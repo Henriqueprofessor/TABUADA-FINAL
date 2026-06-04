@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Copa Tabuada CEIB 2026 - Fase Final (Professor)</title>
+    <title>Copa Tabuada CEIB 2026 - Fase Final</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -82,11 +82,6 @@
             z-index: 1000;
             font-weight: bold;
         }
-        @media (max-width: 700px) {
-            body { padding: 12px; }
-            .card { padding: 16px; }
-            button { padding: 8px 16px; }
-        }
     </style>
 </head>
 <body>
@@ -101,7 +96,7 @@
         </div>
     </div>
 
-    <!-- PAINEL DO PROFESSOR (INICIALMENTE OCULTO) -->
+    <!-- PAINEL DO PROFESSOR -->
     <div id="painel-professor" class="card hidden">
         <h2>🔧 Painel do Professor</h2>
         <div class="flex-grid">
@@ -111,7 +106,7 @@
                 <p>Partida: <strong id="partida-atual">1</strong> / 4</p>
                 <p>Dificuldade: <strong id="dificuldade-nome">-</strong></p>
                 <button id="btn-iniciar-partida" class="btn-success">▶️ Iniciar Partida</button>
-                <button id="btn-finalizar-partida" class="btn-danger">⏹️ Finalizar Partida (forçar)</button>
+                <button id="btn-finalizar-partida" class="btn-danger">⏹️ Finalizar Partida</button>
                 <button id="btn-proxima-partida" class="btn-primary" disabled>➡️ Próxima Partida</button>
                 <hr>
                 <button id="btn-reset-rodada" class="btn-danger">⚠️ Resetar Rodada</button>
@@ -154,7 +149,7 @@
         <button id="btn-sair-aluno" style="margin-top: 20px;">⬅️ Sair</button>
     </div>
 
-    <!-- TELA DE PROJEÇÃO (TORCIDA) -->
+    <!-- TELA DE PROJEÇÃO -->
     <div id="tela-projecao" class="card hidden">
         <h2>📺 COPA TABUADA CEIB 2026 - FASE FINAL</h2>
         <div id="projecao-status" class="status-box">Aguardando início...</div>
@@ -167,41 +162,29 @@
 <div id="toast" class="toast hidden"></div>
 
 <script>
-    // ==================== CONFIGURAÇÃO FIREBASE (SUBSTITUA PELO SEU PROJETO) ====================
+    // ========== CONFIGURAÇÃO DO FIREBASE (VOCÊ DEVE SUBSTITUIR PELOS SEUS DADOS) ==========
     const firebaseConfig = {
-        apiKey: "SUA_API_KEY",
-        authDomain: "SEU_PROJETO.firebaseapp.com",
-        databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
-        projectId: "SEU_PROJETO",
-        storageBucket: "SEU_PROJETO.firebasestorage.app",
-        messagingSenderId: "SEU_ID",
-        appId: "SEU_APP_ID"
+        apiKey: "AIzaSyCSs7aCPTYSebSG6UHSSCMA76p-ZGit9Xc",
+        authDomain: "copa-tabuada-ceib.firebaseapp.com",
+        databaseURL: "https://copa-tabuada-ceib-default-rtdb.firebaseio.com",
+        projectId: "copa-tabuada-ceib",
+        storageBucket: "copa-tabuada-ceib.firebasestorage.app",
+        messagingSenderId: "988790838693",
+        appId: "1:988790838693:web:152da1598c4e14c906844c"
     };
-    // =====================================================================
+    // ⚠️ ATENÇÃO: Substitua pelos dados do SEU novo projeto Firebase para a segunda fase!
+    // =======================================================================
 
-    // Inicializar Firebase (só se estiver no navegador)
-    if (typeof firebase !== 'undefined') {
-        firebase.initializeApp(firebaseConfig);
-    }
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Variáveis globais
-    let meuTipo = null; // 'professor', 'aluno', 'projecao'
-    let alunoId = null;
-    let alunoNome = null;
-    let alunoTurma = null;
-    let estadoRef = null;
-    let estadoAtual = null;
+    let meuTipo = null;
+    let alunoId = null, alunoNome = null, alunoTurma = null;
+    let estadoRef = null, estadoAtual = null;
     let jogoAtivo = false;
-    let partidaAtualAluno = null; // índice da partida
-    let perguntasPartida = [];
-    let perguntaIdx = 0;
-    let pontosPartida = 0;
-    let respostaCorreta = 0;
-    let timerInterval = null;
-    let tempoRestante = 10;
+    let perguntasPartida = [], perguntaIdx = 0, pontosPartida = 0, respostaCorreta = 0;
+    let timerInterval = null, tempoRestante = 10;
 
-    // Ordens das dificuldades por rodada (fixo para todos)
     const ORDENS = {
         1: ["Fácil (2-5)", "Médio (6-9)", "Difícil (0-10 peso 7-9)", "Equilibrado (0-10)"],
         2: ["Difícil (0-10 peso 7-9)", "Equilibrado (0-10)", "Fácil (2-5)", "Médio (6-9)"],
@@ -209,14 +192,12 @@
         4: ["Equilibrado (0-10)", "Difícil (0-10 peso 7-9)", "Médio (6-9)", "Fácil (2-5)"]
     };
 
-    // Gerar banco de perguntas fixo para uma dificuldade
     async function gerarBanco(dificuldade) {
         let fatores = [];
         if (dificuldade.includes("2-5")) fatores = [2,3,4,5];
         else if (dificuldade.includes("6-9")) fatores = [6,7,8,9];
         else if (dificuldade.includes("peso")) fatores = [0,1,2,3,4,5,6,7,8,9,10].filter(f => f>=7 || f<=3);
         else fatores = [0,1,2,3,4,5,6,7,8,9,10];
-        
         let perguntas = [];
         for (let i = 0; i < 20; i++) {
             let fA = fatores[Math.floor(Math.random() * fatores.length)];
@@ -226,24 +207,16 @@
         return perguntas;
     }
 
-    // Inicializar estado no Firebase
     async function inicializarEstado() {
         estadoRef = db.ref('faseFinal');
-        const snapshot = await estadoRef.once('value');
-        if (!snapshot.exists()) {
+        const snap = await estadoRef.once('value');
+        if (!snap.exists()) {
             await estadoRef.set({
-                rodada: 1,
-                partida: 1,
-                status: 'aguardando',
-                participantes: [],
-                resultados: {}, // ex: "r1p1" -> { alunoId: pontos }
-                bancos: {}
+                rodada: 1, partida: 1, status: 'aguardando',
+                participantes: [], resultados: {}, bancos: {}
             });
         }
-        estadoRef.on('value', (snap) => {
-            estadoAtual = snap.val();
-            if (estadoAtual) atualizarInterface();
-        });
+        estadoRef.on('value', (s) => { estadoAtual = s.val(); atualizarInterface(); });
     }
 
     function atualizarInterface() {
@@ -251,38 +224,29 @@
         if (meuTipo === 'professor') {
             document.getElementById('rodada-atual').innerText = estadoAtual.rodada;
             document.getElementById('partida-atual').innerText = estadoAtual.partida;
-            let dificuldade = ORDENS[estadoAtual.rodada][estadoAtual.partida-1];
-            document.getElementById('dificuldade-nome').innerText = dificuldade;
+            let diff = ORDENS[estadoAtual.rodada][estadoAtual.partida-1];
+            document.getElementById('dificuldade-nome').innerText = diff;
             document.getElementById('btn-proxima-partida').disabled = (estadoAtual.status !== 'finalizada');
-            
-            // Lista de participantes
             let lista = estadoAtual.participantes || [];
             let html = '<ul>';
-            lista.forEach(p => { html += `<li>${p.nome} (${p.turma}) - ID: ${p.id}</li>`; });
+            lista.forEach(p => html += `<li>${p.nome} (${p.turma})</li>`);
             html += '</ul>';
             document.getElementById('lista-participantes').innerHTML = html;
-            
-            // Ranking parcial
             exibirRanking();
         } else if (meuTipo === 'aluno' && alunoId) {
-            let participante = (estadoAtual.participantes || []).find(p => p.id === alunoId);
-            if (!participante) {
-                document.getElementById('aluno-nome').innerHTML = "Você não está na lista de participantes. Peça ao professor para adicionar.";
-                return;
-            }
-            document.getElementById('aluno-nome').innerHTML = participante.nome;
-            document.getElementById('aluno-turma').innerHTML = participante.turma;
+            let p = (estadoAtual.participantes || []).find(x => x.id === alunoId);
+            if (!p) return;
+            document.getElementById('aluno-nome').innerHTML = p.nome;
+            document.getElementById('aluno-turma').innerHTML = p.turma;
             document.getElementById('aluno-rodada').innerText = estadoAtual.rodada;
             document.getElementById('aluno-partida').innerText = estadoAtual.partida;
-            let dificuldade = ORDENS[estadoAtual.rodada][estadoAtual.partida-1];
-            document.getElementById('aluno-dificuldade').innerText = dificuldade;
+            let diff = ORDENS[estadoAtual.rodada][estadoAtual.partida-1];
+            document.getElementById('aluno-dificuldade').innerText = diff;
             let chave = `r${estadoAtual.rodada}p${estadoAtual.partida}`;
-            let pontosAtual = (estadoAtual.resultados[chave] || {})[alunoId] || 0;
-            document.getElementById('aluno-pontos').innerText = pontosAtual;
-            
-            if (estadoAtual.status === 'em_andamento' && !jogoAtivo) {
-                iniciarJogoAluno();
-            } else if (estadoAtual.status !== 'em_andamento') {
+            let pts = (estadoAtual.resultados[chave] || {})[alunoId] || 0;
+            document.getElementById('aluno-pontos').innerText = pts;
+            if (estadoAtual.status === 'em_andamento' && !jogoAtivo) iniciarJogoAluno();
+            else if (estadoAtual.status !== 'em_andamento') {
                 if (jogoAtivo) finalizarJogoAluno();
                 document.getElementById('jogo-area').classList.add('hidden');
                 document.getElementById('aguardando').classList.remove('hidden');
@@ -290,15 +254,11 @@
         } else if (meuTipo === 'projecao') {
             exibirRanking(true);
             if (estadoAtual.rodada > 4) {
-                // após 4 rodadas, exibir chaveamento dos 4 primeiros
                 let finalistas = obterFinalistas();
-                let html = '<h3>🏅 CHAVEAMENTO DA FASE DE DUELOS 🏅</h3>';
+                let html = '<h3>🏅 CHAVEAMENTO FINAL</h3>';
                 if (finalistas.length >= 4) {
                     html += `<p>1º: ${finalistas[0].nome} vs 4º: ${finalistas[3].nome}</p>`;
                     html += `<p>2º: ${finalistas[1].nome} vs 3º: ${finalistas[2].nome}</p>`;
-                    html += `<p>🏆 Final: vencedores se enfrentam</p>`;
-                } else {
-                    html += '<p>Aguardando definição dos 4 melhores...</p>';
                 }
                 document.getElementById('projecao-chaveamento').innerHTML = html;
                 document.getElementById('projecao-chaveamento').classList.remove('hidden');
@@ -311,23 +271,21 @@
     async function exibirRanking(projecao = false) {
         if (!estadoAtual) return;
         let participantes = estadoAtual.participantes || [];
-        let rod = estadoAtual.rodada;
-        let partidaMax = estadoAtual.partida;
+        let rod = estadoAtual.rodada, partidaMax = estadoAtual.partida;
         let medias = [];
         for (let p of participantes) {
             let soma = 0, count = 0;
             for (let i = 1; i <= partidaMax; i++) {
-                let chave = `r${rod}p${i}`;
-                let pontos = (estadoAtual.resultados[chave] || {})[p.id] || 0;
-                if (pontos > 0) { soma += pontos; count++; }
+                let pts = (estadoAtual.resultados[`r${rod}p${i}`] || {})[p.id] || 0;
+                if (pts > 0) { soma += pts; count++; }
             }
-            let media = count > 0 ? soma / count : 0;
+            let media = count ? soma / count : 0;
             medias.push({ ...p, media, soma });
         }
         medias.sort((a,b) => b.media - a.media);
-        let html = `<table><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Média</th><th>Total</th></tr>`;
-        medias.slice(0, projecao ? 40 : 20).forEach((m, idx) => {
-            html += `<tr><td>${idx+1}º</td><td>${m.nome}</td><td>${m.turma}</td><td>${m.media.toFixed(2)}</td><td>${m.soma}</td></tr>`;
+        let html = `§{table}<tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Média</th><th>Total</th></tr>`;
+        medias.slice(0, projecao ? 40 : 20).forEach((m, i) => {
+            html += `<tr><td>${i+1}º</td><td>${m.nome}</td><td>${m.turma}</td><td>${m.media.toFixed(2)}</td><td>${m.soma}</td></tr>`;
         });
         html += `</table>`;
         if (projecao) document.getElementById('projecao-ranking').innerHTML = html;
@@ -340,20 +298,15 @@
         let somas = [];
         for (let p of participantes) {
             let total = 0;
-            for (let i = 1; i <= 4; i++) {
-                let chave = `r4p${i}`;
-                total += (estadoAtual.resultados[chave] || {})[p.id] || 0;
-            }
+            for (let i = 1; i <= 4; i++) total += (estadoAtual.resultados[`r4p${i}`] || {})[p.id] || 0;
             somas.push({ ...p, total });
         }
         return somas.sort((a,b) => b.total - a.total).slice(0,4);
     }
 
-    // ========== JOGO DO ALUNO ==========
     async function iniciarJogoAluno() {
         if (jogoAtivo) return;
-        let rod = estadoAtual.rodada;
-        let part = estadoAtual.partida;
+        let rod = estadoAtual.rodada, part = estadoAtual.partida;
         let dificuldade = ORDENS[rod][part-1];
         let bancoKey = `r${rod}p${part}`;
         if (!estadoAtual.bancos[bancoKey]) {
@@ -371,10 +324,7 @@
     }
 
     function proximaPergunta() {
-        if (perguntaIdx >= 20) {
-            finalizarJogoAluno();
-            return;
-        }
+        if (perguntaIdx >= 20) { finalizarJogoAluno(); return; }
         let p = perguntasPartida[perguntaIdx];
         document.getElementById('pergunta').innerHTML = `${p.fA} x ${p.fB} = ?`;
         respostaCorreta = p.resposta;
@@ -398,10 +348,7 @@
             if (!jogoAtivo) return;
             tempoRestante -= 0.1;
             timerElem.innerText = tempoRestante.toFixed(1);
-            if (tempoRestante <= 0) {
-                clearInterval(timerInterval);
-                responder(-1);
-            }
+            if (tempoRestante <= 0) { clearInterval(timerInterval); responder(-1); }
         }, 100);
     }
 
@@ -415,22 +362,17 @@
         }
         if (acertou) {
             let tempoGasto = 10 - tempoRestante;
-            let pontos = Math.floor(300 + (10 - tempoGasto) * 50);
-            pontosPartida += pontos;
+            pontosPartida += Math.floor(300 + (10 - tempoGasto) * 50);
             document.getElementById('aluno-pontos').innerText = pontosPartida;
         }
         perguntaIdx++;
-        if (perguntaIdx < 20) {
-            proximaPergunta();
-        } else {
-            finalizarJogoAluno();
-        }
+        if (perguntaIdx < 20) proximaPergunta();
+        else finalizarJogoAluno();
     }
 
     async function finalizarJogoAluno() {
         jogoAtivo = false;
-        let rod = estadoAtual.rodada;
-        let part = estadoAtual.partida;
+        let rod = estadoAtual.rodada, part = estadoAtual.partida;
         let chave = `r${rod}p${part}`;
         await estadoRef.child(`resultados/${chave}/${alunoId}`).set(pontosPartida);
         document.getElementById('jogo-area').classList.add('hidden');
@@ -438,7 +380,41 @@
         mostrarToast(`Partida finalizada! Pontos: ${pontosPartida}`);
     }
 
-    // ========== PAINEL DO PROFESSOR ==========
+    function mostrarToast(msg) {
+        let t = document.getElementById('toast');
+        t.innerText = msg;
+        t.classList.remove('hidden');
+        setTimeout(() => t.classList.add('hidden'), 3000);
+    }
+
+    // Eventos
+    document.getElementById('btn-professor')?.addEventListener('click', async () => {
+        meuTipo = 'professor';
+        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.getElementById('painel-professor').classList.remove('hidden');
+        await inicializarEstado();
+    });
+    document.getElementById('btn-aluno')?.addEventListener('click', async () => {
+        let nome = prompt("Seu nome completo:");
+        let turma = prompt("Sua turma:");
+        if (!nome || !turma) return;
+        alunoNome = nome; alunoTurma = turma;
+        alunoId = btoa(nome + turma).slice(0, 12);
+        meuTipo = 'aluno';
+        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.getElementById('tela-aluno').classList.remove('hidden');
+        await inicializarEstado();
+        let participantes = estadoAtual?.participantes || [];
+        if (!participantes.find(p => p.id === alunoId)) {
+            await estadoRef.child('participantes').push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
+        }
+    });
+    document.getElementById('btn-projecao')?.addEventListener('click', async () => {
+        meuTipo = 'projecao';
+        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.getElementById('tela-projecao').classList.remove('hidden');
+        await inicializarEstado();
+    });
     document.getElementById('btn-iniciar-partida')?.addEventListener('click', async () => {
         await estadoRef.update({ status: 'em_andamento' });
         mostrarToast("Partida iniciada!");
@@ -448,72 +424,27 @@
         mostrarToast("Partida finalizada!");
     });
     document.getElementById('btn-proxima-partida')?.addEventListener('click', async () => {
-        let novaPartida = estadoAtual.partida + 1;
-        if (novaPartida <= 4) {
-            await estadoRef.update({ partida: novaPartida, status: 'aguardando' });
+        if (estadoAtual.partida < 4) {
+            await estadoRef.update({ partida: estadoAtual.partida + 1, status: 'aguardando' });
         } else if (estadoAtual.rodada < 4) {
-            let novaRodada = estadoAtual.rodada + 1;
-            await estadoRef.update({ rodada: novaRodada, partida: 1, status: 'aguardando' });
+            await estadoRef.update({ rodada: estadoAtual.rodada + 1, partida: 1, status: 'aguardando' });
         } else {
-            mostrarToast("Fim das rodadas classificatórias! Agora os duelos finais.");
-            // Aqui você pode ativar o modo duelos (opcional)
+            mostrarToast("Todas as rodadas concluídas!");
         }
     });
     document.getElementById('btn-reset-rodada')?.addEventListener('click', async () => {
-        if (confirm("Resetar rodada atual? Todos os resultados serão apagados.")) {
-            let rod = estadoAtual.rodada;
-            for (let i=1; i<=4; i++) {
-                await estadoRef.child(`resultados/r${rod}p${i}`).remove();
-            }
-            await estadoRef.update({ partida: 1, status: 'aguardando' });
-        }
+        if (!confirm("Resetar rodada? Dados serão perdidos.")) return;
+        let rod = estadoAtual.rodada;
+        for (let i=1; i<=4; i++) await estadoRef.child(`resultados/r${rod}p${i}`).remove();
+        await estadoRef.update({ partida: 1, status: 'aguardando' });
     });
-    document.getElementById('btn-adicionar-aluno')?.addEventListener('click', () => {
-        let nome = prompt("Nome completo do aluno:");
+    document.getElementById('btn-adicionar-aluno')?.addEventListener('click', async () => {
+        let nome = prompt("Nome do aluno:");
         let turma = prompt("Turma:");
-        if (nome && turma) {
-            let id = btoa(nome + turma + Date.now()).slice(0, 12);
-            let novos = [...(estadoAtual.participantes || []), { id, nome, turma }];
-            estadoRef.child('participantes').set(novos);
-        }
-    });
-
-    // ========== CONTROLE DE TELAS ==========
-    function mostrarToast(msg) {
-        let t = document.getElementById('toast');
-        t.innerText = msg;
-        t.classList.remove('hidden');
-        setTimeout(() => t.classList.add('hidden'), 3000);
-    }
-
-    document.getElementById('btn-professor')?.addEventListener('click', async () => {
-        meuTipo = 'professor';
-        document.querySelectorAll('.card:not(#painel-professor)').forEach(c => c.classList.add('hidden'));
-        document.getElementById('painel-professor').classList.remove('hidden');
-        await inicializarEstado();
-    });
-    document.getElementById('btn-aluno')?.addEventListener('click', async () => {
-        let nome = prompt("Seu nome completo:");
-        let turma = prompt("Sua turma:");
         if (!nome || !turma) return;
-        alunoNome = nome;
-        alunoTurma = turma;
-        alunoId = btoa(nome + turma).slice(0, 12);
-        meuTipo = 'aluno';
-        document.querySelectorAll('.card:not(#tela-aluno)').forEach(c => c.classList.add('hidden'));
-        document.getElementById('tela-aluno').classList.remove('hidden');
-        await inicializarEstado();
-        // Verificar se já está na lista, senão adicionar
-        let participantes = estadoAtual?.participantes || [];
-        if (!participantes.find(p => p.id === alunoId)) {
-            await estadoRef.child('participantes').push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
-        }
-    });
-    document.getElementById('btn-projecao')?.addEventListener('click', async () => {
-        meuTipo = 'projecao';
-        document.querySelectorAll('.card:not(#tela-projecao)').forEach(c => c.classList.add('hidden'));
-        document.getElementById('tela-projecao').classList.remove('hidden');
-        await inicializarEstado();
+        let id = btoa(nome + turma + Date.now()).slice(0, 12);
+        let novos = [...(estadoAtual.participantes || []), { id, nome, turma }];
+        await estadoRef.child('participantes').set(novos);
     });
     document.getElementById('btn-sair-aluno')?.addEventListener('click', () => location.reload());
     document.getElementById('btn-sair-projecao')?.addEventListener('click', () => location.reload());
