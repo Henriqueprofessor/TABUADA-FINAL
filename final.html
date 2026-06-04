@@ -75,6 +75,9 @@
             font-weight: bold;
         }
     </style>
+    <!-- Firebase SDKs obrigatórios -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 </head>
 <body>
 <div class="container">
@@ -154,7 +157,7 @@
 <div id="toast" class="toast hidden"></div>
 
 <script>
-    // ========== CONFIGURAÇÃO DO FIREBASE (NOVO PROJETO SEGUNDA FASE) ==========
+    // Configuração do Firebase (projeto exclusivo da segunda fase)
     const firebaseConfig = {
         apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBz0-o2HVhEE",
         authDomain: "final-copa-tabuada.firebaseapp.com",
@@ -164,8 +167,8 @@
         messagingSenderId: "488825824115",
         appId: "1:488825824115:web:50e94f68253473aee91b06"
     };
-    // =======================================================================
 
+    // Inicializa o Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -278,7 +281,7 @@
         medias.slice(0, projecao ? 40 : 20).forEach((m, i) => {
             html += `<tr><td>${i+1}º</td><td>${m.nome}</td><td>${m.turma}</td><td>${m.media.toFixed(2)}</td><td>${m.soma}</td></tr>`;
         });
-        html += `</tbody></table>`;
+        html += `</tbody>赶`;
         if (projecao) document.getElementById('projecao-ranking').innerHTML = html;
         else document.getElementById('ranking-parcial').innerHTML = html;
     }
@@ -378,7 +381,7 @@
         setTimeout(() => t.classList.add('hidden'), 3000);
     }
 
-    // Eventos dos botões
+    // Eventos
     document.getElementById('btn-professor')?.addEventListener('click', async () => {
         meuTipo = 'professor';
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
