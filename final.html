@@ -53,6 +53,7 @@
             padding: 10px;
             text-align: left;
         }
+        th { background: #1e2a3a; }
         .status-box {
             background: #000000aa;
             border-radius: 20px;
@@ -128,7 +129,7 @@
                 <button id="btn-calcular-classificados" class="btn-primary">📊 Calcular Classificados da Fase</button>
                 <button id="btn-avancar-fase" class="btn-success" disabled>➡️ Avançar para Próxima Fase</button>
                 <button id="btn-reset-fase" class="btn-danger">⚠️ Resetar Fase Atual</button>
-                <button id="btn-remover-duplicados" class="btn-warning">🔧 Remover Participantes Duplicados</button>
+                <button id="btn-remover-duplicados" class="btn-warning">🔧 Remover Duplicados</button>
                 <button id="btn-voltar-inicio" class="btn-primary">🏠 Voltar ao Início</button>
             </div>
             <div>
@@ -155,7 +156,7 @@
             <p>Pontos nesta partida: <strong id="aluno-pontos">0</strong></p>
         </div>
         <div id="pre-contagem" class="hidden">
-            <div class="liberacao-info">🎮 <strong>Sua partida será liberada em breve!</strong> 🎮</div>
+            <div class="liberacao-info">🎮 Sua partida será liberada em breve! 🎮</div>
             <div id="countdown-timer" class="countdown">10</div>
         </div>
         <div id="jogo-area" class="hidden">
@@ -218,6 +219,16 @@
 
     const DIFICULDADES_POR_PARTIDA = ["Fácil (2-5)", "Médio (6-9)", "Difícil (0-10 peso 7-9)", "Equilibrado (0-10)"];
     const CLASSIFICADOS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 4 };
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
 
     function gerarIdEstavel(nome, turma) {
         return btoa(nome.toLowerCase().trim() + "|" + turma).slice(0, 16);
@@ -282,7 +293,8 @@
             return;
         }
         filaLiberacao = ordem.map(p => p.id);
-        document.getElementById('status-sequencial').classList.remove('hidden');
+        const statusDiv = document.getElementById('status-sequencial');
+        if (statusDiv) statusDiv.classList.remove('hidden');
         atualizarFilaDisplay();
         await estadoRef.child('liberacoes').remove();
         let index = 0;
@@ -291,7 +303,7 @@
                 clearInterval(intervaloSequencial);
                 intervaloSequencial = null;
                 mostrarToast("Todos os alunos foram liberados!");
-                document.getElementById('status-sequencial').classList.add('hidden');
+                if (statusDiv) statusDiv.classList.add('hidden');
                 return;
             }
             const alunoIdAtual = filaLiberacao[index];
@@ -316,7 +328,7 @@
         let html = '<p><strong>Ordem de liberação:</strong></p><ol>';
         for (let i = 0; i < filaLiberacao.length; i++) {
             let aluno = getParticipantesArray(estadoAtual).find(p => p.id === filaLiberacao[i]);
-            let nome = aluno ? aluno.nome : filaLiberacao[i];
+            let nome = aluno ? escapeHtml(aluno.nome) : filaLiberacao[i];
             html += `<li>${nome} ${i === 0 ? '(liberando agora)' : ''}</li>`;
         }
         html += '</ol>';
@@ -329,7 +341,39 @@
             intervaloSequencial = null;
         }
         await estadoRef.child('liberacoes').remove();
-        document.getElementById('status-sequencial').classList.add('hidden');
+        const statusDiv = document.getElementById('status-sequencial');
+        if (statusDiv) statusDiv.classList.add('hidden');
+    }
+
+    async function editarNomeAluno(alunoId, novoNome) {
+        if (!estadoAtual) return;
+        if (!novoNome || novoNome.trim() === "") return;
+        const participantes = getParticipantesArray(estadoAtual);
+        const novosParticipantes = participantes.map(p => 
+            p.id === alunoId ? { ...p, nome: novoNome.trim() } : p
+        );
+        await estadoRef.child('participantes').set(novosParticipantes);
+        mostrarToast(`Nome alterado para ${novoNome.trim()}`);
+    }
+
+    async function excluirAluno(alunoId) {
+        if (!estadoAtual) return;
+        const participantes = getParticipantesArray(estadoAtual);
+        const aluno = participantes.find(p => p.id === alunoId);
+        if (!aluno) return;
+        if (!confirm(`Tem certeza que deseja remover ${aluno.nome} da competição?`)) return;
+        const novosParticipantes = participantes.filter(p => p.id !== alunoId);
+        await estadoRef.child('participantes').set(novosParticipantes);
+        const fase = estadoAtual.faseAtual;
+        if (estadoAtual.resultadosFase && estadoAtual.resultadosFase[fase]) {
+            for (let i = 1; i <= 4; i++) {
+                const chave = `r${i}p`;
+                if (estadoAtual.resultadosFase[fase][chave] && estadoAtual.resultadosFase[fase][chave][alunoId]) {
+                    await estadoRef.child(`resultadosFase/${fase}/${chave}/${alunoId}`).remove();
+                }
+            }
+        }
+        mostrarToast(`${aluno.nome} removido da competição.`);
     }
 
     async function removerParticipantesDuplicados() {
@@ -380,18 +424,22 @@
     function iniciarContagemRegressiva() {
         let tempo = 10;
         const countdownElem = document.getElementById('countdown-timer');
+        if (!countdownElem) return;
         countdownElem.innerText = tempo;
-        document.getElementById('pre-contagem').classList.remove('hidden');
-        document.getElementById('jogo-area').classList.add('hidden');
-        document.getElementById('aguardando').classList.add('hidden');
+        const preDiv = document.getElementById('pre-contagem');
+        if (preDiv) preDiv.classList.remove('hidden');
+        const jogoDiv = document.getElementById('jogo-area');
+        if (jogoDiv) jogoDiv.classList.add('hidden');
+        const aguardandoDiv = document.getElementById('aguardando');
+        if (aguardandoDiv) aguardandoDiv.classList.add('hidden');
         if (countdownInterval) clearInterval(countdownInterval);
         countdownInterval = setInterval(async () => {
             tempo--;
-            countdownElem.innerText = tempo;
+            if (countdownElem) countdownElem.innerText = tempo;
             if (tempo <= 0) {
                 clearInterval(countdownInterval);
                 countdownInterval = null;
-                document.getElementById('pre-contagem').classList.add('hidden');
+                if (preDiv) preDiv.classList.add('hidden');
                 if (liberacaoRef) await liberacaoRef.update({ status: 'em_andamento' });
                 iniciarJogoAluno();
             }
@@ -464,45 +512,14 @@
         });
     }
 
-    async function editarNomeAluno(alunoId, novoNome) {
-        if (!estadoAtual || !novoNome || novoNome.trim() === "") return;
-        const participantes = getParticipantesArray(estadoAtual);
-        const novosParticipantes = participantes.map(p => 
-            p.id === alunoId ? { ...p, nome: novoNome.trim() } : p
-        );
-        await estadoRef.child('participantes').set(novosParticipantes);
-        mostrarToast(`Nome alterado para ${novoNome.trim()}`);
-        atualizarInterface(); // força atualização da lista
-    }
-
-    async function excluirAluno(alunoId) {
-        if (!estadoAtual) return;
-        const participantes = getParticipantesArray(estadoAtual);
-        const aluno = participantes.find(p => p.id === alunoId);
-        if (!aluno) return;
-        if (!confirm(`Tem certeza que deseja remover ${aluno.nome} da competição?`)) return;
-        const novosParticipantes = participantes.filter(p => p.id !== alunoId);
-        await estadoRef.child('participantes').set(novosParticipantes);
-        const fase = estadoAtual.faseAtual;
-        if (estadoAtual.resultadosFase && estadoAtual.resultadosFase[fase]) {
-            for (let i = 1; i <= 4; i++) {
-                const chave = `r${i}p`;
-                if (estadoAtual.resultadosFase[fase][chave] && estadoAtual.resultadosFase[fase][chave][alunoId]) {
-                    await estadoRef.child(`resultadosFase/${fase}/${chave}/${alunoId}`).remove();
-                }
-            }
-        }
-        mostrarToast(`${aluno.nome} removido da competição.`);
-        atualizarInterface();
-    }
-
     function atualizarInterface() {
         if (!estadoAtual) return;
         const fase = estadoAtual.faseAtual;
         const partida = estadoAtual.partidaAtual;
         const participantesArray = getParticipantesArray(estadoAtual);
-        const dificuldade = DIFICULDADES_POR_PARTIDA[partida-1] || "?";
+        const dificuldade = (partida >= 1 && partida <= 4) ? DIFICULDADES_POR_PARTIDA[partida-1] : "?";
 
+        // Atualizar títulos
         document.getElementById('fase-atual-titulo').innerText = fase;
         document.getElementById('partida-atual-titulo').innerText = partida;
         
@@ -511,17 +528,17 @@
             document.getElementById('partida-atual-prof').innerText = partida;
             document.getElementById('dificuldade-nome').innerText = dificuldade;
             document.getElementById('btn-avancar-fase').disabled = (estadoAtual.partidaAtual <= 4);
-            
-            let html = '<ul style="list-style:none; padding-left:0;">';
-            participantesArray.forEach(p => {
-                html += `<li style="margin-bottom:8px; display: flex; align-items: center; flex-wrap: wrap;">
-                            <span style="flex:1;">${escapeHtml(p.nome)} (${p.turma})</span>
-                            <button class="btn-small" onclick="window.editarNomeAluno('${p.id}', prompt('Novo nome para ${escapeHtml(p.nome)}:', '${escapeHtml(p.nome)}'))">✏️ Editar</button>
-                            <button class="btn-small btn-excluir" onclick="window.excluirAluno('${p.id}')">🗑️ Excluir</button>
-                         </li>`;
-            });
-            html += '</ul>';
-            document.getElementById('lista-participantes').innerHTML = html;
+            // Lista de participantes com botões Editar e Excluir
+            let listaHtml = '<ul style="list-style:none; padding-left:0;">';
+            for (let p of participantesArray) {
+                listaHtml += `<li style="margin-bottom:8px; display: flex; align-items: center; flex-wrap: wrap;">
+                                <span style="flex:1;">${escapeHtml(p.nome)} (${escapeHtml(p.turma)})</span>
+                                <button class="btn-small" onclick="window.editarNomeAluno('${p.id}', prompt('Novo nome para ${escapeHtml(p.nome)}:', '${escapeHtml(p.nome)}'))">✏️ Editar</button>
+                                <button class="btn-small btn-excluir" onclick="window.excluirAluno('${p.id}')">🗑️ Excluir</button>
+                             </li>`;
+            }
+            listaHtml += '</ul>';
+            document.getElementById('lista-participantes').innerHTML = listaHtml;
             exibirRanking(false);
         } 
         else if (meuTipo === 'aluno' && alunoId) {
@@ -530,8 +547,8 @@
                 document.getElementById('aluno-nome').innerHTML = "Aguardando cadastro no painel do professor...";
                 return;
             }
-            document.getElementById('aluno-nome').innerHTML = p.nome;
-            document.getElementById('aluno-turma').innerHTML = p.turma;
+            document.getElementById('aluno-nome').innerHTML = escapeHtml(p.nome);
+            document.getElementById('aluno-turma').innerHTML = escapeHtml(p.turma);
             document.getElementById('aluno-fase').innerText = fase;
             document.getElementById('aluno-partida').innerText = partida;
             document.getElementById('aluno-dificuldade').innerText = dificuldade;
@@ -540,15 +557,20 @@
             
             if (alunoJaJogouPartida(estadoAtual, alunoId, fase, partida)) {
                 jaJogouEstaPartida = true;
-                document.getElementById('jogo-area').classList.add('hidden');
-                document.getElementById('pre-contagem').classList.add('hidden');
-                document.getElementById('aguardando').classList.add('hidden');
-                document.getElementById('ja-jogou').classList.remove('hidden');
+                const jogoDiv = document.getElementById('jogo-area');
+                if (jogoDiv) jogoDiv.classList.add('hidden');
+                const preDiv = document.getElementById('pre-contagem');
+                if (preDiv) preDiv.classList.add('hidden');
+                const aguardandoDiv = document.getElementById('aguardando');
+                if (aguardandoDiv) aguardandoDiv.classList.add('hidden');
+                const jaJogouDiv = document.getElementById('ja-jogou');
+                if (jaJogouDiv) jaJogouDiv.classList.remove('hidden');
                 if (countdownInterval) clearInterval(countdownInterval);
                 return;
             } else {
                 jaJogouEstaPartida = false;
-                document.getElementById('ja-jogou').classList.add('hidden');
+                const jaJogouDiv = document.getElementById('ja-jogou');
+                if (jaJogouDiv) jaJogouDiv.classList.add('hidden');
             }
             
             if (estadoAtual.status === 'em_andamento' && !jogoAtivo && !countdownInterval && !jaJogouEstaPartida) {
@@ -559,9 +581,12 @@
             }
             if (estadoAtual.status !== 'em_andamento' || partida > 4) {
                 if (jogoAtivo) finalizarJogoAluno();
-                document.getElementById('jogo-area').classList.add('hidden');
-                document.getElementById('pre-contagem').classList.add('hidden');
-                document.getElementById('aguardando').classList.remove('hidden');
+                const jogoDiv = document.getElementById('jogo-area');
+                if (jogoDiv) jogoDiv.classList.add('hidden');
+                const preDiv = document.getElementById('pre-contagem');
+                if (preDiv) preDiv.classList.add('hidden');
+                const aguardandoDiv = document.getElementById('aguardando');
+                if (aguardandoDiv) aguardandoDiv.classList.remove('hidden');
                 if (countdownInterval) clearInterval(countdownInterval);
             }
         }
@@ -570,12 +595,16 @@
             if (fase === 4 && estadoAtual.finalistas) {
                 let finalistas = estadoAtual.finalistas;
                 let html = '<h3>🏅 FINALISTAS DA COPA 🏅</h3><ol>';
-                finalistas.forEach((f,i) => html += `<li>${escapeHtml(f.nome)} (${f.turma})</li>`);
+                finalistas.forEach((f,i) => html += `<li>${escapeHtml(f.nome)} (${escapeHtml(f.turma)})</li>`);
                 html += '</ol>';
-                document.getElementById('projecao-chaveamento').innerHTML = html;
-                document.getElementById('projecao-chaveamento').classList.remove('hidden');
+                const chaveamentoDiv = document.getElementById('projecao-chaveamento');
+                if (chaveamentoDiv) {
+                    chaveamentoDiv.innerHTML = html;
+                    chaveamentoDiv.classList.remove('hidden');
+                }
             } else {
-                document.getElementById('projecao-chaveamento').classList.add('hidden');
+                const chaveamentoDiv = document.getElementById('projecao-chaveamento');
+                if (chaveamentoDiv) chaveamentoDiv.classList.add('hidden');
             }
         }
     }
@@ -588,30 +617,27 @@
             const { total, partidasJogadas, media } = getPontuacaoAlunoNaFase(estadoAtual, p.id, fase);
             return { ...p, total, partidasJogadas, media };
         }).sort((a,b) => b.media - a.media);
-        let html = `</td><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Partidas</th><th>Total</th><th>Média</th></tr></thead><tbody>`;
-        comDados.forEach((p, i) => {
+        
+        let html = `<table>
+            <thead>
+                <tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Partidas</th><th>Total</th><th>Média</th></tr>
+            </thead>
+            <tbody>`;
+        for (let i = 0; i < comDados.length; i++) {
+            const p = comDados[i];
             html += `<tr>
                         <td style="text-align:center">${i+1}º</td>
                         <td>${escapeHtml(p.nome)}</td>
-                        <td>${p.turma}</td>
+                        <td>${escapeHtml(p.turma)}</td>
                         <td style="text-align:center">${p.partidasJogadas}/4</td>
                         <td style="text-align:center">${p.total}</td>
                         <td style="text-align:center">${p.media.toFixed(2)}</td>
                      </tr>`;
-        });
+        }
         html += `</tbody>赶`;
-        if (projecao) document.getElementById('projecao-ranking').innerHTML = html;
-        else document.getElementById('ranking-parcial').innerHTML = html;
-    }
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
+        const containerId = projecao ? 'projecao-ranking' : 'ranking-parcial';
+        const container = document.getElementById(containerId);
+        if (container) container.innerHTML = html;
     }
 
     async function iniciarJogoAluno() {
@@ -633,16 +659,20 @@
         perguntaIdx = 0;
         pontosPartida = 0;
         jogoAtivo = true;
-        document.getElementById('jogo-area').classList.remove('hidden');
-        document.getElementById('aguardando').classList.add('hidden');
-        document.getElementById('ja-jogou').classList.add('hidden');
+        const jogoDiv = document.getElementById('jogo-area');
+        if (jogoDiv) jogoDiv.classList.remove('hidden');
+        const aguardandoDiv = document.getElementById('aguardando');
+        if (aguardandoDiv) aguardandoDiv.classList.add('hidden');
+        const jaJogouDiv = document.getElementById('ja-jogou');
+        if (jaJogouDiv) jaJogouDiv.classList.add('hidden');
         proximaPergunta();
     }
 
     function proximaPergunta() {
         if (perguntaIdx >= 20) { finalizarJogoAluno(); return; }
         let p = perguntasPartida[perguntaIdx];
-        document.getElementById('pergunta').innerHTML = `${p.fA} x ${p.fB} = ?`;
+        const perguntaDiv = document.getElementById('pergunta');
+        if (perguntaDiv) perguntaDiv.innerHTML = `${p.fA} x ${p.fB} = ?`;
         respostaCorreta = p.resposta;
         let opcoes = [respostaCorreta];
         while(opcoes.length < 4) {
@@ -651,8 +681,9 @@
         }
         opcoes.sort(() => Math.random() - 0.5);
         let botoes = document.querySelectorAll('.opcao');
-        botoes.forEach((btn, i) => { btn.innerText = opcoes[i]; btn.disabled = false; });
-        document.getElementById('pergunta-num').innerText = perguntaIdx+1;
+        botoes.forEach((btn, i) => { if (btn) btn.innerText = opcoes[i]; if (btn) btn.disabled = false; });
+        const perguntaNumSpan = document.getElementById('pergunta-num');
+        if (perguntaNumSpan) perguntaNumSpan.innerText = perguntaIdx+1;
         iniciarTimer();
     }
 
@@ -663,27 +694,28 @@
         timerInterval = setInterval(() => {
             if (!jogoAtivo) return;
             tempoRestante -= 0.1;
-            timerElem.innerText = tempoRestante.toFixed(1);
-            if (tempoRestante <= 0) { clearInterval(timerInterval); responder(-1); }
+            if (timerElem) timerElem.innerText = tempoRestante.toFixed(1);
+            if (tempoRestante <= 0) { clearInterval(timerInterval); window.responder(-1); }
         }, 100);
     }
 
-    window.responder = function(escolhaIdx) {
+    window.responder = async function(escolhaIdx) {
         if (!jogoAtivo) return;
         clearInterval(timerInterval);
         let acertou = false;
         if (escolhaIdx !== -1) {
             let btn = document.querySelectorAll('.opcao')[escolhaIdx];
-            if (parseInt(btn.innerText) === respostaCorreta) acertou = true;
+            if (btn && parseInt(btn.innerText) === respostaCorreta) acertou = true;
         }
         if (acertou) {
             let tempoGasto = 10 - tempoRestante;
             pontosPartida += Math.floor(300 + (10 - tempoGasto) * 50);
-            document.getElementById('aluno-pontos').innerText = pontosPartida;
+            const pontosSpan = document.getElementById('aluno-pontos');
+            if (pontosSpan) pontosSpan.innerText = pontosPartida;
         }
         perguntaIdx++;
         if (perguntaIdx < 20) proximaPergunta();
-        else finalizarJogoAluno();
+        else await finalizarJogoAluno();
     };
 
     async function finalizarJogoAluno() {
@@ -699,23 +731,28 @@
             mostrarToast("Você já tinha pontuação nesta partida. Não foi possível salvar nova tentativa.");
         }
         await estadoRef.child(`liberacoes/${alunoId}`).remove();
-        document.getElementById('jogo-area').classList.add('hidden');
-        document.getElementById('aguardando').classList.remove('hidden');
+        const jogoDiv = document.getElementById('jogo-area');
+        if (jogoDiv) jogoDiv.classList.add('hidden');
+        const aguardandoDiv = document.getElementById('aguardando');
+        if (aguardandoDiv) aguardandoDiv.classList.remove('hidden');
         mostrarToast(`Partida finalizada! Pontos: ${pontosPartida}`);
     }
 
     function mostrarToast(msg) {
         let t = document.getElementById('toast');
-        t.innerText = msg;
-        t.classList.remove('hidden');
-        setTimeout(() => t.classList.add('hidden'), 3000);
+        if (t) {
+            t.innerText = msg;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 3000);
+        }
     }
 
     // ========== EVENTOS DOS BOTÕES ==========
     document.getElementById('btn-professor')?.addEventListener('click', async () => {
         meuTipo = 'professor';
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-        document.getElementById('painel-professor').classList.remove('hidden');
+        const painel = document.getElementById('painel-professor');
+        if (painel) painel.classList.remove('hidden');
         await inicializarEstado();
     });
     
@@ -729,7 +766,8 @@
         alunoId = idEstavel;
         meuTipo = 'aluno';
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-        document.getElementById('tela-aluno').classList.remove('hidden');
+        const telaAluno = document.getElementById('tela-aluno');
+        if (telaAluno) telaAluno.classList.remove('hidden');
         await inicializarEstado();
         let participantesArray = getParticipantesArray(estadoAtual);
         let existente = participantesArray.find(p => p.id === alunoId);
@@ -744,7 +782,8 @@
     document.getElementById('btn-projecao')?.addEventListener('click', async () => {
         meuTipo = 'projecao';
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-        document.getElementById('tela-projecao').classList.remove('hidden');
+        const telaProj = document.getElementById('tela-projecao');
+        if (telaProj) telaProj.classList.remove('hidden');
         await inicializarEstado();
     });
     
@@ -805,7 +844,7 @@
     });
     
     document.getElementById('btn-voltar-inicio')?.addEventListener('click', () => {
-        window.location.reload();
+        window.location.href = window.location.origin + window.location.pathname;
     });
     
     document.getElementById('btn-adicionar-aluno')?.addEventListener('click', async () => {
@@ -825,7 +864,7 @@
     document.getElementById('btn-sair-aluno')?.addEventListener('click', () => location.reload());
     document.getElementById('btn-sair-projecao')?.addEventListener('click', () => location.reload());
     
-    // Expor funções globalmente para os botões dinâmicos
+    // Expor funções globais para os botões dinâmicos
     window.editarNomeAluno = editarNomeAluno;
     window.excluirAluno = excluirAluno;
 </script>
