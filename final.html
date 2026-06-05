@@ -97,14 +97,8 @@
             margin: 10px;
             text-align: center;
         }
-        .classificado {
-            color: #2ecc71;
-            font-weight: bold;
-        }
-        .eliminado {
-            color: #e74c3c;
-            font-weight: bold;
-        }
+        .classificado { color: #2ecc71; font-weight: bold; }
+        .eliminado { color: #e74c3c; font-weight: bold; }
         .info-vagas {
             background: #2c3e50;
             padding: 12px;
@@ -116,9 +110,17 @@
             background: #1e2a3a;
             border: 1px solid #ffd966;
             color: white;
+            padding: 8px;
             border-radius: 20px;
-            padding: 6px 12px;
             margin: 4px;
+        }
+        .turma-badge {
+            display: inline-block;
+            background: #e67e22;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin: 2px;
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -156,16 +158,29 @@
             </div>
             <div>
                 <h3>Participantes da Fase <span id="fase-participantes-num">1</span></h3>
-                <div id="lista-participantes" style="max-height: 300px; overflow-y: auto;"></div>
+                <div id="lista-participantes" style="max-height: 250px; overflow-y: auto;"></div>
                 <button id="btn-adicionar-aluno" class="btn-primary">➕ Adicionar Aluno</button>
                 <hr>
                 <h3>Gerenciar Turmas</h3>
-                <button id="btn-adicionar-turma" class="btn-primary">➕ Adicionar Turma</button>
-                <button id="btn-remover-turma" class="btn-danger">🗑️ Remover Turma</button>
-                <div id="lista-turmas" style="margin-top: 8px; font-size: 0.9em;"></div>
+                <div id="lista-turmas" style="margin-bottom: 8px;"></div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="nova-turma" placeholder="Ex: 3003" style="flex:1;">
+                    <button id="btn-adicionar-turma" class="btn-small">➕ Adicionar Turma</button>
+                </div>
+                <hr>
+                <h3>Histórico de Fases</h3>
+                <label>Ver Ranking da Fase:</label>
+                <select id="seletor-fase-historico">
+                    <option value="0">Fase atual</option>
+                    <option value="1">Fase 1</option>
+                    <option value="2">Fase 2</option>
+                    <option value="3">Fase 3</option>
+                    <option value="4">Fase 4</option>
+                </select>
+                <button id="btn-carregar-historico" class="btn-small">Carregar Ranking</button>
             </div>
         </div>
-        <h3>Ranking da Fase Atual (média das partidas já jogadas)</h3>
+        <h3>Ranking <span id="ranking-titulo">da Fase Atual</span></h3>
         <div id="ranking-parcial" class="status-box"></div>
         <div id="status-sequencial" class="status-box hidden">
             <h3>Liberação Sequencial</h3>
@@ -175,53 +190,56 @@
 
     <!-- TELA DO ALUNO -->
     <div id="tela-aluno" class="card hidden">
-        <h2>🎮 Entrar como Aluno</h2>
-        <div style="margin: 20px 0;">
-            <label>Seu nome completo:</label>
-            <input type="text" id="aluno-nome-input" placeholder="Ex: Maria Silva" style="width: 100%;">
-            <label>Turma:</label>
-            <select id="aluno-turma-select" style="width: 100%;"></select>
-            <button id="btn-confirmar-aluno" class="btn-primary" style="margin-top: 16px;">✅ Confirmar e Entrar</button>
+        <h2 id="aluno-nome">Aluno</h2>
+        <p>Turma: <span id="aluno-turma">-</span></p>
+        <div class="status-box">
+            <p>Fase <span id="aluno-fase">-</span> • Partida <span id="aluno-partida">-</span>/4</p>
+            <p>Dificuldade: <span id="aluno-dificuldade">-</span></p>
+            <p>Pontos nesta partida: <strong id="aluno-pontos">0</strong></p>
         </div>
-        <div id="info-aluno" class="hidden">
-            <h3 id="aluno-nome-display"></h3>
-            <p>Turma: <span id="aluno-turma-display"></span></p>
-            <div class="status-box">
-                <p>Fase <span id="aluno-fase">-</span> • Partida <span id="aluno-partida">-</span>/4</p>
-                <p>Dificuldade: <span id="aluno-dificuldade">-</span></p>
-                <p>Pontos nesta partida: <strong id="aluno-pontos">0</strong></p>
-            </div>
-            <div id="pre-contagem" class="hidden">
-                <div class="liberacao-info">🎮 <strong>Sua partida será liberada em breve!</strong> 🎮</div>
-                <div id="countdown-timer" class="countdown">10</div>
-            </div>
-            <div id="jogo-area" class="hidden">
-                <div id="pergunta" style="font-size: 48px; text-align: center;">0 x 0 = ?</div>
-                <div class="opcoes" style="display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin: 20px 0;">
-                    <button class="opcao" onclick="window.responder(0)"></button>
-                    <button class="opcao" onclick="window.responder(1)"></button>
-                    <button class="opcao" onclick="window.responder(2)"></button>
-                    <button class="opcao" onclick="window.responder(3)"></button>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span>Pergunta: <span id="pergunta-num">1</span>/20</span>
-                    <span>Tempo: <span id="timer">0</span>s</span>
-                </div>
-            </div>
-            <div id="ja-jogou" class="hidden erro-mensagem">
-                ⚠️ Você já jogou esta partida! Não é possível jogar novamente.
-            </div>
-            <div id="aguardando" class="hidden" style="text-align: center; padding: 40px;">
-                ⏳ Aguardando o professor liberar a próxima partida...
-            </div>
-            <button id="btn-sair-aluno" style="margin-top: 20px;">⬅️ Sair</button>
+        <div id="pre-contagem" class="hidden">
+            <div class="liberacao-info">🎮 <strong>Sua partida será liberada em breve!</strong> 🎮</div>
+            <div id="countdown-timer" class="countdown">10</div>
         </div>
+        <div id="jogo-area" class="hidden">
+            <div id="pergunta" style="font-size: 48px; text-align: center;">0 x 0 = ?</div>
+            <div class="opcoes" style="display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin: 20px 0;">
+                <button class="opcao" onclick="window.responder(0)"></button>
+                <button class="opcao" onclick="window.responder(1)"></button>
+                <button class="opcao" onclick="window.responder(2)"></button>
+                <button class="opcao" onclick="window.responder(3)"></button>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Pergunta: <span id="pergunta-num">1</span>/20</span>
+                <span>Tempo: <span id="timer">0</span>s</span>
+            </div>
+        </div>
+        <div id="ja-jogou" class="hidden erro-mensagem">
+            ⚠️ Você já jogou esta partida! Não é possível jogar novamente.
+        </div>
+        <div id="aguardando" class="hidden" style="text-align: center; padding: 40px;">
+            ⏳ Aguardando o professor liberar a próxima partida...
+        </div>
+        <button id="btn-sair-aluno" style="margin-top: 20px;">⬅️ Sair</button>
     </div>
 
     <!-- TELA DE TORCIDA -->
     <div id="tela-projecao" class="card hidden">
         <h2>📺 COPA TABUADA CEIB 2026 - TORCIDA</h2>
-        <div id="projecao-status" class="status-box">Aguardando início da fase...</div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div id="projecao-status" class="status-box" style="flex:2;">Aguardando início da fase...</div>
+            <div style="margin-left: 16px;">
+                <label>Ver Fase:</label>
+                <select id="seletor-fase-torcida">
+                    <option value="0">Fase atual</option>
+                    <option value="1">Fase 1</option>
+                    <option value="2">Fase 2</option>
+                    <option value="3">Fase 3</option>
+                    <option value="4">Fase 4</option>
+                </select>
+                <button id="btn-torcida-carregar" class="btn-small">Carregar</button>
+            </div>
+        </div>
         <div id="info-vagas" class="info-vagas"></div>
         <div id="projecao-ranking" class="status-box"></div>
         <div id="projecao-chaveamento" class="status-box hidden"></div>
@@ -245,20 +263,22 @@
     const db = firebase.database();
 
     // ========== VARIÁVEIS GLOBAIS ==========
-    let meuTipo = null;
+    let meuTipo = null; // 'professor', 'aluno', 'projecao'
     let alunoId = null, alunoNome = null, alunoTurma = null;
     let estadoRef = null, estadoAtual = null;
-    let turmasRef = null;
     let jogoAtivo = false;
     let perguntasPartida = [], perguntaIdx = 0, pontosPartida = 0, respostaCorreta = 0;
     let timerInterval = null, tempoRestante = 10;
     let countdownInterval = null;
     let liberacaoRef = null;
     let jaJogouEstaPartida = false;
+    let faseHistoricoCarregada = null; // qual fase está sendo exibida no ranking (null = atual)
 
     const DIFICULDADES_POR_PARTIDA = ["Fácil (2-5)", "Médio (6-9)", "Difícil (0-10 peso 7-9)", "Equilibrado (0-10)"];
     const CLASSIFICADOS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 4 };
+    let turmasDisponiveis = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 
+    // ========== FUNÇÕES AUXILIARES ==========
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -269,14 +289,17 @@
         });
     }
 
-    // Normaliza nome para comparação case-insensitive
-    function normalizarNome(nome) {
-        return nome.trim().toLowerCase();
+    function capitalizarNome(nome) {
+        if (!nome) return '';
+        return nome.toLowerCase().split(' ').map(palavra => {
+            if (palavra.length === 0) return palavra;
+            return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+        }).join(' ');
     }
 
     function gerarIdEstavel(nome, turma) {
-        // Usa nome normalizado para gerar ID consistente independente de maiúsculas/minúsculas
-        return btoa(normalizarNome(nome) + "|" + turma).slice(0, 16);
+        const nomeNormalizado = nome.toLowerCase().trim();
+        return btoa(nomeNormalizado + "|" + turma).slice(0, 16);
     }
 
     function getParticipantesArray(estado) {
@@ -310,123 +333,52 @@
         return { total, partidasJogadas, media: partidasJogadas > 0 ? total / partidasJogadas : 0 };
     }
 
-    // ========== GERENCIAMENTO DE TURMAS ==========
-    async function carregarTurmas() {
-        turmasRef = db.ref('turmas');
-        const snapshot = await turmasRef.once('value');
-        let turmas = snapshot.val();
-        if (!turmas || !Array.isArray(turmas)) {
-            turmas = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
-            await turmasRef.set(turmas);
+    // Ordenação para liberação sequencial (apenas para fase atual)
+    function obterOrdemLiberacao(estado) {
+        const participantes = getParticipantesArray(estado);
+        const fase = estado.faseAtual;
+        const partida = estado.partidaAtual;
+        const naoJogaram = participantes.filter(p => !alunoJaJogouPartida(estado, p.id, fase, partida));
+        if (partida === 1) {
+            return naoJogaram.sort((a,b) => a.nome.localeCompare(b.nome));
+        } else {
+            const comPontos = naoJogaram.map(p => {
+                const { total } = getPontuacaoAlunoNaFase(estado, p.id, fase);
+                return { ...p, total };
+            });
+            return comPontos.sort((a,b) => a.total - b.total);
         }
-        return turmas;
     }
 
-    async function atualizarSelectTurmas(selectElement) {
-        const turmas = await carregarTurmas();
-        selectElement.innerHTML = '';
-        turmas.forEach(t => {
-            const option = document.createElement('option');
-            option.value = t;
-            option.textContent = t;
-            selectElement.appendChild(option);
-        });
-    }
-
-    async function adicionarTurma() {
-        const novaTurma = prompt("Digite o número da nova turma (ex: 3003):");
-        if (!novaTurma) return;
-        const turmas = await carregarTurmas();
-        if (turmas.includes(novaTurma)) {
-            mostrarToast("Turma já existe.");
-            return;
+    // ========== FUNÇÕES DE ARQUIVAMENTO DE FASE ==========
+    async function arquivarFase(fase) {
+        if (!estadoAtual) return;
+        const participantesAtuais = getParticipantesArray(estadoAtual);
+        // Salva a lista completa de participantes da fase (que está em estadoAtual.participantes)
+        await db.ref(`fases/${fase}/participantes`).set(participantesAtuais);
+        // Salva os resultados (já devem estar em resultadosFase[fase])
+        if (estadoAtual.resultadosFase && estadoAtual.resultadosFase[fase]) {
+            await db.ref(`fases/${fase}/resultados`).set(estadoAtual.resultadosFase[fase]);
         }
-        turmas.push(novaTurma);
-        await turmasRef.set(turmas);
-        mostrarToast(`Turma ${novaTurma} adicionada.`);
-        if (document.getElementById('aluno-turma-select')) {
-            await atualizarSelectTurmas(document.getElementById('aluno-turma-select'));
-        }
-        exibirListaTurmas();
-    }
-
-    async function removerTurma() {
-        const turmas = await carregarTurmas();
-        if (turmas.length === 0) {
-            mostrarToast("Não há turmas para remover.");
-            return;
-        }
-        const turmaParaRemover = prompt("Digite o número da turma a remover:\n" + turmas.join(", "));
-        if (!turmaParaRemover) return;
-        if (!turmas.includes(turmaParaRemover)) {
-            mostrarToast("Turma não encontrada.");
-            return;
-        }
-        // Verificar se há alunos cadastrados com essa turma
-        if (estadoAtual && estadoAtual.participantes) {
-            const participantes = getParticipantesArray(estadoAtual);
-            const alunosNaTurma = participantes.filter(p => p.turma === turmaParaRemover);
-            if (alunosNaTurma.length > 0) {
-                if (!confirm(`A turma ${turmaParaRemover} possui ${alunosNaTurma.length} aluno(s). Remover a turma não excluirá os alunos, mas eles não poderão mais ser editados com essa turma. Deseja continuar?`)) {
-                    return;
+        // Salva os bancos de perguntas usados na fase
+        if (estadoAtual.bancosFase) {
+            const bancosFase = {};
+            for (let i=1; i<=4; i++) {
+                const bancoKey = `f${fase}p${i}`;
+                if (estadoAtual.bancosFase[bancoKey]) {
+                    bancosFase[`r${i}p`] = estadoAtual.bancosFase[bancoKey];
                 }
             }
-        }
-        const novasTurmas = turmas.filter(t => t !== turmaParaRemover);
-        await turmasRef.set(novasTurmas);
-        mostrarToast(`Turma ${turmaParaRemover} removida.`);
-        if (document.getElementById('aluno-turma-select')) {
-            await atualizarSelectTurmas(document.getElementById('aluno-turma-select'));
-        }
-        exibirListaTurmas();
-    }
-
-    async function exibirListaTurmas() {
-        const turmas = await carregarTurmas();
-        const container = document.getElementById('lista-turmas');
-        if (container) {
-            container.innerHTML = `<strong>Turmas disponíveis:</strong> ${turmas.join(', ')}`;
+            await db.ref(`fases/${fase}/bancos`).set(bancosFase);
         }
     }
 
-    // ========== FUNÇÕES DO ALUNO (nova entrada) ==========
-    function mostrarTelaAlunoEntrada() {
-        document.getElementById('info-aluno').classList.add('hidden');
-        document.getElementById('aluno-nome-input').value = '';
-        atualizarSelectTurmas(document.getElementById('aluno-turma-select')).then(() => {
-            document.getElementById('aluno-nome-input').focus();
-        });
-    }
-
-    async function confirmarAluno() {
-        const nome = document.getElementById('aluno-nome-input').value.trim();
-        const turma = document.getElementById('aluno-turma-select').value;
-        if (!nome || !turma) {
-            mostrarToast("Preencha nome e turma.");
-            return;
+    async function carregarFaseHistorico(fase) {
+        const snap = await db.ref(`fases/${fase}`).once('value');
+        if (snap.exists()) {
+            return snap.val();
         }
-        const idEstavel = gerarIdEstavel(nome, turma);
-        alunoNome = nome;
-        alunoTurma = turma;
-        alunoId = idEstavel;
-        meuTipo = 'aluno';
-        document.getElementById('aluno-nome-display').innerText = nome;
-        document.getElementById('aluno-turma-display').innerText = turma;
-        document.getElementById('info-aluno').classList.remove('hidden');
-        document.getElementById('jogo-area').classList.add('hidden');
-        document.getElementById('pre-contagem').classList.add('hidden');
-        document.getElementById('aguardando').classList.remove('hidden');
-        document.getElementById('ja-jogou').classList.add('hidden');
-        
-        await inicializarEstado();
-        let participantesArray = getParticipantesArray(estadoAtual);
-        let existente = participantesArray.find(p => p.id === alunoId);
-        if (!existente) {
-            await estadoRef.child('participantes').push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
-        } else {
-            mostrarToast(`Bem-vindo de volta, ${nome}!`);
-        }
-        escutarLiberacao();
+        return null;
     }
 
     // ========== FUNÇÕES DO PROFESSOR ==========
@@ -435,23 +387,10 @@
 
     async function iniciarLiberacaoSequencial() {
         if (!estadoAtual) return;
-        const participantes = getParticipantesArray(estadoAtual);
-        const fase = estadoAtual.faseAtual;
-        const partida = estadoAtual.partidaAtual;
-        const naoJogaram = participantes.filter(p => !alunoJaJogouPartida(estadoAtual, p.id, fase, partida));
-        if (naoJogaram.length === 0) {
+        const ordem = obterOrdemLiberacao(estadoAtual);
+        if (ordem.length === 0) {
             mostrarToast("Todos os alunos já jogaram esta partida!");
             return;
-        }
-        let ordem;
-        if (partida === 1) {
-            ordem = naoJogaram.sort((a,b) => a.nome.localeCompare(b.nome));
-        } else {
-            const comPontos = naoJogaram.map(p => {
-                const { total } = getPontuacaoAlunoNaFase(estadoAtual, p.id, fase);
-                return { ...p, total };
-            });
-            ordem = comPontos.sort((a,b) => a.total - b.total);
         }
         filaLiberacao = ordem.map(p => p.id);
         document.getElementById('status-sequencial').classList.remove('hidden');
@@ -510,11 +449,12 @@
         const aluno = participantes.find(p => p.id === alunoId);
         if (!aluno) return;
         if (!novoNome || novoNome.trim() === "") return;
+        const nomeCapitalizado = capitalizarNome(novoNome.trim());
         const novosParticipantes = participantes.map(p => 
-            p.id === alunoId ? { ...p, nome: novoNome.trim() } : p
+            p.id === alunoId ? { ...p, nome: nomeCapitalizado } : p
         );
         await estadoRef.child('participantes').set(novosParticipantes);
-        mostrarToast(`Nome alterado para ${novoNome.trim()}`);
+        mostrarToast(`Nome alterado para ${nomeCapitalizado}`);
     }
 
     async function excluirAluno(alunoId) {
@@ -543,7 +483,7 @@
         const mapa = new Map();
         const duplicados = [];
         for (let p of participantes) {
-            const chave = `${normalizarNome(p.nome)}|${p.turma}`;
+            const chave = `${p.nome.toLowerCase().trim()}|${p.turma}`;
             if (mapa.has(chave)) {
                 duplicados.push(p.id);
             } else {
@@ -569,19 +509,199 @@
             return { ...p, media, partidasJogadas, total };
         }).sort((a,b) => b.media - a.media);
         const classificados = comMedia.slice(0, numClassificar);
+        // Arquiva a fase atual antes de avançar
+        await arquivarFase(faseAtual);
+        // Salva a lista de classificados para referência
+        await db.ref(`fases/${faseAtual}/classificados`).set(classificados.map(p => p.id));
+        
         if (faseAtual === 4) {
             await estadoRef.child('finalistas').set(classificados);
             mostrarToast(`Fase 4 concluída! ${classificados.length} finalistas definidos.`);
             return;
         }
         const proximaFase = faseAtual + 1;
+        // Atualiza estado atual para a nova fase
         await estadoRef.child('participantes').set(classificados);
-        await estadoRef.child(`resultadosFase/${proximaFase}`).remove();
+        await estadoRef.child('resultadosFase').child(proximaFase).remove();
         await estadoRef.update({ faseAtual: proximaFase, partidaAtual: 1, status: 'aguardando' });
         mostrarToast(`Classificação aplicada! ${classificados.length} alunos passam para a Fase ${proximaFase}.`);
     }
 
-    // ========== FUNÇÕES DO ALUNO (JOGO) ==========
+    // ========== FUNÇÕES DE RANKING (COM HISTÓRICO) ==========
+    async function exibirRankingHistorico(fase) {
+        const dadosFase = await carregarFaseHistorico(fase);
+        if (!dadosFase || !dadosFase.participantes || !dadosFase.resultados) {
+            document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum dado disponível para esta fase.</p>';
+            return;
+        }
+        const participantes = dadosFase.participantes;
+        const resultados = dadosFase.resultados;
+        // Calcular pontuação e média por participante
+        const comDados = participantes.map(p => {
+            let total = 0, partidasJogadas = 0;
+            for (let i = 1; i <= 4; i++) {
+                const chave = `r${i}p`;
+                const pts = (resultados[chave] && resultados[chave][p.id]) || 0;
+                if (pts > 0) {
+                    total += pts;
+                    partidasJogadas++;
+                }
+            }
+            const media = partidasJogadas > 0 ? total / partidasJogadas : 0;
+            return { ...p, total, partidasJogadas, media };
+        }).sort((a,b) => b.media - a.media);
+        
+        let html = `<table class="ranking-table">
+                    <thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Partidas</th><th>Total</th><th>Média</th></tr></thead>
+                    <tbody>`;
+        comDados.forEach((p, i) => {
+            html += `<tr>
+                        <td style="text-align:center">${i+1}º</td>
+                        <td>${escapeHtml(p.nome)}</td>
+                        <td>${escapeHtml(p.turma)}</td>
+                        <td style="text-align:center">${p.partidasJogadas}/4</td>
+                        <td style="text-align:center">${p.total}</td>
+                        <td style="text-align:center">${p.media.toFixed(2)}</td>
+                      </tr>`;
+        });
+        html += `</tbody>赶`;
+        document.getElementById('ranking-parcial').innerHTML = html;
+        document.getElementById('ranking-titulo').innerText = `da Fase ${fase} (Histórico)`;
+    }
+
+    async function exibirRankingAtual() {
+        if (!estadoAtual) return;
+        const fase = estadoAtual.faseAtual;
+        const participantesArray = getParticipantesArray(estadoAtual);
+        const comDados = participantesArray.map(p => {
+            const { total, partidasJogadas, media } = getPontuacaoAlunoNaFase(estadoAtual, p.id, fase);
+            return { ...p, total, partidasJogadas, media };
+        }).sort((a,b) => b.media - a.media);
+        let html = `<table class="ranking-table">
+                    <thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Partidas</th><th>Total</th><th>Média</th></tr></thead>
+                    <tbody>`;
+        comDados.forEach((p, i) => {
+            html += `<tr>
+                        <td style="text-align:center">${i+1}º</td>
+                        <td>${escapeHtml(p.nome)}</td>
+                        <td>${escapeHtml(p.turma)}</td>
+                        <td style="text-align:center">${p.partidasJogadas}/4</td>
+                        <td style="text-align:center">${p.total}</td>
+                        <td style="text-align:center">${p.media.toFixed(2)}</td>
+                      </tr>`;
+        });
+        html += `</tbody>赶`;
+        document.getElementById('ranking-parcial').innerHTML = html;
+        document.getElementById('ranking-titulo').innerText = `da Fase ${fase} (Atual)`;
+    }
+
+    // Função para torcida (com status de classificação)
+    async function exibirRankingTorcida(fase, dadosFase = null) {
+        let faseExibir = fase;
+        let dados = dadosFase;
+        let isHistorico = false;
+        if (!dados) {
+            if (fase === 0 || fase === estadoAtual?.faseAtual) {
+                if (!estadoAtual) return;
+                faseExibir = estadoAtual.faseAtual;
+                dados = {
+                    participantes: getParticipantesArray(estadoAtual),
+                    resultados: estadoAtual.resultadosFase?.[faseExibir] || {},
+                    partidaAtual: estadoAtual.partidaAtual,
+                    faseAtual: faseExibir
+                };
+                isHistorico = false;
+            } else {
+                const dadosArquivados = await carregarFaseHistorico(fase);
+                if (!dadosArquivados) {
+                    document.getElementById('projecao-ranking').innerHTML = '<p>Nenhum dado para esta fase.</p>';
+                    return;
+                }
+                dados = dadosArquivados;
+                dados.partidaAtual = 5; // indicar que fase já terminou
+                dados.faseAtual = fase;
+                isHistorico = true;
+            }
+        }
+        const participantes = dados.participantes;
+        const resultados = dados.resultados;
+        const numVagas = CLASSIFICADOS_POR_FASE[faseExibir] || 4;
+        const partidasFeitas = isHistorico ? 4 : (dados.partidaAtual - 1);
+        const todasPartidasConcluidas = isHistorico || (partidasFeitas >= 4);
+        
+        let dadosRanking = participantes.map(p => {
+            let total = 0, jogadas = 0;
+            for (let i = 1; i <= 4; i++) {
+                const chave = `r${i}p`;
+                const pts = (resultados[chave] && resultados[chave][p.id]) || 0;
+                if (pts > 0) {
+                    total += pts;
+                    jogadas++;
+                }
+            }
+            const media = jogadas > 0 ? total / jogadas : 0;
+            return { ...p, total, jogadas, media };
+        }).sort((a,b) => b.media - a.media);
+        
+        let classificadosIds = [];
+        let mensagemVagas = "";
+        if (todasPartidasConcluidas) {
+            classificadosIds = dadosRanking.slice(0, numVagas).map(p => p.id);
+            mensagemVagas = `🏆 <strong>Fase ${faseExibir} encerrada!</strong> Os ${numVagas} melhores (média final) se classificaram para a próxima fase. 🏆`;
+        } else {
+            mensagemVagas = `📊 <strong>Fase ${faseExibir} em andamento</strong> (${partidasFeitas}/4 partidas concluídas).<br>
+                              Após as 4 partidas, os ${numVagas} primeiros no ranking (pela média) avançam.`;
+        }
+        document.getElementById('info-vagas').innerHTML = mensagemVagas;
+        
+        let html = `<table class="ranking-table">
+                    <thead>
+                        <tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Partidas</th><th>Total</th><th>Média</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>`;
+        dadosRanking.forEach((p, idx) => {
+            const pos = idx + 1;
+            let statusHtml = "";
+            if (todasPartidasConcluidas) {
+                if (classificadosIds.includes(p.id)) {
+                    statusHtml = '<span class="classificado">✅ Classificado!</span>';
+                } else {
+                    statusHtml = '<span class="eliminado">❌ Eliminado</span>';
+                }
+            } else {
+                if (pos <= numVagas) {
+                    statusHtml = '<span class="classificado">🏅 Na zona de classificação</span>';
+                } else {
+                    statusHtml = '<span class="eliminado">⚠️ Fora da zona de classificação</span>';
+                }
+            }
+            html += `<tr>
+                        <td style="text-align:center">${pos}º</td>
+                        <td>${escapeHtml(p.nome)}</td>
+                        <td>${escapeHtml(p.turma)}</td>
+                        <td style="text-align:center">${p.jogadas}/4</td>
+                        <td style="text-align:center">${p.total}</td>
+                        <td style="text-align:center">${p.media.toFixed(2)}</td>
+                        <td style="text-align:center">${statusHtml}</td>
+                      </tr>`;
+        });
+        html += `</tbody>赶`;
+        document.getElementById('projecao-ranking').innerHTML = html;
+        
+        // Se for fase 4 e concluída, mostrar finalistas
+        if (faseExibir === 4 && todasPartidasConcluidas && !isHistorico && estadoAtual?.finalistas) {
+            let finalistas = estadoAtual.finalistas;
+            let htmlFinal = '<h3>🏅 FINALISTAS DA COPA 🏅</h3><ol>';
+            finalistas.forEach(f => htmlFinal += `<li>${escapeHtml(f.nome)} (${escapeHtml(f.turma)})</li>`);
+            htmlFinal += '</ol>';
+            document.getElementById('projecao-chaveamento').innerHTML = htmlFinal;
+            document.getElementById('projecao-chaveamento').classList.remove('hidden');
+        } else {
+            document.getElementById('projecao-chaveamento').classList.add('hidden');
+        }
+    }
+
+    // ========== FUNÇÕES DO ALUNO E JOGO ==========
     function iniciarContagemRegressiva() {
         let tempo = 10;
         const countdownElem = document.getElementById('countdown-timer');
@@ -619,7 +739,6 @@
         });
     }
 
-    // ========== FUNÇÕES DO JOGO ==========
     async function gerarBanco(dificuldade) {
         let fatores = [];
         if (dificuldade.includes("2-5")) fatores = [2,3,4,5];
@@ -693,19 +812,27 @@
             });
             html += '</ul>';
             document.getElementById('lista-participantes').innerHTML = html;
-            exibirRanking();
-            exibirListaTurmas(); // atualiza lista de turmas no painel
+            
+            // Se não estiver exibindo histórico, mostrar ranking atual
+            if (faseHistoricoCarregada === null) {
+                exibirRankingAtual();
+            }
+            // Exibir lista de turmas
+            let turmasHtml = '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
+            turmasDisponiveis.forEach(t => {
+                turmasHtml += `<div class="turma-badge">${escapeHtml(t)} <button class="btn-small" onclick="window.excluirTurmaUI('${t}')" style="background:#a82313; padding:2px 6px;">🗑️</button></div>`;
+            });
+            turmasHtml += '</div>';
+            document.getElementById('lista-turmas').innerHTML = turmasHtml;
         } 
         else if (meuTipo === 'aluno' && alunoId) {
             let p = participantesArray.find(x => x.id === alunoId);
             if (!p) {
-                // Se o aluno não está mais na lista (foi removido), voltar à tela de entrada
-                mostrarToast("Você não está mais na competição. Entre novamente se for permitido.");
-                location.reload();
+                document.getElementById('aluno-nome').innerHTML = "Aguardando cadastro no painel do professor...";
                 return;
             }
-            document.getElementById('aluno-nome-display').innerHTML = escapeHtml(p.nome);
-            document.getElementById('aluno-turma-display').innerHTML = escapeHtml(p.turma);
+            document.getElementById('aluno-nome').innerHTML = escapeHtml(p.nome);
+            document.getElementById('aluno-turma').innerHTML = escapeHtml(p.turma);
             document.getElementById('aluno-fase').innerText = fase;
             document.getElementById('aluno-partida').innerText = partida;
             document.getElementById('aluno-dificuldade').innerText = dificuldade;
@@ -740,98 +867,16 @@
             }
         }
         else if (meuTipo === 'projecao') {
-            exibirRankingTorcida();
-        }
-    }
-
-    async function exibirRankingTorcida() {
-        if (!estadoAtual) return;
-        const fase = estadoAtual.faseAtual;
-        const participantesArray = getParticipantesArray(estadoAtual);
-        const numVagas = CLASSIFICADOS_POR_FASE[fase] || 4;
-        const partidasFeitas = estadoAtual.partidaAtual - 1;
-        const todasPartidasConcluidas = (partidasFeitas >= 4);
-        
-        let dados = participantesArray.map(p => {
-            const { total, partidasJogadas, media } = getPontuacaoAlunoNaFase(estadoAtual, p.id, fase);
-            return { ...p, total, partidasJogadas, media };
-        });
-        dados.sort((a,b) => b.media - a.media);
-        
-        let classificadosIds = [];
-        let mensagemVagas = "";
-        if (todasPartidasConcluidas && partidasFeitas >= 4) {
-            classificadosIds = dados.slice(0, numVagas).map(p => p.id);
-            mensagemVagas = `🏆 <strong>Fase ${fase} encerrada!</strong> Os ${numVagas} melhores (média final) se classificam para a próxima fase. 🏆`;
-        } else {
-            mensagemVagas = `📊 <strong>Fase ${fase} em andamento</strong> (${partidasFeitas}/4 partidas concluídas).<br>
-                              Após as 4 partidas, os ${numVagas} primeiros no ranking (pela média) avançam.`;
-        }
-        document.getElementById('info-vagas').innerHTML = mensagemVagas;
-        
-        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Partidas</th><th>Total</th><th>Média</th><th>Status</th></tr></thead><tbody>`;
-        dados.forEach((p, idx) => {
-            const pos = idx + 1;
-            let statusHtml = "";
-            if (todasPartidasConcluidas && partidasFeitas >= 4) {
-                if (classificadosIds.includes(p.id)) {
-                    statusHtml = '<span class="classificado">✅ Classificado!</span>';
-                } else {
-                    statusHtml = '<span class="eliminado">❌ Eliminado</span>';
+            // A torcida atualiza com a fase selecionada no seletor
+            const faseSelecionada = parseInt(document.getElementById('seletor-fase-torcida').value);
+            if (faseSelecionada === 0) {
+                if (estadoAtual) {
+                    exibirRankingTorcida(estadoAtual.faseAtual);
                 }
             } else {
-                if (pos <= numVagas) {
-                    statusHtml = '<span class="classificado">🏅 Na zona de classificação</span>';
-                } else {
-                    statusHtml = '<span class="eliminado">⚠️ Fora da zona de classificação</span>';
-                }
+                exibirRankingTorcida(faseSelecionada);
             }
-            html += `<tr>
-                        <td style="text-align:center">${pos}º</td>
-                        <td>${escapeHtml(p.nome)}</td>
-                        <td>${escapeHtml(p.turma)}</td>
-                        <td style="text-align:center">${p.partidasJogadas}/4</td>
-                        <td style="text-align:center">${p.total}</td>
-                        <td style="text-align:center">${p.media.toFixed(2)}</td>
-                        <td style="text-align:center">${statusHtml}</td>
-                     </tr>`;
-        });
-        html += `</tbody></table>`;
-        document.getElementById('projecao-ranking').innerHTML = html;
-        
-        if (fase === 4 && todasPartidasConcluidas && estadoAtual.finalistas) {
-            let finalistas = estadoAtual.finalistas;
-            let htmlFinal = '<h3>🏅 FINALISTAS DA COPA 🏅</h3><ol>';
-            finalistas.forEach(f => htmlFinal += `<li>${escapeHtml(f.nome)} (${escapeHtml(f.turma)})</li>`);
-            htmlFinal += '</ol>';
-            document.getElementById('projecao-chaveamento').innerHTML = htmlFinal;
-            document.getElementById('projecao-chaveamento').classList.remove('hidden');
-        } else {
-            document.getElementById('projecao-chaveamento').classList.add('hidden');
         }
-    }
-
-    async function exibirRanking() {
-        if (!estadoAtual) return;
-        const fase = estadoAtual.faseAtual;
-        const participantesArray = getParticipantesArray(estadoAtual);
-        const comDados = participantesArray.map(p => {
-            const { total, partidasJogadas, media } = getPontuacaoAlunoNaFase(estadoAtual, p.id, fase);
-            return { ...p, total, partidasJogadas, media };
-        }).sort((a,b) => b.media - a.media);
-        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Partidas</th><th>Total</th><th>Média</th></tr></thead><tbody>`;
-        comDados.forEach((p, i) => {
-            html += `<tr>
-                        <td style="text-align:center">${i+1}º</td>
-                        <td>${escapeHtml(p.nome)}</td>
-                        <td>${escapeHtml(p.turma)}</td>
-                        <td style="text-align:center">${p.partidasJogadas}/4</td>
-                        <td style="text-align:center">${p.total}</td>
-                        <td style="text-align:center">${p.media.toFixed(2)}</td>
-                     </tr>`;
-        });
-        html += `</tbody></table>`;
-        document.getElementById('ranking-parcial').innerHTML = html;
     }
 
     async function iniciarJogoAluno() {
@@ -931,22 +976,85 @@
         setTimeout(() => t.classList.add('hidden'), 3000);
     }
 
+    // ========== GESTÃO DE TURMAS ==========
+    async function carregarTurmas() {
+        const turmasRef = db.ref('turmas');
+        const snap = await turmasRef.once('value');
+        if (snap.exists()) {
+            turmasDisponiveis = snap.val();
+        } else {
+            await turmasRef.set(turmasDisponiveis);
+        }
+        return turmasDisponiveis;
+    }
+
+    async function adicionarTurma(novaTurma) {
+        novaTurma = novaTurma.trim();
+        if (!novaTurma) return false;
+        if (turmasDisponiveis.includes(novaTurma)) return false;
+        turmasDisponiveis.push(novaTurma);
+        turmasDisponiveis.sort();
+        await db.ref('turmas').set(turmasDisponiveis);
+        return true;
+    }
+
+    async function excluirTurma(turma) {
+        if (!estadoAtual) return false;
+        const participantes = getParticipantesArray(estadoAtual);
+        const existeAluno = participantes.some(p => p.turma === turma);
+        if (existeAluno) {
+            mostrarToast(`Não é possível excluir a turma ${turma} porque há alunos vinculados.`);
+            return false;
+        }
+        turmasDisponiveis = turmasDisponiveis.filter(t => t !== turma);
+        await db.ref('turmas').set(turmasDisponiveis);
+        return true;
+    }
+
     // ========== EVENTOS DOS BOTÕES ==========
     document.getElementById('btn-professor')?.addEventListener('click', async () => {
         meuTipo = 'professor';
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
         document.getElementById('painel-professor').classList.remove('hidden');
-        await inicializarEstado();
         await carregarTurmas();
-        exibirListaTurmas();
+        await inicializarEstado();
+        faseHistoricoCarregada = null;
     });
     
-    document.getElementById('btn-aluno')?.addEventListener('click', () => {
+    document.getElementById('btn-aluno')?.addEventListener('click', async () => {
+        await carregarTurmas();
+        let nome = prompt("Seu nome completo:");
+        if (!nome) return;
+        let turmaSelecionada = null;
+        let turmas = turmasDisponiveis;
+        if (turmas.length === 0) {
+            alert("Nenhuma turma cadastrada. Peça ao professor para adicionar.");
+            return;
+        }
+        let turmaPrompt = "Escolha sua turma:\n" + turmas.map((t, i) => `${i+1} - ${t}`).join('\n');
+        let opcao = parseInt(prompt(turmaPrompt));
+        if (isNaN(opcao) || opcao < 1 || opcao > turmas.length) {
+            mostrarToast("Turma inválida.");
+            return;
+        }
+        turmaSelecionada = turmas[opcao-1];
+        const nomeCapitalizado = capitalizarNome(nome);
+        const idEstavel = gerarIdEstavel(nomeCapitalizado, turmaSelecionada);
+        alunoNome = nomeCapitalizado;
+        alunoTurma = turmaSelecionada;
+        alunoId = idEstavel;
         meuTipo = 'aluno';
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
         document.getElementById('tela-aluno').classList.remove('hidden');
-        mostrarTelaAlunoEntrada();
-        // não chama inicializarEstado ainda, só quando confirmar aluno
+        await inicializarEstado();
+        let participantesArray = getParticipantesArray(estadoAtual);
+        let existente = participantesArray.find(p => p.id === alunoId);
+        if (!existente) {
+            await estadoRef.child('participantes').push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
+        } else {
+            mostrarToast(`Bem-vindo de volta, ${alunoNome}!`);
+        }
+        escutarLiberacao();
     });
     
     document.getElementById('btn-projecao')?.addEventListener('click', async () => {
@@ -954,12 +1062,11 @@
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
         document.getElementById('tela-projecao').classList.remove('hidden');
         await inicializarEstado();
-        await carregarTurmas();
+        // Carregar a fase atual inicialmente
+        if (estadoAtual) {
+            exibirRankingTorcida(estadoAtual.faseAtual);
+        }
     });
-    
-    document.getElementById('btn-confirmar-aluno')?.addEventListener('click', confirmarAluno);
-    document.getElementById('btn-sair-aluno')?.addEventListener('click', () => location.reload());
-    document.getElementById('btn-sair-projecao')?.addEventListener('click', () => location.reload());
     
     document.getElementById('btn-iniciar-partida')?.addEventListener('click', async () => {
         await cancelarLiberacaoSequencial();
@@ -1023,31 +1130,75 @@
     
     document.getElementById('btn-adicionar-aluno')?.addEventListener('click', async () => {
         let nome = prompt("Nome do aluno:");
-        let turma = prompt("Turma:");
-        if (!nome || !turma) return;
-        const idEstavel = gerarIdEstavel(nome, turma);
+        if (!nome) return;
+        let turma = prompt("Turma do aluno (ex: 901):");
+        if (!turma) return;
+        const nomeCapitalizado = capitalizarNome(nome);
+        const idEstavel = gerarIdEstavel(nomeCapitalizado, turma);
         let participantesArray = getParticipantesArray(estadoAtual);
         if (participantesArray.find(p => p.id === idEstavel)) {
-            mostrarToast(`Aluno ${nome} já está cadastrado.`);
+            mostrarToast(`Aluno ${nomeCapitalizado} já está cadastrado.`);
             return;
         }
-        await estadoRef.child('participantes').push({ id: idEstavel, nome, turma });
-        mostrarToast(`Aluno ${nome} adicionado!`);
+        await estadoRef.child('participantes').push({ id: idEstavel, nome: nomeCapitalizado, turma });
+        mostrarToast(`Aluno ${nomeCapitalizado} adicionado!`);
     });
     
-    // Gerenciar turmas
-    document.getElementById('btn-adicionar-turma')?.addEventListener('click', adicionarTurma);
-    document.getElementById('btn-remover-turma')?.addEventListener('click', removerTurma);
+    document.getElementById('btn-adicionar-turma')?.addEventListener('click', async () => {
+        let novaTurma = document.getElementById('nova-turma').value.trim();
+        if (!novaTurma) return;
+        const adicionada = await adicionarTurma(novaTurma);
+        if (adicionada) {
+            mostrarToast(`Turma ${novaTurma} adicionada.`);
+            document.getElementById('nova-turma').value = '';
+            await carregarTurmas();
+            if (meuTipo === 'professor' && estadoAtual) atualizarInterface();
+        } else {
+            mostrarToast(`Turma ${novaTurma} já existe.`);
+        }
+    });
     
-    // Expor funções globais
+    // Botão para carregar histórico no professor
+    document.getElementById('btn-carregar-historico')?.addEventListener('click', async () => {
+        const fase = parseInt(document.getElementById('seletor-fase-historico').value);
+        if (fase === 0) {
+            faseHistoricoCarregada = null;
+            exibirRankingAtual();
+        } else {
+            faseHistoricoCarregada = fase;
+            await exibirRankingHistorico(fase);
+        }
+    });
+    
+    // Seletor de fase na torcida
+    document.getElementById('btn-torcida-carregar')?.addEventListener('click', async () => {
+        const fase = parseInt(document.getElementById('seletor-fase-torcida').value);
+        if (fase === 0) {
+            if (estadoAtual) exibirRankingTorcida(estadoAtual.faseAtual);
+        } else {
+            exibirRankingTorcida(fase);
+        }
+    });
+    
+    document.getElementById('btn-sair-aluno')?.addEventListener('click', () => location.reload());
+    document.getElementById('btn-sair-projecao')?.addEventListener('click', () => location.reload());
+    
+    window.excluirTurmaUI = async (turma) => {
+        if (confirm(`Tem certeza que deseja excluir a turma ${turma}? Esta ação não afetará alunos já cadastrados, mas removerá a opção para novos alunos.`)) {
+            const excluida = await excluirTurma(turma);
+            if (excluida) {
+                mostrarToast(`Turma ${turma} excluída.`);
+                await carregarTurmas();
+                if (meuTipo === 'professor' && estadoAtual) atualizarInterface();
+            } else {
+                mostrarToast(`Não foi possível excluir a turma ${turma}. Verifique se há alunos vinculados.`);
+            }
+        }
+    };
+    
     window.editarNomeAluno = editarNomeAluno;
     window.excluirAluno = excluirAluno;
     window.responder = responder;
-    
-    // Inicializar carregamento de turmas ao abrir o site
-    carregarTurmas().then(() => {
-        if (document.getElementById('aluno-turma-select')) atualizarSelectTurmas(document.getElementById('aluno-turma-select'));
-    });
 </script>
 </body>
 </html>
