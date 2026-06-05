@@ -75,7 +75,6 @@
             font-weight: bold;
         }
     </style>
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 </head>
@@ -91,7 +90,6 @@
         </div>
     </div>
 
-    <!-- PAINEL DO PROFESSOR -->
     <div id="painel-professor" class="card hidden">
         <h2>🔧 Painel do Professor</h2>
         <div class="flex-grid">
@@ -116,7 +114,6 @@
         <div id="ranking-parcial" class="status-box"></div>
     </div>
 
-    <!-- TELA DO ALUNO -->
     <div id="tela-aluno" class="card hidden">
         <h2 id="aluno-nome">Aluno</h2>
         <p>Turma: <span id="aluno-turma">-</span></p>
@@ -144,7 +141,6 @@
         <button id="btn-sair-aluno" style="margin-top: 20px;">⬅️ Sair</button>
     </div>
 
-    <!-- TELA DE PROJEÇÃO -->
     <div id="tela-projecao" class="card hidden">
         <h2>📺 COPA TABUADA CEIB 2026 - FASE FINAL</h2>
         <div id="projecao-status" class="status-box">Aguardando início...</div>
@@ -153,11 +149,9 @@
         <button id="btn-sair-projecao">⬅️ Voltar</button>
     </div>
 </div>
-
 <div id="toast" class="toast hidden"></div>
 
 <script>
-    // Configuração do Firebase (projeto exclusivo segunda fase)
     const firebaseConfig = {
         apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBz0-o2HVhEE",
         authDomain: "final-copa-tabuada.firebaseapp.com",
@@ -167,7 +161,6 @@
         messagingSenderId: "488825824115",
         appId: "1:488825824115:web:50e94f68253473aee91b06"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -184,6 +177,14 @@
         3: ["Médio (6-9)", "Fácil (2-5)", "Equilibrado (0-10)", "Difícil (0-10 peso 7-9)"],
         4: ["Equilibrado (0-10)", "Difícil (0-10 peso 7-9)", "Médio (6-9)", "Fácil (2-5)"]
     };
+
+    // Função para garantir que participantes seja sempre um array
+    function getParticipantesArray(estado) {
+        if (!estado || !estado.participantes) return [];
+        if (Array.isArray(estado.participantes)) return estado.participantes;
+        // Se for objeto, converte para array
+        return Object.values(estado.participantes);
+    }
 
     async function gerarBanco(dificuldade) {
         let fatores = [];
@@ -204,7 +205,6 @@
         estadoRef = db.ref('faseFinal');
         const snap = await estadoRef.once('value');
         if (!snap.exists()) {
-            // Estrutura inicial correta
             await estadoRef.set({
                 rodada: 1,
                 partida: 1,
@@ -214,48 +214,41 @@
                 bancos: {}
             });
         } else {
-            // Garantir que participantes seja array (corrigir se veio como objeto)
+            // Garante que participantes seja array, mesmo se o Firebase tiver salvo como objeto
             const dados = snap.val();
-            let precisaAtualizar = false;
-            if (!Array.isArray(dados.participantes)) {
-                await estadoRef.child('participantes').set([]);
-                precisaAtualizar = true;
-            }
-            if (precisaAtualizar) {
-                console.log("Estrutura corrigida: participantes agora é array.");
+            if (dados.participantes && !Array.isArray(dados.participantes)) {
+                await estadoRef.child('participantes').set(Object.values(dados.participantes));
             }
         }
         estadoRef.on('value', (s) => {
             estadoAtual = s.val();
-            if (estadoAtual) {
-                // Garantir que participantes seja array localmente
-                if (!Array.isArray(estadoAtual.participantes)) {
-                    estadoAtual.participantes = [];
-                }
-                atualizarInterface();
+            if (estadoAtual && estadoAtual.participantes && !Array.isArray(estadoAtual.participantes)) {
+                estadoAtual.participantes = Object.values(estadoAtual.participantes);
             }
+            atualizarInterface();
         });
     }
 
     function atualizarInterface() {
         if (!estadoAtual) return;
+        const participantesArray = getParticipantesArray(estadoAtual);
+        
         if (meuTipo === 'professor') {
             document.getElementById('rodada-atual').innerText = estadoAtual.rodada;
             document.getElementById('partida-atual').innerText = estadoAtual.partida;
             let diff = ORDENS[estadoAtual.rodada][estadoAtual.partida-1];
             document.getElementById('dificuldade-nome').innerText = diff;
             document.getElementById('btn-proxima-partida').disabled = (estadoAtual.status !== 'finalizada');
-            let lista = Array.isArray(estadoAtual.participantes) ? estadoAtual.participantes : [];
             let html = '<ul>';
-            lista.forEach(p => html += `<li>${p.nome} (${p.turma})</li>`);
+            participantesArray.forEach(p => html += `<li>${p.nome} (${p.turma})</li>`);
             html += '</ul>';
             document.getElementById('lista-participantes').innerHTML = html;
             exibirRanking();
-        } else if (meuTipo === 'aluno' && alunoId) {
-            let participantes = Array.isArray(estadoAtual.participantes) ? estadoAtual.participantes : [];
-            let p = participantes.find(x => x.id === alunoId);
+        } 
+        else if (meuTipo === 'aluno' && alunoId) {
+            let p = participantesArray.find(x => x.id === alunoId);
             if (!p) {
-                document.getElementById('aluno-nome').innerHTML = "Você não está na lista. Peça ao professor para adicionar.";
+                document.getElementById('aluno-nome').innerHTML = "Aguardando cadastro no painel do professor...";
                 return;
             }
             document.getElementById('aluno-nome').innerHTML = p.nome;
@@ -265,16 +258,16 @@
             let diff = ORDENS[estadoAtual.rodada][estadoAtual.partida-1];
             document.getElementById('aluno-dificuldade').innerText = diff;
             let chave = `r${estadoAtual.rodada}p${estadoAtual.partida}`;
-            let pts = (estadoAtual.resultados && estadoAtual.resultados[chave] && estadoAtual.resultados[chave][alunoId]) ? estadoAtual.resultados[chave][alunoId] : 0;
+            let pts = (estadoAtual.resultados[chave] || {})[alunoId] || 0;
             document.getElementById('aluno-pontos').innerText = pts;
-            if (estadoAtual.status === 'em_andamento' && !jogoAtivo) {
-                iniciarJogoAluno();
-            } else if (estadoAtual.status !== 'em_andamento') {
+            if (estadoAtual.status === 'em_andamento' && !jogoAtivo) iniciarJogoAluno();
+            else if (estadoAtual.status !== 'em_andamento') {
                 if (jogoAtivo) finalizarJogoAluno();
                 document.getElementById('jogo-area').classList.add('hidden');
                 document.getElementById('aguardando').classList.remove('hidden');
             }
-        } else if (meuTipo === 'projecao') {
+        } 
+        else if (meuTipo === 'projecao') {
             exibirRanking(true);
             if (estadoAtual.rodada > 4) {
                 let finalistas = obterFinalistas();
@@ -293,16 +286,14 @@
 
     async function exibirRanking(projecao = false) {
         if (!estadoAtual) return;
-        let participantes = Array.isArray(estadoAtual.participantes) ? estadoAtual.participantes : [];
-        let rod = estadoAtual.rodada;
-        let partidaMax = estadoAtual.partida;
+        const participantesArray = getParticipantesArray(estadoAtual);
+        let rod = estadoAtual.rodada, partidaMax = estadoAtual.partida;
         let medias = [];
-        for (let p of participantes) {
+        for (let p of participantesArray) {
             let soma = 0, count = 0;
             for (let i = 1; i <= partidaMax; i++) {
-                let chave = `r${rod}p${i}`;
-                let pontos = (estadoAtual.resultados && estadoAtual.resultados[chave] && estadoAtual.resultados[chave][p.id]) ? estadoAtual.resultados[chave][p.id] : 0;
-                if (pontos > 0) { soma += pontos; count++; }
+                let pts = (estadoAtual.resultados[`r${rod}p${i}`] || {})[p.id] || 0;
+                if (pts > 0) { soma += pts; count++; }
             }
             let media = count ? soma / count : 0;
             medias.push({ ...p, media, soma });
@@ -319,14 +310,11 @@
 
     function obterFinalistas() {
         if (!estadoAtual || estadoAtual.rodada < 4) return [];
-        let participantes = Array.isArray(estadoAtual.participantes) ? estadoAtual.participantes : [];
+        const participantesArray = getParticipantesArray(estadoAtual);
         let somas = [];
-        for (let p of participantes) {
+        for (let p of participantesArray) {
             let total = 0;
-            for (let i = 1; i <= 4; i++) {
-                let chave = `r4p${i}`;
-                total += (estadoAtual.resultados && estadoAtual.resultados[chave] && estadoAtual.resultados[chave][p.id]) ? estadoAtual.resultados[chave][p.id] : 0;
-            }
+            for (let i = 1; i <= 4; i++) total += (estadoAtual.resultados[`r4p${i}`] || {})[p.id] || 0;
             somas.push({ ...p, total });
         }
         return somas.sort((a,b) => b.total - a.total).slice(0,4);
@@ -337,10 +325,9 @@
         let rod = estadoAtual.rodada, part = estadoAtual.partida;
         let dificuldade = ORDENS[rod][part-1];
         let bancoKey = `r${rod}p${part}`;
-        if (!estadoAtual.bancos || !estadoAtual.bancos[bancoKey]) {
+        if (!estadoAtual.bancos[bancoKey]) {
             let perguntas = await gerarBanco(dificuldade);
             await estadoRef.child(`bancos/${bancoKey}`).set(perguntas);
-            if (!estadoAtual.bancos) estadoAtual.bancos = {};
             estadoAtual.bancos[bancoKey] = perguntas;
         }
         perguntasPartida = estadoAtual.bancos[bancoKey];
@@ -416,7 +403,7 @@
         setTimeout(() => t.classList.add('hidden'), 3000);
     }
 
-    // Eventos dos botões
+    // ========== EVENTOS ==========
     document.getElementById('btn-professor')?.addEventListener('click', async () => {
         meuTipo = 'professor';
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
@@ -428,14 +415,14 @@
         let turma = prompt("Sua turma:");
         if (!nome || !turma) return;
         alunoNome = nome; alunoTurma = turma;
-        alunoId = btoa(nome + turma + Date.now()).slice(0, 12);
+        alunoId = btoa(nome + turma).slice(0, 12);
         meuTipo = 'aluno';
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
         document.getElementById('tela-aluno').classList.remove('hidden');
         await inicializarEstado();
-        // Adiciona o aluno à lista de participantes (se não existir)
-        let participantes = Array.isArray(estadoAtual?.participantes) ? estadoAtual.participantes : [];
-        if (!participantes.find(p => p.id === alunoId)) {
+        // Adiciona o aluno à lista de participantes se não existir
+        let participantesArray = getParticipantesArray(estadoAtual);
+        if (!participantesArray.find(p => p.id === alunoId)) {
             await estadoRef.child('participantes').push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
         }
     });
@@ -466,20 +453,16 @@
     document.getElementById('btn-reset-rodada')?.addEventListener('click', async () => {
         if (!confirm("Resetar rodada? Dados serão perdidos.")) return;
         let rod = estadoAtual.rodada;
-        for (let i=1; i<=4; i++) {
-            await estadoRef.child(`resultados/r${rod}p${i}`).remove();
-        }
+        for (let i=1; i<=4; i++) await estadoRef.child(`resultados/r${rod}p${i}`).remove();
         await estadoRef.update({ partida: 1, status: 'aguardando' });
-        mostrarToast("Rodada resetada.");
     });
     document.getElementById('btn-adicionar-aluno')?.addEventListener('click', async () => {
         let nome = prompt("Nome do aluno:");
         let turma = prompt("Turma:");
         if (!nome || !turma) return;
         let id = btoa(nome + turma + Date.now()).slice(0, 12);
-        let novos = [...(Array.isArray(estadoAtual?.participantes) ? estadoAtual.participantes : []), { id, nome, turma }];
-        await estadoRef.child('participantes').set(novos);
-        mostrarToast(`Aluno ${nome} adicionado.`);
+        await estadoRef.child('participantes').push({ id, nome, turma });
+        mostrarToast(`Aluno ${nome} adicionado!`);
     });
     document.getElementById('btn-sair-aluno')?.addEventListener('click', () => location.reload());
     document.getElementById('btn-sair-projecao')?.addEventListener('click', () => location.reload());
