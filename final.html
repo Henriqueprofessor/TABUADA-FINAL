@@ -41,6 +41,8 @@
         .btn-danger { background: #c0392b; }
         .btn-warning { background: #f39c12; }
         .btn-small { padding: 4px 8px; font-size: 12px; margin-left: 8px; }
+        .btn-excluir { background: #a82313; margin-left: 4px; }
+        .btn-excluir:hover { background: #7a1a0e; }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -95,14 +97,6 @@
             margin: 10px;
             text-align: center;
         }
-        .edit-nome-input {
-            background: #1e2a3a;
-            border: 1px solid #ffd966;
-            color: white;
-            border-radius: 20px;
-            padding: 4px 8px;
-            width: 140px;
-        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -134,6 +128,8 @@
                 <button id="btn-calcular-classificados" class="btn-primary">📊 Calcular Classificados da Fase</button>
                 <button id="btn-avancar-fase" class="btn-success" disabled>➡️ Avançar para Próxima Fase</button>
                 <button id="btn-reset-fase" class="btn-danger">⚠️ Resetar Fase Atual</button>
+                <button id="btn-remover-duplicados" class="btn-warning">🔧 Remover Participantes Duplicados</button>
+                <button id="btn-voltar-inicio" class="btn-primary">🏠 Voltar ao Início</button>
             </div>
             <div>
                 <h3>Participantes da Fase <span id="fase-participantes-num">1</span></h3>
@@ -165,10 +161,10 @@
         <div id="jogo-area" class="hidden">
             <div id="pergunta" style="font-size: 48px; text-align: center;">0 x 0 = ?</div>
             <div class="opcoes" style="display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin: 20px 0;">
-                <button class="opcao" onclick="responder(0)"></button>
-                <button class="opcao" onclick="responder(1)"></button>
-                <button class="opcao" onclick="responder(2)"></button>
-                <button class="opcao" onclick="responder(3)"></button>
+                <button class="opcao" onclick="window.responder(0)"></button>
+                <button class="opcao" onclick="window.responder(1)"></button>
+                <button class="opcao" onclick="window.responder(2)"></button>
+                <button class="opcao" onclick="window.responder(3)"></button>
             </div>
             <div style="display: flex; justify-content: space-between;">
                 <span>Pergunta: <span id="pergunta-num">1</span>/20</span>
@@ -258,18 +254,14 @@
         return { total, partidasJogadas, media: partidasJogadas > 0 ? total / partidasJogadas : 0 };
     }
 
-    // Ordenação para liberação sequencial: partida1 -> alfabética; outras -> menor pontuação atual
     function obterOrdemLiberacao(estado) {
         const participantes = getParticipantesArray(estado);
         const fase = estado.faseAtual;
         const partida = estado.partidaAtual;
-        // Filtra quem ainda não jogou esta partida
         const naoJogaram = participantes.filter(p => !alunoJaJogouPartida(estado, p.id, fase, partida));
         if (partida === 1) {
-            // Primeira partida da fase: ordem alfabética
             return naoJogaram.sort((a,b) => a.nome.localeCompare(b.nome));
         } else {
-            // Demais partidas: ordenar pela pontuação total acumulada na fase (menor primeiro)
             const comPontos = naoJogaram.map(p => {
                 const { total } = getPontuacaoAlunoNaFase(estado, p.id, fase);
                 return { ...p, total };
@@ -340,17 +332,26 @@
         document.getElementById('status-sequencial').classList.add('hidden');
     }
 
-    async function editarNomeAluno(alunoId, novoNome) {
+    async function removerParticipantesDuplicados() {
         if (!estadoAtual) return;
         const participantes = getParticipantesArray(estadoAtual);
-        const aluno = participantes.find(p => p.id === alunoId);
-        if (!aluno) return;
-        // Atualiza localmente e no Firebase
-        const novosParticipantes = participantes.map(p => 
-            p.id === alunoId ? { ...p, nome: novoNome } : p
-        );
-        await estadoRef.child('participantes').set(novosParticipantes);
-        mostrarToast(`Nome alterado para ${novoNome}`);
+        const mapa = new Map();
+        const duplicados = [];
+        for (let p of participantes) {
+            const chave = `${p.nome.toLowerCase().trim()}|${p.turma}`;
+            if (mapa.has(chave)) {
+                duplicados.push(p.id);
+            } else {
+                mapa.set(chave, p);
+            }
+        }
+        if (duplicados.length === 0) {
+            mostrarToast("Nenhum duplicado encontrado.");
+            return;
+        }
+        const novos = participantes.filter(p => !duplicados.includes(p.id));
+        await estadoRef.child('participantes').set(novos);
+        mostrarToast(`${duplicados.length} duplicado(s) removido(s).`);
     }
 
     async function aplicarCorteClassificacao() {
@@ -463,6 +464,38 @@
         });
     }
 
+    async function editarNomeAluno(alunoId, novoNome) {
+        if (!estadoAtual || !novoNome || novoNome.trim() === "") return;
+        const participantes = getParticipantesArray(estadoAtual);
+        const novosParticipantes = participantes.map(p => 
+            p.id === alunoId ? { ...p, nome: novoNome.trim() } : p
+        );
+        await estadoRef.child('participantes').set(novosParticipantes);
+        mostrarToast(`Nome alterado para ${novoNome.trim()}`);
+        atualizarInterface(); // força atualização da lista
+    }
+
+    async function excluirAluno(alunoId) {
+        if (!estadoAtual) return;
+        const participantes = getParticipantesArray(estadoAtual);
+        const aluno = participantes.find(p => p.id === alunoId);
+        if (!aluno) return;
+        if (!confirm(`Tem certeza que deseja remover ${aluno.nome} da competição?`)) return;
+        const novosParticipantes = participantes.filter(p => p.id !== alunoId);
+        await estadoRef.child('participantes').set(novosParticipantes);
+        const fase = estadoAtual.faseAtual;
+        if (estadoAtual.resultadosFase && estadoAtual.resultadosFase[fase]) {
+            for (let i = 1; i <= 4; i++) {
+                const chave = `r${i}p`;
+                if (estadoAtual.resultadosFase[fase][chave] && estadoAtual.resultadosFase[fase][chave][alunoId]) {
+                    await estadoRef.child(`resultadosFase/${fase}/${chave}/${alunoId}`).remove();
+                }
+            }
+        }
+        mostrarToast(`${aluno.nome} removido da competição.`);
+        atualizarInterface();
+    }
+
     function atualizarInterface() {
         if (!estadoAtual) return;
         const fase = estadoAtual.faseAtual;
@@ -472,24 +505,24 @@
 
         document.getElementById('fase-atual-titulo').innerText = fase;
         document.getElementById('partida-atual-titulo').innerText = partida;
+        
         if (meuTipo === 'professor') {
             document.getElementById('fase-num').innerText = fase;
             document.getElementById('partida-atual-prof').innerText = partida;
             document.getElementById('dificuldade-nome').innerText = dificuldade;
-            document.getElementById('btn-proxima-partida').disabled = (estadoAtual.status !== 'finalizada');
-            // Lista de participantes com botão de editar nome
+            document.getElementById('btn-avancar-fase').disabled = (estadoAtual.partidaAtual <= 4);
+            
             let html = '<ul style="list-style:none; padding-left:0;">';
             participantesArray.forEach(p => {
-                html += `<li style="margin-bottom:8px;">
-                            ${p.nome} (${p.turma})
-                            <button class="btn-small" onclick="editarNomeAluno('${p.id}', prompt('Novo nome para ${p.nome}:', '${p.nome}'))">✏️ Editar</button>
+                html += `<li style="margin-bottom:8px; display: flex; align-items: center; flex-wrap: wrap;">
+                            <span style="flex:1;">${escapeHtml(p.nome)} (${p.turma})</span>
+                            <button class="btn-small" onclick="window.editarNomeAluno('${p.id}', prompt('Novo nome para ${escapeHtml(p.nome)}:', '${escapeHtml(p.nome)}'))">✏️ Editar</button>
+                            <button class="btn-small btn-excluir" onclick="window.excluirAluno('${p.id}')">🗑️ Excluir</button>
                          </li>`;
             });
             html += '</ul>';
             document.getElementById('lista-participantes').innerHTML = html;
-            exibirRanking();
-            const podeAvancar = (estadoAtual.partidaAtual > 4);
-            document.getElementById('btn-avancar-fase').disabled = !podeAvancar;
+            exibirRanking(false);
         } 
         else if (meuTipo === 'aluno' && alunoId) {
             let p = participantesArray.find(x => x.id === alunoId);
@@ -537,7 +570,7 @@
             if (fase === 4 && estadoAtual.finalistas) {
                 let finalistas = estadoAtual.finalistas;
                 let html = '<h3>🏅 FINALISTAS DA COPA 🏅</h3><ol>';
-                finalistas.forEach((f,i) => html += `<li>${f.nome} (${f.turma})</li>`);
+                finalistas.forEach((f,i) => html += `<li>${escapeHtml(f.nome)} (${f.turma})</li>`);
                 html += '</ol>';
                 document.getElementById('projecao-chaveamento').innerHTML = html;
                 document.getElementById('projecao-chaveamento').classList.remove('hidden');
@@ -555,13 +588,30 @@
             const { total, partidasJogadas, media } = getPontuacaoAlunoNaFase(estadoAtual, p.id, fase);
             return { ...p, total, partidasJogadas, media };
         }).sort((a,b) => b.media - a.media);
-        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Partidas</th><th>Total</th><th>Média</th></tr></thead><tbody>`;
+        let html = `</td><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Partidas</th><th>Total</th><th>Média</th></tr></thead><tbody>`;
         comDados.forEach((p, i) => {
-            html += `<tr><td style="text-align:center">${i+1}º</td><td>${p.nome}</td><td>${p.turma}</td><td style="text-align:center">${p.partidasJogadas}/4</td><td style="text-align:center">${p.total}</td><td style="text-align:center">${p.media.toFixed(2)}</td></tr>`;
+            html += `<tr>
+                        <td style="text-align:center">${i+1}º</td>
+                        <td>${escapeHtml(p.nome)}</td>
+                        <td>${p.turma}</td>
+                        <td style="text-align:center">${p.partidasJogadas}/4</td>
+                        <td style="text-align:center">${p.total}</td>
+                        <td style="text-align:center">${p.media.toFixed(2)}</td>
+                     </tr>`;
         });
         html += `</tbody>赶`;
         if (projecao) document.getElementById('projecao-ranking').innerHTML = html;
         else document.getElementById('ranking-parcial').innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
     }
 
     async function iniciarJogoAluno() {
@@ -618,7 +668,7 @@
         }, 100);
     }
 
-    function responder(escolhaIdx) {
+    window.responder = function(escolhaIdx) {
         if (!jogoAtivo) return;
         clearInterval(timerInterval);
         let acertou = false;
@@ -634,7 +684,7 @@
         perguntaIdx++;
         if (perguntaIdx < 20) proximaPergunta();
         else finalizarJogoAluno();
-    }
+    };
 
     async function finalizarJogoAluno() {
         jogoAtivo = false;
@@ -750,6 +800,14 @@
         mostrarToast(`Fase ${fase} resetada.`);
     });
     
+    document.getElementById('btn-remover-duplicados')?.addEventListener('click', async () => {
+        await removerParticipantesDuplicados();
+    });
+    
+    document.getElementById('btn-voltar-inicio')?.addEventListener('click', () => {
+        window.location.reload();
+    });
+    
     document.getElementById('btn-adicionar-aluno')?.addEventListener('click', async () => {
         let nome = prompt("Nome do aluno:");
         let turma = prompt("Turma:");
@@ -767,8 +825,9 @@
     document.getElementById('btn-sair-aluno')?.addEventListener('click', () => location.reload());
     document.getElementById('btn-sair-projecao')?.addEventListener('click', () => location.reload());
     
-    // Expor função global para edição
+    // Expor funções globalmente para os botões dinâmicos
     window.editarNomeAluno = editarNomeAluno;
+    window.excluirAluno = excluirAluno;
 </script>
 </body>
 </html>
