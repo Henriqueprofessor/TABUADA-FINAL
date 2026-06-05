@@ -12,10 +12,7 @@
             color: #eee;
             padding: 20px;
         }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1400px; margin: 0 auto; }
         .card {
             background: rgba(12,20,35,0.9);
             backdrop-filter: blur(4px);
@@ -178,11 +175,9 @@
         4: ["Equilibrado (0-10)", "Difícil (0-10 peso 7-9)", "Médio (6-9)", "Fácil (2-5)"]
     };
 
-    // Função para garantir que participantes seja sempre um array
     function getParticipantesArray(estado) {
         if (!estado || !estado.participantes) return [];
         if (Array.isArray(estado.participantes)) return estado.participantes;
-        // Se for objeto, converte para array
         return Object.values(estado.participantes);
     }
 
@@ -209,21 +204,27 @@
                 rodada: 1,
                 partida: 1,
                 status: 'aguardando',
-                participantes: [],   // array vazio
-                resultados: {},
+                participantes: [],
+                resultados: {},   // objetos vazios
                 bancos: {}
             });
         } else {
-            // Garante que participantes seja array, mesmo se o Firebase tiver salvo como objeto
             const dados = snap.val();
             if (dados.participantes && !Array.isArray(dados.participantes)) {
                 await estadoRef.child('participantes').set(Object.values(dados.participantes));
             }
+            if (!dados.resultados) {
+                await estadoRef.child('resultados').set({});
+            }
         }
         estadoRef.on('value', (s) => {
             estadoAtual = s.val();
-            if (estadoAtual && estadoAtual.participantes && !Array.isArray(estadoAtual.participantes)) {
-                estadoAtual.participantes = Object.values(estadoAtual.participantes);
+            if (estadoAtual) {
+                if (estadoAtual.participantes && !Array.isArray(estadoAtual.participantes)) {
+                    estadoAtual.participantes = Object.values(estadoAtual.participantes);
+                }
+                if (!estadoAtual.resultados) estadoAtual.resultados = {};
+                if (!estadoAtual.bancos) estadoAtual.bancos = {};
             }
             atualizarInterface();
         });
@@ -258,7 +259,7 @@
             let diff = ORDENS[estadoAtual.rodada][estadoAtual.partida-1];
             document.getElementById('aluno-dificuldade').innerText = diff;
             let chave = `r${estadoAtual.rodada}p${estadoAtual.partida}`;
-            let pts = (estadoAtual.resultados[chave] || {})[alunoId] || 0;
+            let pts = (estadoAtual.resultados[chave] && estadoAtual.resultados[chave][alunoId]) ? estadoAtual.resultados[chave][alunoId] : 0;
             document.getElementById('aluno-pontos').innerText = pts;
             if (estadoAtual.status === 'em_andamento' && !jogoAtivo) iniciarJogoAluno();
             else if (estadoAtual.status !== 'em_andamento') {
@@ -292,14 +293,15 @@
         for (let p of participantesArray) {
             let soma = 0, count = 0;
             for (let i = 1; i <= partidaMax; i++) {
-                let pts = (estadoAtual.resultados[`r${rod}p${i}`] || {})[p.id] || 0;
+                let chave = `r${rod}p${i}`;
+                let pts = (estadoAtual.resultados[chave] && estadoAtual.resultados[chave][p.id]) ? estadoAtual.resultados[chave][p.id] : 0;
                 if (pts > 0) { soma += pts; count++; }
             }
             let media = count ? soma / count : 0;
             medias.push({ ...p, media, soma });
         }
         medias.sort((a,b) => b.media - a.media);
-        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Média</th><th>Total</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Média</th><th>Total</th></tr></thead><tbody>`;
         medias.slice(0, projecao ? 40 : 20).forEach((m, i) => {
             html += `<tr><td>${i+1}º</td><td>${m.nome}</td><td>${m.turma}</td><td>${m.media.toFixed(2)}</td><td>${m.soma}</td></tr>`;
         });
@@ -314,7 +316,10 @@
         let somas = [];
         for (let p of participantesArray) {
             let total = 0;
-            for (let i = 1; i <= 4; i++) total += (estadoAtual.resultados[`r4p${i}`] || {})[p.id] || 0;
+            for (let i = 1; i <= 4; i++) {
+                let chave = `r4p${i}`;
+                total += (estadoAtual.resultados[chave] && estadoAtual.resultados[chave][p.id]) ? estadoAtual.resultados[chave][p.id] : 0;
+            }
             somas.push({ ...p, total });
         }
         return somas.sort((a,b) => b.total - a.total).slice(0,4);
@@ -420,7 +425,6 @@
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
         document.getElementById('tela-aluno').classList.remove('hidden');
         await inicializarEstado();
-        // Adiciona o aluno à lista de participantes se não existir
         let participantesArray = getParticipantesArray(estadoAtual);
         if (!participantesArray.find(p => p.id === alunoId)) {
             await estadoRef.child('participantes').push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
