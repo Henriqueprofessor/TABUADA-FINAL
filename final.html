@@ -195,13 +195,22 @@
     <!-- TELA DE PROJEÇÃO (TORCIDA) -->
     <div id="tela-projecao" class="card hidden">
         <h2>📺 COPA TABUADA CEIB 2026 - TORCIDA</h2>
-        <div style="display: flex; justify-content: space-between;">
-            <div id="projecao-status" class="status-box">Carregando...</div>
-            <div><label>Fase:</label><select id="seletor-fase-torcida"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select><button id="btn-torcida-carregar" class="btn-small">Carregar</button></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div id="projecao-status" class="status-box" style="flex:2;">Carregando...</div>
+            <div style="margin-left: 16px;">
+                <label>Fase:</label>
+                <select id="seletor-fase-torcida" class="select-fase">
+                    <option value="1">Fase 1</option>
+                    <option value="2">Fase 2</option>
+                    <option value="3">Fase 3</option>
+                    <option value="4">Fase 4</option>
+                </select>
+                <button id="btn-torcida-carregar" class="btn-small">Carregar</button>
+            </div>
         </div>
         <div id="info-vagas" class="info-vagas"></div>
         <div id="projecao-ranking" class="status-box"><div class="loading">Carregando...</div></div>
-        <button id="btn-sair-projecao">Voltar</button>
+        <button id="btn-sair-projecao">⬅️ Voltar</button>
     </div>
 </div>
 <div id="toast" class="toast hidden"></div>
@@ -220,6 +229,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // ========== VARIÁVEIS GLOBAIS ==========
     let meuTipo = null;
     let alunoId = null, alunoNome = null, alunoTurma = null;
     let estadoRef = null;
@@ -257,7 +267,7 @@
     async function getProgresso(id,fase) { return (await db.ref(`progressoAluno/${id}/fase${fase}`).once('value')).val() || 0; }
     async function setProgresso(id,fase,val) { await db.ref(`progressoAluno/${id}/fase${fase}`).set(val); }
 
-    // ========== RANKING COMPLETO ==========
+    // ========== RANKING COMPLETO (SEM VITÓRIAS E ÚLTIMA POS) ==========
     async function gerarRanking(estado, fase) {
         const participantes = getParticipantesArray(estado);
         if(participantes.length===0) return [];
@@ -267,23 +277,16 @@
             stats.push({...p, total, jogadas, melhorT});
         }
         stats.sort((a,b)=>b.total - a.total);
-        // calcular vitórias e última posição
-        let vitorias = new Map(), ultimaPos = new Map(), pontuacaoPorPartida = new Map();
+        // Calcular evolução (percentual entre última e penúltima partida)
+        let pontuacaoPorPartida = new Map();
         for(let i=1;i<=4;i++) {
             let partida = estado.resultadosFase?.[fase]?.[`r${i}p`];
             if(!partida) continue;
-            let rankingPartida = [];
             for(let p of participantes) {
                 let pts = partida[p.id]?.pontos || 0;
-                if(pts>0) rankingPartida.push({id:p.id, pts});
-            }
-            rankingPartida.sort((a,b)=>b.pts - a.pts);
-            if(rankingPartida.length){
-                vitorias.set(rankingPartida[0].id, (vitorias.get(rankingPartida[0].id)||0)+1);
-                for(let idx=0; idx<rankingPartida.length; idx++) {
-                    ultimaPos.set(rankingPartida[idx].id, idx+1);
-                    if(!pontuacaoPorPartida.has(rankingPartida[idx].id)) pontuacaoPorPartida.set(rankingPartida[idx].id, []);
-                    pontuacaoPorPartida.get(rankingPartida[idx].id).push({partida:i, pontos:rankingPartida[idx].pts});
+                if(pts>0) {
+                    if(!pontuacaoPorPartida.has(p.id)) pontuacaoPorPartida.set(p.id, []);
+                    pontuacaoPorPartida.get(p.id).push({partida:i, pontos:pts});
                 }
             }
         }
@@ -310,9 +313,8 @@
             }
             resultado.push({
                 pos, nome:p.nome, turma:p.turma, total:p.total, gap,
-                atualPos:`${pos}º`, ultimaPos: ultimaPos.get(p.id) || "—",
                 evolucao: evol, melhorVolta: p.melhorT ? `${p.melhorT.toFixed(2)}s` : "—",
-                vitorias: vitorias.get(p.id) || 0, partidas: `${p.jogadas}/4`,
+                partidas: `${p.jogadas}/4`,
                 classificado: pos <= numVagas ? "✅ Sim" : "❌ Não"
             });
         }
@@ -481,11 +483,11 @@
 
         let ranking = await gerarRanking(estadoAtual, fase);
         if(ranking.length === 0) { document.getElementById('conteudo-ranking-aluno').innerHTML = '<div class="loading">Nenhum participante ainda.</div>'; return; }
-        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
+        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
         for(let r of ranking) {
-            html += `<tr><td style="text-align:center">${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td>${r.total}</td><td>${r.gap}</td><td>${r.atualPos}</td><td>${r.ultimaPos}</td><td>${r.evolucao}</td><td>${r.melhorVolta}</td><td>${r.vitorias}</td><td>${r.partidas}</td><td>${r.classificado}</td></tr>`;
+            html += `<td><td style="text-align:center">${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.pos}º</td><td>${r.evolucao}</td><td style="text-align:center">${r.melhorVolta}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
         }
-        html += `</tbody>赶`;
+        html += `</tbody></table>`;
         document.getElementById('conteudo-ranking-aluno').innerHTML = html;
     }
 
@@ -542,8 +544,8 @@
         let dados = snap.val();
         let estadoFake = {participantes: dados.participantes || [], resultadosFase: {[fase]: dados.resultados || {}}};
         let ranking = await gerarRanking(estadoFake, fase);
-        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
-        for(let r of ranking) html += `<tr><td>${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td>${r.total}</td><td>${r.gap}</td><td>${r.atualPos}</td><td>${r.ultimaPos}</td><td>${r.evolucao}</td><td>${r.melhorVolta}</td><td>${r.vitorias}</td><td>${r.partidas}</td><td>${r.classificado}</td></tr>`;
+        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
+        for(let r of ranking) html += `<tr><td style="text-align:center">${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.pos}º</td><td>${r.evolucao}</td><td style="text-align:center">${r.melhorVolta}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
         html += `</tbody></table>`;
         document.getElementById('ranking-parcial').innerHTML = html;
         document.getElementById('ranking-titulo').innerText = `Fase ${fase}`;
@@ -552,8 +554,8 @@
         if(!estadoAtual) return;
         let ranking = await gerarRanking(estadoAtual, estadoAtual.faseAtual);
         if(ranking.length===0) { document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum participante.</p>'; return; }
-        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
-        for(let r of ranking) html += `<tr><td>${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td>${r.total}</td><td>${r.gap}</td><td>${r.atualPos}</td><td>${r.ultimaPos}</td><td>${r.evolucao}</td><td>${r.melhorVolta}</td><td>${r.vitorias}</td><td>${r.partidas}</td><td>${r.classificado}</td></tr>`;
+        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
+        for(let r of ranking) html += `<tr><td style="text-align:center">${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.pos}º</td><td>${r.evolucao}</td><td style="text-align:center">${r.melhorVolta}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
         html += `</tbody></table>`;
         document.getElementById('ranking-parcial').innerHTML = html;
         document.getElementById('ranking-titulo').innerText = `Fase ${estadoAtual.faseAtual} (Atual)`;
@@ -561,7 +563,7 @@
     async function exibirRankingTorcida() {
         let fase = parseInt(document.getElementById('seletor-fase-torcida').value);
         let snap = await db.ref(`fases/${fase}`).once('value');
-        if(!snap.exists()) { document.getElementById('projecao-ranking').innerHTML = '<p>Nenhum dado.</p>'; return; }
+        if(!snap.exists()) { document.getElementById('projecao-ranking').innerHTML = '<p>Nenhum dado disponível para esta fase.</p>'; return; }
         let dados = snap.val();
         let estadoFake = {participantes: dados.participantes || [], resultadosFase: {[fase]: dados.resultados || {}}};
         let ranking = await gerarRanking(estadoFake, fase);
@@ -569,8 +571,8 @@
         let html = `<div class="info-vagas">🏆 ${numVagas} vagas para a próxima fase.</div>`;
         if(ranking.length===0) html += '<p>Nenhum participante.</p>';
         else {
-            html += `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
-            for(let r of ranking) html += `<tr><td>${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td>${r.total}</td><td>${r.gap}</td><td>${r.atualPos}</td><td>${r.ultimaPos}</td><td>${r.evolucao}</td><td>${r.melhorVolta}</td><td>${r.vitorias}</td><td>${r.partidas}</td><td>${r.classificado}</td></tr>`;
+            html += `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
+            for(let r of ranking) html += `<tr><td style="text-align:center">${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.pos}º</td><td>${r.evolucao}</td><td style="text-align:center">${r.melhorVolta}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
             html += `</tbody></table>`;
         }
         document.getElementById('projecao-ranking').innerHTML = html;
