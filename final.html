@@ -102,24 +102,26 @@
         .trend-flat { color: #f39c12; }
         .loading { text-align: center; padding: 20px; color: #aaa; }
         /* Barra de tempo */
-        .barra-tempo-container {
+        .barra-tempo {
             width: 100%;
-            height: 12px;
+            height: 16px;
             background: #2c3e50;
             border-radius: 10px;
             overflow: hidden;
-            margin-bottom: 20px;
+            margin: 16px 0;
+            cursor: help;
         }
-        .barra-tempo-progresso {
+        .progresso-tempo {
             width: 100%;
             height: 100%;
             background: #27ae60;
-            transition: width 0.1s linear;
+            transition: width 0.1s linear, background 0.2s ease;
         }
-        .barra-tempo-progresso.urgente { background: #e74c3c; animation: pulseBarra 0.5s infinite; }
-        @keyframes pulseBarra { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
-        /* Grid de opções */
-        .grid-opcoes {
+        .progresso-tempo.pulsando {
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+        /* Grade de opções em ordem crescente, 2x2 */
+        .opcoes-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
@@ -131,12 +133,16 @@
             border: none;
             border-radius: 40px;
             padding: 14px;
-            font-size: 1.2rem;
+            font-size: 20px;
             font-weight: bold;
             cursor: pointer;
             transition: 0.2s;
+            text-align: center;
         }
-        .opcao:hover { background: #2c5a6e; transform: scale(1.02); }
+        .opcao:hover {
+            background: #2c5a6e;
+            transform: scale(1.02);
+        }
         /* Diálogo de turma */
         .dialog-turma {
             position: fixed;
@@ -246,15 +252,17 @@
             <div class="status-box">
                 <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
                 <!-- Barra de tempo -->
-                <div class="barra-tempo-container">
-                    <div id="barra-tempo" class="barra-tempo-progresso" style="width: 100%;"></div>
+                <div class="barra-tempo" title="Tempo restante">
+                    <div id="progresso-tempo" class="progresso-tempo" style="width: 100%; background-color: #27ae60;"></div>
                 </div>
                 <div id="pergunta" style="font-size: 48px; text-align: center;">0 x 0 = ?</div>
-                <div id="opcoes" class="grid-opcoes"></div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span>Pergunta: <span id="pergunta-num">1</span>/20</span>
-                    <span>Tempo: <span id="timer" class="timer-grande timer-normal">10.0s</span></span>
+                <div class="opcoes-grid" id="opcoes-container">
+                    <button class="opcao" onclick="window.responder(0)"></button>
+                    <button class="opcao" onclick="window.responder(1)"></button>
+                    <button class="opcao" onclick="window.responder(2)"></button>
+                    <button class="opcao" onclick="window.responder(3)"></button>
                 </div>
+                <div><span>Pergunta: <span id="pergunta-num">1</span>/20</span> <span>Tempo: <span id="timer" class="timer-grande timer-normal">10.0s</span></span></div>
                 <p>Pontos nesta partida: <strong id="pontos-partida">0</strong></p>
             </div>
             <button id="btn-cancelar-jogo" class="btn-danger">❌ Cancelar</button>
@@ -370,7 +378,7 @@
     async function getProgresso(id,fase) { return (await db.ref(`progressoAluno/${id}/fase${fase}`).once('value')).val() || 0; }
     async function setProgresso(id,fase,val) { await db.ref(`progressoAluno/${id}/fase${fase}`).set(val); }
 
-    // ========== RANKING COMPLETO ==========
+    // ========== RANKING COMPLETO (RETORNA ARRAY DE OBJETOS) ==========
     async function gerarRanking(estado, fase) {
         const participantes = getParticipantesArray(estado);
         if(participantes.length===0) return [];
@@ -412,7 +420,39 @@
         return resultado;
     }
 
-    // ========== JOGO COM BARRA DE TEMPO E OPÇÕES EM ORDEM CRESCENTE ==========
+    // ========== FUNÇÕES DE RANKING QUE GERAM HTML CORRETAMENTE ==========
+    function gerarTabelaRanking(ranking) {
+        if(!ranking || ranking.length===0) return '<div class="loading">Nenhum participante ainda.</div>';
+        let html = `<table class="ranking-table">
+                        <thead>
+                            <tr>
+                                <th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th>
+                                <th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th>
+                                <th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+        for(let r of ranking) {
+            html += `<tr>
+                        <td style="text-align:center">${r.pos}º</td>
+                        <td style="text-align:left">${escapeHtml(r.nome)}</td>
+                        <td style="text-align:center">${escapeHtml(r.turma)}</td>
+                        <td style="text-align:center">${r.total}</td>
+                        <td style="text-align:center">${r.gap}</td>
+                        <td style="text-align:center">${r.posRodada}</td>
+                        <td style="text-align:center">${r.pontRodadaAnterior}</td>
+                        <td style="text-align:center">${r.pontRodadaAtual}</td>
+                        <td style="text-align:center">${r.evolucao}</td>
+                        <td style="text-align:center">${r.melhorPontuacao}</td>
+                        <td style="text-align:center">${r.partidas}</td>
+                        <td style="text-align:center">${r.classificado}</td>
+                      </tr>`;
+        }
+        html += `</tbody></table>`;
+        return html;
+    }
+
+    // ========== JOGO ==========
     async function gerarBanco(dificuldade) {
         let fatores = [];
         if(dificuldade.includes("2-5")) fatores=[2,3,4,5];
@@ -456,13 +496,14 @@
         if(barraInterval) clearInterval(barraInterval);
         tempoRestante = 10;
         let timerElem = document.getElementById('timer');
-        let barraElem = document.getElementById('barra-tempo');
+        let barraElem = document.getElementById('progresso-tempo');
         timerElem.classList.remove('timer-alerta','timer-urgente');
         timerElem.classList.add('timer-normal');
         barraElem.style.width = '100%';
-        barraElem.style.background = '#27ae60';
-        barraElem.classList.remove('urgente');
-        timerInterval = setInterval(()=>{
+        barraElem.style.backgroundColor = '#27ae60';
+        barraElem.classList.remove('pulsando');
+        
+        timerInterval = setInterval(() => {
             if(!jogoAtivo) return;
             tempoRestante -= 0.1;
             timerElem.innerText = tempoRestante.toFixed(1);
@@ -473,47 +514,43 @@
                 timerElem.classList.remove('timer-alerta');
                 timerElem.classList.add('timer-urgente');
             }
-            if(tempoRestante <= 0) { clearInterval(timerInterval); window.responder(-1); }
-        },100);
-        barraInterval = setInterval(()=>{
-            if(!jogoAtivo) return;
-            let percentual = (tempoRestante / 10) * 100;
-            barraElem.style.width = percentual + '%';
-            if(percentual < 40) {
-                barraElem.style.background = '#e67e22';
-                if(percentual < 20) {
-                    barraElem.style.background = '#e74c3c';
-                    barraElem.classList.add('urgente');
-                } else {
-                    barraElem.classList.remove('urgente');
-                }
-            } else {
-                barraElem.style.background = '#27ae60';
-                barraElem.classList.remove('urgente');
+            if(tempoRestante <= 0) { 
+                clearInterval(timerInterval); 
+                clearInterval(barraInterval);
+                window.responder(-1); 
             }
-        },50);
+        }, 100);
+        
+        barraInterval = setInterval(() => {
+            if(!jogoAtivo) return;
+            let percent = (tempoRestante / 10) * 100;
+            barraElem.style.width = Math.max(0, percent) + '%';
+            if(tempoRestante <= 2) {
+                barraElem.style.backgroundColor = '#e74c3c';
+                barraElem.classList.add('pulsando');
+            } else if(tempoRestante <= 5) {
+                barraElem.style.backgroundColor = '#f39c12';
+                barraElem.classList.remove('pulsando');
+            } else {
+                barraElem.style.backgroundColor = '#27ae60';
+                barraElem.classList.remove('pulsando');
+            }
+        }, 50);
     }
     function proximaPergunta() {
-        if(perguntaIdx >= 20) { finalizarPartida(); return; }
+        if(perguntaIdx>=20) { finalizarPartida(); return; }
         let p = perguntasPartida[perguntaIdx];
         document.getElementById('pergunta').innerHTML = `${p.fA} x ${p.fB} = ?`;
         respostaCorreta = p.resposta;
+        // Gerar opções em ordem crescente
         let opcoes = [respostaCorreta];
         while(opcoes.length < 4) {
-            let r = respostaCorreta + (Math.floor(Math.random()*13)-6);
+            let r = respostaCorreta + (Math.floor(Math.random() * 13) - 6);
             if(r !== respostaCorreta && r >= 0 && r <= 120 && !opcoes.includes(r)) opcoes.push(r);
         }
-        // Ordenar em ordem crescente
-        opcoes.sort((a,b)=>a-b);
-        let container = document.getElementById('opcoes');
-        container.innerHTML = '';
-        for(let i=0;i<opcoes.length;i++) {
-            let btn = document.createElement('button');
-            btn.className = 'opcao';
-            btn.innerText = opcoes[i];
-            btn.onclick = (function(idx){ return function(){ window.responder(idx); }; })(i);
-            container.appendChild(btn);
-        }
+        opcoes.sort((a,b) => a - b);
+        let botoes = document.querySelectorAll('.opcao');
+        botoes.forEach((btn, i) => { btn.innerText = opcoes[i]; btn.disabled = false; });
         document.getElementById('pergunta-num').innerText = perguntaIdx+1;
         iniciarTimer();
     }
@@ -522,7 +559,7 @@
         clearInterval(timerInterval);
         clearInterval(barraInterval);
         let fase = estadoAtual.faseAtual;
-        let tempoMedio = temposPartida.length ? temposPartida.reduce((a,b)=>a+b)/temposPartida.length : null;
+        let tempoMedio = temposPartida.length ? temposPartida.reduce((a,b)=>a+b,0)/temposPartida.length : null;
         await estadoRef.child(`resultadosFase/${fase}/r${partidaSendoJogada}p/${alunoId}`).set({pontos:pontosPartida, tempoMedio, maiorSequencia:maiorSequenciaPartida});
         let progresso = await getProgresso(alunoId, fase);
         if(partidaSendoJogada > progresso) await setProgresso(alunoId, fase, partidaSendoJogada);
@@ -535,10 +572,10 @@
         if(!jogoAtivo) return;
         clearInterval(timerInterval);
         clearInterval(barraInterval);
-        let botoes = document.querySelectorAll('.opcao');
         let acertou = false;
-        if(escolhaIdx !== -1 && botoes[escolhaIdx]) {
-            if(parseInt(botoes[escolhaIdx].innerText) === respostaCorreta) acertou = true;
+        if(escolhaIdx !== -1) {
+            let btn = document.querySelectorAll('.opcao')[escolhaIdx];
+            if(parseInt(btn.innerText) === respostaCorreta) acertou = true;
         }
         if(acertou) {
             let tempoGasto = 10 - tempoRestante;
@@ -587,16 +624,20 @@
         proximaPergunta();
     }
 
-    // ========== INTERFACE DO ALUNO ==========
+    // ========== INTERFACE DO ALUNO (COM RANKING CORRIGIDO) ==========
     async function atualizarInterfaceAluno() {
         if(!estadoAtual || !alunoId || meuTipo !== 'aluno') return;
         let fase = estadoAtual.faseAtual;
         let status = estadoAtual.status;
         let progresso = await getProgresso(alunoId, fase);
         let {total} = getDetalhesAluno(estadoAtual, alunoId, fase);
-        document.getElementById('aluno-fase').innerText = fase;
-        document.getElementById('partidas-feitas').innerText = progresso;
-        document.getElementById('aluno-pontos-total').innerText = total;
+        
+        document.getElementById('aluno-nome').innerHTML = escapeHtml(alunoNome);
+        document.getElementById('aluno-turma').innerHTML = escapeHtml(alunoTurma);
+        document.getElementById('aluno-fase').innerHTML = fase;
+        document.getElementById('partidas-feitas').innerHTML = progresso;
+        document.getElementById('aluno-pontos-total').innerHTML = total;
+        
         let podeJogar = (status === 'em_andamento' && progresso < 4);
         let btn = document.getElementById('btn-jogar-proxima');
         if(podeJogar) {
@@ -613,20 +654,11 @@
         else document.getElementById('aguardando').classList.add('hidden');
 
         let ranking = await gerarRanking(estadoAtual, fase);
-        if(ranking.length === 0) { 
-            document.getElementById('conteudo-ranking-aluno').innerHTML = '<div class="loading">Nenhum participante ainda.</div>'; 
-            return; 
-        }
-        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th><th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>';
-        for(let r of ranking) {
-            html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
-        }
-        html += '</tbody></table>';
-        document.getElementById('conteudo-ranking-aluno').innerHTML = html;
+        document.getElementById('conteudo-ranking-aluno').innerHTML = gerarTabelaRanking(ranking);
     }
 
     // ========== FUNÇÕES DO PROFESSOR ==========
-    async function resetarFase() {
+    async function resetarFaseProf() {
         if(!confirm("Resetar fase atual? Todos os dados serão perdidos.")) return;
         let fase = estadoAtual.faseAtual;
         await estadoRef.child(`resultadosFase/${fase}`).remove();
@@ -634,7 +666,7 @@
         await estadoRef.update({status:'aguardando'});
         mostrarToast(`Fase ${fase} resetada.`);
     }
-    async function avancarFase() {
+    async function avancarFaseProf() {
         if(!estadoAtual || estadoAtual.faseAtual >= 4) { mostrarToast("Já na última fase."); return; }
         let faseAtual = estadoAtual.faseAtual;
         await db.ref(`fases/${faseAtual}/participantes`).set(getParticipantesArray(estadoAtual));
@@ -646,7 +678,7 @@
         await estadoRef.update({faseAtual:novaFase, partidaAtual:1, status:'aguardando'});
         mostrarToast(`Avançou para Fase ${novaFase}. Alunos devem se reinscrever.`);
     }
-    async function removerDuplicados() {
+    async function removerDuplicadosProf() {
         let participantes = getParticipantesArray(estadoAtual);
         let mapa = new Map(), dups = [];
         for(let p of participantes) {
@@ -678,34 +710,15 @@
         let dados = snap.val();
         let estadoFake = {participantes: dados.participantes || [], resultadosFase: {[fase]: dados.resultados || {}}};
         let ranking = await gerarRanking(estadoFake, fase);
-        if(ranking.length === 0) { 
-            document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum participante.</p>'; 
-            return; 
-        }
-        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th><th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>';
-        for(let r of ranking) {
-            html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
-        }
-        html += '</tbody></table>';
-        document.getElementById('ranking-parcial').innerHTML = html;
+        document.getElementById('ranking-parcial').innerHTML = gerarTabelaRanking(ranking);
         document.getElementById('ranking-titulo').innerText = `Fase ${fase}`;
     }
     async function exibirRankingAtualProfessor() {
         if(!estadoAtual) return;
         let ranking = await gerarRanking(estadoAtual, estadoAtual.faseAtual);
-        if(ranking.length===0) { 
-            document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum participante.</p>'; 
-            return; 
-        }
-        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th><th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th><tr></thead><tbody>';
-        for(let r of ranking) {
-            html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
-        }
-        html += '</tbody></table>';
-        document.getElementById('ranking-parcial').innerHTML = html;
+        document.getElementById('ranking-parcial').innerHTML = gerarTabelaRanking(ranking);
         document.getElementById('ranking-titulo').innerText = `Fase ${estadoAtual.faseAtual} (Atual)`;
     }
-
     async function exibirRankingTorcida() {
         let fase = parseInt(document.getElementById('seletor-fase-torcida').value);
         let snap = await db.ref(`fases/${fase}`).once('value');
@@ -718,15 +731,7 @@
         let ranking = await gerarRanking(estadoFake, fase);
         let numVagas = CLASSIFICADOS_POR_FASE[fase];
         let html = '<div class="info-vagas">🏆 ' + numVagas + ' vagas para a próxima fase.</div>';
-        if(ranking.length === 0) {
-            html += '<p>Nenhum participante.</p>';
-        } else {
-            html += '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th><th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>';
-            for(let r of ranking) {
-                html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
-            }
-            html += '</tbody></table>';
-        }
+        html += gerarTabelaRanking(ranking);
         document.getElementById('projecao-ranking').innerHTML = html;
         document.getElementById('info-vagas').innerHTML = '<div class="info-vagas">🏆 ' + numVagas + ' vagas</div>';
     }
@@ -862,9 +867,9 @@
     });
     document.getElementById('btn-liberar-fase')?.addEventListener('click', async () => { await estadoRef.update({status:'em_andamento'}); mostrarToast("Fase liberada!"); });
     document.getElementById('btn-finalizar-fase')?.addEventListener('click', async () => { await salvarHistoricoFase(estadoAtual.faseAtual); await estadoRef.update({status:'finalizada'}); mostrarToast("Fase finalizada."); });
-    document.getElementById('btn-avancar-fase')?.addEventListener('click', avancarFase);
-    document.getElementById('btn-reset-fase')?.addEventListener('click', resetarFase);
-    document.getElementById('btn-remover-duplicados')?.addEventListener('click', removerDuplicados);
+    document.getElementById('btn-avancar-fase')?.addEventListener('click', avancarFaseProf);
+    document.getElementById('btn-reset-fase')?.addEventListener('click', resetarFaseProf);
+    document.getElementById('btn-remover-duplicados')?.addEventListener('click', removerDuplicadosProf);
     document.getElementById('btn-voltar-inicio')?.addEventListener('click', ()=>location.reload());
     document.getElementById('btn-adicionar-aluno')?.addEventListener('click', async () => {
         let nome = prompt("Nome:"); if(!nome) return;
@@ -899,6 +904,7 @@
     });
     window.responder = responder;
     function mostrarToast(msg) { let t=document.getElementById('toast'); t.innerText=msg; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),3000); }
+
     // Listeners dinâmicos
     document.addEventListener('click', async (e) => {
         if(e.target.classList.contains('btn-editar')) {
