@@ -101,7 +101,43 @@
         .trend-down { color: #e74c3c; }
         .trend-flat { color: #f39c12; }
         .loading { text-align: center; padding: 20px; color: #aaa; }
-        /* Estilo para o diálogo de seleção de turma */
+        /* Barra de tempo */
+        .barra-tempo-container {
+            width: 100%;
+            height: 12px;
+            background: #2c3e50;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .barra-tempo-progresso {
+            width: 100%;
+            height: 100%;
+            background: #27ae60;
+            transition: width 0.1s linear;
+        }
+        .barra-tempo-progresso.urgente { background: #e74c3c; animation: pulseBarra 0.5s infinite; }
+        @keyframes pulseBarra { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        /* Grid de opções */
+        .grid-opcoes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .opcao {
+            background: #1f3a4b;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 14px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .opcao:hover { background: #2c5a6e; transform: scale(1.02); }
+        /* Diálogo de turma */
         .dialog-turma {
             position: fixed;
             top: 50%;
@@ -209,14 +245,16 @@
         <div id="jogo-area" class="hidden">
             <div class="status-box">
                 <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
-                <div id="pergunta" style="font-size: 48px; text-align: center;">0 x 0 = ?</div>
-                <div class="opcoes" style="display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin: 20px 0;">
-                    <button class="opcao btn-primary" onclick="window.responder(0)"></button>
-                    <button class="opcao btn-primary" onclick="window.responder(1)"></button>
-                    <button class="opcao btn-primary" onclick="window.responder(2)"></button>
-                    <button class="opcao btn-primary" onclick="window.responder(3)"></button>
+                <!-- Barra de tempo -->
+                <div class="barra-tempo-container">
+                    <div id="barra-tempo" class="barra-tempo-progresso" style="width: 100%;"></div>
                 </div>
-                <div><span>Pergunta: <span id="pergunta-num">1</span>/20</span> <span>Tempo: <span id="timer" class="timer-grande timer-normal">10.0s</span></span></div>
+                <div id="pergunta" style="font-size: 48px; text-align: center;">0 x 0 = ?</div>
+                <div id="opcoes" class="grid-opcoes"></div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Pergunta: <span id="pergunta-num">1</span>/20</span>
+                    <span>Tempo: <span id="timer" class="timer-grande timer-normal">10.0s</span></span>
+                </div>
                 <p>Pontos nesta partida: <strong id="pontos-partida">0</strong></p>
             </div>
             <button id="btn-cancelar-jogo" class="btn-danger">❌ Cancelar</button>
@@ -271,6 +309,7 @@
     let jogoAtivo = false;
     let perguntasPartida = [], perguntaIdx = 0, pontosPartida = 0, respostaCorreta = 0;
     let timerInterval = null, tempoRestante = 10;
+    let barraInterval = null;
     let temposPartida = [], maiorSequenciaPartida = 0, sequenciaAtualPartida = 0, acertosConsecutivos = 0;
     let partidaSendoJogada = 1;
     let estadoPronto = false;
@@ -373,7 +412,7 @@
         return resultado;
     }
 
-    // ========== JOGO ==========
+    // ========== JOGO COM BARRA DE TEMPO E OPÇÕES EM ORDEM CRESCENTE ==========
     async function gerarBanco(dificuldade) {
         let fatores = [];
         if(dificuldade.includes("2-5")) fatores=[2,3,4,5];
@@ -414,35 +453,74 @@
     }
     function iniciarTimer() {
         if(timerInterval) clearInterval(timerInterval);
-        tempoRestante=10;
+        if(barraInterval) clearInterval(barraInterval);
+        tempoRestante = 10;
         let timerElem = document.getElementById('timer');
+        let barraElem = document.getElementById('barra-tempo');
         timerElem.classList.remove('timer-alerta','timer-urgente');
         timerElem.classList.add('timer-normal');
+        barraElem.style.width = '100%';
+        barraElem.style.background = '#27ae60';
+        barraElem.classList.remove('urgente');
         timerInterval = setInterval(()=>{
             if(!jogoAtivo) return;
-            tempoRestante-=0.1;
+            tempoRestante -= 0.1;
             timerElem.innerText = tempoRestante.toFixed(1);
-            if(tempoRestante<=3 && tempoRestante>1) { timerElem.classList.remove('timer-normal'); timerElem.classList.add('timer-alerta'); }
-            else if(tempoRestante<=1) { timerElem.classList.remove('timer-alerta'); timerElem.classList.add('timer-urgente'); }
-            if(tempoRestante<=0) { clearInterval(timerInterval); window.responder(-1); }
+            if(tempoRestante <= 3 && tempoRestante > 1) {
+                timerElem.classList.remove('timer-normal');
+                timerElem.classList.add('timer-alerta');
+            } else if(tempoRestante <= 1) {
+                timerElem.classList.remove('timer-alerta');
+                timerElem.classList.add('timer-urgente');
+            }
+            if(tempoRestante <= 0) { clearInterval(timerInterval); window.responder(-1); }
         },100);
+        barraInterval = setInterval(()=>{
+            if(!jogoAtivo) return;
+            let percentual = (tempoRestante / 10) * 100;
+            barraElem.style.width = percentual + '%';
+            if(percentual < 40) {
+                barraElem.style.background = '#e67e22';
+                if(percentual < 20) {
+                    barraElem.style.background = '#e74c3c';
+                    barraElem.classList.add('urgente');
+                } else {
+                    barraElem.classList.remove('urgente');
+                }
+            } else {
+                barraElem.style.background = '#27ae60';
+                barraElem.classList.remove('urgente');
+            }
+        },50);
     }
     function proximaPergunta() {
-        if(perguntaIdx>=20) { finalizarPartida(); return; }
+        if(perguntaIdx >= 20) { finalizarPartida(); return; }
         let p = perguntasPartida[perguntaIdx];
         document.getElementById('pergunta').innerHTML = `${p.fA} x ${p.fB} = ?`;
         respostaCorreta = p.resposta;
         let opcoes = [respostaCorreta];
-        while(opcoes.length<4) { let r = respostaCorreta + (Math.floor(Math.random()*13)-6); if(r!==respostaCorreta && r>=0 && r<=120 && !opcoes.includes(r)) opcoes.push(r); }
-        opcoes.sort(()=>Math.random()-0.5);
-        let botoes = document.querySelectorAll('.opcao');
-        botoes.forEach((btn,i)=>{ btn.innerText=opcoes[i]; btn.disabled=false; });
+        while(opcoes.length < 4) {
+            let r = respostaCorreta + (Math.floor(Math.random()*13)-6);
+            if(r !== respostaCorreta && r >= 0 && r <= 120 && !opcoes.includes(r)) opcoes.push(r);
+        }
+        // Ordenar em ordem crescente
+        opcoes.sort((a,b)=>a-b);
+        let container = document.getElementById('opcoes');
+        container.innerHTML = '';
+        for(let i=0;i<opcoes.length;i++) {
+            let btn = document.createElement('button');
+            btn.className = 'opcao';
+            btn.innerText = opcoes[i];
+            btn.onclick = (function(idx){ return function(){ window.responder(idx); }; })(i);
+            container.appendChild(btn);
+        }
         document.getElementById('pergunta-num').innerText = perguntaIdx+1;
         iniciarTimer();
     }
     async function finalizarPartida() {
-        jogoAtivo=false;
+        jogoAtivo = false;
         clearInterval(timerInterval);
+        clearInterval(barraInterval);
         let fase = estadoAtual.faseAtual;
         let tempoMedio = temposPartida.length ? temposPartida.reduce((a,b)=>a+b)/temposPartida.length : null;
         await estadoRef.child(`resultadosFase/${fase}/r${partidaSendoJogada}p/${alunoId}`).set({pontos:pontosPartida, tempoMedio, maiorSequencia:maiorSequenciaPartida});
@@ -456,10 +534,11 @@
     function responder(escolhaIdx) {
         if(!jogoAtivo) return;
         clearInterval(timerInterval);
+        clearInterval(barraInterval);
+        let botoes = document.querySelectorAll('.opcao');
         let acertou = false;
-        if(escolhaIdx !== -1) {
-            let btn = document.querySelectorAll('.opcao')[escolhaIdx];
-            if(parseInt(btn.innerText) === respostaCorreta) acertou = true;
+        if(escolhaIdx !== -1 && botoes[escolhaIdx]) {
+            if(parseInt(botoes[escolhaIdx].innerText) === respostaCorreta) acertou = true;
         }
         if(acertou) {
             let tempoGasto = 10 - tempoRestante;
@@ -508,7 +587,7 @@
         proximaPergunta();
     }
 
-    // ========== INTERFACE DO ALUNO (RANKING CORRIGIDO) ==========
+    // ========== INTERFACE DO ALUNO ==========
     async function atualizarInterfaceAluno() {
         if(!estadoAtual || !alunoId || meuTipo !== 'aluno') return;
         let fase = estadoAtual.faseAtual;
@@ -538,27 +617,9 @@
             document.getElementById('conteudo-ranking-aluno').innerHTML = '<div class="loading">Nenhum participante ainda.</div>'; 
             return; 
         }
-        let html = '<table class="ranking-table">' +
-            '<thead><tr>' +
-            '<th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th>' +
-            '<th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th>' +
-            '<th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th>' +
-            '</tr></thead><tbody>';
+        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th><th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>';
         for(let r of ranking) {
-            html += '<tr>' +
-                '<td style="text-align:center">' + r.pos + 'º</td>' +
-                '<td style="text-align:left">' + escapeHtml(r.nome) + '</td>' +
-                '<td style="text-align:center">' + escapeHtml(r.turma) + '</td>' +
-                '<td style="text-align:center">' + r.total + '</td>' +
-                '<td style="text-align:center">' + r.gap + '</td>' +
-                '<td style="text-align:center">' + r.posRodada + '</td>' +
-                '<td style="text-align:center">' + r.pontRodadaAnterior + '</td>' +
-                '<td style="text-align:center">' + r.pontRodadaAtual + '</td>' +
-                '<td style="text-align:center">' + r.evolucao + '</td>' +
-                '<td style="text-align:center">' + r.melhorPontuacao + '</td>' +
-                '<td style="text-align:center">' + r.partidas + '</td>' +
-                '<td style="text-align:center">' + r.classificado + '</td>' +
-                '</tr>';
+            html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
         }
         html += '</tbody></table>';
         document.getElementById('conteudo-ranking-aluno').innerHTML = html;
@@ -621,27 +682,9 @@
             document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum participante.</p>'; 
             return; 
         }
-        let html = '<table class="ranking-table">' +
-            '<thead><tr>' +
-            '<th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th>' +
-            '<th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th>' +
-            '<th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th>' +
-            '</tr></thead><tbody>';
+        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th><th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>';
         for(let r of ranking) {
-            html += '<tr>' +
-                '<td style="text-align:center">' + r.pos + 'º</td>' +
-                '<td style="text-align:left">' + escapeHtml(r.nome) + '</td>' +
-                '<td style="text-align:center">' + escapeHtml(r.turma) + '</td>' +
-                '<td style="text-align:center">' + r.total + '</td>' +
-                '<td style="text-align:center">' + r.gap + '</td>' +
-                '<td style="text-align:center">' + r.posRodada + '</td>' +
-                '<td style="text-align:center">' + r.pontRodadaAnterior + '</td>' +
-                '<td style="text-align:center">' + r.pontRodadaAtual + '</td>' +
-                '<td style="text-align:center">' + r.evolucao + '</td>' +
-                '<td style="text-align:center">' + r.melhorPontuacao + '</td>' +
-                '<td style="text-align:center">' + r.partidas + '</td>' +
-                '<td style="text-align:center">' + r.classificado + '</td>' +
-                '</tr>';
+            html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
         }
         html += '</tbody></table>';
         document.getElementById('ranking-parcial').innerHTML = html;
@@ -654,34 +697,15 @@
             document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum participante.</p>'; 
             return; 
         }
-        let html = '<table class="ranking-table">' +
-            '<thead><tr>' +
-            '<th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th>' +
-            '<th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th>' +
-            '<th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th>' +
-            '</tr></thead><tbody>';
+        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th><th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th><tr></thead><tbody>';
         for(let r of ranking) {
-            html += '<tr>' +
-                '<td style="text-align:center">' + r.pos + 'º</td>' +
-                '<td style="text-align:left">' + escapeHtml(r.nome) + '</td>' +
-                '<td style="text-align:center">' + escapeHtml(r.turma) + '</td>' +
-                '<td style="text-align:center">' + r.total + '</td>' +
-                '<td style="text-align:center">' + r.gap + '</td>' +
-                '<td style="text-align:center">' + r.posRodada + '</td>' +
-                '<td style="text-align:center">' + r.pontRodadaAnterior + '</td>' +
-                '<td style="text-align:center">' + r.pontRodadaAtual + '</td>' +
-                '<td style="text-align:center">' + r.evolucao + '</td>' +
-                '<td style="text-align:center">' + r.melhorPontuacao + '</td>' +
-                '<td style="text-align:center">' + r.partidas + '</td>' +
-                '<td style="text-align:center">' + r.classificado + '</td>' +
-                '</tr>';
+            html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
         }
         html += '</tbody></table>';
         document.getElementById('ranking-parcial').innerHTML = html;
         document.getElementById('ranking-titulo').innerText = `Fase ${estadoAtual.faseAtual} (Atual)`;
     }
 
-    // ========== TELA DE TORCIDA (RANKING CORRIGIDO) ==========
     async function exibirRankingTorcida() {
         let fase = parseInt(document.getElementById('seletor-fase-torcida').value);
         let snap = await db.ref(`fases/${fase}`).once('value');
@@ -697,27 +721,9 @@
         if(ranking.length === 0) {
             html += '<p>Nenhum participante.</p>';
         } else {
-            html += '<table class="ranking-table">' +
-                '<thead><tr>' +
-                '<th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th>' +
-                '<th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th>' +
-                '<th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th>' +
-                '</tr></thead><tbody>';
+            html += '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Pos Rodada</th><th>Rodada Anterior</th><th>Rodada Atual</th><th>Evolução</th><th>Melhor Pontuação</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>';
             for(let r of ranking) {
-                html += '<tr>' +
-                    '<td style="text-align:center">' + r.pos + 'º</td>' +
-                    '<td style="text-align:left">' + escapeHtml(r.nome) + '</td>' +
-                    '<td style="text-align:center">' + escapeHtml(r.turma) + '</td>' +
-                    '<td style="text-align:center">' + r.total + '</td>' +
-                    '<td style="text-align:center">' + r.gap + '</td>' +
-                    '<td style="text-align:center">' + r.posRodada + '</td>' +
-                    '<td style="text-align:center">' + r.pontRodadaAnterior + '</td>' +
-                    '<td style="text-align:center">' + r.pontRodadaAtual + '</td>' +
-                    '<td style="text-align:center">' + r.evolucao + '</td>' +
-                    '<td style="text-align:center">' + r.melhorPontuacao + '</td>' +
-                    '<td style="text-align:center">' + r.partidas + '</td>' +
-                    '<td style="text-align:center">' + r.classificado + '</td>' +
-                    '</tr>';
+                html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
             }
             html += '</tbody></table>';
         }
@@ -877,7 +883,7 @@
         if(progresso >= 4) { mostrarToast("Já completou todas."); return; }
         iniciarPartidaEspecifica(progresso+1);
     });
-    document.getElementById('btn-cancelar-jogo')?.addEventListener('click', ()=>{ jogoAtivo=false; clearInterval(timerInterval); document.getElementById('jogo-area').classList.add('hidden'); document.getElementById('aguardando').classList.remove('hidden'); });
+    document.getElementById('btn-cancelar-jogo')?.addEventListener('click', ()=>{ jogoAtivo=false; clearInterval(timerInterval); clearInterval(barraInterval); document.getElementById('jogo-area').classList.add('hidden'); document.getElementById('aguardando').classList.remove('hidden'); });
     document.getElementById('btn-sair-aluno')?.addEventListener('click', ()=>location.reload());
     document.getElementById('btn-sair-projecao')?.addEventListener('click', ()=>location.reload());
     document.getElementById('btn-carregar-historico')?.addEventListener('click', async () => { let fase = parseInt(document.getElementById('seletor-fase-historico').value); await mostrarRankingHistorico(fase); });
