@@ -240,7 +240,7 @@
     const db = firebase.database();
 
     // ========== VARIÁVEIS GLOBAIS ==========
-    let meuTipo = null; // 'professor', 'aluno', 'projecao'
+    let meuTipo = null;
     let alunoId = null, alunoNome = null, alunoTurma = null;
     let estadoRef = null, estadoAtual = null;
     let jogoAtivo = false;
@@ -248,7 +248,6 @@
     let timerInterval = null, tempoRestante = 10;
     let temposPartida = [], maiorSequenciaPartida = 0, sequenciaAtualPartida = 0, acertosConsecutivos = 0;
     let partidaSendoJogada = 1;
-    let faseHistoricoCarregada = null;
 
     const DIFICULDADES_POR_PARTIDA = ["Fácil (2-5)", "Médio (6-9)", "Difícil (0-10 peso 7-9)", "Equilibrado (0-10)"];
     const CLASSIFICADOS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 4 };
@@ -560,7 +559,7 @@
         proximaPergunta();
     }
 
-    // ========== INTERFACE DO ALUNO (COM RANKING) ==========
+    // ========== INTERFACE DO ALUNO ==========
     async function atualizarInterfaceAluno() {
         if (!estadoAtual || !alunoId || meuTipo !== 'aluno') return;
         const fase = estadoAtual.faseAtual;
@@ -599,10 +598,10 @@
         } else {
             document.getElementById('aguardando').classList.add('hidden');
         }
-        // Exibir ranking completo para o aluno
+        // Exibir ranking (mesmo que vazio)
         const ranking = await gerarRankingCompleto(estadoAtual, fase);
         if (ranking.length === 0) {
-            document.getElementById('conteudo-ranking-aluno').innerHTML = '<div class="loading">Nenhum participante ainda.</div>';
+            document.getElementById('conteudo-ranking-aluno').innerHTML = '<div class="loading">Nenhum participante inscrito ainda.</div>';
             return;
         }
         let html = `<table class="ranking-table">
@@ -613,8 +612,8 @@
                         <tbody>`;
         for (const r of ranking) {
             html += `<tr><td style="text-align:center">${r.pos}º</td>
-                          <td>${escapeHtml(r.nome)}</td>
-                          <td>${escapeHtml(r.turma)}</td>
+                           <td>${escapeHtml(r.nome)}</td>
+                           <td>${escapeHtml(r.turma)}</td>
                           <td style="text-align:center">${r.totalPontos}</td>
                           <td style="text-align:center">${r.gapTexto}</td>
                           <td style="text-align:center">${r.atualPos}</td>
@@ -637,7 +636,7 @@
         await estadoRef.child(`resultadosFase/${fase}`).remove();
         await db.ref('progressoAluno').once('value', snap => {
             snap.forEach(child => {
-                if (child.key.startsWith(`fase${fase}`)) child.ref.remove();
+                if (child.key.includes(`fase${fase}`)) child.ref.remove();
             });
         });
         await estadoRef.update({ status: 'aguardando' });
@@ -701,8 +700,8 @@
         let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
         for (const r of ranking) {
             html += `<tr><td style="text-align:center">${r.pos}º</td>
-                          <td>${escapeHtml(r.nome)}</td>
-                          <td>${escapeHtml(r.turma)}</td>
+                           <td>${escapeHtml(r.nome)}</td>
+                           <td>${escapeHtml(r.turma)}</td>
                           <td style="text-align:center">${r.totalPontos}</td>
                           <td style="text-align:center">${r.gapTexto}</td>
                           <td style="text-align:center">${r.atualPos}</td>
@@ -712,7 +711,7 @@
                           <td style="text-align:center">${r.vitorias}</td>
                           <td style="text-align:center">${r.partidasStr}</td>
                           <td style="text-align:center">${r.classificado}</td>
-                        </tr>`;
+                        </table>`;
         }
         html += `</tbody>赶`;
         document.getElementById('ranking-parcial').innerHTML = html;
@@ -723,14 +722,14 @@
         const fase = estadoAtual.faseAtual;
         const ranking = await gerarRankingCompleto(estadoAtual, fase);
         if (ranking.length === 0) {
-            document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum participante.</p>';
+            document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum participante inscrito.</p>';
             return;
         }
-        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th><tr></thead><tbody>`;
+        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
         for (const r of ranking) {
             html += `<tr><td style="text-align:center">${r.pos}º</td>
-                          <td>${escapeHtml(r.nome)}</td>
-                          <td>${escapeHtml(r.turma)}</td>
+                           <td>${escapeHtml(r.nome)}</td>
+                           <td>${escapeHtml(r.turma)}</td>
                           <td style="text-align:center">${r.totalPontos}</td>
                           <td style="text-align:center">${r.gapTexto}</td>
                           <td style="text-align:center">${r.atualPos}</td>
@@ -765,8 +764,8 @@
             html += `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
             for (const r of ranking) {
                 html += `<tr><td style="text-align:center">${r.pos}º</td>
-                              <td>${escapeHtml(r.nome)}</td>
-                              <td>${escapeHtml(r.turma)}</td>
+                               <td>${escapeHtml(r.nome)}</td>
+                               <td>${escapeHtml(r.turma)}</td>
                               <td style="text-align:center">${r.totalPontos}</td>
                               <td style="text-align:center">${r.gapTexto}</td>
                               <td style="text-align:center">${r.atualPos}</td>
@@ -776,7 +775,7 @@
                               <td style="text-align:center">${r.vitorias}</td>
                               <td style="text-align:center">${r.partidasStr}</td>
                               <td style="text-align:center">${r.classificado}</td>
-                            </tr>`;
+                            </table>`;
             }
             html += `</tbody>赶`;
         }
@@ -911,9 +910,8 @@
         if (!participantes.find(p => p.id === alunoId)) {
             await estadoRef.child('participantes').push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
         }
-        // Aguarda um pouco para garantir que o Firebase sincronizou
+        // Força a atualização da interface após garantir que o Firebase sincronizou
         setTimeout(() => atualizarInterfaceAluno(), 500);
-        // Também escuta mudanças futuras
         estadoRef.on('value', () => { if (meuTipo === 'aluno') atualizarInterfaceAluno(); });
     });
     document.getElementById('btn-projecao')?.addEventListener('click', async () => {
