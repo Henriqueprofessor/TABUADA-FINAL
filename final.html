@@ -110,7 +110,7 @@
 <div class="container">
     <div class="card">
         <h1>🏆 COPA TABUADA CEIB 2026 - FASES ELIMINATÓRIAS</h1>
-        <p>Fase atual: <strong id="fase-atual-titulo">1</strong> • <span id="status-fase">Aguardando</span></p>
+        <p>Fase atual: <strong id="fase-atual-titulo">--</strong> • <span id="status-fase">Carregando...</span></p>
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0;">
             <button id="btn-professor" class="btn-primary">👨‍🏫 Entrar como Professor</button>
             <button id="btn-aluno">🎮 Entrar como Aluno</button>
@@ -123,8 +123,8 @@
         <h2>🔧 Painel do Professor</h2>
         <div class="flex-grid">
             <div>
-                <h3>Controle da Fase <span id="fase-num">1</span>/4</h3>
-                <p>Status: <strong id="status-fase-prof">aguardando</strong></p>
+                <h3>Controle da Fase <span id="fase-num">--</span>/4</h3>
+                <p>Status: <strong id="status-fase-prof">carregando...</strong></p>
                 <button id="btn-liberar-fase" class="btn-success">🔓 Liberar Fase (alunos podem jogar)</button>
                 <button id="btn-finalizar-fase" class="btn-danger">🔒 Finalizar Fase (bloquear novos jogos)</button>
                 <hr>
@@ -134,8 +134,8 @@
                 <button id="btn-voltar-inicio" class="btn-primary">🏠 Voltar ao Início</button>
             </div>
             <div>
-                <h3>Participantes da Fase <span id="fase-participantes-num">1</span></h3>
-                <div id="lista-participantes" style="max-height: 250px; overflow-y: auto;"></div>
+                <h3>Participantes da Fase <span id="fase-participantes-num">--</span></h3>
+                <div id="lista-participantes" style="max-height: 250px; overflow-y: auto;"><div class="loading">Carregando...</div></div>
                 <button id="btn-adicionar-aluno" class="btn-primary">➕ Adicionar Aluno (inscrição manual)</button>
                 <hr>
                 <h3>Gerenciar Turmas</h3>
@@ -157,7 +157,7 @@
             </div>
         </div>
         <h3>Ranking da <span id="ranking-titulo">Fase Atual</span></h3>
-        <div id="ranking-parcial" class="status-box"></div>
+        <div id="ranking-parcial" class="status-box"><div class="loading">Carregando...</div></div>
     </div>
 
     <!-- TELA DO ALUNO -->
@@ -165,12 +165,12 @@
         <h2 id="aluno-nome">Aluno</h2>
         <p>Turma: <span id="aluno-turma">-</span></p>
         <div class="progresso-aluno">
-            <p><strong>📊 Fase <span id="aluno-fase">-</span> - Seu progresso</strong></p>
+            <p><strong>📊 Fase <span id="aluno-fase">--</span> - Seu progresso</strong></p>
             <p>Partidas concluídas: <span id="partidas-feitas">0</span> / 4</p>
             <p>Total de pontos na fase: <strong id="aluno-pontos-total">0</strong></p>
             <button id="btn-jogar-proxima" class="btn-jogar" disabled>▶️ Jogar Próxima Partida</button>
-            <div id="msg-fase-finalizada" class="hidden" style="margin-top: 10px; color: #f39c12;">🏁 Você completou todas as 4 partidas desta fase! Aguarde a próxima fase ser liberada.</div>
-            <div id="msg-fase-bloqueada" class="hidden" style="margin-top: 10px; color: #e74c3c;">⛔ A fase não está liberada. Aguarde o professor.</div>
+            <div id="msg-fase-finalizada" class="hidden">🏁 Você completou todas as 4 partidas! Aguarde próxima fase.</div>
+            <div id="msg-fase-bloqueada" class="hidden">⛔ A fase não está liberada. Aguarde o professor.</div>
         </div>
         <div id="jogo-area" class="hidden">
             <div class="status-box">
@@ -182,44 +182,26 @@
                     <button class="opcao btn-primary" onclick="window.responder(2)"></button>
                     <button class="opcao btn-primary" onclick="window.responder(3)"></button>
                 </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span>Pergunta: <span id="pergunta-num">1</span>/20</span>
-                    <span>Tempo: <span id="timer" class="timer-grande timer-normal">10.0s</span></span>
-                </div>
+                <div><span>Pergunta: <span id="pergunta-num">1</span>/20</span> <span>Tempo: <span id="timer" class="timer-grande timer-normal">10.0s</span></span></div>
                 <p>Pontos nesta partida: <strong id="pontos-partida">0</strong></p>
             </div>
-            <button id="btn-cancelar-jogo" class="btn-danger" style="margin-top: 10px;">❌ Cancelar e voltar</button>
+            <button id="btn-cancelar-jogo" class="btn-danger">❌ Cancelar</button>
         </div>
-        <div id="aguardando" class="hidden" style="text-align: center; padding: 40px;">
-            ⏳ Aguardando liberação da fase pelo professor...
-        </div>
-        <div id="ranking-aluno" class="status-box">
-            <h3>Ranking da Fase</h3>
-            <div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div>
-        </div>
-        <button id="btn-sair-aluno" style="margin-top: 20px;">⬅️ Sair</button>
+        <div id="aguardando" class="hidden" style="text-align: center; padding: 40px;">⏳ Aguardando liberação da fase...</div>
+        <div id="ranking-aluno" class="status-box"><h3>Ranking da Fase</h3><div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div></div>
+        <button id="btn-sair-aluno">⬅️ Sair</button>
     </div>
 
     <!-- TELA DE PROJEÇÃO (TORCIDA) -->
     <div id="tela-projecao" class="card hidden">
         <h2>📺 COPA TABUADA CEIB 2026 - TORCIDA</h2>
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-            <div id="projecao-status" class="status-box" style="flex:2;">Aguardando início da fase...</div>
-            <div style="margin-left: 16px;">
-                <label>Ver Fase:</label>
-                <select id="seletor-fase-torcida" class="select-fase">
-                    <option value="1">Fase 1</option>
-                    <option value="2">Fase 2</option>
-                    <option value="3">Fase 3</option>
-                    <option value="4">Fase 4</option>
-                </select>
-                <button id="btn-torcida-carregar" class="btn-small">Carregar</button>
-            </div>
+        <div style="display: flex; justify-content: space-between;">
+            <div id="projecao-status" class="status-box">Carregando...</div>
+            <div><label>Fase:</label><select id="seletor-fase-torcida"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select><button id="btn-torcida-carregar" class="btn-small">Carregar</button></div>
         </div>
         <div id="info-vagas" class="info-vagas"></div>
-        <div id="projecao-ranking" class="status-box"></div>
-        <div id="projecao-chaveamento" class="status-box hidden"></div>
-        <button id="btn-sair-projecao">⬅️ Voltar</button>
+        <div id="projecao-ranking" class="status-box"><div class="loading">Carregando...</div></div>
+        <button id="btn-sair-projecao">Voltar</button>
     </div>
 </div>
 <div id="toast" class="toast hidden"></div>
@@ -238,7 +220,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ========== VARIÁVEIS GLOBAIS ==========
     let meuTipo = null;
     let alunoId = null, alunoNome = null, alunoTurma = null;
     let estadoRef = null;
@@ -248,298 +229,210 @@
     let timerInterval = null, tempoRestante = 10;
     let temposPartida = [], maiorSequenciaPartida = 0, sequenciaAtualPartida = 0, acertosConsecutivos = 0;
     let partidaSendoJogada = 1;
-    let estadoInicializado = false;
-
-    const DIFICULDADES_POR_PARTIDA = ["Fácil (2-5)", "Médio (6-9)", "Difícil (0-10 peso 7-9)", "Equilibrado (0-10)"];
+    let estadoPronto = false;
+    const DIFICULDADES = ["Fácil (2-5)", "Médio (6-9)", "Difícil (0-10 peso 7-9)", "Equilibrado (0-10)"];
     const CLASSIFICADOS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 4 };
-    let turmasDisponiveis = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
+    let turmasDisponiveis = ["901","1001","1002","1003","1004","2001","2002","2003","3001","3002"];
 
     // ========== FUNÇÕES AUXILIARES ==========
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-    function capitalizarNome(nome) {
-        if (!nome) return '';
-        return nome.toLowerCase().split(' ').map(palavra => palavra.charAt(0).toUpperCase() + palavra.slice(1)).join(' ');
-    }
-    function gerarIdEstavel(nome, turma) {
-        const nomeNormalizado = nome.toLowerCase().trim();
-        return btoa(nomeNormalizado + "|" + turma).slice(0, 16);
-    }
-    function getParticipantesArray(estado) {
-        if (!estado || !estado.participantes) return [];
-        if (Array.isArray(estado.participantes)) return estado.participantes;
-        // Se for objeto (quando convertido por push do Firebase), converte para array
-        return Object.values(estado.participantes);
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'); }
+    function capitalizarNome(nome) { return nome.toLowerCase().split(' ').map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' '); }
+    function gerarIdEstavel(nome, turma) { return btoa(nome.toLowerCase().trim()+"|"+turma).slice(0,16); }
+    function getParticipantesArray(estado) { 
+        if(!estado || !estado.participantes) return [];
+        return Array.isArray(estado.participantes) ? estado.participantes : Object.values(estado.participantes);
     }
     function alunoJaJogouPartida(estado, alunoId, fase, partida) {
         const chave = `r${partida}p`;
-        const resultadosFase = estado.resultadosFase && estado.resultadosFase[fase];
-        if (!resultadosFase) return false;
-        return !!(resultadosFase[chave] && resultadosFase[chave][alunoId] && resultadosFase[chave][alunoId].pontos > 0);
+        return !!(estado.resultadosFase?.[fase]?.[chave]?.[alunoId]?.pontos > 0);
     }
-    function getEstatisticasAlunoNaFase(estado, alunoId, fase) {
-        let totalPontos = 0, partidasJogadas = 0, melhorTempo = null;
-        const resultadosFase = estado.resultadosFase && estado.resultadosFase[fase];
-        if (resultadosFase) {
-            for (let i = 1; i <= 4; i++) {
-                const chave = `r${i}p`;
-                const dados = resultadosFase[chave] ? resultadosFase[chave][alunoId] : null;
-                if (dados && dados.pontos > 0) {
-                    totalPontos += dados.pontos;
-                    partidasJogadas++;
-                    if (dados.tempoMedio && (melhorTempo === null || dados.tempoMedio < melhorTempo)) melhorTempo = dados.tempoMedio;
-                }
-            }
+    function getPontosAluno(estado, id, fase) {
+        let total=0, jogadas=0, melhorT=null;
+        for(let i=1;i<=4;i++) {
+            let d = estado.resultadosFase?.[fase]?.[`r${i}p`]?.[id];
+            if(d?.pontos > 0) { total+=d.pontos; jogadas++; if(d.tempoMedio && (melhorT===null || d.tempoMedio<melhorT)) melhorT=d.tempoMedio; }
         }
-        return { totalPontos, partidasJogadas, melhorTempo };
+        return {total, jogadas, melhorT};
     }
-    async function getProgressoAluno(alunoId, fase) {
-        const snap = await db.ref(`progressoAluno/${alunoId}/fase${fase}`).once('value');
-        return snap.val() || 0;
-    }
-    async function setProgressoAluno(alunoId, fase, partidasCompletadas) {
-        await db.ref(`progressoAluno/${alunoId}/fase${fase}`).set(partidasCompletadas);
-    }
+    async function getProgresso(id,fase) { return (await db.ref(`progressoAluno/${id}/fase${fase}`).once('value')).val() || 0; }
+    async function setProgresso(id,fase,val) { await db.ref(`progressoAluno/${id}/fase${fase}`).set(val); }
 
-    // ========== CÁLCULO DE MÉTRICAS AVANÇADAS ==========
-    async function calcularMetricasAvancadas(estado, fase) {
+    // ========== RANKING COMPLETO ==========
+    async function gerarRanking(estado, fase) {
         const participantes = getParticipantesArray(estado);
-        const resultadosFase = estado.resultadosFase && estado.resultadosFase[fase];
-        if (!resultadosFase) return { vitoriasMap: new Map(), ultimaPosMap: new Map(), pontuacaoPorPartidaMap: new Map() };
-        const vitoriasMap = new Map();
-        const ultimaPosMap = new Map();
-        const pontuacaoPorPartidaMap = new Map();
-        for (let i = 1; i <= 4; i++) {
-            const chave = `r${i}p`;
-            const partidaDados = resultadosFase[chave];
-            if (!partidaDados) continue;
-            const rankingPartida = [];
-            for (let p of participantes) {
-                const dados = partidaDados[p.id];
-                if (dados && dados.pontos) rankingPartida.push({ alunoId: p.id, pontos: dados.pontos });
+        if(participantes.length===0) return [];
+        let stats = [];
+        for(let p of participantes) {
+            const {total, jogadas, melhorT} = getPontosAluno(estado, p.id, fase);
+            stats.push({...p, total, jogadas, melhorT});
+        }
+        stats.sort((a,b)=>b.total - a.total);
+        // calcular vitórias e última posição
+        let vitorias = new Map(), ultimaPos = new Map(), pontuacaoPorPartida = new Map();
+        for(let i=1;i<=4;i++) {
+            let partida = estado.resultadosFase?.[fase]?.[`r${i}p`];
+            if(!partida) continue;
+            let rankingPartida = [];
+            for(let p of participantes) {
+                let pts = partida[p.id]?.pontos || 0;
+                if(pts>0) rankingPartida.push({id:p.id, pts});
             }
-            rankingPartida.sort((a,b) => b.pontos - a.pontos);
-            if (rankingPartida.length > 0) {
-                const vencedorId = rankingPartida[0].alunoId;
-                vitoriasMap.set(vencedorId, (vitoriasMap.get(vencedorId) || 0) + 1);
-                for (let idx=0; idx<rankingPartida.length; idx++) {
-                    const aid = rankingPartida[idx].alunoId;
-                    ultimaPosMap.set(aid, idx+1);
-                    if (!pontuacaoPorPartidaMap.has(aid)) pontuacaoPorPartidaMap.set(aid, []);
-                    pontuacaoPorPartidaMap.get(aid).push({ partida: i, pontos: rankingPartida[idx].pontos });
+            rankingPartida.sort((a,b)=>b.pts - a.pts);
+            if(rankingPartida.length){
+                vitorias.set(rankingPartida[0].id, (vitorias.get(rankingPartida[0].id)||0)+1);
+                for(let idx=0; idx<rankingPartida.length; idx++) {
+                    ultimaPos.set(rankingPartida[idx].id, idx+1);
+                    if(!pontuacaoPorPartida.has(rankingPartida[idx].id)) pontuacaoPorPartida.set(rankingPartida[idx].id, []);
+                    pontuacaoPorPartida.get(rankingPartida[idx].id).push({partida:i, pontos:rankingPartida[idx].pts});
                 }
             }
         }
-        return { vitoriasMap, ultimaPosMap, pontuacaoPorPartidaMap };
-    }
-    function calcularEvolucao(pontuacaoPorPartida) {
-        if (!pontuacaoPorPartida || pontuacaoPorPartida.length < 2) return null;
-        const ordenado = [...pontuacaoPorPartida].sort((a,b) => a.partida - b.partida);
-        const ultimo = ordenado[ordenado.length-1];
-        const penultimo = ordenado[ordenado.length-2];
-        if (penultimo.pontos === 0) return null;
-        return ((ultimo.pontos - penultimo.pontos) / penultimo.pontos) * 100;
-    }
-    async function gerarRankingCompleto(estado, fase) {
-        const participantes = getParticipantesArray(estado);
-        if (participantes.length === 0) return [];
-        const stats = [];
-        for (let p of participantes) {
-            const { totalPontos, partidasJogadas, melhorTempo } = getEstatisticasAlunoNaFase(estado, p.id, fase);
-            stats.push({ ...p, totalPontos, partidasJogadas, melhorTempo });
-        }
-        stats.sort((a,b) => b.totalPontos - a.totalPontos);
-        const metricas = await calcularMetricasAvancadas(estado, fase);
-        const { vitoriasMap, ultimaPosMap, pontuacaoPorPartidaMap } = metricas;
         const numVagas = CLASSIFICADOS_POR_FASE[fase];
-        const resultado = [];
-        for (let i=0; i<stats.length; i++) {
-            const p = stats[i];
-            const pos = i+1;
-            let gapTexto = "";
-            if (pos === 1) gapTexto = "–";
-            else if (pos <= numVagas) gapTexto = `-${stats[i-1].totalPontos - p.totalPontos}`;
-            else gapTexto = `-${stats[numVagas-1].totalPontos - p.totalPontos} (para ${numVagas}º)`;
-            const vitorias = vitoriasMap.get(p.id) || 0;
-            const ultimaPos = ultimaPosMap.get(p.id) || "—";
-            const melhorVoltaStr = p.melhorTempo ? `${p.melhorTempo.toFixed(2)}s` : "—";
-            const partidasStr = `${p.partidasJogadas}/4`;
-            const classificado = (pos <= numVagas) ? "✅ Sim" : "❌ Não";
-            let evolucaoHtml = "—";
-            const pontuacaoPartida = pontuacaoPorPartidaMap.get(p.id);
-            if (pontuacaoPartida && pontuacaoPartida.length >= 2) {
-                const evol = calcularEvolucao(pontuacaoPartida);
-                if (evol !== null) {
-                    const absEvol = Math.abs(evol).toFixed(1);
-                    if (evol > 0) evolucaoHtml = `<span class="trend-up">▲ +${absEvol}%</span>`;
-                    else if (evol < 0) evolucaoHtml = `<span class="trend-down">▼ ${absEvol}%</span>`;
-                    else evolucaoHtml = `<span class="trend-flat">► 0%</span>`;
+        let resultado = [];
+        for(let i=0;i<stats.length;i++) {
+            let p = stats[i];
+            let pos = i+1;
+            let gap = "";
+            if(pos===1) gap = "–";
+            else if(pos <= numVagas) gap = `-${stats[i-1].total - p.total}`;
+            else gap = `-${stats[numVagas-1].total - p.total} (para ${numVagas}º)`;
+            let evol = "—";
+            let lista = pontuacaoPorPartida.get(p.id);
+            if(lista && lista.length>=2) {
+                lista.sort((a,b)=>a.partida-b.partida);
+                let ult = lista[lista.length-1].pontos, pen = lista[lista.length-2].pontos;
+                if(pen) {
+                    let perc = ((ult-pen)/pen)*100;
+                    if(perc>0) evol = `<span class="trend-up">▲ +${perc.toFixed(1)}%</span>`;
+                    else if(perc<0) evol = `<span class="trend-down">▼ ${Math.abs(perc).toFixed(1)}%</span>`;
+                    else evol = `<span class="trend-flat">► 0%</span>`;
                 }
             }
             resultado.push({
-                pos, nome: p.nome, turma: p.turma, totalPontos: p.totalPontos,
-                gapTexto, atualPos: `${pos}º`, ultimaPos, evolucaoHtml,
-                melhorVoltaStr, vitorias, partidasStr, classificado
+                pos, nome:p.nome, turma:p.turma, total:p.total, gap,
+                atualPos:`${pos}º`, ultimaPos: ultimaPos.get(p.id) || "—",
+                evolucao: evol, melhorVolta: p.melhorT ? `${p.melhorT.toFixed(2)}s` : "—",
+                vitorias: vitorias.get(p.id) || 0, partidas: `${p.jogadas}/4`,
+                classificado: pos <= numVagas ? "✅ Sim" : "❌ Não"
             });
         }
         return resultado;
     }
 
-    // ========== JOGO (ALUNO) ==========
+    // ========== JOGO ==========
     async function gerarBanco(dificuldade) {
         let fatores = [];
-        if (dificuldade.includes("2-5")) fatores = [2,3,4,5];
-        else if (dificuldade.includes("6-9")) fatores = [6,7,8,9];
-        else if (dificuldade.includes("peso")) fatores = [0,1,2,3,4,5,6,7,8,9,10].filter(f => f>=7 || f<=3);
-        else fatores = [0,1,2,3,4,5,6,7,8,9,10];
-        let perguntas = [];
-        for (let i = 0; i < 20; i++) {
-            let fA = fatores[Math.floor(Math.random() * fatores.length)];
-            let fB = Math.floor(Math.random() * 11);
-            perguntas.push({ fA, fB, resposta: fA * fB });
+        if(dificuldade.includes("2-5")) fatores=[2,3,4,5];
+        else if(dificuldade.includes("6-9")) fatores=[6,7,8,9];
+        else if(dificuldade.includes("peso")) fatores=[0,1,2,3,4,5,6,7,8,9,10].filter(f=>f>=7||f<=3);
+        else fatores=[0,1,2,3,4,5,6,7,8,9,10];
+        let perguntas=[];
+        for(let i=0;i<20;i++) {
+            let a = fatores[Math.floor(Math.random()*fatores.length)];
+            let b = Math.floor(Math.random()*11);
+            perguntas.push({fA:a, fB:b, resposta:a*b});
         }
         return perguntas;
     }
     function dispararConfete() {
-        const canvas = document.getElementById('confetti-canvas');
-        const ctx = canvas.getContext('2d');
+        let canvas = document.getElementById('confetti-canvas');
+        let ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        const particles = [];
-        for (let i = 0; i < 50; i++) {
-            particles.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                radius: Math.random() * 5 + 2,
-                color: `hsl(${Math.random() * 360}, 70%, 60%)`,
-                vx: (Math.random() - 0.5) * 3,
-                vy: (Math.random() - 0.5) * 3 - 2,
-                alpha: 1
-            });
-        }
-        let animFrame;
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            let allDead = true;
-            for (let p of particles) {
-                if (p.alpha <= 0) continue;
-                allDead = false;
-                p.x += p.vx;
-                p.y += p.vy;
-                p.alpha -= 0.02;
-                ctx.globalAlpha = p.alpha;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.fill();
+        let parts = [];
+        for(let i=0;i<50;i++) parts.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*5+2, color:`hsl(${Math.random()*360},70%,60%)`, vx:(Math.random()-0.5)*3, vy:(Math.random()-0.5)*3-2, a:1});
+        let anim;
+        function draw(){
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            let vivos=false;
+            for(let p of parts){
+                if(p.a<=0) continue;
+                vivos=true;
+                p.x+=p.vx; p.y+=p.vy; p.a-=0.02;
+                ctx.globalAlpha=p.a;
+                ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=p.color; ctx.fill();
             }
-            if (allDead) cancelAnimationFrame(animFrame);
-            else animFrame = requestAnimationFrame(draw);
+            if(vivos) anim=requestAnimationFrame(draw);
+            else cancelAnimationFrame(anim);
         }
         draw();
-        setTimeout(() => cancelAnimationFrame(animFrame), 2000);
+        setTimeout(()=>cancelAnimationFrame(anim),2000);
     }
-    function iniciarTimerJogo() {
-        if (timerInterval) clearInterval(timerInterval);
-        tempoRestante = 10;
-        const timerElem = document.getElementById('timer');
-        timerElem.classList.remove('timer-alerta', 'timer-urgente');
+    function iniciarTimer() {
+        if(timerInterval) clearInterval(timerInterval);
+        tempoRestante=10;
+        let timerElem = document.getElementById('timer');
+        timerElem.classList.remove('timer-alerta','timer-urgente');
         timerElem.classList.add('timer-normal');
-        timerInterval = setInterval(() => {
-            if (!jogoAtivo) return;
-            tempoRestante -= 0.1;
+        timerInterval = setInterval(()=>{
+            if(!jogoAtivo) return;
+            tempoRestante-=0.1;
             timerElem.innerText = tempoRestante.toFixed(1);
-            if (tempoRestante <= 3 && tempoRestante > 1) {
-                timerElem.classList.remove('timer-normal');
-                timerElem.classList.add('timer-alerta');
-            } else if (tempoRestante <= 1) {
-                timerElem.classList.remove('timer-alerta');
-                timerElem.classList.add('timer-urgente');
-            }
-            if (tempoRestante <= 0) { clearInterval(timerInterval); window.responder(-1); }
-        }, 100);
+            if(tempoRestante<=3 && tempoRestante>1) { timerElem.classList.remove('timer-normal'); timerElem.classList.add('timer-alerta'); }
+            else if(tempoRestante<=1) { timerElem.classList.remove('timer-alerta'); timerElem.classList.add('timer-urgente'); }
+            if(tempoRestante<=0) { clearInterval(timerInterval); window.responder(-1); }
+        },100);
     }
     function proximaPergunta() {
-        if (perguntaIdx >= 20) { finalizarPartida(); return; }
+        if(perguntaIdx>=20) { finalizarPartida(); return; }
         let p = perguntasPartida[perguntaIdx];
         document.getElementById('pergunta').innerHTML = `${p.fA} x ${p.fB} = ?`;
         respostaCorreta = p.resposta;
         let opcoes = [respostaCorreta];
-        while(opcoes.length < 4) {
-            let r = respostaCorreta + (Math.floor(Math.random() * 13) - 6);
-            if (r !== respostaCorreta && r >= 0 && r <= 120 && !opcoes.includes(r)) opcoes.push(r);
-        }
-        opcoes.sort(() => Math.random() - 0.5);
+        while(opcoes.length<4) { let r = respostaCorreta + (Math.floor(Math.random()*13)-6); if(r!==respostaCorreta && r>=0 && r<=120 && !opcoes.includes(r)) opcoes.push(r); }
+        opcoes.sort(()=>Math.random()-0.5);
         let botoes = document.querySelectorAll('.opcao');
-        botoes.forEach((btn, i) => { btn.innerText = opcoes[i]; btn.disabled = false; });
+        botoes.forEach((btn,i)=>{ btn.innerText=opcoes[i]; btn.disabled=false; });
         document.getElementById('pergunta-num').innerText = perguntaIdx+1;
-        iniciarTimerJogo();
+        iniciarTimer();
     }
     async function finalizarPartida() {
-        jogoAtivo = false;
+        jogoAtivo=false;
         clearInterval(timerInterval);
-        const fase = estadoAtual.faseAtual;
-        const tempoMedio = temposPartida.length > 0 ? temposPartida.reduce((a,b) => a+b,0) / temposPartida.length : null;
-        const dadosPartida = { pontos: pontosPartida, tempoMedio: tempoMedio, maiorSequencia: maiorSequenciaPartida };
-        const chave = `r${partidaSendoJogada}p`;
-        const pathResultado = `resultadosFase/${fase}/${chave}/${alunoId}`;
-        const resultadosFase = estadoAtual.resultadosFase && estadoAtual.resultadosFase[fase];
-        const existe = resultadosFase && resultadosFase[chave] && resultadosFase[chave][alunoId];
-        if (!existe) await estadoRef.child(pathResultado).set(dadosPartida);
-        else mostrarToast("Você já tinha pontuação nesta partida.");
-        const progressoAtual = await getProgressoAluno(alunoId, fase);
-        if (partidaSendoJogada > progressoAtual) await setProgressoAluno(alunoId, fase, partidaSendoJogada);
+        let fase = estadoAtual.faseAtual;
+        let tempoMedio = temposPartida.length ? temposPartida.reduce((a,b)=>a+b)/temposPartida.length : null;
+        await estadoRef.child(`resultadosFase/${fase}/r${partidaSendoJogada}p/${alunoId}`).set({pontos:pontosPartida, tempoMedio, maiorSequencia:maiorSequenciaPartida});
+        let progresso = await getProgresso(alunoId, fase);
+        if(partidaSendoJogada > progresso) await setProgresso(alunoId, fase, partidaSendoJogada);
         document.getElementById('jogo-area').classList.add('hidden');
         document.getElementById('aguardando').classList.remove('hidden');
         mostrarToast(`Partida ${partidaSendoJogada} finalizada! Pontos: ${pontosPartida}`);
-        await atualizarInterfaceAluno();
+        if(meuTipo === 'aluno') await atualizarInterfaceAluno();
     }
     function responder(escolhaIdx) {
-        if (!jogoAtivo) return;
+        if(!jogoAtivo) return;
         clearInterval(timerInterval);
         let acertou = false;
-        if (escolhaIdx !== -1) {
+        if(escolhaIdx !== -1) {
             let btn = document.querySelectorAll('.opcao')[escolhaIdx];
-            if (parseInt(btn.innerText) === respostaCorreta) acertou = true;
+            if(parseInt(btn.innerText) === respostaCorreta) acertou = true;
         }
-        if (acertou) {
+        if(acertou) {
             let tempoGasto = 10 - tempoRestante;
-            const ganho = Math.floor(300 + (10 - tempoGasto) * 50);
-            pontosPartida += ganho;
+            pontosPartida += Math.floor(300 + (10 - tempoGasto) * 50);
             document.getElementById('pontos-partida').innerText = pontosPartida;
-            const pontosSpan = document.getElementById('pontos-partida');
-            pontosSpan.classList.add('pulse-pontos');
-            setTimeout(() => pontosSpan.classList.remove('pulse-pontos'), 300);
+            document.getElementById('pontos-partida').classList.add('pulse-pontos');
+            setTimeout(()=>document.getElementById('pontos-partida').classList.remove('pulse-pontos'),300);
             temposPartida.push(tempoGasto);
             sequenciaAtualPartida++;
-            if (sequenciaAtualPartida > maiorSequenciaPartida) maiorSequenciaPartida = sequenciaAtualPartida;
+            if(sequenciaAtualPartida > maiorSequenciaPartida) maiorSequenciaPartida = sequenciaAtualPartida;
             acertosConsecutivos++;
-            if (acertosConsecutivos % 3 === 0) dispararConfete();
+            if(acertosConsecutivos % 3 === 0) dispararConfete();
         } else {
             sequenciaAtualPartida = 0;
             acertosConsecutivos = 0;
         }
         perguntaIdx++;
-        if (perguntaIdx < 20) proximaPergunta();
+        if(perguntaIdx < 20) proximaPergunta();
         else finalizarPartida();
     }
     async function iniciarPartidaEspecifica(partidaNum) {
-        if (jogoAtivo) return;
-        const fase = estadoAtual.faseAtual;
-        if (alunoJaJogouPartida(estadoAtual, alunoId, fase, partidaNum)) {
-            mostrarToast(`Você já jogou a partida ${partidaNum}!`);
-            return;
-        }
-        const dificuldade = DIFICULDADES_POR_PARTIDA[partidaNum-1];
-        const bancoKey = `f${fase}p${partidaNum}`;
-        if (!estadoAtual.bancosFase[bancoKey]) {
+        if(jogoAtivo) return;
+        let fase = estadoAtual.faseAtual;
+        if(alunoJaJogouPartida(estadoAtual, alunoId, fase, partidaNum)) { mostrarToast("Você já jogou esta partida!"); return; }
+        let dificuldade = DIFICULDADES[partidaNum-1];
+        let bancoKey = `f${fase}p${partidaNum}`;
+        if(!estadoAtual.bancosFase?.[bancoKey]) {
             let perguntas = await gerarBanco(dificuldade);
             await estadoRef.child(`bancosFase/${bancoKey}`).set(perguntas);
             estadoAtual.bancosFase[bancoKey] = perguntas;
@@ -561,71 +454,36 @@
         proximaPergunta();
     }
 
-    // ========== INTERFACE DO ALUNO (COM RANKING) ==========
+    // ========== INTERFACE DO ALUNO ==========
     async function atualizarInterfaceAluno() {
-        if (!estadoAtual || !alunoId || meuTipo !== 'aluno') return;
-        const fase = estadoAtual.faseAtual;
-        if (fase === undefined) {
-            document.getElementById('conteudo-ranking-aluno').innerHTML = '<div class="loading">Aguardando dados da fase...</div>';
-            return;
-        }
-        const status = estadoAtual.status;
-        const progresso = await getProgressoAluno(alunoId, fase);
-        const { totalPontos } = getEstatisticasAlunoNaFase(estadoAtual, alunoId, fase);
+        if(!estadoAtual || !alunoId || meuTipo !== 'aluno') return;
+        let fase = estadoAtual.faseAtual;
+        let status = estadoAtual.status;
+        let progresso = await getProgresso(alunoId, fase);
+        let {total} = getPontosAluno(estadoAtual, alunoId, fase);
         document.getElementById('aluno-fase').innerText = fase;
         document.getElementById('partidas-feitas').innerText = progresso;
-        document.getElementById('aluno-pontos-total').innerText = totalPontos;
-        const podeJogar = (status === 'em_andamento' && progresso < 4);
-        const btnJogar = document.getElementById('btn-jogar-proxima');
-        if (podeJogar) {
-            btnJogar.disabled = false;
-            btnJogar.innerText = `▶️ Jogar Partida ${progresso+1}/4`;
+        document.getElementById('aluno-pontos-total').innerText = total;
+        let podeJogar = (status === 'em_andamento' && progresso < 4);
+        let btn = document.getElementById('btn-jogar-proxima');
+        if(podeJogar) {
+            btn.disabled = false;
+            btn.innerText = `▶️ Jogar Partida ${progresso+1}/4`;
             document.getElementById('msg-fase-finalizada').classList.add('hidden');
             document.getElementById('msg-fase-bloqueada').classList.add('hidden');
         } else {
-            btnJogar.disabled = true;
-            if (progresso >= 4) {
-                btnJogar.innerText = "✅ Todas as partidas concluídas";
-                document.getElementById('msg-fase-finalizada').classList.remove('hidden');
-                document.getElementById('msg-fase-bloqueada').classList.add('hidden');
-            } else {
-                btnJogar.innerText = "⏳ Fase não liberada";
-                document.getElementById('msg-fase-bloqueada').classList.remove('hidden');
-                document.getElementById('msg-fase-finalizada').classList.add('hidden');
-            }
+            btn.disabled = true;
+            if(progresso >= 4) { btn.innerText = "✅ Todas concluídas"; document.getElementById('msg-fase-finalizada').classList.remove('hidden'); }
+            else { btn.innerText = "⏳ Fase não liberada"; document.getElementById('msg-fase-bloqueada').classList.remove('hidden'); }
         }
-        if (status !== 'em_andamento' && progresso < 4) {
-            document.getElementById('aguardando').classList.remove('hidden');
-            document.getElementById('jogo-area').classList.add('hidden');
-        } else {
-            document.getElementById('aguardando').classList.add('hidden');
-        }
-        // Exibir ranking completo para o aluno
-        const ranking = await gerarRankingCompleto(estadoAtual, fase);
-        if (ranking.length === 0) {
-            document.getElementById('conteudo-ranking-aluno').innerHTML = '<div class="loading">Nenhum participante ainda.</div>';
-            return;
-        }
-        let html = `<table class="ranking-table">
-                        <thead>
-                            <tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-        for (const r of ranking) {
-            html += `<tr><td style="text-align:center">${r.pos}º</td>
-                            <td>${escapeHtml(r.nome)}</td>
-                            <td>${escapeHtml(r.turma)}</td>
-                            <td style="text-align:center">${r.totalPontos}</td>
-                            <td style="text-align:center">${r.gapTexto}</td>
-                            <td style="text-align:center">${r.atualPos}</td>
-                            <td style="text-align:center">${r.ultimaPos}º</td>
-                            <td style="text-align:center">${r.evolucaoHtml}</td>
-                            <td style="text-align:center">${r.melhorVoltaStr}</td>
-                            <td style="text-align:center">${r.vitorias}</td>
-                            <td style="text-align:center">${r.partidasStr}</td>
-                            <td style="text-align:center">${r.classificado}</td>
-                        </tr>`;
+        if(status !== 'em_andamento' && progresso < 4) document.getElementById('aguardando').classList.remove('hidden');
+        else document.getElementById('aguardando').classList.add('hidden');
+
+        let ranking = await gerarRanking(estadoAtual, fase);
+        if(ranking.length === 0) { document.getElementById('conteudo-ranking-aluno').innerHTML = '<div class="loading">Nenhum participante ainda.</div>'; return; }
+        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
+        for(let r of ranking) {
+            html += `<tr><td style="text-align:center">${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td>${r.total}</td><td>${r.gap}</td><td>${r.atualPos}</td><td>${r.ultimaPos}</td><td>${r.evolucao}</td><td>${r.melhorVolta}</td><td>${r.vitorias}</td><td>${r.partidas}</td><td>${r.classificado}</td></tr>`;
         }
         html += `</tbody>赶`;
         document.getElementById('conteudo-ranking-aluno').innerHTML = html;
@@ -633,386 +491,251 @@
 
     // ========== FUNÇÕES DO PROFESSOR ==========
     async function resetarFase() {
-        if (!confirm("Resetar fase atual? Todos os resultados e progresso serão perdidos.")) return;
-        const fase = estadoAtual.faseAtual;
+        if(!confirm("Resetar fase atual? Todos os dados serão perdidos.")) return;
+        let fase = estadoAtual.faseAtual;
         await estadoRef.child(`resultadosFase/${fase}`).remove();
-        await db.ref('progressoAluno').once('value', snap => {
-            snap.forEach(child => {
-                if (child.key.includes(`fase${fase}`)) child.ref.remove();
-            });
-        });
-        await estadoRef.update({ status: 'aguardando' });
+        await db.ref('progressoAluno').once('value', snap=>snap.forEach(c=>{if(c.key.includes(`fase${fase}`)) c.ref.remove();}));
+        await estadoRef.update({status:'aguardando'});
         mostrarToast(`Fase ${fase} resetada.`);
     }
     async function avancarFase() {
-        if (!estadoAtual) return;
-        if (estadoAtual.faseAtual >= 4) { mostrarToast("Última fase."); return; }
-        const faseAtual = estadoAtual.faseAtual;
-        await salvarFaseHistorico(faseAtual);
-        const novaFase = faseAtual + 1;
+        if(!estadoAtual || estadoAtual.faseAtual >= 4) { mostrarToast("Já na última fase."); return; }
+        let faseAtual = estadoAtual.faseAtual;
+        await db.ref(`fases/${faseAtual}/participantes`).set(getParticipantesArray(estadoAtual));
+        await db.ref(`fases/${faseAtual}/resultados`).set(estadoAtual.resultadosFase?.[faseAtual] || {});
+        let novaFase = faseAtual + 1;
         await estadoRef.child(`resultadosFase/${novaFase}`).remove();
-        await estadoRef.child(`participantes`).set([]);
-        await estadoRef.child(`bancosFase`).set({});
-        await estadoRef.update({ faseAtual: novaFase, partidaAtual: 1, status: 'aguardando' });
-        mostrarToast(`Avançou para Fase ${novaFase}. Os alunos devem se inscrever novamente.`);
+        await estadoRef.child('participantes').set([]);
+        await estadoRef.child('bancosFase').set({});
+        await estadoRef.update({faseAtual:novaFase, partidaAtual:1, status:'aguardando'});
+        mostrarToast(`Avançou para Fase ${novaFase}. Alunos devem se reinscrever.`);
     }
     async function removerDuplicados() {
-        const participantes = getParticipantesArray(estadoAtual);
-        const mapa = new Map();
-        const duplicados = [];
-        for (let p of participantes) {
-            const chave = `${p.nome.toLowerCase().trim()}|${p.turma}`;
-            if (mapa.has(chave)) duplicados.push(p.id);
+        let participantes = getParticipantesArray(estadoAtual);
+        let mapa = new Map(), dups = [];
+        for(let p of participantes) {
+            let chave = `${p.nome.toLowerCase().trim()}|${p.turma}`;
+            if(mapa.has(chave)) dups.push(p.id);
             else mapa.set(chave, p);
         }
-        if (duplicados.length === 0) { mostrarToast("Nenhum duplicado."); return; }
-        const novos = participantes.filter(p => !duplicados.includes(p.id));
+        if(dups.length===0) { mostrarToast("Nenhum duplicado."); return; }
+        let novos = participantes.filter(p=>!dups.includes(p.id));
         await estadoRef.child('participantes').set(novos);
-        mostrarToast(`${duplicados.length} duplicados removidos.`);
+        mostrarToast(`${dups.length} duplicados removidos.`);
     }
-    async function salvarFaseHistorico(fase) {
-        if (!estadoAtual) return;
-        const participantes = getParticipantesArray(estadoAtual);
-        const resultados = estadoAtual.resultadosFase && estadoAtual.resultadosFase[fase];
-        const bancos = {};
-        if (estadoAtual.bancosFase) {
-            for (let i=1; i<=4; i++) {
-                const key = `f${fase}p${i}`;
-                if (estadoAtual.bancosFase[key]) bancos[`r${i}p`] = estadoAtual.bancosFase[key];
-            }
-        }
-        await db.ref(`fases/${fase}/participantes`).set(participantes);
-        if (resultados) await db.ref(`fases/${fase}/resultados`).set(resultados);
-        if (Object.keys(bancos).length) await db.ref(`fases/${fase}/bancos`).set(bancos);
+    async function carregarTurmas() {
+        let snap = await db.ref('turmas').once('value');
+        if(snap.exists()) turmasDisponiveis = snap.val();
+        else await db.ref('turmas').set(turmasDisponiveis);
     }
-    async function exibirRankingFase(fase) {
-        const snap = await db.ref(`fases/${fase}`).once('value');
-        if (!snap.exists()) { document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum dado.</p>'; return; }
-        const dados = snap.val();
-        const estadoFake = {
-            participantes: dados.participantes || [],
-            resultadosFase: { [fase]: dados.resultados || {} },
-            bancosFase: dados.bancos || {}
-        };
-        const ranking = await gerarRankingCompleto(estadoFake, fase);
-        if (ranking.length === 0) {
-            document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum participante.</p>';
-            return;
-        }
+    async function salvarHistoricoFase(fase) {
+        if(!estadoAtual) return;
+        await db.ref(`fases/${fase}/participantes`).set(getParticipantesArray(estadoAtual));
+        await db.ref(`fases/${fase}/resultados`).set(estadoAtual.resultadosFase?.[fase] || {});
+        let bancos = {};
+        if(estadoAtual.bancosFase) for(let i=1;i<=4;i++) bancos[`r${i}p`] = estadoAtual.bancosFase[`f${fase}p${i}`];
+        await db.ref(`fases/${fase}/bancos`).set(bancos);
+    }
+    async function mostrarRankingHistorico(fase) {
+        let snap = await db.ref(`fases/${fase}`).once('value');
+        if(!snap.exists()) { document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum dado.</p>'; return; }
+        let dados = snap.val();
+        let estadoFake = {participantes: dados.participantes || [], resultadosFase: {[fase]: dados.resultados || {}}};
+        let ranking = await gerarRanking(estadoFake, fase);
         let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
-        for (const r of ranking) {
-            html += `<tr><td style="text-align:center">${r.pos}º</td>
-                            <td>${escapeHtml(r.nome)}</td>
-                            <td>${escapeHtml(r.turma)}</td>
-                            <td style="text-align:center">${r.totalPontos}</td>
-                            <td style="text-align:center">${r.gapTexto}</td>
-                            <td style="text-align:center">${r.atualPos}</td>
-                            <td style="text-align:center">${r.ultimaPos}º</td>
-                            <td style="text-align:center">${r.evolucaoHtml}</td>
-                            <td style="text-align:center">${r.melhorVoltaStr}</td>
-                            <td style="text-align:center">${r.vitorias}</td>
-                            <td style="text-align:center">${r.partidasStr}</td>
-                            <td style="text-align:center">${r.classificado}</td>
-                        </tr>`;
-        }
+        for(let r of ranking) html += `<tr><td>${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td>${r.total}</td><td>${r.gap}</td><td>${r.atualPos}</td><td>${r.ultimaPos}</td><td>${r.evolucao}</td><td>${r.melhorVolta}</td><td>${r.vitorias}</td><td>${r.partidas}</td><td>${r.classificado}</td></tr>`;
         html += `</tbody></table>`;
         document.getElementById('ranking-parcial').innerHTML = html;
         document.getElementById('ranking-titulo').innerText = `Fase ${fase}`;
     }
     async function exibirRankingAtualProfessor() {
-        if (!estadoAtual) return;
-        const fase = estadoAtual.faseAtual;
-        const ranking = await gerarRankingCompleto(estadoAtual, fase);
-        if (ranking.length === 0) {
-            document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum participante.</p>';
-            return;
-        }
+        if(!estadoAtual) return;
+        let ranking = await gerarRanking(estadoAtual, estadoAtual.faseAtual);
+        if(ranking.length===0) { document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum participante.</p>'; return; }
         let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
-        for (const r of ranking) {
-            html += `<tr><td style="text-align:center">${r.pos}º</td>
-                            <td>${escapeHtml(r.nome)}</td>
-                            <td>${escapeHtml(r.turma)}</td>
-                            <td style="text-align:center">${r.totalPontos}</td>
-                            <td style="text-align:center">${r.gapTexto}</td>
-                            <td style="text-align:center">${r.atualPos}</td>
-                            <td style="text-align:center">${r.ultimaPos}º</td>
-                            <td style="text-align:center">${r.evolucaoHtml}</td>
-                            <td style="text-align:center">${r.melhorVoltaStr}</td>
-                            <td style="text-align:center">${r.vitorias}</td>
-                            <td style="text-align:center">${r.partidasStr}</td>
-                            <td style="text-align:center">${r.classificado}</td>
-                        </tr>`;
-        }
+        for(let r of ranking) html += `<tr><td>${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td>${r.total}</td><td>${r.gap}</td><td>${r.atualPos}</td><td>${r.ultimaPos}</td><td>${r.evolucao}</td><td>${r.melhorVolta}</td><td>${r.vitorias}</td><td>${r.partidas}</td><td>${r.classificado}</td></tr>`;
         html += `</tbody></table>`;
         document.getElementById('ranking-parcial').innerHTML = html;
-        document.getElementById('ranking-titulo').innerText = `Fase ${fase} (Atual)`;
+        document.getElementById('ranking-titulo').innerText = `Fase ${estadoAtual.faseAtual} (Atual)`;
     }
     async function exibirRankingTorcida() {
-        const fase = parseInt(document.getElementById('seletor-fase-torcida').value);
-        const snap = await db.ref(`fases/${fase}`).once('value');
-        if (!snap.exists()) { document.getElementById('projecao-ranking').innerHTML = '<p>Nenhum dado.</p>'; return; }
-        const dados = snap.val();
-        const estadoFake = {
-            participantes: dados.participantes || [],
-            resultadosFase: { [fase]: dados.resultados || {} },
-            bancosFase: dados.bancos || {}
-        };
-        const ranking = await gerarRankingCompleto(estadoFake, fase);
-        const numVagas = CLASSIFICADOS_POR_FASE[fase];
+        let fase = parseInt(document.getElementById('seletor-fase-torcida').value);
+        let snap = await db.ref(`fases/${fase}`).once('value');
+        if(!snap.exists()) { document.getElementById('projecao-ranking').innerHTML = '<p>Nenhum dado.</p>'; return; }
+        let dados = snap.val();
+        let estadoFake = {participantes: dados.participantes || [], resultadosFase: {[fase]: dados.resultados || {}}};
+        let ranking = await gerarRanking(estadoFake, fase);
+        let numVagas = CLASSIFICADOS_POR_FASE[fase];
         let html = `<div class="info-vagas">🏆 ${numVagas} vagas para a próxima fase.</div>`;
-        if (ranking.length === 0) {
-            html += '<p>Nenhum participante.</p>';
-        } else {
+        if(ranking.length===0) html += '<p>Nenhum participante.</p>';
+        else {
             html += `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
-            for (const r of ranking) {
-                html += `<tr><td style="text-align:center">${r.pos}º</td>
-                                <td>${escapeHtml(r.nome)}</td>
-                                <td>${escapeHtml(r.turma)}</td>
-                                <td style="text-align:center">${r.totalPontos}</td>
-                                <td style="text-align:center">${r.gapTexto}</td>
-                                <td style="text-align:center">${r.atualPos}</td>
-                                <td style="text-align:center">${r.ultimaPos}º</td>
-                                <td style="text-align:center">${r.evolucaoHtml}</td>
-                                <td style="text-align:center">${r.melhorVoltaStr}</td>
-                                <td style="text-align:center">${r.vitorias}</td>
-                                <td style="text-align:center">${r.partidasStr}</td>
-                                <td style="text-align:center">${r.classificado}</td>
-                            <tr>`;
-            }
+            for(let r of ranking) html += `<tr><td>${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td>${r.total}</td><td>${r.gap}</td><td>${r.atualPos}</td><td>${r.ultimaPos}</td><td>${r.evolucao}</td><td>${r.melhorVolta}</td><td>${r.vitorias}</td><td>${r.partidas}</td><td>${r.classificado}</td></tr>`;
             html += `</tbody></table>`;
         }
         document.getElementById('projecao-ranking').innerHTML = html;
-        document.getElementById('info-vagas').innerHTML = `<div class="info-vagas">🏆 ${numVagas} vagas para a próxima fase.</div>`;
+        document.getElementById('info-vagas').innerHTML = `<div class="info-vagas">🏆 ${numVagas} vagas</div>`;
     }
 
-    // ========== INICIALIZAÇÃO GERAL ==========
+    // ========== INICIALIZAÇÃO PRINCIPAL ==========
     async function inicializarEstado() {
         estadoRef = db.ref('faseFinal');
-        // Aguarda o primeiro snapshot
-        const snap = await estadoRef.once('value');
-        if (!snap.exists()) {
+        let snap = await estadoRef.once('value');
+        if(!snap.exists()) {
             await estadoRef.set({
                 faseAtual: 1,
                 partidaAtual: 1,
                 status: 'aguardando',
                 participantes: [],
-                resultadosFase: { 1: {} },
-                bancosFase: {},
-                liberacoes: {}
+                resultadosFase: {1:{}},
+                bancosFase: {}
             });
         } else {
-            const dados = snap.val();
-            if (dados.participantes && !Array.isArray(dados.participantes)) await estadoRef.child('participantes').set(Object.values(dados.participantes));
-            if (!dados.resultadosFase) await estadoRef.child('resultadosFase').set({});
-            if (!dados.bancosFase) await estadoRef.child('bancosFase').set({});
+            let dados = snap.val();
+            if(dados.participantes && !Array.isArray(dados.participantes)) await estadoRef.child('participantes').set(Object.values(dados.participantes));
         }
-        // Agora inicia o listener contínuo
         estadoRef.on('value', (s) => {
             estadoAtual = s.val();
-            if (estadoAtual) {
-                if (estadoAtual.participantes && !Array.isArray(estadoAtual.participantes)) estadoAtual.participantes = Object.values(estadoAtual.participantes);
-                if (!estadoAtual.resultadosFase) estadoAtual.resultadosFase = {};
-                if (!estadoAtual.bancosFase) estadoAtual.bancosFase = {};
-            }
-            estadoInicializado = true;
+            if(estadoAtual && estadoAtual.participantes && !Array.isArray(estadoAtual.participantes)) estadoAtual.participantes = Object.values(estadoAtual.participantes);
+            estadoPronto = true;
             atualizarInterfaceGeral();
         });
     }
     function atualizarInterfaceGeral() {
-        if (!estadoAtual) return;
-        const fase = estadoAtual.faseAtual;
-        const status = estadoAtual.status;
+        if(!estadoAtual) return;
+        let fase = estadoAtual.faseAtual;
+        let status = estadoAtual.status;
         document.getElementById('fase-atual-titulo').innerText = fase;
         document.getElementById('status-fase').innerText = status === 'em_andamento' ? '🔓 Liberada' : '🔒 Aguardando';
-        if (meuTipo === 'professor') {
+        if(meuTipo === 'professor') {
             document.getElementById('fase-num').innerText = fase;
             document.getElementById('status-fase-prof').innerText = status;
-            // Renderiza participantes com listeners centralizados (usando data-id)
-            const participantes = getParticipantesArray(estadoAtual);
-            let html = '<ul style="list-style:none; padding-left:0;">';
-            participantes.forEach(p => {
-                html += `<li style="margin-bottom:8px;">
-                            <span>${escapeHtml(p.nome)} (${escapeHtml(p.turma)})</span>
-                            <button class="btn-editar btn-small" data-id="${p.id}">✏️</button>
-                            <button class="btn-excluir-aluno btn-small btn-excluir" data-id="${p.id}">🗑️</button>
-                         </li>`;
-            });
+            let participantes = getParticipantesArray(estadoAtual);
+            let html = '<ul>';
+            participantes.forEach(p => html += `<li>${escapeHtml(p.nome)} (${escapeHtml(p.turma)}) <button class="btn-editar" data-id="${p.id}">✏️</button> <button class="btn-excluir-aluno" data-id="${p.id}">🗑️</button></li>`);
             html += '</ul>';
             document.getElementById('lista-participantes').innerHTML = html;
             exibirRankingAtualProfessor();
-            let turmasHtml = '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
-            turmasDisponiveis.forEach(t => {
-                turmasHtml += `<div class="turma-badge">${escapeHtml(t)} <button class="btn-excluir-turma btn-small" data-turma="${t}" style="background:#a82313;">🗑️</button></div>`;
-            });
+            let turmasHtml = '<div>';
+            turmasDisponiveis.forEach(t => turmasHtml += `<span class="turma-badge">${escapeHtml(t)} <button class="btn-excluir-turma" data-turma="${t}">🗑️</button></span> `);
             turmasHtml += '</div>';
             document.getElementById('lista-turmas').innerHTML = turmasHtml;
-        } else if (meuTipo === 'aluno') {
+        } else if(meuTipo === 'aluno') {
             atualizarInterfaceAluno();
-        } else if (meuTipo === 'projecao') {
+        } else if(meuTipo === 'projecao') {
             exibirRankingTorcida();
-        }
-    }
-
-    // ========== AUXILIARES DO PROFESSOR ==========
-    async function carregarTurmas() {
-        const snap = await db.ref('turmas').once('value');
-        if (snap.exists()) turmasDisponiveis = snap.val();
-        else await db.ref('turmas').set(turmasDisponiveis);
-        return turmasDisponiveis;
-    }
-    async function editarNomeAluno(id, novoNome) {
-        if (!novoNome) return;
-        const participantes = getParticipantesArray(estadoAtual);
-        const novos = participantes.map(p => p.id === id ? { ...p, nome: capitalizarNome(novoNome) } : p);
-        await estadoRef.child('participantes').set(novos);
-        mostrarToast("Nome alterado.");
-    }
-    async function excluirAluno(id) {
-        if (!confirm("Excluir aluno da fase atual?")) return;
-        const participantes = getParticipantesArray(estadoAtual);
-        const novos = participantes.filter(p => p.id !== id);
-        await estadoRef.child('participantes').set(novos);
-        mostrarToast("Aluno removido.");
-    }
-    async function excluirTurma(turma) {
-        if (confirm(`Excluir turma ${turma}?`)) {
-            const participantes = getParticipantesArray(estadoAtual);
-            if (participantes.some(p => p.turma === turma)) { mostrarToast("Há alunos nessa turma na fase atual."); return; }
-            turmasDisponiveis = turmasDisponiveis.filter(t => t !== turma);
-            await db.ref('turmas').set(turmasDisponiveis);
-            mostrarToast(`Turma ${turma} excluída.`);
-            if (meuTipo === 'professor') atualizarInterfaceGeral();
         }
     }
 
     // ========== EVENTOS ==========
     document.getElementById('btn-professor')?.addEventListener('click', async () => {
         meuTipo = 'professor';
-        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
         document.getElementById('painel-professor').classList.remove('hidden');
         await carregarTurmas();
         await inicializarEstado();
     });
     document.getElementById('btn-aluno')?.addEventListener('click', async () => {
         await carregarTurmas();
-        if (!estadoInicializado) await inicializarEstado();
-        if (estadoAtual.status !== 'em_andamento') {
-            mostrarToast("A fase ainda não foi liberada pelo professor. Aguarde.");
-            return;
-        }
+        if(!estadoPronto) await inicializarEstado();
+        if(estadoAtual.status !== 'em_andamento') { mostrarToast("A fase não está liberada."); return; }
         let nome = prompt("Seu nome completo:");
-        if (!nome) return;
-        if (turmasDisponiveis.length === 0) { alert("Nenhuma turma cadastrada."); return; }
-        let turmaPrompt = "Escolha sua turma:\n" + turmasDisponiveis.map((t,i) => `${i+1} - ${t}`).join('\n');
-        let opcao = parseInt(prompt(turmaPrompt));
-        if (isNaN(opcao) || opcao < 1 || opcao > turmasDisponiveis.length) { mostrarToast("Turma inválida."); return; }
-        const turmaSelecionada = turmasDisponiveis[opcao-1];
-        const nomeCapitalizado = capitalizarNome(nome);
-        const idEstavel = gerarIdEstavel(nomeCapitalizado, turmaSelecionada);
-        alunoNome = nomeCapitalizado; alunoTurma = turmaSelecionada; alunoId = idEstavel;
+        if(!nome) return;
+        let turma = prompt("Escolha sua turma:\n" + turmasDisponiveis.map((t,i)=>`${i+1} - ${t}`).join('\n'));
+        let idx = parseInt(turma);
+        if(isNaN(idx) || idx<1 || idx>turmasDisponiveis.length) { mostrarToast("Turma inválida."); return; }
+        let turmaSel = turmasDisponiveis[idx-1];
+        let nomeCap = capitalizarNome(nome);
+        let idEst = gerarIdEstavel(nomeCap, turmaSel);
+        alunoNome = nomeCap; alunoTurma = turmaSel; alunoId = idEst;
         meuTipo = 'aluno';
-        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
         document.getElementById('tela-aluno').classList.remove('hidden');
         let participantes = getParticipantesArray(estadoAtual);
-        if (!participantes.find(p => p.id === alunoId)) {
-            participantes.push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
+        if(!participantes.find(p=>p.id===alunoId)) {
+            participantes.push({id:alunoId, nome:alunoNome, turma:alunoTurma});
             await estadoRef.child('participantes').set(participantes);
         }
         await atualizarInterfaceAluno();
-        // Escuta mudanças futuras para atualizar o ranking do aluno automaticamente
-        estadoRef.on('value', async () => { if (meuTipo === 'aluno') await atualizarInterfaceAluno(); });
+        estadoRef.on('value', async ()=>{ if(meuTipo==='aluno') await atualizarInterfaceAluno(); });
     });
     document.getElementById('btn-projecao')?.addEventListener('click', async () => {
         meuTipo = 'projecao';
-        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
         document.getElementById('tela-projecao').classList.remove('hidden');
         await inicializarEstado();
         exibirRankingTorcida();
     });
-    document.getElementById('btn-liberar-fase')?.addEventListener('click', async () => {
-        await estadoRef.update({ status: 'em_andamento' });
-        mostrarToast("Fase liberada! Alunos podem se inscrever e jogar.");
-    });
-    document.getElementById('btn-finalizar-fase')?.addEventListener('click', async () => {
-        const faseAtual = estadoAtual.faseAtual;
-        await salvarFaseHistorico(faseAtual);
-        await estadoRef.update({ status: 'finalizada' });
-        mostrarToast("Fase finalizada. Alunos não podem mais jogar.");
-    });
-    document.getElementById('btn-avancar-fase')?.addEventListener('click', async () => {
-        await avancarFase();
-    });
+    document.getElementById('btn-liberar-fase')?.addEventListener('click', async () => { await estadoRef.update({status:'em_andamento'}); mostrarToast("Fase liberada!"); });
+    document.getElementById('btn-finalizar-fase')?.addEventListener('click', async () => { await salvarHistoricoFase(estadoAtual.faseAtual); await estadoRef.update({status:'finalizada'}); mostrarToast("Fase finalizada."); });
+    document.getElementById('btn-avancar-fase')?.addEventListener('click', avancarFase);
     document.getElementById('btn-reset-fase')?.addEventListener('click', resetarFase);
     document.getElementById('btn-remover-duplicados')?.addEventListener('click', removerDuplicados);
-    document.getElementById('btn-voltar-inicio')?.addEventListener('click', () => location.reload());
+    document.getElementById('btn-voltar-inicio')?.addEventListener('click', ()=>location.reload());
     document.getElementById('btn-adicionar-aluno')?.addEventListener('click', async () => {
-        let nome = prompt("Nome:");
-        if (!nome) return;
-        let turma = prompt("Turma:");
-        if (!turma) return;
-        const nomeCap = capitalizarNome(nome);
-        const id = gerarIdEstavel(nomeCap, turma);
+        let nome = prompt("Nome:"); if(!nome) return;
+        let turma = prompt("Turma:"); if(!turma) return;
+        let nomeCap = capitalizarNome(nome);
+        let id = gerarIdEstavel(nomeCap, turma);
         let participantes = getParticipantesArray(estadoAtual);
-        if (participantes.find(p => p.id === id)) { mostrarToast("Aluno já existe."); return; }
-        participantes.push({ id, nome: nomeCap, turma });
+        if(participantes.find(p=>p.id===id)) { mostrarToast("Já existe."); return; }
+        participantes.push({id, nome:nomeCap, turma});
         await estadoRef.child('participantes').set(participantes);
         mostrarToast("Adicionado.");
     });
     document.getElementById('btn-jogar-proxima')?.addEventListener('click', async () => {
-        if (!estadoAtual || estadoAtual.status !== 'em_andamento') { mostrarToast("Fase não liberada."); return; }
-        const progresso = await getProgressoAluno(alunoId, estadoAtual.faseAtual);
-        if (progresso >= 4) { mostrarToast("Você já completou todas as partidas."); return; }
-        const proxima = progresso + 1;
-        iniciarPartidaEspecifica(proxima);
+        if(!estadoAtual || estadoAtual.status !== 'em_andamento') { mostrarToast("Fase não liberada."); return; }
+        let progresso = await getProgresso(alunoId, estadoAtual.faseAtual);
+        if(progresso >= 4) { mostrarToast("Já completou todas."); return; }
+        iniciarPartidaEspecifica(progresso+1);
     });
-    document.getElementById('btn-cancelar-jogo')?.addEventListener('click', () => {
-        jogoAtivo = false;
-        clearInterval(timerInterval);
-        document.getElementById('jogo-area').classList.add('hidden');
-        document.getElementById('aguardando').classList.remove('hidden');
-    });
-    document.getElementById('btn-sair-aluno')?.addEventListener('click', () => location.reload());
-    document.getElementById('btn-sair-projecao')?.addEventListener('click', () => location.reload());
-    document.getElementById('btn-carregar-historico')?.addEventListener('click', async () => {
-        const fase = parseInt(document.getElementById('seletor-fase-historico').value);
-        await exibirRankingFase(fase);
-    });
-    document.getElementById('btn-torcida-carregar')?.addEventListener('click', async () => {
-        await exibirRankingTorcida();
-    });
+    document.getElementById('btn-cancelar-jogo')?.addEventListener('click', ()=>{ jogoAtivo=false; clearInterval(timerInterval); document.getElementById('jogo-area').classList.add('hidden'); document.getElementById('aguardando').classList.remove('hidden'); });
+    document.getElementById('btn-sair-aluno')?.addEventListener('click', ()=>location.reload());
+    document.getElementById('btn-sair-projecao')?.addEventListener('click', ()=>location.reload());
+    document.getElementById('btn-carregar-historico')?.addEventListener('click', async () => { let fase = parseInt(document.getElementById('seletor-fase-historico').value); await mostrarRankingHistorico(fase); });
+    document.getElementById('btn-torcida-carregar')?.addEventListener('click', exibirRankingTorcida);
     document.getElementById('btn-adicionar-turma')?.addEventListener('click', async () => {
-        let novaTurma = document.getElementById('nova-turma').value.trim();
-        if (!novaTurma) return;
-        if (!turmasDisponiveis.includes(novaTurma)) {
-            turmasDisponiveis.push(novaTurma);
-            turmasDisponiveis.sort();
-            await db.ref('turmas').set(turmasDisponiveis);
-            document.getElementById('nova-turma').value = '';
-            mostrarToast(`Turma ${novaTurma} adicionada.`);
-            if (meuTipo === 'professor') atualizarInterfaceGeral();
-        } else mostrarToast("Turma já existe.");
+        let nova = document.getElementById('nova-turma').value.trim();
+        if(!nova || turmasDisponiveis.includes(nova)) { mostrarToast("Turma inválida ou já existe."); return; }
+        turmasDisponiveis.push(nova); turmasDisponiveis.sort();
+        await db.ref('turmas').set(turmasDisponiveis);
+        document.getElementById('nova-turma').value = '';
+        mostrarToast(`Turma ${nova} adicionada.`);
+        if(meuTipo==='professor') atualizarInterfaceGeral();
     });
     window.responder = responder;
-    function mostrarToast(msg) {
-        let t = document.getElementById('toast');
-        t.innerText = msg;
-        t.classList.remove('hidden');
-        setTimeout(() => t.classList.add('hidden'), 3000);
-    }
-
-    // Listeners centralizados (substitui os onclick inline)
+    function mostrarToast(msg) { let t=document.getElementById('toast'); t.innerText=msg; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),3000); }
+    // Listeners dinâmicos
     document.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('btn-editar')) {
-            const id = e.target.dataset.id;
-            const novoNome = prompt('Novo nome:');
-            if (novoNome) await editarNomeAluno(id, novoNome);
+        if(e.target.classList.contains('btn-editar')) {
+            let id = e.target.dataset.id;
+            let novo = prompt("Novo nome:");
+            if(novo) {
+                let participantes = getParticipantesArray(estadoAtual);
+                let novos = participantes.map(p=>p.id===id? {...p, nome:capitalizarNome(novo)}:p);
+                await estadoRef.child('participantes').set(novos);
+                mostrarToast("Nome alterado.");
+            }
         }
-        if (e.target.classList.contains('btn-excluir-aluno')) {
-            await excluirAluno(e.target.dataset.id);
+        if(e.target.classList.contains('btn-excluir-aluno')) {
+            let id = e.target.dataset.id;
+            if(confirm("Excluir aluno?")) {
+                let participantes = getParticipantesArray(estadoAtual);
+                let novos = participantes.filter(p=>p.id!==id);
+                await estadoRef.child('participantes').set(novos);
+                mostrarToast("Aluno removido.");
+            }
         }
-        if (e.target.classList.contains('btn-excluir-turma')) {
-            const turma = e.target.dataset.turma;
-            await excluirTurma(turma);
+        if(e.target.classList.contains('btn-excluir-turma')) {
+            let turma = e.target.dataset.turma;
+            if(confirm(`Excluir turma ${turma}?`)) {
+                let participantes = getParticipantesArray(estadoAtual);
+                if(participantes.some(p=>p.turma===turma)) { mostrarToast("Há alunos nessa turma."); return; }
+                turmasDisponiveis = turmasDisponiveis.filter(t=>t!==turma);
+                await db.ref('turmas').set(turmasDisponiveis);
+                mostrarToast(`Turma ${turma} excluída.`);
+                if(meuTipo==='professor') atualizarInterfaceGeral();
+            }
         }
     });
 </script>
