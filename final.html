@@ -193,10 +193,9 @@
         <div id="aguardando" class="hidden" style="text-align: center; padding: 40px;">
             ⏳ Aguardando liberação da fase pelo professor...
         </div>
-        <!-- Área para exibir o ranking para o aluno -->
         <div id="ranking-aluno" class="status-box">
             <h3>Ranking da Fase</h3>
-            <div id="conteudo-ranking-aluno"><div class="loading">Carregando ranking...</div></div>
+            <div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div>
         </div>
         <button id="btn-sair-aluno" style="margin-top: 20px;">⬅️ Sair</button>
     </div>
@@ -242,12 +241,14 @@
     // ========== VARIÁVEIS GLOBAIS ==========
     let meuTipo = null;
     let alunoId = null, alunoNome = null, alunoTurma = null;
-    let estadoRef = null, estadoAtual = null;
+    let estadoRef = null;
+    let estadoAtual = null;
     let jogoAtivo = false;
     let perguntasPartida = [], perguntaIdx = 0, pontosPartida = 0, respostaCorreta = 0;
     let timerInterval = null, tempoRestante = 10;
     let temposPartida = [], maiorSequenciaPartida = 0, sequenciaAtualPartida = 0, acertosConsecutivos = 0;
     let partidaSendoJogada = 1;
+    let estadoInicializado = false;
 
     const DIFICULDADES_POR_PARTIDA = ["Fácil (2-5)", "Médio (6-9)", "Difícil (0-10 peso 7-9)", "Equilibrado (0-10)"];
     const CLASSIFICADOS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 4 };
@@ -274,6 +275,7 @@
     function getParticipantesArray(estado) {
         if (!estado || !estado.participantes) return [];
         if (Array.isArray(estado.participantes)) return estado.participantes;
+        // Se for objeto (quando convertido por push do Firebase), converte para array
         return Object.values(estado.participantes);
     }
     function alunoJaJogouPartida(estado, alunoId, fase, partida) {
@@ -559,7 +561,7 @@
         proximaPergunta();
     }
 
-    // ========== INTERFACE DO ALUNO ==========
+    // ========== INTERFACE DO ALUNO (COM RANKING) ==========
     async function atualizarInterfaceAluno() {
         if (!estadoAtual || !alunoId || meuTipo !== 'aluno') return;
         const fase = estadoAtual.faseAtual;
@@ -598,10 +600,10 @@
         } else {
             document.getElementById('aguardando').classList.add('hidden');
         }
-        // Exibir ranking (mesmo que vazio)
+        // Exibir ranking completo para o aluno
         const ranking = await gerarRankingCompleto(estadoAtual, fase);
         if (ranking.length === 0) {
-            document.getElementById('conteudo-ranking-aluno').innerHTML = '<div class="loading">Nenhum participante inscrito ainda.</div>';
+            document.getElementById('conteudo-ranking-aluno').innerHTML = '<div class="loading">Nenhum participante ainda.</div>';
             return;
         }
         let html = `<table class="ranking-table">
@@ -612,17 +614,17 @@
                         <tbody>`;
         for (const r of ranking) {
             html += `<tr><td style="text-align:center">${r.pos}º</td>
-                           <td>${escapeHtml(r.nome)}</td>
-                           <td>${escapeHtml(r.turma)}</td>
-                          <td style="text-align:center">${r.totalPontos}</td>
-                          <td style="text-align:center">${r.gapTexto}</td>
-                          <td style="text-align:center">${r.atualPos}</td>
-                          <td style="text-align:center">${r.ultimaPos}º</td>
-                          <td style="text-align:center">${r.evolucaoHtml}</td>
-                          <td style="text-align:center">${r.melhorVoltaStr}</td>
-                          <td style="text-align:center">${r.vitorias}</td>
-                          <td style="text-align:center">${r.partidasStr}</td>
-                          <td style="text-align:center">${r.classificado}</td>
+                            <td>${escapeHtml(r.nome)}</td>
+                            <td>${escapeHtml(r.turma)}</td>
+                            <td style="text-align:center">${r.totalPontos}</td>
+                            <td style="text-align:center">${r.gapTexto}</td>
+                            <td style="text-align:center">${r.atualPos}</td>
+                            <td style="text-align:center">${r.ultimaPos}º</td>
+                            <td style="text-align:center">${r.evolucaoHtml}</td>
+                            <td style="text-align:center">${r.melhorVoltaStr}</td>
+                            <td style="text-align:center">${r.vitorias}</td>
+                            <td style="text-align:center">${r.partidasStr}</td>
+                            <td style="text-align:center">${r.classificado}</td>
                         </tr>`;
         }
         html += `</tbody>赶`;
@@ -700,20 +702,20 @@
         let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
         for (const r of ranking) {
             html += `<tr><td style="text-align:center">${r.pos}º</td>
-                           <td>${escapeHtml(r.nome)}</td>
-                           <td>${escapeHtml(r.turma)}</td>
-                          <td style="text-align:center">${r.totalPontos}</td>
-                          <td style="text-align:center">${r.gapTexto}</td>
-                          <td style="text-align:center">${r.atualPos}</td>
-                          <td style="text-align:center">${r.ultimaPos}º</td>
-                          <td style="text-align:center">${r.evolucaoHtml}</td>
-                          <td style="text-align:center">${r.melhorVoltaStr}</td>
-                          <td style="text-align:center">${r.vitorias}</td>
-                          <td style="text-align:center">${r.partidasStr}</td>
-                          <td style="text-align:center">${r.classificado}</td>
-                        </table>`;
+                            <td>${escapeHtml(r.nome)}</td>
+                            <td>${escapeHtml(r.turma)}</td>
+                            <td style="text-align:center">${r.totalPontos}</td>
+                            <td style="text-align:center">${r.gapTexto}</td>
+                            <td style="text-align:center">${r.atualPos}</td>
+                            <td style="text-align:center">${r.ultimaPos}º</td>
+                            <td style="text-align:center">${r.evolucaoHtml}</td>
+                            <td style="text-align:center">${r.melhorVoltaStr}</td>
+                            <td style="text-align:center">${r.vitorias}</td>
+                            <td style="text-align:center">${r.partidasStr}</td>
+                            <td style="text-align:center">${r.classificado}</td>
+                        </tr>`;
         }
-        html += `</tbody>赶`;
+        html += `</tbody></table>`;
         document.getElementById('ranking-parcial').innerHTML = html;
         document.getElementById('ranking-titulo').innerText = `Fase ${fase}`;
     }
@@ -722,26 +724,26 @@
         const fase = estadoAtual.faseAtual;
         const ranking = await gerarRankingCompleto(estadoAtual, fase);
         if (ranking.length === 0) {
-            document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum participante inscrito.</p>';
+            document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum participante.</p>';
             return;
         }
         let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
         for (const r of ranking) {
             html += `<tr><td style="text-align:center">${r.pos}º</td>
-                           <td>${escapeHtml(r.nome)}</td>
-                           <td>${escapeHtml(r.turma)}</td>
-                          <td style="text-align:center">${r.totalPontos}</td>
-                          <td style="text-align:center">${r.gapTexto}</td>
-                          <td style="text-align:center">${r.atualPos}</td>
-                          <td style="text-align:center">${r.ultimaPos}º</td>
-                          <td style="text-align:center">${r.evolucaoHtml}</td>
-                          <td style="text-align:center">${r.melhorVoltaStr}</td>
-                          <td style="text-align:center">${r.vitorias}</td>
-                          <td style="text-align:center">${r.partidasStr}</td>
-                          <td style="text-align:center">${r.classificado}</td>
+                            <td>${escapeHtml(r.nome)}</td>
+                            <td>${escapeHtml(r.turma)}</td>
+                            <td style="text-align:center">${r.totalPontos}</td>
+                            <td style="text-align:center">${r.gapTexto}</td>
+                            <td style="text-align:center">${r.atualPos}</td>
+                            <td style="text-align:center">${r.ultimaPos}º</td>
+                            <td style="text-align:center">${r.evolucaoHtml}</td>
+                            <td style="text-align:center">${r.melhorVoltaStr}</td>
+                            <td style="text-align:center">${r.vitorias}</td>
+                            <td style="text-align:center">${r.partidasStr}</td>
+                            <td style="text-align:center">${r.classificado}</td>
                         </tr>`;
         }
-        html += `</tbody>赶`;
+        html += `</tbody></table>`;
         document.getElementById('ranking-parcial').innerHTML = html;
         document.getElementById('ranking-titulo').innerText = `Fase ${fase} (Atual)`;
     }
@@ -764,20 +766,20 @@
             html += `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ Líder</th><th>Atual Pos</th><th>Última Pos</th><th>Evolução</th><th>Melhor Volta</th><th>Vitórias</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
             for (const r of ranking) {
                 html += `<tr><td style="text-align:center">${r.pos}º</td>
-                               <td>${escapeHtml(r.nome)}</td>
-                               <td>${escapeHtml(r.turma)}</td>
-                              <td style="text-align:center">${r.totalPontos}</td>
-                              <td style="text-align:center">${r.gapTexto}</td>
-                              <td style="text-align:center">${r.atualPos}</td>
-                              <td style="text-align:center">${r.ultimaPos}º</td>
-                              <td style="text-align:center">${r.evolucaoHtml}</td>
-                              <td style="text-align:center">${r.melhorVoltaStr}</td>
-                              <td style="text-align:center">${r.vitorias}</td>
-                              <td style="text-align:center">${r.partidasStr}</td>
-                              <td style="text-align:center">${r.classificado}</td>
-                            </table>`;
+                                <td>${escapeHtml(r.nome)}</td>
+                                <td>${escapeHtml(r.turma)}</td>
+                                <td style="text-align:center">${r.totalPontos}</td>
+                                <td style="text-align:center">${r.gapTexto}</td>
+                                <td style="text-align:center">${r.atualPos}</td>
+                                <td style="text-align:center">${r.ultimaPos}º</td>
+                                <td style="text-align:center">${r.evolucaoHtml}</td>
+                                <td style="text-align:center">${r.melhorVoltaStr}</td>
+                                <td style="text-align:center">${r.vitorias}</td>
+                                <td style="text-align:center">${r.partidasStr}</td>
+                                <td style="text-align:center">${r.classificado}</td>
+                            <tr>`;
             }
-            html += `</tbody>赶`;
+            html += `</tbody></table>`;
         }
         document.getElementById('projecao-ranking').innerHTML = html;
         document.getElementById('info-vagas').innerHTML = `<div class="info-vagas">🏆 ${numVagas} vagas para a próxima fase.</div>`;
@@ -786,6 +788,7 @@
     // ========== INICIALIZAÇÃO GERAL ==========
     async function inicializarEstado() {
         estadoRef = db.ref('faseFinal');
+        // Aguarda o primeiro snapshot
         const snap = await estadoRef.once('value');
         if (!snap.exists()) {
             await estadoRef.set({
@@ -803,6 +806,7 @@
             if (!dados.resultadosFase) await estadoRef.child('resultadosFase').set({});
             if (!dados.bancosFase) await estadoRef.child('bancosFase').set({});
         }
+        // Agora inicia o listener contínuo
         estadoRef.on('value', (s) => {
             estadoAtual = s.val();
             if (estadoAtual) {
@@ -810,6 +814,7 @@
                 if (!estadoAtual.resultadosFase) estadoAtual.resultadosFase = {};
                 if (!estadoAtual.bancosFase) estadoAtual.bancosFase = {};
             }
+            estadoInicializado = true;
             atualizarInterfaceGeral();
         });
     }
@@ -822,12 +827,14 @@
         if (meuTipo === 'professor') {
             document.getElementById('fase-num').innerText = fase;
             document.getElementById('status-fase-prof').innerText = status;
+            // Renderiza participantes com listeners centralizados (usando data-id)
+            const participantes = getParticipantesArray(estadoAtual);
             let html = '<ul style="list-style:none; padding-left:0;">';
-            getParticipantesArray(estadoAtual).forEach(p => {
+            participantes.forEach(p => {
                 html += `<li style="margin-bottom:8px;">
                             <span>${escapeHtml(p.nome)} (${escapeHtml(p.turma)})</span>
-                            <button class="btn-small" onclick="window.editarNomeAluno('${p.id}', prompt('Novo nome:'))">✏️</button>
-                            <button class="btn-small btn-excluir" onclick="window.excluirAluno('${p.id}')">🗑️</button>
+                            <button class="btn-editar btn-small" data-id="${p.id}">✏️</button>
+                            <button class="btn-excluir-aluno btn-small btn-excluir" data-id="${p.id}">🗑️</button>
                          </li>`;
             });
             html += '</ul>';
@@ -835,7 +842,7 @@
             exibirRankingAtualProfessor();
             let turmasHtml = '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
             turmasDisponiveis.forEach(t => {
-                turmasHtml += `<div class="turma-badge">${escapeHtml(t)} <button class="btn-small" onclick="window.excluirTurmaUI('${t}')" style="background:#a82313;">🗑️</button></div>`;
+                turmasHtml += `<div class="turma-badge">${escapeHtml(t)} <button class="btn-excluir-turma btn-small" data-turma="${t}" style="background:#a82313;">🗑️</button></div>`;
             });
             turmasHtml += '</div>';
             document.getElementById('lista-turmas').innerHTML = turmasHtml;
@@ -853,21 +860,21 @@
         else await db.ref('turmas').set(turmasDisponiveis);
         return turmasDisponiveis;
     }
-    window.editarNomeAluno = async (alunoId, novoNome) => {
+    async function editarNomeAluno(id, novoNome) {
         if (!novoNome) return;
         const participantes = getParticipantesArray(estadoAtual);
-        const novos = participantes.map(p => p.id === alunoId ? { ...p, nome: capitalizarNome(novoNome) } : p);
+        const novos = participantes.map(p => p.id === id ? { ...p, nome: capitalizarNome(novoNome) } : p);
         await estadoRef.child('participantes').set(novos);
         mostrarToast("Nome alterado.");
-    };
-    window.excluirAluno = async (alunoId) => {
+    }
+    async function excluirAluno(id) {
         if (!confirm("Excluir aluno da fase atual?")) return;
         const participantes = getParticipantesArray(estadoAtual);
-        const novos = participantes.filter(p => p.id !== alunoId);
+        const novos = participantes.filter(p => p.id !== id);
         await estadoRef.child('participantes').set(novos);
         mostrarToast("Aluno removido.");
-    };
-    window.excluirTurmaUI = async (turma) => {
+    }
+    async function excluirTurma(turma) {
         if (confirm(`Excluir turma ${turma}?`)) {
             const participantes = getParticipantesArray(estadoAtual);
             if (participantes.some(p => p.turma === turma)) { mostrarToast("Há alunos nessa turma na fase atual."); return; }
@@ -876,7 +883,7 @@
             mostrarToast(`Turma ${turma} excluída.`);
             if (meuTipo === 'professor') atualizarInterfaceGeral();
         }
-    };
+    }
 
     // ========== EVENTOS ==========
     document.getElementById('btn-professor')?.addEventListener('click', async () => {
@@ -888,7 +895,7 @@
     });
     document.getElementById('btn-aluno')?.addEventListener('click', async () => {
         await carregarTurmas();
-        if (!estadoAtual) await inicializarEstado();
+        if (!estadoInicializado) await inicializarEstado();
         if (estadoAtual.status !== 'em_andamento') {
             mostrarToast("A fase ainda não foi liberada pelo professor. Aguarde.");
             return;
@@ -908,11 +915,12 @@
         document.getElementById('tela-aluno').classList.remove('hidden');
         let participantes = getParticipantesArray(estadoAtual);
         if (!participantes.find(p => p.id === alunoId)) {
-            await estadoRef.child('participantes').push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
+            participantes.push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
+            await estadoRef.child('participantes').set(participantes);
         }
-        // Força a atualização da interface após garantir que o Firebase sincronizou
-        setTimeout(() => atualizarInterfaceAluno(), 500);
-        estadoRef.on('value', () => { if (meuTipo === 'aluno') atualizarInterfaceAluno(); });
+        await atualizarInterfaceAluno();
+        // Escuta mudanças futuras para atualizar o ranking do aluno automaticamente
+        estadoRef.on('value', async () => { if (meuTipo === 'aluno') await atualizarInterfaceAluno(); });
     });
     document.getElementById('btn-projecao')?.addEventListener('click', async () => {
         meuTipo = 'projecao';
@@ -944,8 +952,10 @@
         if (!turma) return;
         const nomeCap = capitalizarNome(nome);
         const id = gerarIdEstavel(nomeCap, turma);
-        if (getParticipantesArray(estadoAtual).find(p => p.id === id)) { mostrarToast("Aluno já existe."); return; }
-        await estadoRef.child('participantes').push({ id, nome: nomeCap, turma });
+        let participantes = getParticipantesArray(estadoAtual);
+        if (participantes.find(p => p.id === id)) { mostrarToast("Aluno já existe."); return; }
+        participantes.push({ id, nome: nomeCap, turma });
+        await estadoRef.child('participantes').set(participantes);
         mostrarToast("Adicionado.");
     });
     document.getElementById('btn-jogar-proxima')?.addEventListener('click', async () => {
@@ -989,6 +999,22 @@
         t.classList.remove('hidden');
         setTimeout(() => t.classList.add('hidden'), 3000);
     }
+
+    // Listeners centralizados (substitui os onclick inline)
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('btn-editar')) {
+            const id = e.target.dataset.id;
+            const novoNome = prompt('Novo nome:');
+            if (novoNome) await editarNomeAluno(id, novoNome);
+        }
+        if (e.target.classList.contains('btn-excluir-aluno')) {
+            await excluirAluno(e.target.dataset.id);
+        }
+        if (e.target.classList.contains('btn-excluir-turma')) {
+            const turma = e.target.dataset.turma;
+            await excluirTurma(turma);
+        }
+    });
 </script>
 </body>
 </html>
