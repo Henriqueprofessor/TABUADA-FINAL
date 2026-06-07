@@ -143,6 +143,35 @@
             background: #2c5a6e;
             transform: scale(1.02);
         }
+        /* Filtros */
+        .filtros-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #1e2a3a;
+            border-radius: 20px;
+            align-items: flex-end;
+        }
+        .filtro-group {
+            flex: 1;
+            min-width: 150px;
+        }
+        .filtro-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 4px;
+            color: #ffd966;
+        }
+        .filtro-group input, .filtro-group select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 20px;
+            background: #0a0f1e;
+            border: 1px solid #ffd966;
+            color: white;
+        }
         /* Diálogo de turma */
         .dialog-turma {
             position: fixed;
@@ -222,7 +251,7 @@
                 </div>
                 <hr>
                 <h3>Visualizar Ranking</h3>
-                <label>Fase:</label>
+                <label>Fase (histórico):</label>
                 <select id="seletor-fase-historico" class="select-fase">
                     <option value="1">Fase 1</option>
                     <option value="2">Fase 2</option>
@@ -233,6 +262,32 @@
             </div>
         </div>
         <h3>Ranking da <span id="ranking-titulo">Fase Atual</span></h3>
+        <div id="filtros-professor" class="filtros-container">
+            <div class="filtro-group">
+                <label>Filtrar por nome</label>
+                <input type="text" id="filtro-nome-prof" placeholder="Nome...">
+            </div>
+            <div class="filtro-group">
+                <label>Filtrar por turma</label>
+                <input type="text" id="filtro-turma-prof" placeholder="Turma...">
+            </div>
+            <div class="filtro-group">
+                <label>Ordenar por Melhor Pontuação</label>
+                <select id="ordem-melhor-pont-prof">
+                    <option value="">--</option>
+                    <option value="crescente">Menor → Maior</option>
+                    <option value="decrescente">Maior → Menor</option>
+                </select>
+            </div>
+            <div class="filtro-group">
+                <label>Ordenar por Evolução (%)</label>
+                <select id="ordem-evolucao-prof">
+                    <option value="">--</option>
+                    <option value="crescente">Menor → Maior</option>
+                    <option value="decrescente">Maior → Menor</option>
+                </select>
+            </div>
+        </div>
         <div id="ranking-parcial" class="status-box"><div class="loading">Carregando...</div></div>
     </div>
 
@@ -251,7 +306,6 @@
         <div id="jogo-area" class="hidden">
             <div class="status-box">
                 <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
-                <!-- Barra de tempo -->
                 <div class="barra-tempo" title="Tempo restante">
                     <div id="progresso-tempo" class="progresso-tempo" style="width: 100%; background-color: #27ae60;"></div>
                 </div>
@@ -268,27 +322,70 @@
             <button id="btn-cancelar-jogo" class="btn-danger">❌ Cancelar</button>
         </div>
         <div id="aguardando" class="hidden" style="text-align: center; padding: 40px;">⏳ Aguardando liberação da fase...</div>
-        <div id="ranking-aluno" class="status-box"><h3>Ranking da Fase</h3><div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div></div>
+        <div id="ranking-aluno" class="status-box">
+            <h3>Ranking da Fase Atual</h3>
+            <div class="filtros-container">
+                <div class="filtro-group">
+                    <label>Filtrar por nome</label>
+                    <input type="text" id="filtro-nome-aluno" placeholder="Nome...">
+                </div>
+                <div class="filtro-group">
+                    <label>Filtrar por turma</label>
+                    <input type="text" id="filtro-turma-aluno" placeholder="Turma...">
+                </div>
+                <div class="filtro-group">
+                    <label>Ordenar por Melhor Pontuação</label>
+                    <select id="ordem-melhor-pont-aluno">
+                        <option value="">--</option>
+                        <option value="crescente">Menor → Maior</option>
+                        <option value="decrescente">Maior → Menor</option>
+                    </select>
+                </div>
+                <div class="filtro-group">
+                    <label>Ordenar por Evolução (%)</label>
+                    <select id="ordem-evolucao-aluno">
+                        <option value="">--</option>
+                        <option value="crescente">Menor → Maior</option>
+                        <option value="decrescente">Maior → Menor</option>
+                    </select>
+                </div>
+            </div>
+            <div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div>
+        </div>
         <button id="btn-sair-aluno">⬅️ Sair</button>
     </div>
 
-    <!-- TELA DE PROJEÇÃO (TORCIDA) -->
+    <!-- TELA DE PROJEÇÃO (TORCIDA) - SOMENTE FASE ATUAL -->
     <div id="tela-projecao" class="card hidden">
         <h2>📺 COPA TABUADA CEIB 2026 - TORCIDA</h2>
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-            <div id="projecao-status" class="status-box" style="flex:2;">Carregando...</div>
-            <div style="margin-left: 16px;">
-                <label>Fase:</label>
-                <select id="seletor-fase-torcida" class="select-fase">
-                    <option value="1">Fase 1</option>
-                    <option value="2">Fase 2</option>
-                    <option value="3">Fase 3</option>
-                    <option value="4">Fase 4</option>
+        <div id="projecao-status" class="status-box">Carregando fase atual...</div>
+        <div id="info-vagas" class="info-vagas"></div>
+        <div class="filtros-container">
+            <div class="filtro-group">
+                <label>Filtrar por nome</label>
+                <input type="text" id="filtro-nome-torcida" placeholder="Nome...">
+            </div>
+            <div class="filtro-group">
+                <label>Filtrar por turma</label>
+                <input type="text" id="filtro-turma-torcida" placeholder="Turma...">
+            </div>
+            <div class="filtro-group">
+                <label>Ordenar por Melhor Pontuação</label>
+                <select id="ordem-melhor-pont-torcida">
+                    <option value="">--</option>
+                    <option value="crescente">Menor → Maior</option>
+                    <option value="decrescente">Maior → Menor</option>
                 </select>
-                <button id="btn-torcida-carregar" class="btn-small">Carregar</button>
+            </div>
+            <div class="filtro-group">
+                <label>Ordenar por Evolução (%)</label>
+                <select id="ordem-evolucao-torcida">
+                    <option value="">--</option>
+                    <option value="crescente">Menor → Maior</option>
+                    <option value="decrescente">Maior → Menor</option>
+                </select>
             </div>
         </div>
-        <div id="info-vagas" class="info-vagas"></div>
         <div id="projecao-ranking" class="status-box"><div class="loading">Carregando...</div></div>
         <button id="btn-sair-projecao">⬅️ Voltar</button>
     </div>
@@ -420,7 +517,38 @@
         return resultado;
     }
 
-    // ========== FUNÇÕES DE RANKING QUE GERAM HTML CORRETAMENTE ==========
+    // ========== FUNÇÃO DE FILTRAGEM E ORDENAÇÃO ==========
+    function filtrarEOrdenarRanking(rankingOriginal, filtroNome, filtroTurma, ordemMelhorPont, ordemEvolucao) {
+        let resultado = [...rankingOriginal];
+        if(filtroNome && filtroNome.trim() !== '') {
+            const nomeLower = filtroNome.toLowerCase().trim();
+            resultado = resultado.filter(r => r.nome.toLowerCase().includes(nomeLower));
+        }
+        if(filtroTurma && filtroTurma.trim() !== '') {
+            const turmaLower = filtroTurma.toLowerCase().trim();
+            resultado = resultado.filter(r => r.turma.toLowerCase().includes(turmaLower));
+        }
+        if(ordemMelhorPont === 'crescente') {
+            resultado.sort((a,b) => a.melhorPontuacao - b.melhorPontuacao);
+        } else if(ordemMelhorPont === 'decrescente') {
+            resultado.sort((a,b) => b.melhorPontuacao - a.melhorPontuacao);
+        }
+        if(ordemEvolucao === 'crescente' || ordemEvolucao === 'decrescente') {
+            const extrairPercentual = (evolStr) => {
+                const match = evolStr.match(/([+-]?\d+(?:\.\d+)?)%/);
+                if(match) return parseFloat(match[1]);
+                return 0;
+            };
+            resultado.sort((a,b) => {
+                let valA = extrairPercentual(a.evolucao);
+                let valB = extrairPercentual(b.evolucao);
+                return ordemEvolucao === 'crescente' ? valA - valB : valB - valA;
+            });
+        }
+        return resultado;
+    }
+
+    // ========== FUNÇÃO QUE GERA A TABELA COM HTML CORRETO ==========
     function gerarTabelaRanking(ranking) {
         if(!ranking || ranking.length===0) return '<div class="loading">Nenhum participante ainda.</div>';
         let html = `<table class="ranking-table">
@@ -446,10 +574,49 @@
                         <td style="text-align:center">${r.melhorPontuacao}</td>
                         <td style="text-align:center">${r.partidas}</td>
                         <td style="text-align:center">${r.classificado}</td>
-                      </tr>`;
+                    </tr>`;
         }
         html += `</tbody></table>`;
         return html;
+    }
+
+    async function atualizarRankingProfessor() {
+        if(!estadoAtual) return;
+        let ranking = await gerarRanking(estadoAtual, estadoAtual.faseAtual);
+        const filtroNome = document.getElementById('filtro-nome-prof')?.value || '';
+        const filtroTurma = document.getElementById('filtro-turma-prof')?.value || '';
+        const ordemMelhorPont = document.getElementById('ordem-melhor-pont-prof')?.value || '';
+        const ordemEvolucao = document.getElementById('ordem-evolucao-prof')?.value || '';
+        const rankingFiltrado = filtrarEOrdenarRanking(ranking, filtroNome, filtroTurma, ordemMelhorPont, ordemEvolucao);
+        document.getElementById('ranking-parcial').innerHTML = gerarTabelaRanking(rankingFiltrado);
+        document.getElementById('ranking-titulo').innerText = `Fase ${estadoAtual.faseAtual} (Atual)`;
+    }
+
+    async function atualizarRankingAluno() {
+        if(!estadoAtual || !alunoId) return;
+        let ranking = await gerarRanking(estadoAtual, estadoAtual.faseAtual);
+        const filtroNome = document.getElementById('filtro-nome-aluno')?.value || '';
+        const filtroTurma = document.getElementById('filtro-turma-aluno')?.value || '';
+        const ordemMelhorPont = document.getElementById('ordem-melhor-pont-aluno')?.value || '';
+        const ordemEvolucao = document.getElementById('ordem-evolucao-aluno')?.value || '';
+        const rankingFiltrado = filtrarEOrdenarRanking(ranking, filtroNome, filtroTurma, ordemMelhorPont, ordemEvolucao);
+        document.getElementById('conteudo-ranking-aluno').innerHTML = gerarTabelaRanking(rankingFiltrado);
+    }
+
+    async function atualizarRankingTorcida() {
+        if(!estadoAtual) return;
+        let fase = estadoAtual.faseAtual;
+        let ranking = await gerarRanking(estadoAtual, fase);
+        let numVagas = CLASSIFICADOS_POR_FASE[fase];
+        const filtroNome = document.getElementById('filtro-nome-torcida')?.value || '';
+        const filtroTurma = document.getElementById('filtro-turma-torcida')?.value || '';
+        const ordemMelhorPont = document.getElementById('ordem-melhor-pont-torcida')?.value || '';
+        const ordemEvolucao = document.getElementById('ordem-evolucao-torcida')?.value || '';
+        const rankingFiltrado = filtrarEOrdenarRanking(ranking, filtroNome, filtroTurma, ordemMelhorPont, ordemEvolucao);
+        const html = `<div class="info-vagas">🏆 ${numVagas} vagas para a próxima fase.</div>` + gerarTabelaRanking(rankingFiltrado);
+        document.getElementById('projecao-ranking').innerHTML = html;
+        document.getElementById('projecao-status').innerHTML = `Fase ${fase} - ${estadoAtual.status === 'em_andamento' ? '🔓 Em andamento' : '🔒 Finalizada'}`;
+        document.getElementById('info-vagas').innerHTML = `<div class="info-vagas">🏆 ${numVagas} vagas</div>`;
     }
 
     // ========== JOGO ==========
@@ -542,7 +709,6 @@
         let p = perguntasPartida[perguntaIdx];
         document.getElementById('pergunta').innerHTML = `${p.fA} x ${p.fB} = ?`;
         respostaCorreta = p.resposta;
-        // Gerar opções em ordem crescente
         let opcoes = [respostaCorreta];
         while(opcoes.length < 4) {
             let r = respostaCorreta + (Math.floor(Math.random() * 13) - 6);
@@ -624,20 +790,18 @@
         proximaPergunta();
     }
 
-    // ========== INTERFACE DO ALUNO (COM RANKING CORRIGIDO) ==========
+    // ========== INTERFACE DO ALUNO ==========
     async function atualizarInterfaceAluno() {
         if(!estadoAtual || !alunoId || meuTipo !== 'aluno') return;
         let fase = estadoAtual.faseAtual;
         let status = estadoAtual.status;
         let progresso = await getProgresso(alunoId, fase);
         let {total} = getDetalhesAluno(estadoAtual, alunoId, fase);
-        
         document.getElementById('aluno-nome').innerHTML = escapeHtml(alunoNome);
         document.getElementById('aluno-turma').innerHTML = escapeHtml(alunoTurma);
         document.getElementById('aluno-fase').innerHTML = fase;
         document.getElementById('partidas-feitas').innerHTML = progresso;
         document.getElementById('aluno-pontos-total').innerHTML = total;
-        
         let podeJogar = (status === 'em_andamento' && progresso < 4);
         let btn = document.getElementById('btn-jogar-proxima');
         if(podeJogar) {
@@ -653,8 +817,7 @@
         if(status !== 'em_andamento' && progresso < 4) document.getElementById('aguardando').classList.remove('hidden');
         else document.getElementById('aguardando').classList.add('hidden');
 
-        let ranking = await gerarRanking(estadoAtual, fase);
-        document.getElementById('conteudo-ranking-aluno').innerHTML = gerarTabelaRanking(ranking);
+        await atualizarRankingAluno();
     }
 
     // ========== FUNÇÕES DO PROFESSOR ==========
@@ -710,30 +873,13 @@
         let dados = snap.val();
         let estadoFake = {participantes: dados.participantes || [], resultadosFase: {[fase]: dados.resultados || {}}};
         let ranking = await gerarRanking(estadoFake, fase);
-        document.getElementById('ranking-parcial').innerHTML = gerarTabelaRanking(ranking);
+        const filtroNome = document.getElementById('filtro-nome-prof')?.value || '';
+        const filtroTurma = document.getElementById('filtro-turma-prof')?.value || '';
+        const ordemMelhorPont = document.getElementById('ordem-melhor-pont-prof')?.value || '';
+        const ordemEvolucao = document.getElementById('ordem-evolucao-prof')?.value || '';
+        const rankingFiltrado = filtrarEOrdenarRanking(ranking, filtroNome, filtroTurma, ordemMelhorPont, ordemEvolucao);
+        document.getElementById('ranking-parcial').innerHTML = gerarTabelaRanking(rankingFiltrado);
         document.getElementById('ranking-titulo').innerText = `Fase ${fase}`;
-    }
-    async function exibirRankingAtualProfessor() {
-        if(!estadoAtual) return;
-        let ranking = await gerarRanking(estadoAtual, estadoAtual.faseAtual);
-        document.getElementById('ranking-parcial').innerHTML = gerarTabelaRanking(ranking);
-        document.getElementById('ranking-titulo').innerText = `Fase ${estadoAtual.faseAtual} (Atual)`;
-    }
-    async function exibirRankingTorcida() {
-        let fase = parseInt(document.getElementById('seletor-fase-torcida').value);
-        let snap = await db.ref(`fases/${fase}`).once('value');
-        if(!snap.exists()) { 
-            document.getElementById('projecao-ranking').innerHTML = '<p>Nenhum dado disponível para esta fase.</p>'; 
-            return; 
-        }
-        let dados = snap.val();
-        let estadoFake = {participantes: dados.participantes || [], resultadosFase: {[fase]: dados.resultados || {}}};
-        let ranking = await gerarRanking(estadoFake, fase);
-        let numVagas = CLASSIFICADOS_POR_FASE[fase];
-        let html = '<div class="info-vagas">🏆 ' + numVagas + ' vagas para a próxima fase.</div>';
-        html += gerarTabelaRanking(ranking);
-        document.getElementById('projecao-ranking').innerHTML = html;
-        document.getElementById('info-vagas').innerHTML = '<div class="info-vagas">🏆 ' + numVagas + ' vagas</div>';
     }
 
     // ========== INICIALIZAÇÃO PRINCIPAL ==========
@@ -774,15 +920,34 @@
             participantes.forEach(p => html += `<li>${escapeHtml(p.nome)} (${escapeHtml(p.turma)}) <button class="btn-editar" data-id="${p.id}">✏️</button> <button class="btn-excluir-aluno" data-id="${p.id}">🗑️</button></li>`);
             html += '</ul>';
             document.getElementById('lista-participantes').innerHTML = html;
-            exibirRankingAtualProfessor();
+            atualizarRankingProfessor();
             let turmasHtml = '<div>';
             turmasDisponiveis.forEach(t => turmasHtml += `<span class="turma-badge">${escapeHtml(t)} <button class="btn-excluir-turma" data-turma="${t}">🗑️</button></span> `);
             turmasHtml += '</div>';
             document.getElementById('lista-turmas').innerHTML = turmasHtml;
+            // Listeners de filtro
+            const filtros = ['filtro-nome-prof', 'filtro-turma-prof', 'ordem-melhor-pont-prof', 'ordem-evolucao-prof'];
+            filtros.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.addEventListener('input', () => atualizarRankingProfessor());
+                if(el && (id.includes('ordem'))) el.addEventListener('change', () => atualizarRankingProfessor());
+            });
         } else if(meuTipo === 'aluno') {
             atualizarInterfaceAluno();
+            const filtros = ['filtro-nome-aluno', 'filtro-turma-aluno', 'ordem-melhor-pont-aluno', 'ordem-evolucao-aluno'];
+            filtros.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.addEventListener('input', () => atualizarRankingAluno());
+                if(el && (id.includes('ordem'))) el.addEventListener('change', () => atualizarRankingAluno());
+            });
         } else if(meuTipo === 'projecao') {
-            exibirRankingTorcida();
+            atualizarRankingTorcida();
+            const filtros = ['filtro-nome-torcida', 'filtro-turma-torcida', 'ordem-melhor-pont-torcida', 'ordem-evolucao-torcida'];
+            filtros.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.addEventListener('input', () => atualizarRankingTorcida());
+                if(el && (id.includes('ordem'))) el.addEventListener('change', () => atualizarRankingTorcida());
+            });
         }
     }
 
@@ -863,7 +1028,7 @@
         document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
         document.getElementById('tela-projecao').classList.remove('hidden');
         await inicializarEstado();
-        exibirRankingTorcida();
+        atualizarRankingTorcida();
     });
     document.getElementById('btn-liberar-fase')?.addEventListener('click', async () => { await estadoRef.update({status:'em_andamento'}); mostrarToast("Fase liberada!"); });
     document.getElementById('btn-finalizar-fase')?.addEventListener('click', async () => { await salvarHistoricoFase(estadoAtual.faseAtual); await estadoRef.update({status:'finalizada'}); mostrarToast("Fase finalizada."); });
@@ -892,7 +1057,7 @@
     document.getElementById('btn-sair-aluno')?.addEventListener('click', ()=>location.reload());
     document.getElementById('btn-sair-projecao')?.addEventListener('click', ()=>location.reload());
     document.getElementById('btn-carregar-historico')?.addEventListener('click', async () => { let fase = parseInt(document.getElementById('seletor-fase-historico').value); await mostrarRankingHistorico(fase); });
-    document.getElementById('btn-torcida-carregar')?.addEventListener('click', exibirRankingTorcida);
+    document.getElementById('btn-torcida-carregar')?.addEventListener('click', () => atualizarRankingTorcida());
     document.getElementById('btn-adicionar-turma')?.addEventListener('click', async () => {
         let nova = document.getElementById('nova-turma').value.trim();
         if(!nova || turmasDisponiveis.includes(nova)) { mostrarToast("Turma inválida ou já existe."); return; }
