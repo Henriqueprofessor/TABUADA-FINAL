@@ -220,6 +220,8 @@
             <button id="btn-professor" class="btn-primary">👨‍🏫 Entrar como Professor</button>
             <button id="btn-aluno">🎮 Entrar como Aluno</button>
             <button id="btn-projecao">📺 Tela de Torcida</button>
+            <!-- Link para a primeira fase (classificatória) -->
+            <button onclick="window.open('https://henriqueprofessor.github.io/Tabuada/', '_blank')" class="btn-success">🏠 Fase Classificatória</button>
         </div>
     </div>
 
@@ -475,7 +477,7 @@
     async function getProgresso(id,fase) { return (await db.ref(`progressoAluno/${id}/fase${fase}`).once('value')).val() || 0; }
     async function setProgresso(id,fase,val) { await db.ref(`progressoAluno/${id}/fase${fase}`).set(val); }
 
-    // ========== RANKING COMPLETO (RETORNA ARRAY DE OBJETOS) ==========
+    // ========== RANKING COMPLETO ==========
     async function gerarRanking(estado, fase) {
         const participantes = getParticipantesArray(estado);
         if(participantes.length===0) return [];
@@ -576,7 +578,7 @@
                         <td style="text-align:center">${r.classificado}</td>
                     </tr>`;
         }
-        html += `</tbody></table>`;
+        html += `</tbody><tr>`;
         return html;
     }
 
