@@ -79,28 +79,6 @@
             font-weight: bold;
             color: white;
         }
-        .timer-grande {
-            font-size: 2rem;
-            font-weight: bold;
-            text-align: center;
-            margin: 10px 0;
-            transition: color 0.2s;
-        }
-        .timer-normal { color: #ffffff; }
-        .timer-alerta { color: #f1c40f; }
-        .timer-urgente { color: #e74c3c; animation: pulse 0.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
-        .pulse-pontos { animation: pontuacaoPulse 0.3s ease-in-out; }
-        @keyframes pontuacaoPulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); color: #f1c40f; } 100% { transform: scale(1); } }
-        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
-        .progresso-aluno { background: #2c3e50; padding: 12px; border-radius: 16px; margin-bottom: 20px; text-align: center; }
-        .btn-jogar { background: #27ae60; font-size: 1.2rem; padding: 12px 24px; margin-top: 10px; }
-        .info-vagas { background: #2c3e50; padding: 12px; border-radius: 12px; margin-bottom: 16px; text-align: center; }
-        .select-fase { background: #1e2a3a; border: 1px solid #ffd966; color: white; padding: 6px 12px; border-radius: 20px; margin: 0 8px; }
-        .trend-up { color: #2ecc71; }
-        .trend-down { color: #e74c3c; }
-        .trend-flat { color: #f39c12; }
-        .loading { text-align: center; padding: 20px; color: #aaa; }
         .barra-tempo {
             width: 100%;
             height: 16px;
@@ -117,6 +95,18 @@
             transition: width 0.1s linear, background 0.2s ease;
         }
         .progresso-tempo.pulsando { animation: pulse 0.5s ease-in-out infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        .pulse-pontos { animation: pontuacaoPulse 0.3s ease-in-out; }
+        @keyframes pontuacaoPulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); color: #f1c40f; } 100% { transform: scale(1); } }
+        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+        .progresso-aluno { background: #2c3e50; padding: 12px; border-radius: 16px; margin-bottom: 20px; text-align: center; }
+        .btn-jogar { background: #27ae60; font-size: 1.2rem; padding: 12px 24px; margin-top: 10px; }
+        .info-vagas { background: #2c3e50; padding: 12px; border-radius: 12px; margin-bottom: 16px; text-align: center; }
+        .select-fase { background: #1e2a3a; border: 1px solid #ffd966; color: white; padding: 6px 12px; border-radius: 20px; margin: 0 8px; }
+        .trend-up { color: #2ecc71; }
+        .trend-down { color: #e74c3c; }
+        .trend-flat { color: #f39c12; }
+        .loading { text-align: center; padding: 20px; color: #aaa; }
         .opcoes-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -287,7 +277,7 @@
                     <button class="opcao" onclick="window.responder(2)"></button>
                     <button class="opcao" onclick="window.responder(3)"></button>
                 </div>
-                <div><span>Pergunta: <span id="pergunta-num">1</span>/20</span> <span>Tempo: <span id="timer" class="timer-grande timer-normal">10.0s</span></span></div>
+                <div><span>Pergunta: <span id="pergunta-num">1</span>/20</span></div>
                 <p>Pontos nesta partida: <strong id="pontos-partida">0</strong></p>
             </div>
             <button id="btn-cancelar-jogo" class="btn-danger">❌ Cancelar</button>
@@ -449,7 +439,6 @@
         return resultado;
     }
 
-    // ========== FUNÇÃO CORRIGIDA: GERA TABELA COM TAGS CORRETAS ==========
     function gerarTabelaRanking(ranking) {
         if(!ranking || ranking.length===0) return '<div class="loading">Nenhum participante ainda.</div>';
         let html = `<table class="ranking-table">
@@ -475,7 +464,7 @@
                         <td style="text-align:center">${r.posRodada}</td>
                         <td style="text-align:center">${r.partidas}</td>
                         <td style="text-align:center">${r.classificado}</td>
-                    </tr>`;
+                     </tr>`;
         }
         html += `</tbody></table>`;
         return html;
@@ -561,19 +550,13 @@
         if(timerInterval) clearInterval(timerInterval);
         if(barraInterval) clearInterval(barraInterval);
         tempoRestante = 10;
-        let timerElem = document.getElementById('timer');
         let barraElem = document.getElementById('progresso-tempo');
-        timerElem.classList.remove('timer-alerta','timer-urgente');
-        timerElem.classList.add('timer-normal');
         barraElem.style.width = '100%';
         barraElem.style.backgroundColor = '#27ae60';
         barraElem.classList.remove('pulsando');
         timerInterval = setInterval(() => {
             if(!jogoAtivo) return;
             tempoRestante -= 0.1;
-            timerElem.innerText = tempoRestante.toFixed(1);
-            if(tempoRestante <= 3 && tempoRestante > 1) { timerElem.classList.remove('timer-normal'); timerElem.classList.add('timer-alerta'); }
-            else if(tempoRestante <= 1) { timerElem.classList.remove('timer-alerta'); timerElem.classList.add('timer-urgente'); }
             if(tempoRestante <= 0) { clearInterval(timerInterval); clearInterval(barraInterval); window.responder(-1); }
         }, 100);
         barraInterval = setInterval(() => {
