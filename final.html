@@ -268,11 +268,31 @@
         <div id="ranking-parcial" class="status-box"><div class="loading">Carregando...</div></div>
     </div>
 
-    <!-- TELA DO ALUNO (COM JOGO NO INÍCIO, APÓS O PROGRESSO) -->
+    <!-- TELA DO ALUNO - JOGO ANTES DO BLOCO DE PROGRESSO -->
     <div id="tela-aluno" class="card hidden">
         <h2 id="aluno-nome">Aluno</h2>
         <p>Turma: <span id="aluno-turma">-</span></p>
 
+        <!-- ÁREA DO JOGO (AGORA NO TOPO, ANTES DO PROGRESSO) -->
+        <div id="jogo-area" class="hidden">
+            <div class="status-box">
+                <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
+                <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo" style="width:100%; background:#27ae60;"></div></div>
+                <div id="pergunta" style="font-size:48px; text-align:center;">0 x 0 = ?</div>
+                <div class="opcoes-grid" id="opcoes-container">
+                    <button class="opcao" onclick="window.responder(0)"></button>
+                    <button class="opcao" onclick="window.responder(1)"></button>
+                    <button class="opcao" onclick="window.responder(2)"></button>
+                    <button class="opcao" onclick="window.responder(3)"></button>
+                </div>
+                <div><span>Pergunta: <span id="pergunta-num">1</span>/20</span></div>
+                <p>Pontos nesta partida: <strong id="pontos-partida">0</strong></p>
+            </div>
+        </div>
+
+        <div id="aguardando" class="hidden" style="text-align:center; padding:40px;">⏳ Aguardando liberação da fase...</div>
+
+        <!-- BLOCO DE PROGRESSO -->
         <div class="progresso-aluno">
             <p><strong>📊 Fase <span id="aluno-fase">--</span> - Seu progresso</strong></p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0;">
@@ -310,25 +330,7 @@
             <div id="msg-fase-bloqueada" class="hidden">⛔ A fase não está liberada. Aguarde o professor.</div>
         </div>
 
-        <!-- Área do jogo posicionada bem aqui, antes do ranking (início da tela) -->
-        <div id="jogo-area" class="hidden">
-            <div class="status-box">
-                <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
-                <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo" style="width:100%; background:#27ae60;"></div></div>
-                <div id="pergunta" style="font-size:48px; text-align:center;">0 x 0 = ?</div>
-                <div class="opcoes-grid" id="opcoes-container">
-                    <button class="opcao" onclick="window.responder(0)"></button>
-                    <button class="opcao" onclick="window.responder(1)"></button>
-                    <button class="opcao" onclick="window.responder(2)"></button>
-                    <button class="opcao" onclick="window.responder(3)"></button>
-                </div>
-                <div><span>Pergunta: <span id="pergunta-num">1</span>/20</span></div>
-                <p>Pontos nesta partida: <strong id="pontos-partida">0</strong></p>
-            </div>
-        </div>
-
-        <div id="aguardando" class="hidden" style="text-align:center; padding:40px;">⏳ Aguardando liberação da fase...</div>
-
+        <!-- RANKING -->
         <div id="ranking-aluno" class="status-box">
             <h3>Ranking da Fase Atual</h3>
             <div class="filtros-container">
@@ -498,7 +500,7 @@
         for(let r of ranking) {
             html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
         }
-        html += `</tbody></table>`;
+        html += `</tbody></td>`;
         return html;
     }
 
