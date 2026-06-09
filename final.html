@@ -196,7 +196,8 @@
         .classificado-msg { margin-top: 12px; padding: 8px; border-radius: 16px; font-weight: bold; }
         .classificado-sim { background: rgba(39,174,96,0.2); color: #2ecc71; }
         .classificado-nao { background: rgba(231,76,60,0.2); color: #e74c3c; }
-        .info-sincronizacao { font-size: 12px; color: #aaa; margin-top: 8px; text-align: right; }
+        .info-sincronizacao { font-size: 12px; color: #aaa; margin-top: 8px; text-align: center; }
+        .sinc-container { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 8px; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -212,6 +213,7 @@
 </div>
 
 <div class="container">
+    <!-- TELA PRINCIPAL (com sincronização centralizada) -->
     <div class="card">
         <h1>🏆 COPA TABUADA CEIB 2026 - FASES ELIMINATÓRIAS</h1>
         <p>Fase atual: <strong id="fase-atual-titulo">--</strong> • <span id="status-fase">Carregando...</span></p>
@@ -220,10 +222,12 @@
             <button id="btn-aluno">🎮 Entrar como Aluno</button>
             <button id="btn-projecao">📺 Tela de Torcida</button>
             <button onclick="window.open('https://henriqueprofessor.github.io/Tabuada/', '_blank')" class="btn-success">🏠 Fase Classificatória</button>
+            <button id="btn-sincronizar-principal" class="btn-primary">🔄 Sincronizar agora</button>
         </div>
+        <div id="ultima-sincronizacao-principal" class="info-sincronizacao">Última atualização: --</div>
     </div>
 
-    <!-- PAINEL DO PROFESSOR -->
+    <!-- PAINEL DO PROFESSOR (SEM SINCRONIZAÇÃO) -->
     <div id="painel-professor" class="card hidden">
         <h2>🔧 Painel do Professor</h2>
         <div class="flex-grid">
@@ -237,8 +241,6 @@
                 <button id="btn-reset-fase" class="btn-danger">⚠️ Resetar Fase</button>
                 <button id="btn-remover-duplicados" class="btn-warning">🔧 Remover Duplicados</button>
                 <button id="btn-reset-todos-dados" class="btn-danger">🗑️ Resetar Todos</button>
-                <button id="btn-sincronizar" class="btn-primary">🔄 Sincronizar agora</button>
-                <div id="ultima-sincronizacao-prof" class="info-sincronizacao">Última atualização: --</div>
                 <button id="btn-voltar-inicio" class="btn-primary">🏠 Voltar</button>
             </div>
             <div>
@@ -273,12 +275,11 @@
         <div id="ranking-parcial" class="status-box"><div class="loading">Carregando...</div></div>
     </div>
 
-    <!-- TELA DO ALUNO - JOGO ANTES DO BLOCO DE PROGRESSO -->
+    <!-- TELA DO ALUNO (sem alterações) -->
     <div id="tela-aluno" class="card hidden">
         <h2 id="aluno-nome">Aluno</h2>
         <p>Turma: <span id="aluno-turma">-</span></p>
 
-        <!-- ÁREA DO JOGO (AGORA NO TOPO, ANTES DO PROGRESSO) -->
         <div id="jogo-area" class="hidden">
             <div class="status-box">
                 <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
@@ -297,7 +298,6 @@
 
         <div id="aguardando" class="hidden" style="text-align:center; padding:40px;">⏳ Aguardando liberação da fase...</div>
 
-        <!-- BLOCO DE PROGRESSO -->
         <div class="progresso-aluno">
             <p><strong>📊 Fase <span id="aluno-fase">--</span> - Seu progresso</strong></p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0;">
@@ -335,7 +335,6 @@
             <div id="msg-fase-bloqueada" class="hidden">⛔ A fase não está liberada. Aguarde o professor.</div>
         </div>
 
-        <!-- RANKING -->
         <div id="ranking-aluno" class="status-box">
             <h3>Ranking da Fase Atual</h3>
             <div class="filtros-container">
@@ -350,11 +349,9 @@
         <button id="btn-sair-aluno">⬅️ Sair</button>
     </div>
 
-    <!-- TELA DE PROJEÇÃO -->
+    <!-- TELA DE PROJEÇÃO (SEM SINCRONIZAÇÃO) -->
     <div id="tela-projecao" class="card hidden">
         <h2>📺 COPA TABUADA CEIB 2026 - TORCIDA</h2>
-        <button id="btn-sincronizar-torcida" class="btn-primary" style="margin-bottom: 12px;">🔄 Sincronizar agora</button>
-        <div id="ultima-sincronizacao-torcida" class="info-sincronizacao">Última atualização: --</div>
         <div id="projecao-status" class="status-box">Carregando...</div>
         <div id="info-vagas" class="info-vagas"></div>
         <div class="filtros-container">
@@ -408,12 +405,9 @@
 
     function atualizarDisplayUltimaSincronizacao() {
         const lastSync = localStorage.getItem(STORAGE_LAST_SYNC);
-        const textos = ["ultima-sincronizacao-prof", "ultima-sincronizacao-torcida"];
         const dataStr = lastSync ? `Última atualização: ${new Date(parseInt(lastSync)).toLocaleString()}` : "Última atualização: --";
-        textos.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.innerText = dataStr;
-        });
+        const elemento = document.getElementById("ultima-sincronizacao-principal");
+        if (elemento) elemento.innerText = dataStr;
     }
 
     async function forcarSincronizacao() {
@@ -716,7 +710,6 @@
         }
         const botoes = document.querySelectorAll('.opcao');
         if (botoes.length >= 4) {
-            // Exibe as opções em ordem crescente, uma abaixo da outra
             for(let i = 0; i < 4; i++) {
                 botoes[i].innerText = opcoes[i];
                 botoes[i].disabled = false;
@@ -1088,7 +1081,7 @@
         if(btn.id === 'btn-reset-fase') await resetarFaseProf();
         if(btn.id === 'btn-remover-duplicados') await removerDuplicadosProf();
         if(btn.id === 'btn-reset-todos-dados') await resetarTodosDados();
-        if(btn.id === 'btn-sincronizar' || btn.id === 'btn-sincronizar-torcida') await forcarSincronizacao();
+        if(btn.id === 'btn-sincronizar-principal') await forcarSincronizacao();
         if(btn.id === 'btn-voltar-inicio' || btn.id === 'btn-sair-aluno' || btn.id === 'btn-sair-projecao') location.reload();
         if(btn.id === 'btn-adicionar-aluno') {
             let n = prompt("Nome:"), t = prompt("Turma:");
