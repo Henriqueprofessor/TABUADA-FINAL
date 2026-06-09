@@ -193,6 +193,9 @@
             border-radius: 12px;
             margin: 4px;
         }
+        .classificado-msg { margin-top: 12px; padding: 8px; border-radius: 16px; font-weight: bold; }
+        .classificado-sim { background: rgba(39,174,96,0.2); color: #2ecc71; }
+        .classificado-nao { background: rgba(231,76,60,0.2); color: #e74c3c; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -308,6 +311,7 @@
                         <p><strong id="projecao-posicao" style="font-size:1.2rem;">--</strong></p>
                     </div>
                 </div>
+                <div id="classificacao-atual" class="classificado-msg" style="margin-top:12px;"></div>
                 <p id="msg-incentivo" style="font-size:12px; margin-top:8px; font-style:italic; color:#aaa;"></p>
             </div>
 
@@ -467,6 +471,7 @@
                 else evol = `<span class="trend-flat">► 0%</span>`;
             }
             resultado.push({
+                id: p.id,
                 pos, nome:p.nome, turma:p.turma, total:p.total, gap,
                 melhorPontuacao: p.melhorPontuacao || 0,
                 pontRodadaAnterior: p.pontRodadaAnterior !== null ? p.pontRodadaAnterior : "–",
@@ -518,9 +523,10 @@
                         <td style="text-align:center">${r.posRodada}</td>
                         <td style="text-align:center">${r.partidas}</td>
                         <td style="text-align:center">${r.classificado}</td>
-                     </tr>`;
+                      </tr>`;
         }
-        html += `</tbody></table>`; // CORREÇÃO ERRO 1 e 3: Fechamento fora do loop e tag correta
+        html += `</tbody>
+                </table>`;
         return html;
     }
 
@@ -571,51 +577,40 @@
         else fatores=[0,1,2,3,4,5,6,7,8,9,10];
         
         let perguntas=[];
-        // Criar uma lista de posições para garantir 25% de distribuição (5 de cada para 20 perguntas)
         let posicoes = [0,0,0,0,0,1,1,1,1,1,2,2,2,2,2,3,3,3,3,3];
-        posicoes.sort(() => Math.random() - 0.5); // Embaralhar as posições
+        posicoes.sort(() => Math.random() - 0.5);
 
         for(let i=0;i<20;i++) {
             let a = fatores[Math.floor(Math.random()*fatores.length)];
             let b = Math.floor(Math.random()*11);
             let resposta = a * b;
             
-            // Gerar 3 alternativas incorretas
             let incorretas = [];
             while(incorretas.length < 3) {
                 let r = resposta + (Math.floor(Math.random()*13)-6);
                 if(r>=0 && r !== resposta && !incorretas.includes(r)) incorretas.push(r);
             }
             
-            // Queremos que a resposta correta fique na posição 'posicoes[i]' do array ordenado
-            // Ex: Se posicoes[i] = 0, a resposta deve ser a menor de todas.
-            // Se posicoes[i] = 3, a resposta deve ser a maior de todas.
-            
-            let todas = [];
             let posDesejada = posicoes[i];
-            
-            if (posDesejada === 0) { // Resposta deve ser a menor
+            if (posDesejada === 0) {
                 incorretas = incorretas.map(val => val <= resposta ? resposta + Math.floor(Math.random()*10) + 1 : val);
-            } else if (posDesejada === 1) { // Resposta deve ser a 2ª menor
-                // Garantir 1 menor e 2 maiores
+            } else if (posDesejada === 1) {
                 incorretas = [
                     resposta - (Math.floor(Math.random()*5) + 1),
                     resposta + (Math.floor(Math.random()*5) + 1),
                     resposta + (Math.floor(Math.random()*10) + 6)
                 ].map(v => v < 0 ? 0 : v);
-            } else if (posDesejada === 2) { // Resposta deve ser a 3ª menor
-                // Garantir 2 menores e 1 maior
+            } else if (posDesejada === 2) {
                 incorretas = [
                     resposta - (Math.floor(Math.random()*10) + 6),
                     resposta - (Math.floor(Math.random()*5) + 1),
                     resposta + (Math.floor(Math.random()*5) + 1)
                 ].map(v => v < 0 ? 0 : v);
-            } else { // Resposta deve ser a maior
+            } else {
                 incorretas = incorretas.map(val => val >= resposta ? resposta - Math.floor(Math.random()*10) - 1 : val);
             }
             
-            // Limpar duplicatas e garantir que a resposta correta seja a única na sua posição de ranking
-            todas = [resposta, ...incorretas.map(v => v < 0 ? 0 : v)];
+            let todas = [resposta, ...incorretas.map(v => v < 0 ? 0 : v)];
             let set = new Set(todas);
             while(set.size < 4) {
                 let r = resposta + (Math.floor(Math.random()*20)-10);
@@ -623,19 +618,14 @@
             }
             todas = Array.from(set).sort((a,b) => a-b);
             
-            // Agora forçamos a resposta correta a estar exatamente no índice posDesejada do array ordenado
-            // Se não estiver, trocamos
             let idxAtual = todas.indexOf(resposta);
             if(idxAtual !== posDesejada) {
                 let temp = todas[posDesejada];
                 todas[posDesejada] = todas[idxAtual];
                 todas[idxAtual] = temp;
-                // Re-ordenar as incorretas mantendo a correta no lugar para não quebrar a lógica de ranking
                 let correta = todas[posDesejada];
                 let menores = todas.filter((v, idx) => idx !== posDesejada && v < correta).sort((a,b) => a-b);
                 let maiores = todas.filter((v, idx) => idx !== posDesejada && v > correta).sort((a,b) => a-b);
-                
-                // Preencher o array final respeitando o ranking
                 let finalArr = [];
                 for(let k=0; k<4; k++) {
                     if(k < posDesejada) finalArr.push(menores.shift());
@@ -701,8 +691,6 @@
         respostaCorreta = p.resposta;
         
         let opcoes = p.opcoesOrdenadas;
-        
-        // Caso o banco de perguntas antigo não tenha opcoesOrdenadas, gera na hora
         if (!opcoes || !Array.isArray(opcoes)) {
             opcoes = [respostaCorreta];
             while(opcoes.length < 4) {
@@ -712,20 +700,15 @@
             opcoes.sort((a, b) => a - b);
         }
         
-        // Mapeamento visual solicitado:
-        // [Btn 0: Menor]      [Btn 1: 3ª Maior]
-        // [Btn 2: 2ª Maior]   [Btn 3: Maior]
-        
         const botoes = document.querySelectorAll('.opcao');
         if (botoes.length >= 4) {
-            botoes[0].innerText = opcoes[0]; // Sup Esq
-            botoes[1].innerText = opcoes[2]; // Sup Dir
-            botoes[2].innerText = opcoes[1]; // Inf Esq
-            botoes[3].innerText = opcoes[3]; // Inf Dir
+            botoes[0].innerText = opcoes[0];
+            botoes[1].innerText = opcoes[2];
+            botoes[2].innerText = opcoes[1];
+            botoes[3].innerText = opcoes[3];
             
             botoes.forEach(btn => {
                 btn.disabled = false;
-                // Garantir que o texto seja visível (caso haja algum CSS ocultando)
                 btn.style.color = "white";
             });
         }
@@ -815,7 +798,7 @@
         document.getElementById('partidas-feitas').innerText = progresso;
         document.getElementById('aluno-pontos-total').innerText = total.toLocaleString('pt-BR');
         
-        // Cálculo de Posições e Projeções
+        // Posição geral (ranking da fase atual)
         const rankingGeral = await gerarRanking(estadoAtual, fase);
         const minhaPosGeral = rankingGeral.findIndex(p => p.id === alunoId) + 1;
         document.getElementById('aluno-posicao-atual').innerText = minhaPosGeral > 0 ? `${minhaPosGeral}º` : '--';
@@ -828,10 +811,35 @@
                 .map(([id, dados]) => ({id, pontos: dados.pontos}))
                 .sort((a,b) => b.pontos - a.pontos);
             const minhaPosRodada = rankingRodada.findIndex(p => p.id === alunoId) + 1;
-            document.getElementById('aluno-posicao-rodada').innerText = minhaPosRodada > 0 ? `${minhaPosRodada}º` : '--';
+            document.getElementById('aluno-posicao-rodada').innerHTML = minhaPosRodada > 0 ? `${minhaPosRodada}º` : '--';
+        } else {
+            document.getElementById('aluno-posicao-rodada').innerHTML = '--';
         }
 
-        // Lógica de Projeção
+        // Lógica de Projeção e Classificação Atual
+        const numVagas = CLASSIFICADOS_POR_FASE[fase];
+        const classificacaoDiv = document.getElementById('classificacao-atual');
+        
+        if(progresso > 0) {
+            // Verifica classificação atual (com base nos pontos já consolidados)
+            const posAtual = minhaPosGeral;
+            if(posAtual > 0 && posAtual <= numVagas) {
+                classificacaoDiv.innerHTML = `✅ CLASSIFICADO! Você está na ${posAtual}º posição, dentro do G-${numVagas}.`;
+                classificacaoDiv.className = "classificado-msg classificado-sim";
+            } else if(posAtual > 0) {
+                const pontosProximos = (rankingGeral[numVagas-1]?.total || 0) - total;
+                classificacaoDiv.innerHTML = `❌ Não classificado atualmente (${posAtual}º lugar). Faltam ${pontosProximos} pontos para entrar no G-${numVagas}.`;
+                classificacaoDiv.className = "classificado-msg classificado-nao";
+            } else {
+                classificacaoDiv.innerHTML = `⏳ Posição indefinida.`;
+                classificacaoDiv.className = "classificado-msg";
+            }
+        } else {
+            classificacaoDiv.innerHTML = `📊 Após jogar sua primeira partida, saberemos se você está classificado.`;
+            classificacaoDiv.className = "classificado-msg";
+        }
+        
+        // Projeção de pontos e posição final (baseada na média)
         if(progresso > 0 && progresso < 4) {
             document.getElementById('area-projecao').classList.remove('hidden');
             const media = total / progresso;
@@ -841,22 +849,35 @@
             // Estimar posição final baseada na projeção
             const rankingSimulado = rankingGeral.map(p => {
                 if(p.id === alunoId) return {...p, total: projecaoPontos};
-                // Para outros alunos, se não terminaram, projetamos também
-                const prog = p.partidas.filter(x=>x).length;
-                return prog > 0 ? {...p, total: Math.round((p.total/prog)*4)} : p;
+                const progParts = parseInt(p.partidas.split('/')[0]) || 0;
+                return progParts > 0 ? {...p, total: Math.round((p.total/progParts)*4)} : p;
             }).sort((a,b) => b.total - a.total);
             
             const posProjetada = rankingSimulado.findIndex(p => p.id === alunoId) + 1;
             document.getElementById('projecao-posicao').innerText = `${posProjetada}º`;
             
-            const numVagas = CLASSIFICADOS_POR_FASE[fase];
             const msg = document.getElementById('msg-incentivo');
             if(posProjetada <= numVagas) {
                 msg.innerText = "🔥 No ritmo atual, você garante sua vaga!";
                 msg.style.color = "#2ecc71";
             } else {
-                msg.innerText = `🎯 Faltam aprox. ${Math.round((rankingSimulado[numVagas-1].total - projecaoPontos)/ (4-progresso))} pontos por partida para entrar no G-${numVagas}!`;
+                const pontosFaltantes = (rankingSimulado[numVagas-1]?.total || projecaoPontos + 1) - projecaoPontos;
+                const pontosPorPartida = Math.ceil(pontosFaltantes / (4 - progresso));
+                msg.innerText = `🎯 Faltam aprox. ${pontosFaltantes} pontos no total (${pontosPorPartida} por partida) para entrar no G-${numVagas}!`;
                 msg.style.color = "#f39c12";
+            }
+        } else if (progresso === 4) {
+            // Se já terminou todas as partidas, mostrar classificação final
+            document.getElementById('area-projecao').classList.remove('hidden');
+            document.getElementById('projecao-pontos').innerText = total.toLocaleString('pt-BR');
+            document.getElementById('projecao-posicao').innerText = `${minhaPosGeral}º`;
+            document.getElementById('msg-incentivo').innerHTML = "";
+            if(minhaPosGeral <= numVagas) {
+                document.getElementById('classificacao-atual').innerHTML = `🏆 PARABÉNS! Você está CLASSIFICADO para a próxima fase! (${minhaPosGeral}º lugar)`;
+                document.getElementById('classificacao-atual').className = "classificado-msg classificado-sim";
+            } else {
+                document.getElementById('classificacao-atual').innerHTML = `😢 Infelizmente você não se classificou para a próxima fase (${minhaPosGeral}º lugar). Mas continue treinando!`;
+                document.getElementById('classificacao-atual').className = "classificado-msg classificado-nao";
             }
         } else {
             document.getElementById('area-projecao').classList.add('hidden');
@@ -978,7 +999,7 @@
         }
     }
 
-    // EVENTOS CENTRALIZADOS (ERRO 5 CORREÇÃO)
+    // EVENTOS CENTRALIZADOS
     document.addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
         if(!btn) return;
@@ -1008,7 +1029,6 @@
             if(!nome) return;
             alunoNome = capitalizarNome(nome);
 
-            // Mostrar Modal de Seleção de Turma
             const grid = document.getElementById('grid-turmas-selecao');
             grid.innerHTML = '';
             turmasDisponiveis.forEach(t => {
@@ -1095,7 +1115,6 @@
             document.getElementById('aguardando').classList.remove('hidden');
         }
 
-        // Eventos de lista (Editar/Excluir)
         if(btn.classList.contains('btn-editar-aluno')) {
             let id = btn.dataset.id, novo = prompt("Novo nome:");
             if(novo) {
@@ -1135,7 +1154,6 @@
         setTimeout(() => t.classList.add('hidden'), 3000);
     }
     
-    // Inicialização automática se já houver tipo definido (ex: após reload)
     window.onload = () => { if(meuTipo) inicializarEstado(); };
 </script>
 </body>
