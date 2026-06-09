@@ -199,9 +199,19 @@
 </head>
 <body>
 <canvas id="confetti-canvas"></canvas>
-<div class="container">
-    <div class="card">
-        <h1>🏆 COPA TABUADA CEIB 2026 - FASES ELIMINATÓRIAS</h1>
+    <div id="modal-selecao-turma" class="overlay hidden">
+        <div class="dialog-turma">
+            <h3>Escolha sua Turma</h3>
+            <div id="grid-turmas-selecao" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px;">
+                <!-- Botões de turma aqui -->
+            </div>
+            <button id="btn-cancelar-selecao" class="btn-danger" style="margin-top: 20px;">Cancelar</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h1>🏆 COPA TABUADA CEIB 2026 - FASES ELIMINATÓRIAS</h1>
         <p>Fase atual: <strong id="fase-atual-titulo">--</strong> • <span id="status-fase">Carregando...</span></p>
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0;">
             <button id="btn-professor" class="btn-primary">👨‍🏫 Entrar como Professor</button>
@@ -905,31 +915,49 @@
             await carregarTurmas();
             if(!estadoPronto) await inicializarEstado();
             
-            // Verificação de segurança para evitar o erro de 'status' nulo
             if(!estadoAtual) {
                 mostrarToast("Aguardando conexão com o servidor...");
                 return;
             }
 
             if(estadoAtual.status !== 'em_andamento') { mostrarToast("A fase não está liberada."); return; }
+            
             let nome = prompt("Seu nome completo:");
             if(!nome) return;
-            let turmaPrompt = "Escolha sua turma:\n" + turmasDisponiveis.map((t,i)=>`${i+1}: ${t}`).join('\n');
-            let idx = parseInt(prompt(turmaPrompt)) - 1;
-            if(isNaN(idx) || !turmasDisponiveis[idx]) { mostrarToast("Turma inválida."); return; }
-            
-            alunoNome = capitalizarNome(nome); alunoTurma = turmasDisponiveis[idx]; alunoId = gerarIdEstavel(alunoNome, alunoTurma);
-            meuTipo = 'aluno';
-            document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
-            document.getElementById('tela-aluno').classList.remove('hidden');
-            
-            // CORREÇÃO ERRO 4: Lógica de salvamento sem push aleatório
-            let lista = getParticipantesArray(estadoAtual);
-            if(!lista.find(p => p.id === alunoId)) {
-                lista.push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
-                await estadoRef.child('participantes').set(lista);
-            }
-            await atualizarInterfaceAluno();
+            alunoNome = capitalizarNome(nome);
+
+            // Mostrar Modal de Seleção de Turma
+            const grid = document.getElementById('grid-turmas-selecao');
+            grid.innerHTML = '';
+            turmasDisponiveis.forEach(t => {
+                const b = document.createElement('button');
+                b.innerText = t;
+                b.className = 'btn-turma-opcao';
+                b.style.width = '100%';
+                b.style.padding = '15px';
+                b.style.fontSize = '18px';
+                b.onclick = async () => {
+                    alunoTurma = t;
+                    alunoId = gerarIdEstavel(alunoNome, alunoTurma);
+                    meuTipo = 'aluno';
+                    document.getElementById('modal-selecao-turma').classList.add('hidden');
+                    document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
+                    document.getElementById('tela-aluno').classList.remove('hidden');
+                    
+                    let lista = getParticipantesArray(estadoAtual);
+                    if(!lista.find(p => p.id === alunoId)) {
+                        lista.push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
+                        await estadoRef.child('participantes').set(lista);
+                    }
+                    await atualizarInterfaceAluno();
+                };
+                grid.appendChild(b);
+            });
+            document.getElementById('modal-selecao-turma').classList.remove('hidden');
+        }
+
+        if(btn.id === 'btn-cancelar-selecao') {
+            document.getElementById('modal-selecao-turma').classList.add('hidden');
         }
 
         if(btn.id === 'btn-projecao') {
