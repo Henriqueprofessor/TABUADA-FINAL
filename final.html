@@ -276,8 +276,41 @@
         <p>Turma: <span id="aluno-turma">-</span></p>
         <div class="progresso-aluno">
             <p><strong>📊 Fase <span id="aluno-fase">--</span> - Seu progresso</strong></p>
-            <p>Partidas concluídas: <span id="partidas-feitas">0</span> / 4</p>
-            <p>Total de pontos na fase: <strong id="aluno-pontos-total">0</strong></p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0;">
+                <div class="status-box" style="margin-top:0; padding:10px;">
+                    <p style="font-size:12px; color:#ffd966;">Partidas</p>
+                    <p><span id="partidas-feitas">0</span> / 4</p>
+                </div>
+                <div class="status-box" style="margin-top:0; padding:10px;">
+                    <p style="font-size:12px; color:#ffd966;">Pontos Atuais</p>
+                    <p><strong id="aluno-pontos-total">0</strong></p>
+                </div>
+                <div id="box-posicao-atual" class="status-box" style="margin-top:0; padding:10px;">
+                    <p style="font-size:12px; color:#ffd966;">Posição Geral</p>
+                    <p><strong id="aluno-posicao-atual">--</strong></p>
+                </div>
+                <div id="box-posicao-rodada" class="status-box" style="margin-top:0; padding:10px;">
+                    <p style="font-size:12px; color:#ffd966;">Na Rodada</p>
+                    <p><strong id="aluno-posicao-rodada">--</strong></p>
+                </div>
+            </div>
+            
+            <div id="area-projecao" class="status-box" style="margin-top:0; background: rgba(39, 174, 96, 0.1); border: 1px solid #27ae60; margin-bottom: 15px;">
+                <p style="color:#2ecc71; font-weight:bold; margin-bottom:5px;">🔮 Projeção Final</p>
+                <div style="display: flex; justify-content: space-around; align-items: center;">
+                    <div>
+                        <p style="font-size:11px;">Pontos Estimados</p>
+                        <p><strong id="projecao-pontos" style="font-size:1.2rem;">--</strong></p>
+                    </div>
+                    <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.2);"></div>
+                    <div>
+                        <p style="font-size:11px;">Posição Estimada</p>
+                        <p><strong id="projecao-posicao" style="font-size:1.2rem;">--</strong></p>
+                    </div>
+                </div>
+                <p id="msg-incentivo" style="font-size:12px; margin-top:8px; font-style:italic; color:#aaa;"></p>
+            </div>
+
             <button id="btn-jogar-proxima" class="btn-jogar" disabled>▶️ Jogar Próxima Partida</button>
             <div id="msg-fase-finalizada" class="hidden">🏁 Você completou todas as 4 partidas! Aguarde próxima fase.</div>
             <div id="msg-fase-bloqueada" class="hidden">⛔ A fase não está liberada. Aguarde o professor.</div>
@@ -775,11 +808,60 @@
         let fase = estadoAtual.faseAtual, status = estadoAtual.status;
         let progresso = await getProgresso(alunoId, fase);
         let {total} = getDetalhesAluno(estadoAtual, alunoId, fase);
+        
         document.getElementById('aluno-nome').innerText = alunoNome;
         document.getElementById('aluno-turma').innerText = alunoTurma;
         document.getElementById('aluno-fase').innerText = fase;
         document.getElementById('partidas-feitas').innerText = progresso;
-        document.getElementById('aluno-pontos-total').innerText = total;
+        document.getElementById('aluno-pontos-total').innerText = total.toLocaleString('pt-BR');
+        
+        // Cálculo de Posições e Projeções
+        const rankingGeral = await gerarRanking(estadoAtual, fase);
+        const minhaPosGeral = rankingGeral.findIndex(p => p.id === alunoId) + 1;
+        document.getElementById('aluno-posicao-atual').innerText = minhaPosGeral > 0 ? `${minhaPosGeral}º` : '--';
+
+        // Posição na última rodada jogada
+        if(progresso > 0) {
+            const chaveUltima = `r${progresso}p`;
+            const resultadosRodada = estadoAtual.resultadosFase?.[fase]?.[chaveUltima] || {};
+            const rankingRodada = Object.entries(resultadosRodada)
+                .map(([id, dados]) => ({id, pontos: dados.pontos}))
+                .sort((a,b) => b.pontos - a.pontos);
+            const minhaPosRodada = rankingRodada.findIndex(p => p.id === alunoId) + 1;
+            document.getElementById('aluno-posicao-rodada').innerText = minhaPosRodada > 0 ? `${minhaPosRodada}º` : '--';
+        }
+
+        // Lógica de Projeção
+        if(progresso > 0 && progresso < 4) {
+            document.getElementById('area-projecao').classList.remove('hidden');
+            const media = total / progresso;
+            const projecaoPontos = Math.round(media * 4);
+            document.getElementById('projecao-pontos').innerText = projecaoPontos.toLocaleString('pt-BR');
+            
+            // Estimar posição final baseada na projeção
+            const rankingSimulado = rankingGeral.map(p => {
+                if(p.id === alunoId) return {...p, total: projecaoPontos};
+                // Para outros alunos, se não terminaram, projetamos também
+                const prog = p.partidas.filter(x=>x).length;
+                return prog > 0 ? {...p, total: Math.round((p.total/prog)*4)} : p;
+            }).sort((a,b) => b.total - a.total);
+            
+            const posProjetada = rankingSimulado.findIndex(p => p.id === alunoId) + 1;
+            document.getElementById('projecao-posicao').innerText = `${posProjetada}º`;
+            
+            const numVagas = CLASSIFICADOS_POR_FASE[fase];
+            const msg = document.getElementById('msg-incentivo');
+            if(posProjetada <= numVagas) {
+                msg.innerText = "🔥 No ritmo atual, você garante sua vaga!";
+                msg.style.color = "#2ecc71";
+            } else {
+                msg.innerText = `🎯 Faltam aprox. ${Math.round((rankingSimulado[numVagas-1].total - projecaoPontos)/ (4-progresso))} pontos por partida para entrar no G-${numVagas}!`;
+                msg.style.color = "#f39c12";
+            }
+        } else {
+            document.getElementById('area-projecao').classList.add('hidden');
+        }
+
         let podeJogar = (status === 'em_andamento' && progresso < 4);
         let btn = document.getElementById('btn-jogar-proxima');
         if(podeJogar) {
