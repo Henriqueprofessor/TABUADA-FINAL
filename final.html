@@ -277,6 +277,7 @@
     <div id="tela-aluno" class="card hidden">
         <h2 id="aluno-nome">Aluno</h2>
         <p>Turma: <span id="aluno-turma">-</span></p>
+        
         <div class="progresso-aluno">
             <p><strong>📊 Fase <span id="aluno-fase">--</span> - Seu progresso</strong></p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0;">
@@ -319,6 +320,20 @@
             <div id="msg-fase-finalizada" class="hidden">🏁 Você completou todas as 4 partidas! Aguarde próxima fase.</div>
             <div id="msg-fase-bloqueada" class="hidden">⛔ A fase não está liberada. Aguarde o professor.</div>
         </div>
+
+        <!-- Ranking e Jogo movido para depois do progresso -->
+        <div id="ranking-aluno" class="status-box">
+            <h3>Ranking da Fase Atual</h3>
+            <div class="filtros-container">
+                <div class="filtro-group"><label>Filtrar por nome</label><input type="text" id="filtro-nome-aluno" placeholder="Nome..."></div>
+                <div class="filtro-group"><label>Filtrar por turma</label><input type="text" id="filtro-turma-aluno" placeholder="Turma..."></div>
+                <div class="filtro-group"><label>Ordenar por Melhor Pontuação</label><select id="ordem-melhor-pont-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
+                <div class="filtro-group"><label>Ordenar por Evolução (%)</label><select id="ordem-evolucao-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
+            </div>
+            <div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div>
+        </div>
+
+        <!-- Área do jogo (agora abaixo do ranking) -->
         <div id="jogo-area" class="hidden">
             <div class="status-box">
                 <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
@@ -335,17 +350,9 @@
             </div>
             <button id="btn-cancelar-jogo" class="btn-danger">❌ Cancelar</button>
         </div>
+
         <div id="aguardando" class="hidden" style="text-align:center; padding:40px;">⏳ Aguardando liberação da fase...</div>
-        <div id="ranking-aluno" class="status-box">
-            <h3>Ranking da Fase Atual</h3>
-            <div class="filtros-container">
-                <div class="filtro-group"><label>Filtrar por nome</label><input type="text" id="filtro-nome-aluno" placeholder="Nome..."></div>
-                <div class="filtro-group"><label>Filtrar por turma</label><input type="text" id="filtro-turma-aluno" placeholder="Turma..."></div>
-                <div class="filtro-group"><label>Ordenar por Melhor Pontuação</label><select id="ordem-melhor-pont-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-                <div class="filtro-group"><label>Ordenar por Evolução (%)</label><select id="ordem-evolucao-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-            </div>
-            <div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div>
-        </div>
+        
         <button id="btn-sair-aluno">⬅️ Sair</button>
     </div>
 
@@ -367,7 +374,7 @@
 <div id="toast" class="toast hidden"></div>
 
 <script>
-    // CONFIGURAÇÃO FIREBASE
+    // CONFIGURAÇÃO FIREBASE (mesma do original)
     const firebaseConfig = {
         apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBz0-o2HVhEE",
         authDomain: "final-copa-tabuada.firebaseapp.com",
@@ -395,7 +402,7 @@
     const CLASSIFICADOS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 4 };
     let turmasDisponiveis = ["901","1001","1002","1003","1004","2001","2002","2003","3001","3002"];
 
-    // AUXILIARES
+    // AUXILIARES (todas as funções auxiliares permanecem idênticas ao original)
     function escapeHtml(str) { if(!str) return ''; return str.toString().replace(/[&<>]/g, m => m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'); }
     function capitalizarNome(nome) { if(!nome) return ''; return nome.toLowerCase().split(' ').map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' '); }
     function gerarIdEstavel(nome, turma) { return btoa(nome.toLowerCase().trim()+"|"+turma).slice(0,16); }
@@ -442,7 +449,7 @@
     async function getProgresso(id,fase) { return (await db.ref(`progressoAluno/${id}/fase${fase}`).once('value')).val() || 0; }
     async function setProgresso(id,fase,val) { await db.ref(`progressoAluno/${id}/fase${fase}`).set(val); }
 
-    // RANKING
+    // RANKING (idêntico)
     async function gerarRanking(estado, fase) {
         let participantes = getParticipantesArray(estado);
         if(participantes.length===0) return [];
@@ -500,37 +507,15 @@
 
     function gerarTabelaRanking(ranking) {
         if(!ranking || ranking.length===0) return '<div class="loading">Nenhum participante ainda.</div>';
-        let html = `<table class="ranking-table">
-                        <thead>
-                            <tr>
-                                <th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ</th>
-                                <th>Melhor Pontuação</th><th>Rodada Atual</th><th>Rodada Anterior</th>
-                                <th>Evolução</th><th>Pos Rodada</th><th>Partidas</th><th>Classificado</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
+        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ</th><th>Melhor Pontuação</th><th>Rodada Atual</th><th>Rodada Anterior</th><th>Evolução</th><th>Pos Rodada</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
         for(let r of ranking) {
-            html += `<tr>
-                        <td style="text-align:center">${r.pos}º</td>
-                        <td style="text-align:left">${escapeHtml(r.nome)}</td>
-                        <td style="text-align:center">${escapeHtml(r.turma)}</td>
-                        <td style="text-align:center">${r.total}</td>
-                        <td style="text-align:center">${r.gap}</td>
-                        <td style="text-align:center">${r.melhorPontuacao}</td>
-                        <td style="text-align:center">${r.pontRodadaAtual}</td>
-                        <td style="text-align:center">${r.pontRodadaAnterior}</td>
-                        <td style="text-align:center">${r.evolucao}</td>
-                        <td style="text-align:center">${r.posRodada}</td>
-                        <td style="text-align:center">${r.partidas}</td>
-                        <td style="text-align:center">${r.classificado}</td>
-                      </tr>`;
+            html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
         }
-        html += `</tbody>
-                </table>`;
+        html += `</tbody></table>`;
         return html;
     }
 
-    // ATUALIZAÇÃO DE INTERFACE
+    // Funções de atualização (sem alterações)
     async function atualizarRankingProfessor() {
         if(!estadoAtual) return;
         let ranking = await gerarRanking(estadoAtual, estadoAtual.faseAtual);
@@ -568,7 +553,7 @@
         document.getElementById('info-vagas').innerHTML = `<div class="info-vagas">🏆 ${numVagas} vagas</div>`;
     }
 
-    // JOGO
+    // JOGO (idêntico ao original, exceto que a interface agora está abaixo do ranking)
     async function gerarBanco(dificuldade) {
         let fatores = [];
         if(dificuldade.includes("2-5")) fatores=[2,3,4,5];
@@ -798,12 +783,10 @@
         document.getElementById('partidas-feitas').innerText = progresso;
         document.getElementById('aluno-pontos-total').innerText = total.toLocaleString('pt-BR');
         
-        // Posição geral (ranking da fase atual)
         const rankingGeral = await gerarRanking(estadoAtual, fase);
         const minhaPosGeral = rankingGeral.findIndex(p => p.id === alunoId) + 1;
         document.getElementById('aluno-posicao-atual').innerText = minhaPosGeral > 0 ? `${minhaPosGeral}º` : '--';
 
-        // Posição na última rodada jogada
         if(progresso > 0) {
             const chaveUltima = `r${progresso}p`;
             const resultadosRodada = estadoAtual.resultadosFase?.[fase]?.[chaveUltima] || {};
@@ -816,12 +799,10 @@
             document.getElementById('aluno-posicao-rodada').innerHTML = '--';
         }
 
-        // Lógica de Projeção e Classificação Atual
         const numVagas = CLASSIFICADOS_POR_FASE[fase];
         const classificacaoDiv = document.getElementById('classificacao-atual');
         
         if(progresso > 0) {
-            // Verifica classificação atual (com base nos pontos já consolidados)
             const posAtual = minhaPosGeral;
             if(posAtual > 0 && posAtual <= numVagas) {
                 classificacaoDiv.innerHTML = `✅ CLASSIFICADO! Você está na ${posAtual}º posição, dentro do G-${numVagas}.`;
@@ -839,14 +820,12 @@
             classificacaoDiv.className = "classificado-msg";
         }
         
-        // Projeção de pontos e posição final (baseada na média)
         if(progresso > 0 && progresso < 4) {
             document.getElementById('area-projecao').classList.remove('hidden');
             const media = total / progresso;
             const projecaoPontos = Math.round(media * 4);
             document.getElementById('projecao-pontos').innerText = projecaoPontos.toLocaleString('pt-BR');
             
-            // Estimar posição final baseada na projeção
             const rankingSimulado = rankingGeral.map(p => {
                 if(p.id === alunoId) return {...p, total: projecaoPontos};
                 const progParts = parseInt(p.partidas.split('/')[0]) || 0;
@@ -867,7 +846,6 @@
                 msg.style.color = "#f39c12";
             }
         } else if (progresso === 4) {
-            // Se já terminou todas as partidas, mostrar classificação final
             document.getElementById('area-projecao').classList.remove('hidden');
             document.getElementById('projecao-pontos').innerText = total.toLocaleString('pt-BR');
             document.getElementById('projecao-posicao').innerText = `${minhaPosGeral}º`;
@@ -899,7 +877,7 @@
         await atualizarRankingAluno();
     }
 
-    // PROFESSOR
+    // Funções do professor (idênticas)
     async function resetarFaseProf() {
         if(!confirm("Resetar fase atual? Todos os dados serão perdidos.")) return;
         let fase = estadoAtual.faseAtual;
@@ -959,7 +937,7 @@
         document.getElementById('ranking-titulo').innerText = `Fase ${fase}`;
     }
 
-    // INICIALIZAÇÃO
+    // Inicialização e eventos (idênticos)
     async function inicializarEstado() {
         estadoRef = db.ref('faseFinal');
         let snap = await estadoRef.once('value');
@@ -999,7 +977,6 @@
         }
     }
 
-    // EVENTOS CENTRALIZADOS
     document.addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
         if(!btn) return;
@@ -1017,18 +994,11 @@
         if(btn.id === 'btn-aluno') {
             await carregarTurmas();
             if(!estadoPronto) await inicializarEstado();
-            
-            if(!estadoAtual) {
-                mostrarToast("Aguardando conexão com o servidor...");
-                return;
-            }
-
+            if(!estadoAtual) { mostrarToast("Aguardando conexão com o servidor..."); return; }
             if(estadoAtual.status !== 'em_andamento') { mostrarToast("A fase não está liberada."); return; }
-            
             let nome = prompt("Seu nome completo:");
             if(!nome) return;
             alunoNome = capitalizarNome(nome);
-
             const grid = document.getElementById('grid-turmas-selecao');
             grid.innerHTML = '';
             turmasDisponiveis.forEach(t => {
@@ -1045,7 +1015,6 @@
                     document.getElementById('modal-selecao-turma').classList.add('hidden');
                     document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
                     document.getElementById('tela-aluno').classList.remove('hidden');
-                    
                     let lista = getParticipantesArray(estadoAtual);
                     if(!lista.find(p => p.id === alunoId)) {
                         lista.push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
@@ -1058,17 +1027,13 @@
             document.getElementById('modal-selecao-turma').classList.remove('hidden');
         }
 
-        if(btn.id === 'btn-cancelar-selecao') {
-            document.getElementById('modal-selecao-turma').classList.add('hidden');
-        }
-
+        if(btn.id === 'btn-cancelar-selecao') { document.getElementById('modal-selecao-turma').classList.add('hidden'); }
         if(btn.id === 'btn-projecao') {
             meuTipo = 'projecao';
             document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
             document.getElementById('tela-projecao').classList.remove('hidden');
             await inicializarEstado();
         }
-
         if(btn.id === 'btn-liberar-fase') { await estadoRef.update({status:'em_andamento'}); mostrarToast("Fase liberada!"); }
         if(btn.id === 'btn-finalizar-fase') { await estadoRef.update({status:'finalizada'}); mostrarToast("Fase finalizada!"); }
         if(btn.id === 'btn-avancar-fase') await avancarFaseProf();
@@ -1076,7 +1041,6 @@
         if(btn.id === 'btn-remover-duplicados') await removerDuplicadosProf();
         if(btn.id === 'btn-reset-todos-dados') await resetarTodosDados();
         if(btn.id === 'btn-voltar-inicio' || btn.id === 'btn-sair-aluno' || btn.id === 'btn-sair-projecao') location.reload();
-        
         if(btn.id === 'btn-adicionar-aluno') {
             let n = prompt("Nome:"), t = prompt("Turma:");
             if(n && t) {
@@ -1088,7 +1052,6 @@
                 mostrarToast("Adicionado.");
             }
         }
-
         if(btn.id === 'btn-adicionar-turma') {
             let nt = document.getElementById('nova-turma').value.trim();
             if(nt && !turmasDisponiveis.includes(nt)) {
@@ -1098,23 +1061,19 @@
                 atualizarInterfaceGeral();
             }
         }
-
         if(btn.id === 'btn-carregar-historico') {
             let f = document.getElementById('seletor-fase-historico').value;
             await mostrarRankingHistorico(f);
         }
-
         if(btn.id === 'btn-jogar-proxima') {
             let prog = await getProgresso(alunoId, estadoAtual.faseAtual);
             if(prog < 4) iniciarPartidaEspecifica(prog + 1);
         }
-
         if(btn.id === 'btn-cancelar-jogo') {
             jogoAtivo = false; clearInterval(timerInterval); clearInterval(barraInterval);
             document.getElementById('jogo-area').classList.add('hidden');
             document.getElementById('aguardando').classList.remove('hidden');
         }
-
         if(btn.classList.contains('btn-editar-aluno')) {
             let id = btn.dataset.id, novo = prompt("Novo nome:");
             if(novo) {
@@ -1139,7 +1098,6 @@
         }
     });
 
-    // Filtros
     document.addEventListener('input', (e) => {
         if(e.target.id?.includes('filtro') || e.target.id?.includes('ordem')) {
             if(meuTipo === 'professor') atualizarRankingProfessor();
