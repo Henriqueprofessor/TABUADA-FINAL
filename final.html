@@ -526,11 +526,83 @@
         else if(dificuldade.includes("6-9")) fatores=[6,7,8,9];
         else if(dificuldade.includes("peso")) fatores=[0,1,2,3,4,5,6,7,8,9,10].filter(f=>f>=7||f<=3);
         else fatores=[0,1,2,3,4,5,6,7,8,9,10];
+        
         let perguntas=[];
+        // Criar uma lista de posições para garantir 25% de distribuição (5 de cada para 20 perguntas)
+        let posicoes = [0,0,0,0,0,1,1,1,1,1,2,2,2,2,2,3,3,3,3,3];
+        posicoes.sort(() => Math.random() - 0.5); // Embaralhar as posições
+
         for(let i=0;i<20;i++) {
             let a = fatores[Math.floor(Math.random()*fatores.length)];
             let b = Math.floor(Math.random()*11);
-            perguntas.push({fA:a, fB:b, resposta:a*b});
+            let resposta = a * b;
+            
+            // Gerar 3 alternativas incorretas
+            let incorretas = [];
+            while(incorretas.length < 3) {
+                let r = resposta + (Math.floor(Math.random()*13)-6);
+                if(r>=0 && r !== resposta && !incorretas.includes(r)) incorretas.push(r);
+            }
+            
+            // Queremos que a resposta correta fique na posição 'posicoes[i]' do array ordenado
+            // Ex: Se posicoes[i] = 0, a resposta deve ser a menor de todas.
+            // Se posicoes[i] = 3, a resposta deve ser a maior de todas.
+            
+            let todas = [];
+            let posDesejada = posicoes[i];
+            
+            if (posDesejada === 0) { // Resposta deve ser a menor
+                incorretas = incorretas.map(val => val <= resposta ? resposta + Math.floor(Math.random()*10) + 1 : val);
+            } else if (posDesejada === 1) { // Resposta deve ser a 2ª menor
+                // Garantir 1 menor e 2 maiores
+                incorretas = [
+                    resposta - (Math.floor(Math.random()*5) + 1),
+                    resposta + (Math.floor(Math.random()*5) + 1),
+                    resposta + (Math.floor(Math.random()*10) + 6)
+                ].map(v => v < 0 ? 0 : v);
+            } else if (posDesejada === 2) { // Resposta deve ser a 3ª menor
+                // Garantir 2 menores e 1 maior
+                incorretas = [
+                    resposta - (Math.floor(Math.random()*10) + 6),
+                    resposta - (Math.floor(Math.random()*5) + 1),
+                    resposta + (Math.floor(Math.random()*5) + 1)
+                ].map(v => v < 0 ? 0 : v);
+            } else { // Resposta deve ser a maior
+                incorretas = incorretas.map(val => val >= resposta ? resposta - Math.floor(Math.random()*10) - 1 : val);
+            }
+            
+            // Limpar duplicatas e garantir que a resposta correta seja a única na sua posição de ranking
+            todas = [resposta, ...incorretas.map(v => v < 0 ? 0 : v)];
+            let set = new Set(todas);
+            while(set.size < 4) {
+                let r = resposta + (Math.floor(Math.random()*20)-10);
+                if(r>=0 && !set.has(r)) set.add(r);
+            }
+            todas = Array.from(set).sort((a,b) => a-b);
+            
+            // Agora forçamos a resposta correta a estar exatamente no índice posDesejada do array ordenado
+            // Se não estiver, trocamos
+            let idxAtual = todas.indexOf(resposta);
+            if(idxAtual !== posDesejada) {
+                let temp = todas[posDesejada];
+                todas[posDesejada] = todas[idxAtual];
+                todas[idxAtual] = temp;
+                // Re-ordenar as incorretas mantendo a correta no lugar para não quebrar a lógica de ranking
+                let correta = todas[posDesejada];
+                let menores = todas.filter((v, idx) => idx !== posDesejada && v < correta).sort((a,b) => a-b);
+                let maiores = todas.filter((v, idx) => idx !== posDesejada && v > correta).sort((a,b) => a-b);
+                
+                // Preencher o array final respeitando o ranking
+                let finalArr = [];
+                for(let k=0; k<4; k++) {
+                    if(k < posDesejada) finalArr.push(menores.shift());
+                    else if(k === posDesejada) finalArr.push(correta);
+                    else finalArr.push(maiores.shift());
+                }
+                todas = finalArr;
+            }
+
+            perguntas.push({fA:a, fB:b, resposta:resposta, opcoesOrdenadas: todas});
         }
         return perguntas;
     }
@@ -584,13 +656,21 @@
         let p = perguntasPartida[perguntaIdx];
         document.getElementById('pergunta').innerHTML = `${p.fA} x ${p.fB} = ?`;
         respostaCorreta = p.resposta;
-        let opcoes = [respostaCorreta];
-        while(opcoes.length < 4) {
-            let r = respostaCorreta + (Math.floor(Math.random()*13)-6);
-            if(r>=0 && !opcoes.includes(r)) opcoes.push(r);
-        }
-        opcoes.sort(()=>Math.random()-0.5);
-        document.querySelectorAll('.opcao').forEach((btn,i) => { btn.innerText = opcoes[i]; btn.disabled=false; });
+        
+        // Usar as opções pré-calculadas que garantem a distribuição de 25%
+        let opcoes = p.opcoesOrdenadas;
+        
+        // Mapeamento para o layout solicitado:
+        // [Btn 0: Menor]      [Btn 1: 3ª Maior]
+        // [Btn 2: 2ª Maior]   [Btn 3: Maior]
+        
+        const botoes = document.querySelectorAll('.opcao');
+        botoes[0].innerText = opcoes[0]; // Superior Esquerdo: Menor
+        botoes[1].innerText = opcoes[2]; // Superior Direito: 3ª Maior
+        botoes[2].innerText = opcoes[1]; // Inferior Esquerdo: 2ª Maior
+        botoes[3].innerText = opcoes[3]; // Inferior Direito: Maior
+        
+        botoes.forEach(btn => btn.disabled = false);
         document.getElementById('pergunta-num').innerText = perguntaIdx+1;
         iniciarTimer();
     }
