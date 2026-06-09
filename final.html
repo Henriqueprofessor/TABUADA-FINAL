@@ -657,20 +657,36 @@
         document.getElementById('pergunta').innerHTML = `${p.fA} x ${p.fB} = ?`;
         respostaCorreta = p.resposta;
         
-        // Usar as opções pré-calculadas que garantem a distribuição de 25%
         let opcoes = p.opcoesOrdenadas;
         
-        // Mapeamento para o layout solicitado:
+        // Caso o banco de perguntas antigo não tenha opcoesOrdenadas, gera na hora
+        if (!opcoes || !Array.isArray(opcoes)) {
+            opcoes = [respostaCorreta];
+            while(opcoes.length < 4) {
+                let r = respostaCorreta + (Math.floor(Math.random()*13)-6);
+                if(r>=0 && !opcoes.includes(r)) opcoes.push(r);
+            }
+            opcoes.sort((a, b) => a - b);
+        }
+        
+        // Mapeamento visual solicitado:
         // [Btn 0: Menor]      [Btn 1: 3ª Maior]
         // [Btn 2: 2ª Maior]   [Btn 3: Maior]
         
         const botoes = document.querySelectorAll('.opcao');
-        botoes[0].innerText = opcoes[0]; // Superior Esquerdo: Menor
-        botoes[1].innerText = opcoes[2]; // Superior Direito: 3ª Maior
-        botoes[2].innerText = opcoes[1]; // Inferior Esquerdo: 2ª Maior
-        botoes[3].innerText = opcoes[3]; // Inferior Direito: Maior
+        if (botoes.length >= 4) {
+            botoes[0].innerText = opcoes[0]; // Sup Esq
+            botoes[1].innerText = opcoes[2]; // Sup Dir
+            botoes[2].innerText = opcoes[1]; // Inf Esq
+            botoes[3].innerText = opcoes[3]; // Inf Dir
+            
+            botoes.forEach(btn => {
+                btn.disabled = false;
+                // Garantir que o texto seja visível (caso haja algum CSS ocultando)
+                btn.style.color = "white";
+            });
+        }
         
-        botoes.forEach(btn => btn.disabled = false);
         document.getElementById('pergunta-num').innerText = perguntaIdx+1;
         iniciarTimer();
     }
