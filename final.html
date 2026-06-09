@@ -904,6 +904,13 @@
         if(btn.id === 'btn-aluno') {
             await carregarTurmas();
             if(!estadoPronto) await inicializarEstado();
+            
+            // Verificação de segurança para evitar o erro de 'status' nulo
+            if(!estadoAtual) {
+                mostrarToast("Aguardando conexão com o servidor...");
+                return;
+            }
+
             if(estadoAtual.status !== 'em_andamento') { mostrarToast("A fase não está liberada."); return; }
             let nome = prompt("Seu nome completo:");
             if(!nome) return;
