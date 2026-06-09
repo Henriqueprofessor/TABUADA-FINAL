@@ -268,7 +268,7 @@
         <div id="ranking-parcial" class="status-box"><div class="loading">Carregando...</div></div>
     </div>
 
-    <!-- TELA DO ALUNO -->
+    <!-- TELA DO ALUNO (COM JOGO NO INÍCIO, APÓS O PROGRESSO) -->
     <div id="tela-aluno" class="card hidden">
         <h2 id="aluno-nome">Aluno</h2>
         <p>Turma: <span id="aluno-turma">-</span></p>
@@ -310,18 +310,7 @@
             <div id="msg-fase-bloqueada" class="hidden">⛔ A fase não está liberada. Aguarde o professor.</div>
         </div>
 
-        <div id="ranking-aluno" class="status-box">
-            <h3>Ranking da Fase Atual</h3>
-            <div class="filtros-container">
-                <div class="filtro-group"><label>Nome</label><input type="text" id="filtro-nome-aluno" placeholder="Nome..."></div>
-                <div class="filtro-group"><label>Turma</label><input type="text" id="filtro-turma-aluno" placeholder="Turma..."></div>
-                <div class="filtro-group"><label>Melhor Pontuação</label><select id="ordem-melhor-pont-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-                <div class="filtro-group"><label>Evolução (%)</label><select id="ordem-evolucao-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-            </div>
-            <div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div>
-        </div>
-
-        <!-- Área do jogo (sem botão cancelar) -->
+        <!-- Área do jogo posicionada bem aqui, antes do ranking (início da tela) -->
         <div id="jogo-area" class="hidden">
             <div class="status-box">
                 <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
@@ -339,6 +328,18 @@
         </div>
 
         <div id="aguardando" class="hidden" style="text-align:center; padding:40px;">⏳ Aguardando liberação da fase...</div>
+
+        <div id="ranking-aluno" class="status-box">
+            <h3>Ranking da Fase Atual</h3>
+            <div class="filtros-container">
+                <div class="filtro-group"><label>Nome</label><input type="text" id="filtro-nome-aluno" placeholder="Nome..."></div>
+                <div class="filtro-group"><label>Turma</label><input type="text" id="filtro-turma-aluno" placeholder="Turma..."></div>
+                <div class="filtro-group"><label>Melhor Pontuação</label><select id="ordem-melhor-pont-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
+                <div class="filtro-group"><label>Evolução (%)</label><select id="ordem-evolucao-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
+            </div>
+            <div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div>
+        </div>
+
         <button id="btn-sair-aluno">⬅️ Sair</button>
     </div>
 
@@ -495,7 +496,7 @@
         if(!ranking || ranking.length===0) return '<div class="loading">Nenhum participante ainda.</div>';
         let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ</th><th>Melhor Pont.</th><th>Rodada Atual</th><th>Rodada Ant.</th><th>Evolução</th><th>Pos Rodada</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
         for(let r of ranking) {
-            html += `<tr><td style="text-align:center">${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
+            html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
         }
         html += `</tbody></table>`;
         return html;
@@ -746,7 +747,6 @@
             console.log("Gerando novo banco de perguntas...");
             let perguntas = await gerarBanco(dificuldade);
             await estadoRef.child(`bancosFase/${bancoKey}`).set(perguntas);
-            // Atualiza o estado local
             if(!estadoAtual.bancosFase) estadoAtual.bancosFase = {};
             estadoAtual.bancosFase[bancoKey] = perguntas;
         }
@@ -861,7 +861,7 @@
         await atualizarRankingAluno();
     }
 
-    // Funções do professor (implementações simplificadas mas funcionais)
+    // Funções do professor
     async function resetarFaseProf() {
         if(!confirm("Resetar fase atual? Todos os dados serão perdidos.")) return;
         let fase = estadoAtual.faseAtual;
@@ -1058,7 +1058,7 @@
             if(prog < 4) iniciarPartidaEspecifica(prog + 1);
             else mostrarToast("Você já completou todas as partidas desta fase.");
         }
-        // Editar/excluir aluno/turma (funcionalidades mantidas)
+        // Editar/excluir aluno/turma
         if(btn.classList.contains('btn-editar-aluno')) {
             let id = btn.dataset.id, novo = prompt("Novo nome:");
             if(novo) {
