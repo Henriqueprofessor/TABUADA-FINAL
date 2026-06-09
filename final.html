@@ -104,7 +104,6 @@
         .trend-down { color: #e74c3c; }
         .trend-flat { color: #f39c12; }
         .loading { text-align: center; padding: 20px; color: #aaa; }
-        /* Lista de opções vertical (igual ao primeiro jogo) */
         .lista-opcoes {
             display: flex;
             flex-direction: column;
@@ -198,6 +197,30 @@
         .classificado-nao { background: rgba(231,76,60,0.2); color: #e74c3c; }
         .info-sincronizacao { font-size: 12px; color: #aaa; margin-top: 8px; text-align: center; }
         .sinc-container { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 8px; }
+        /* Estilos para controle de ordenação e busca de participantes */
+        .controles-participantes {
+            background: #1e2a3a;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .controles-participantes input, .controles-participantes select {
+            background: #0a0f1e;
+            border: 1px solid #ffd966;
+            color: white;
+            border-radius: 20px;
+            padding: 8px 12px;
+            flex: 1;
+            min-width: 150px;
+        }
+        .controles-participantes button {
+            margin: 0;
+            padding: 8px 16px;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -213,7 +236,7 @@
 </div>
 
 <div class="container">
-    <!-- TELA PRINCIPAL (com sincronização centralizada) -->
+    <!-- TELA PRINCIPAL -->
     <div class="card">
         <h1>🏆 COPA TABUADA CEIB 2026 - FASES ELIMINATÓRIAS</h1>
         <p>Fase atual: <strong id="fase-atual-titulo">--</strong> • <span id="status-fase">Carregando...</span></p>
@@ -227,7 +250,7 @@
         <div id="ultima-sincronizacao-principal" class="info-sincronizacao">Última atualização: --</div>
     </div>
 
-    <!-- PAINEL DO PROFESSOR (SEM SINCRONIZAÇÃO) -->
+    <!-- PAINEL DO PROFESSOR (COM ORDENAÇÃO E BUSCA) -->
     <div id="painel-professor" class="card hidden">
         <h2>🔧 Painel do Professor</h2>
         <div class="flex-grid">
@@ -245,6 +268,16 @@
             </div>
             <div>
                 <h3>Participantes <span id="fase-participantes-num">--</span></h3>
+                <!-- Controles de busca e ordenação -->
+                <div class="controles-participantes">
+                    <input type="text" id="busca-participante" placeholder="🔍 Buscar por nome..." autocomplete="off">
+                    <select id="ordenacao-participantes">
+                        <option value="nome_asc">📝 Nome (A-Z)</option>
+                        <option value="turma_asc">🏫 Turma (crescente)</option>
+                        <option value="data_desc">🕒 Data de cadastro (mais recente)</option>
+                    </select>
+                    <button id="btn-reset-filtros" class="btn-small">Limpar filtros</button>
+                </div>
                 <div id="lista-participantes" style="max-height: 250px; overflow-y: auto;"></div>
                 <button id="btn-adicionar-aluno" class="btn-primary">➕ Adicionar Aluno</button>
                 <hr>
@@ -279,7 +312,6 @@
     <div id="tela-aluno" class="card hidden">
         <h2 id="aluno-nome">Aluno</h2>
         <p>Turma: <span id="aluno-turma">-</span></p>
-
         <div id="jogo-area" class="hidden">
             <div class="status-box">
                 <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
@@ -295,9 +327,7 @@
                 <p>Pontos nesta partida: <strong id="pontos-partida">0</strong></p>
             </div>
         </div>
-
         <div id="aguardando" class="hidden" style="text-align:center; padding:40px;">⏳ Aguardando liberação da fase...</div>
-
         <div class="progresso-aluno">
             <p><strong>📊 Fase <span id="aluno-fase">--</span> - Seu progresso</strong></p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0;">
@@ -318,7 +348,6 @@
                     <p><strong id="aluno-posicao-rodada">--</strong></p>
                 </div>
             </div>
-
             <div id="area-projecao" class="status-box" style="margin-top:0; background: rgba(39, 174, 96, 0.1); border: 1px solid #27ae60; margin-bottom: 15px;">
                 <p style="color:#2ecc71; font-weight:bold;">🔮 Projeção Final</p>
                 <div style="display: flex; justify-content: space-around; align-items: center;">
@@ -329,12 +358,10 @@
                 <div id="classificacao-atual" class="classificado-msg"></div>
                 <p id="msg-incentivo" style="font-size:12px; margin-top:8px; font-style:italic; color:#aaa;"></p>
             </div>
-
             <button id="btn-jogar-proxima" class="btn-jogar" disabled>▶️ Jogar Próxima Partida</button>
             <div id="msg-fase-finalizada" class="hidden">🏁 Você completou todas as 4 partidas! Aguarde próxima fase.</div>
             <div id="msg-fase-bloqueada" class="hidden">⛔ A fase não está liberada. Aguarde o professor.</div>
         </div>
-
         <div id="ranking-aluno" class="status-box">
             <h3>Ranking da Fase Atual</h3>
             <div class="filtros-container">
@@ -345,11 +372,10 @@
             </div>
             <div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div>
         </div>
-
         <button id="btn-sair-aluno">⬅️ Sair</button>
     </div>
 
-    <!-- TELA DE PROJEÇÃO (SEM SINCRONIZAÇÃO) -->
+    <!-- TELA DE PROJEÇÃO -->
     <div id="tela-projecao" class="card hidden">
         <h2>📺 COPA TABUADA CEIB 2026 - TORCIDA</h2>
         <div id="projecao-status" class="status-box">Carregando...</div>
@@ -955,6 +981,77 @@
         document.getElementById('ranking-titulo').innerText = `Fase ${fase}`;
     }
 
+    // ==================== RENDERIZAÇÃO DA LISTA DE PARTICIPANTES COM FILTRO E ORDENAÇÃO ====================
+    let participantesCache = []; // guarda a lista original para filtrar/ordenar
+
+    function ordenarParticipantes(participantes, criterio) {
+        let copia = [...participantes];
+        switch(criterio) {
+            case 'nome_asc':
+                copia.sort((a,b) => a.nome.localeCompare(b.nome));
+                break;
+            case 'turma_asc':
+                copia.sort((a,b) => {
+                    if (a.turma === b.turma) return a.nome.localeCompare(b.nome);
+                    return a.turma.localeCompare(b.turma);
+                });
+                break;
+            case 'data_desc':
+                copia.sort((a,b) => (b.dataCadastro || 0) - (a.dataCadastro || 0));
+                break;
+            default:
+                copia.sort((a,b) => a.nome.localeCompare(b.nome));
+        }
+        return copia;
+    }
+
+    function filtrarParticipantes(participantes, busca) {
+        if (!busca.trim()) return participantes;
+        return participantes.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase().trim()));
+    }
+
+    function renderizarListaParticipantes() {
+        if (!estadoAtual) return;
+        let participantes = getParticipantesArray(estadoAtual);
+        participantesCache = [...participantes];
+        const busca = document.getElementById('busca-participante')?.value || '';
+        const criterio = document.getElementById('ordenacao-participantes')?.value || 'nome_asc';
+        let filtrados = filtrarParticipantes(participantesCache, busca);
+        let ordenados = ordenarParticipantes(filtrados, criterio);
+        const container = document.getElementById('lista-participantes');
+        if (!container) return;
+        if (ordenados.length === 0) {
+            container.innerHTML = '<div style="padding: 12px; text-align: center;">Nenhum participante encontrado.</div>';
+            document.getElementById('fase-participantes-num').innerText = '0';
+            return;
+        }
+        let html = '<ul style="list-style: none; padding: 0;">';
+        ordenados.forEach(p => {
+            html += `<li style="padding: 8px; border-bottom: 1px solid #2c3e50; display: flex; justify-content: space-between; align-items: center;">
+                        <span>${escapeHtml(p.nome)} (${escapeHtml(p.turma)})</span>
+                        <span>
+                            <button class="btn-editar-aluno" data-id="${p.id}" style="padding: 4px 12px;">✏️</button>
+                            <button class="btn-excluir-aluno" data-id="${p.id}" style="padding: 4px 12px; background: #c0392b;">🗑️</button>
+                        </span>
+                     </li>`;
+        });
+        html += '</ul>';
+        container.innerHTML = html;
+        document.getElementById('fase-participantes-num').innerText = ordenados.length;
+    }
+
+    // Função para garantir que novos participantes tenham dataCadastro
+    async function adicionarParticipanteComData(nome, turma) {
+        const id = gerarIdEstavel(nome, turma);
+        const dataCadastro = Date.now();
+        const novoParticipante = { id, nome, turma, dataCadastro };
+        let lista = getParticipantesArray(estadoAtual);
+        if (lista.find(p => p.id === id)) return false;
+        lista.push(novoParticipante);
+        await estadoRef.child('participantes').set(lista);
+        return true;
+    }
+
     // ==================== INICIALIZAÇÃO COM CACHE LOCAL ====================
     async function inicializarEstado() {
         estadoRef = db.ref('faseFinal');
@@ -962,6 +1059,17 @@
             let snap = await estadoRef.once('value');
             if (snap.exists()) {
                 const estado = snap.val();
+                // Garantir que participantes antigos tenham dataCadastro (se não tiver, atribuir uma data padrão - a mais antiga possível)
+                if (estado.participantes && Array.isArray(estado.participantes)) {
+                    let modificado = false;
+                    estado.participantes.forEach(p => {
+                        if (!p.dataCadastro) {
+                            p.dataCadastro = 0; // será ordenado como mais antigo
+                            modificado = true;
+                        }
+                    });
+                    if (modificado) await estadoRef.child('participantes').set(estado.participantes);
+                }
                 salvarEstadoLocal(estado);
             } else {
                 const estadoInicial = { faseAtual:1, status:'aguardando', participantes:[], resultadosFase:{1:{}}, bancosFase:{} };
@@ -999,12 +1107,7 @@
         if(meuTipo === 'professor') {
             document.getElementById('fase-num').innerText = fase;
             document.getElementById('status-fase-prof').innerText = status;
-            let participantes = getParticipantesArray(estadoAtual);
-            let html = '<ul>';
-            participantes.forEach(p => html += `<li>${escapeHtml(p.nome)} (${escapeHtml(p.turma)}) <button class="btn-editar-aluno" data-id="${p.id}">✏️</button> <button class="btn-excluir-aluno" data-id="${p.id}">🗑️</button></li>`);
-            html += '</ul>';
-            document.getElementById('lista-participantes').innerHTML = html;
-            document.getElementById('fase-participantes-num').innerText = participantes.length;
+            renderizarListaParticipantes(); // usa filtros e ordenação
             atualizarRankingProfessor();
             let turmasHtml = '<div>';
             turmasDisponiveis.forEach(t => turmasHtml += `<span class="turma-badge">${escapeHtml(t)} <button class="btn-excluir-turma" data-turma="${t}">🗑️</button></span> `);
@@ -1057,8 +1160,15 @@
                     document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
                     document.getElementById('tela-aluno').classList.remove('hidden');
                     let lista = getParticipantesArray(estadoAtual);
-                    if(!lista.find(p => p.id === alunoId)) {
-                        lista.push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
+                    let existente = lista.find(p => p.id === alunoId);
+                    if(!existente) {
+                        // Adiciona com data de cadastro
+                        const novoAluno = { id: alunoId, nome: alunoNome, turma: alunoTurma, dataCadastro: Date.now() };
+                        lista.push(novoAluno);
+                        await estadoRef.child('participantes').set(lista);
+                    } else if (!existente.dataCadastro) {
+                        // Atualiza participante antigo com dataCadastro
+                        existente.dataCadastro = Date.now();
                         await estadoRef.child('participantes').set(lista);
                     }
                     await atualizarInterfaceAluno();
@@ -1086,13 +1196,14 @@
         if(btn.id === 'btn-adicionar-aluno') {
             let n = prompt("Nome:"), t = prompt("Turma:");
             if(n && t) {
-                let nCap = capitalizarNome(n), id = gerarIdEstavel(nCap, t);
-                let lista = getParticipantesArray(estadoAtual);
-                if(lista.find(p=>p.id===id)) { mostrarToast("Já existe."); return; }
-                lista.push({id, nome:nCap, turma:t});
-                await estadoRef.child('participantes').set(lista);
-                mostrarToast("Adicionado.");
-                location.reload();
+                let nCap = capitalizarNome(n);
+                let sucesso = await adicionarParticipanteComData(nCap, t);
+                if(sucesso) {
+                    mostrarToast("Adicionado.");
+                    location.reload();
+                } else {
+                    mostrarToast("Já existe.");
+                }
             }
         }
         if(btn.id === 'btn-adicionar-turma') {
@@ -1107,6 +1218,11 @@
         if(btn.id === 'btn-carregar-historico') {
             let f = document.getElementById('seletor-fase-historico').value;
             await mostrarRankingHistorico(f);
+        }
+        if(btn.id === 'btn-reset-filtros') {
+            document.getElementById('busca-participante').value = '';
+            document.getElementById('ordenacao-participantes').value = 'nome_asc';
+            renderizarListaParticipantes();
         }
         if(btn.id === 'btn-jogar-proxima') {
             let prog = await getProgresso(alunoId, estadoAtual.faseAtual);
@@ -1124,7 +1240,11 @@
             if(novo) {
                 let lista = getParticipantesArray(estadoAtual);
                 let idx = lista.findIndex(p=>p.id===id);
-                if(idx!==-1) { lista[idx].nome = capitalizarNome(novo); await estadoRef.child('participantes').set(lista); location.reload(); }
+                if(idx!==-1) { 
+                    lista[idx].nome = capitalizarNome(novo); 
+                    await estadoRef.child('participantes').set(lista); 
+                    location.reload(); 
+                }
             }
         }
         if(btn.classList.contains('btn-excluir-aluno')) {
@@ -1149,6 +1269,9 @@
             if(meuTipo === 'professor') atualizarRankingProfessor();
             if(meuTipo === 'aluno') atualizarRankingAluno();
             if(meuTipo === 'projecao') atualizarRankingTorcida();
+        }
+        if (e.target.id === 'busca-participante' || e.target.id === 'ordenacao-participantes') {
+            if (meuTipo === 'professor') renderizarListaParticipantes();
         }
     });
 
