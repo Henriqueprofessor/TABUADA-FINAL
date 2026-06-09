@@ -104,9 +104,10 @@
         .trend-down { color: #e74c3c; }
         .trend-flat { color: #f39c12; }
         .loading { text-align: center; padding: 20px; color: #aaa; }
-        .opcoes-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
+        /* Lista de opções vertical (igual ao primeiro jogo) */
+        .lista-opcoes {
+            display: flex;
+            flex-direction: column;
             gap: 12px;
             margin: 20px 0;
         }
@@ -121,6 +122,7 @@
             cursor: pointer;
             transition: 0.2s;
             text-align: center;
+            width: 100%;
         }
         .opcao:hover { background: #2c5a6e; transform: scale(1.02); }
         .filtros-container {
@@ -282,11 +284,11 @@
                 <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo" style="width:100%; background:#27ae60;"></div></div>
                 <div id="pergunta" style="font-size:48px; text-align:center;">0 x 0 = ?</div>
-                <div class="opcoes-grid" id="opcoes-container">
-                    <button class="opcao" onclick="window.responder(0)"></button>
-                    <button class="opcao" onclick="window.responder(1)"></button>
-                    <button class="opcao" onclick="window.responder(2)"></button>
-                    <button class="opcao" onclick="window.responder(3)"></button>
+                <div class="lista-opcoes" id="opcoes-container">
+                    <button class="opcao" data-idx="0"></button>
+                    <button class="opcao" data-idx="1"></button>
+                    <button class="opcao" data-idx="2"></button>
+                    <button class="opcao" data-idx="3"></button>
                 </div>
                 <div><span>Pergunta: <span id="pergunta-num">1</span>/20</span></div>
                 <p>Pontos nesta partida: <strong id="pontos-partida">0</strong></p>
@@ -422,7 +424,6 @@
             if (estado) {
                 salvarEstadoLocal(estado);
                 mostrarToast("✅ Dados sincronizados com sucesso!");
-                // Recarrega a página para aplicar o estado sincronizado
                 location.reload();
             } else {
                 mostrarToast("Erro: estado vazio no Firebase.");
@@ -598,7 +599,7 @@
         document.getElementById('info-vagas').innerHTML = `<div class="info-vagas">🏆 ${numVagas} vagas</div>`;
     }
 
-    // ==================== JOGO ====================
+    // ==================== JOGO (COM RESPOSTAS VERTICAIS) ====================
     async function gerarBanco(dificuldade) {
         let fatores = [];
         if(dificuldade.includes("2-5")) fatores=[2,3,4,5];
@@ -646,25 +647,8 @@
                 let r = resposta + (Math.floor(Math.random()*20)-10);
                 if(r>=0 && !set.has(r)) set.add(r);
             }
-            todas = Array.from(set).sort((a,b) => a-b);
-            
-            let idxAtual = todas.indexOf(resposta);
-            if(idxAtual !== posDesejada) {
-                let temp = todas[posDesejada];
-                todas[posDesejada] = todas[idxAtual];
-                todas[idxAtual] = temp;
-                let correta = todas[posDesejada];
-                let menores = todas.filter((v, idx) => idx !== posDesejada && v < correta).sort((a,b) => a-b);
-                let maiores = todas.filter((v, idx) => idx !== posDesejada && v > correta).sort((a,b) => a-b);
-                let finalArr = [];
-                for(let k=0; k<4; k++) {
-                    if(k < posDesejada) finalArr.push(menores.shift());
-                    else if(k === posDesejada) finalArr.push(correta);
-                    else finalArr.push(maiores.shift());
-                }
-                todas = finalArr;
-            }
-            perguntas.push({fA:a, fB:b, resposta:resposta, opcoesOrdenadas: todas});
+            let opcoes = Array.from(set).sort((a,b) => a - b);
+            perguntas.push({fA:a, fB:b, resposta:resposta, opcoesOrdenadas: opcoes});
         }
         return perguntas;
     }
@@ -732,11 +716,12 @@
         }
         const botoes = document.querySelectorAll('.opcao');
         if (botoes.length >= 4) {
-            botoes[0].innerText = opcoes[0];
-            botoes[1].innerText = opcoes[2];
-            botoes[2].innerText = opcoes[1];
-            botoes[3].innerText = opcoes[3];
-            botoes.forEach(btn => { btn.disabled = false; btn.style.color = "white"; });
+            // Exibe as opções em ordem crescente, uma abaixo da outra
+            for(let i = 0; i < 4; i++) {
+                botoes[i].innerText = opcoes[i];
+                botoes[i].disabled = false;
+                botoes[i].style.color = "white";
+            }
         }
         document.getElementById('pergunta-num').innerText = perguntaIdx+1;
         iniciarTimer();
@@ -980,14 +965,12 @@
     // ==================== INICIALIZAÇÃO COM CACHE LOCAL ====================
     async function inicializarEstado() {
         estadoRef = db.ref('faseFinal');
-        // Tentar carregar do Firebase primeiro
         try {
             let snap = await estadoRef.once('value');
             if (snap.exists()) {
                 const estado = snap.val();
                 salvarEstadoLocal(estado);
             } else {
-                // Criar estado inicial padrão
                 const estadoInicial = { faseAtual:1, status:'aguardando', participantes:[], resultadosFase:{1:{}}, bancosFase:{} };
                 await estadoRef.set(estadoInicial);
                 salvarEstadoLocal(estadoInicial);
@@ -996,7 +979,6 @@
             console.warn("Falha ao acessar Firebase, usando cache local", e);
             const local = carregarEstadoLocal();
             if (local) {
-                // Usar estado local como fallback
                 estadoAtual = local;
                 estadoPronto = true;
                 atualizarInterfaceGeral();
@@ -1005,7 +987,6 @@
             }
         }
 
-        // Listener em tempo real (atualiza cache e interface)
         estadoRef.on('value', (s) => {
             estadoAtual = s.val();
             if (estadoAtual && estadoAtual.participantes && !Array.isArray(estadoAtual.participantes)) {
@@ -1139,7 +1120,12 @@
             if(prog < 4) iniciarPartidaEspecifica(prog + 1);
             else mostrarToast("Você já completou todas as partidas desta fase.");
         }
-        // Editar/excluir aluno/turma
+        // Captura cliques nos botões de opção vertical
+        if(btn.classList.contains('opcao')) {
+            const idx = btn.getAttribute('data-idx');
+            if(idx !== null) window.responder(parseInt(idx));
+        }
+
         if(btn.classList.contains('btn-editar-aluno')) {
             let id = btn.dataset.id, novo = prompt("Novo nome:");
             if(novo) {
