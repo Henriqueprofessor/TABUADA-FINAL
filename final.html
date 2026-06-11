@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:;">
+
     <title>Copa Tabuada CEIB 2026 - Fases com Tempo Dinâmico</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1159,7 +1159,7 @@
     
     document.getElementById('btn-confirmar-senha').addEventListener('click', () => {
         let senha = document.getElementById('input-senha').value;
-        if (senha === "professor123") {
+        if (senha === "040199") {
             meuTipo = 'professor';
             fecharDialog('senha');
             document.getElementById('tela-principal').classList.add('hidden');
@@ -1302,6 +1302,12 @@
         atualizarInterfaceGeral();
         mostrarToast("Sincronizado!");
     });
+    
+    // Atualizar ranking a cada 2 segundos
+    setInterval(() => {
+        if (meuTipo === 'torcida') atualizarRankingTorcida();
+        if (meuTipo === 'professor') atualizarRankingProfessor();
+    }, 2000);
     
     // Inicializar
     inicializarEstadoLocal();
