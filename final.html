@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:;">
     <title>Copa Tabuada CEIB 2026 - Fases com Tempo Dinâmico</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -441,8 +442,6 @@
             }
         }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 </head>
 <body>
 <div class="container">
@@ -456,6 +455,9 @@
             <button id="btn-aluno" class="btn-success">🎮 Aluno</button>
             <button id="btn-projecao" class="btn-primary">📺 Torcida</button>
             <button id="btn-sincronizar" class="btn-warning">🔄 Sincronizar</button>
+        </div>
+        <div id="info-conexao" style="text-align: center; color: #aaa; font-size: 12px; margin-top: 16px;">
+            Status: <span id="status-conexao">Conectando...</span>
         </div>
     </div>
 
@@ -611,28 +613,8 @@
 </div>
 
 <script>
-    // ==================== CONFIGURAÇÃO FIREBASE ====================
-    // IMPORTANTE: Substitua com suas credenciais reais do Firebase
-    const firebaseConfig = {
-        apiKey: "AIzaSyDkNBxZZZZZZZZZZZZZZZZZZZZZZZZZZZ",
-        authDomain: "copa-tabuada.firebaseapp.com",
-        databaseURL: "https://copa-tabuada-default-rtdb.firebaseio.com",
-        projectId: "copa-tabuada",
-        storageBucket: "copa-tabuada.appspot.com",
-        messagingSenderId: "123456789",
-        appId: "1:123456789:web:abcdef123456"
-    };
-    
-    try {
-        firebase.initializeApp(firebaseConfig);
-    } catch (e) {
-        console.log("Firebase já inicializado ou erro:", e.message);
-    }
-    
-    const db = firebase.database();
-    
     // ==================== VARIÁVEIS GLOBAIS ====================
-    let estadoRef, estadoAtual = null, estadoPronto = false;
+    let estadoAtual = null, estadoPronto = false;
     let meuTipo = null; // 'professor', 'aluno', 'torcida'
     let alunoId = null, alunoNome = null, alunoTurma = null;
     
@@ -643,7 +625,7 @@
     let faseEmAndamento = false;
     
     // Cronômetro por Pergunta
-    let tempoPergunaSegundos = 10;
+    let tempoPergunaSegundos = 10; // 10 segundos
     let tempoRestantePergunta = tempoPergunaSegundos;
     let cronometroPergunaInterval = null;
     let perguntaAtual = 0;
@@ -656,6 +638,9 @@
     let historicoTentativas = [];
     
     const CLASSIFICADOS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5 };
+    
+    // Dados em LocalStorage (para persistência sem Firebase)
+    const STORAGE_KEY = 'copa_tabuada_dados';
     
     // ==================== FUNÇÕES AUXILIARES ====================
     function escapeHtml(str) {
@@ -702,6 +687,41 @@
         } else if (tipo === 'senha') {
             document.getElementById('dialog-senha').classList.add('hidden');
         }
+    }
+    
+    // ==================== ARMAZENAMENTO LOCAL ====================
+    function salvarDados() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(estadoAtual));
+    }
+    
+    function carregarDados() {
+        let dados = localStorage.getItem(STORAGE_KEY);
+        if (dados) {
+            try {
+                estadoAtual = JSON.parse(dados);
+                return true;
+            } catch (e) {
+                console.error("Erro ao carregar dados:", e);
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    function inicializarEstadoLocal() {
+        if (!carregarDados()) {
+            estadoAtual = {
+                faseAtual: 1,
+                status: 'aguardando',
+                participantes: [],
+                resultadosFase: { 1: {} },
+                bancosFase: {}
+            };
+            salvarDados();
+        }
+        estadoPronto = true;
+        atualizarInterfaceGeral();
+        document.getElementById('status-conexao').innerText = 'Usando armazenamento local';
     }
     
     // ==================== GERAÇÃO DE PERGUNTAS ====================
@@ -1070,37 +1090,6 @@
     }
     
     // ==================== INICIALIZAÇÃO ====================
-    async function inicializarEstado() {
-        estadoRef = db.ref('faseFinal');
-        try {
-            let snap = await estadoRef.once('value');
-            if (snap.exists()) {
-                estadoAtual = snap.val();
-            } else {
-                const estadoInicial = {
-                    faseAtual: 1,
-                    status: 'aguardando',
-                    participantes: [],
-                    resultadosFase: { 1: {} },
-                    bancosFase: {}
-                };
-                await estadoRef.set(estadoInicial);
-                estadoAtual = estadoInicial;
-            }
-            estadoPronto = true;
-            atualizarInterfaceGeral();
-        } catch (e) {
-            console.error("Erro ao acessar Firebase:", e);
-            mostrarToast("Erro de conexão");
-        }
-        
-        estadoRef.on('value', (s) => {
-            estadoAtual = s.val();
-            estadoPronto = true;
-            atualizarInterfaceGeral();
-        });
-    }
-    
     function atualizarInterfaceGeral() {
         if (!estadoAtual) return;
         
@@ -1168,7 +1157,7 @@
         mostrarDialog('senha');
     });
     
-    document.getElementById('btn-confirmar-senha').addEventListener('click', async () => {
+    document.getElementById('btn-confirmar-senha').addEventListener('click', () => {
         let senha = document.getElementById('input-senha').value;
         if (senha === "professor123") {
             meuTipo = 'professor';
@@ -1202,11 +1191,12 @@
         alunoNome = capitalizarNome(nome);
         alunoTurma = turma;
         
-        // Adicionar participante ao Firebase
+        // Adicionar participante
         let participantes = estadoAtual.participantes || [];
         if (!participantes.find(p => p.id === alunoId)) {
             participantes.push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
-            await estadoRef.update({ participantes: participantes });
+            estadoAtual.participantes = participantes;
+            salvarDados();
         }
         
         meuTipo = 'aluno';
@@ -1233,11 +1223,13 @@
     });
     
     // Controles do Professor
-    document.getElementById('btn-iniciar-fase').addEventListener('click', async () => {
+    document.getElementById('btn-iniciar-fase').addEventListener('click', () => {
         if (!faseEmAndamento) {
-            await estadoRef.update({ status: 'em_andamento' });
+            estadoAtual.status = 'em_andamento';
+            salvarDados();
             iniciarCronometroGlobal();
             mostrarToast("Fase iniciada! ⏱️");
+            atualizarInterfaceGeral();
         }
     });
     
@@ -1246,21 +1238,36 @@
         mostrarToast("Fase pausada");
     });
     
-    document.getElementById('btn-finalizar-fase').addEventListener('click', async () => {
+    document.getElementById('btn-finalizar-fase').addEventListener('click', () => {
         pausarCronometroGlobal();
-        await estadoRef.update({ status: 'finalizada' });
+        estadoAtual.status = 'finalizada';
+        salvarDados();
         mostrarToast("Fase finalizada!");
+        atualizarInterfaceGeral();
     });
     
-    document.getElementById('btn-avancar-fase').addEventListener('click', async () => {
+    document.getElementById('btn-avancar-fase').addEventListener('click', () => {
         if (estadoAtual.faseAtual < 4) {
             let novaFase = estadoAtual.faseAtual + 1;
-            await estadoRef.update({
-                faseAtual: novaFase,
-                status: 'aguardando',
-                resultadosFase: { ...estadoAtual.resultadosFase, [novaFase]: {} }
-            });
+            estadoAtual.faseAtual = novaFase;
+            estadoAtual.status = 'aguardando';
+            if (!estadoAtual.resultadosFase[novaFase]) {
+                estadoAtual.resultadosFase[novaFase] = {};
+            }
+            salvarDados();
             mostrarToast(`Avançou para Fase ${novaFase}`);
+            atualizarInterfaceGeral();
+        }
+    });
+    
+    document.getElementById('btn-reset-fase').addEventListener('click', () => {
+        if (confirm("Resetar fase atual? Todos os dados serão perdidos.")) {
+            let fase = estadoAtual.faseAtual;
+            estadoAtual.resultadosFase[fase] = {};
+            estadoAtual.status = 'aguardando';
+            salvarDados();
+            mostrarToast(`Fase ${fase} resetada.`);
+            atualizarInterfaceGeral();
         }
     });
     
@@ -1291,8 +1298,13 @@
         document.getElementById('painel-torcida').classList.add('hidden');
     });
     
+    document.getElementById('btn-sincronizar').addEventListener('click', () => {
+        atualizarInterfaceGeral();
+        mostrarToast("Sincronizado!");
+    });
+    
     // Inicializar
-    inicializarEstado();
+    inicializarEstadoLocal();
 </script>
 </body>
 </html>
