@@ -874,7 +874,15 @@
     
     // ==================== EXIBIR PERGUNTA ====================
     function exibirPergunta() {
-        if (perguntaAtual >= perguntasJogo.length) return;
+        if (!perguntasJogo || perguntasJogo.length === 0) {
+            document.getElementById('pergunta-texto').innerText = 'Erro ao carregar perguntas. Recarregue a página.';
+            return;
+        }
+        
+        if (perguntaAtual >= perguntasJogo.length) {
+            document.getElementById('pergunta-texto').innerText = 'Fase concluída!';
+            return;
+        }
         
         let p = perguntasJogo[perguntaAtual];
         document.getElementById('pergunta-numero').innerText = `Pergunta ${perguntaAtual + 1}/${perguntasJogo.length}`;
@@ -1146,6 +1154,17 @@
         if (status === 'em_andamento') {
             document.getElementById('area-jogo').classList.remove('hidden');
             document.getElementById('area-aguardando').classList.add('hidden');
+            
+            // Gerar perguntas se ainda não foram geradas
+            if (perguntasJogo.length === 0) {
+                perguntasJogo = await gerarBanco("0-10");
+                perguntaAtual = 0;
+            }
+            
+            // Exibir primeira pergunta se ainda não foi exibida
+            if (perguntaAtual === 0 && !cronometroPergunaInterval) {
+                exibirPergunta();
+            }
         } else {
             document.getElementById('area-jogo').classList.add('hidden');
             document.getElementById('area-aguardando').classList.remove('hidden');
@@ -1204,9 +1223,11 @@
         document.getElementById('tela-principal').classList.add('hidden');
         document.getElementById('painel-aluno').classList.remove('hidden');
         
-        // Gerar perguntas
-        perguntasJogo = await gerarBanco("0-10");
-        perguntaAtual = 0;
+        // Gerar perguntas ANTES de atualizar a interface
+        if (perguntasJogo.length === 0) {
+            perguntasJogo = await gerarBanco("0-10");
+            perguntaAtual = 0;
+        }
         
         atualizarInterfaceGeral();
     });
@@ -1307,6 +1328,7 @@
     setInterval(() => {
         if (meuTipo === 'torcida') atualizarRankingTorcida();
         if (meuTipo === 'professor') atualizarRankingProfessor();
+        if (meuTipo === 'aluno') atualizarInterfaceAluno();
     }, 2000);
     
     // Inicializar
