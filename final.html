@@ -725,7 +725,7 @@
     }
     
     // ==================== GERAÇÃO DE PERGUNTAS ====================
-    async function gerarBanco(dificuldade) {
+    function gerarBanco(dificuldade) {
         let fatores = [];
         if (dificuldade.includes("2-5")) fatores = [2, 3, 4, 5];
         else if (dificuldade.includes("6-9")) fatores = [6, 7, 8, 9];
@@ -1141,7 +1141,7 @@
         container.innerHTML = html;
     }
     
-    async function atualizarInterfaceAluno() {
+    function atualizarInterfaceAluno() {
         if (!estadoAtual || !alunoId || meuTipo !== 'aluno') return;
         
         let fase = estadoAtual.faseAtual;
@@ -1155,15 +1155,15 @@
             document.getElementById('area-jogo').classList.remove('hidden');
             document.getElementById('area-aguardando').classList.add('hidden');
             
-            // Gerar perguntas se ainda não foram geradas
-            if (perguntasJogo.length === 0) {
-                perguntasJogo = await gerarBanco("0-10");
+            // Gerar perguntas se ainda não foram geradas (SÍNCRONO)
+            if (!perguntasJogo || perguntasJogo.length === 0) {
+                perguntasJogo = gerarBanco("0-10");
                 perguntaAtual = 0;
             }
             
             // Exibir primeira pergunta se ainda não foi exibida
-            if (perguntaAtual === 0 && !cronometroPergunaInterval) {
-                exibirPergunta();
+            if (perguntaAtual === 0 && perguntasJogo.length > 0 && !cronometroPergunaInterval) {
+                setTimeout(() => exibirPergunta(), 50);
             }
         } else {
             document.getElementById('area-jogo').classList.add('hidden');
@@ -1197,7 +1197,7 @@
         mostrarDialog('entrada');
     });
     
-    document.getElementById('btn-confirmar-entrada').addEventListener('click', async () => {
+    document.getElementById('btn-confirmar-entrada').addEventListener('click', () => {
         let nome = document.getElementById('input-nome').value.trim();
         let turma = document.getElementById('input-turma').value.trim();
         
@@ -1223,13 +1223,20 @@
         document.getElementById('tela-principal').classList.add('hidden');
         document.getElementById('painel-aluno').classList.remove('hidden');
         
-        // Gerar perguntas ANTES de atualizar a interface
-        if (perguntasJogo.length === 0) {
-            perguntasJogo = await gerarBanco("0-10");
+        // Gerar perguntas IMEDIATAMENTE (SÍNCRONO)
+        if (!perguntasJogo || perguntasJogo.length === 0) {
+            perguntasJogo = gerarBanco("0-10");
             perguntaAtual = 0;
         }
         
         atualizarInterfaceGeral();
+        
+        // Forçar exibição da primeira pergunta após 100ms
+        setTimeout(() => {
+            if (estadoAtual.status === 'em_andamento' && perguntasJogo.length > 0) {
+                exibirPergunta();
+            }
+        }, 100);
     });
     
     document.getElementById('btn-cancelar-entrada').addEventListener('click', () => {
@@ -1328,8 +1335,21 @@
     setInterval(() => {
         if (meuTipo === 'torcida') atualizarRankingTorcida();
         if (meuTipo === 'professor') atualizarRankingProfessor();
-        if (meuTipo === 'aluno') atualizarInterfaceAluno();
+        if (meuTipo === 'aluno') {
+            atualizarInterfaceAluno();
+            // Verificação de emergência: se pergunta está travada em "Carregando"
+            if (document.getElementById('pergunta-texto') && document.getElementById('pergunta-texto').innerText === 'Carregando...' && perguntasJogo && perguntasJogo.length > 0) {
+                exibirPergunta();
+            }
+        }
     }, 2000);
+    
+    // Verificação de emergência: se após 3 segundos ainda estiver "Carregando", força exibição
+    setTimeout(() => {
+        if (meuTipo === 'aluno' && document.getElementById('pergunta-texto') && document.getElementById('pergunta-texto').innerText === 'Carregando...' && perguntasJogo && perguntasJogo.length > 0) {
+            exibirPergunta();
+        }
+    }, 3000);
     
     // Inicializar
     inicializarEstadoLocal();
