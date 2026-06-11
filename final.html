@@ -439,15 +439,16 @@
 
         <!-- PAINEL DO ALUNO -->
         <div id="painel-aluno" class="painel hidden">
-            <h2 id="aluno-nome">Aluno</h2>
-            <p style="font-size: 14px; color: #aaa;">Turma: <span id="aluno-turma">--</span> | Fase: <span id="aluno-fase">1</span></p>
+            <div id="area-jogo">
+                <h2 id="aluno-nome">Aluno</h2>
+                <p style="font-size: 14px; color: #aaa;">Turma: <span id="aluno-turma">--</span> | Fase: <span id="aluno-fase">1</span></p>
 
-            <!-- Cronômetro Global -->
-            <div class="cronometro-container">
-                <div id="cronometro-global">12:00</div>
-                <div class="barra-tempo">
-                    <div class="progresso-tempo" id="barra-global"></div>
-                </div>
+                <!-- Cronômetro Global -->
+                <div class="cronometro-container">
+                    <div id="cronometro-global">12:00</div>
+                    <div class="barra-tempo">
+                        <div class="progresso-tempo" id="barra-global"></div>
+                    </div>
 
             <!-- Painel de Indicadores -->
             <div class="painel-indicadores">
@@ -502,7 +503,8 @@
                 ⏰ ÚLTIMOS 2 MINUTOS! Última chance para melhorar sua posição!
             </div>
 
-            <button id="btn-voltar-aluno" class="btn-primary">🏠 Voltar</button>
+                <button id="btn-voltar-aluno" class="btn-primary">🏠 Voltar</button>
+            </div>
         </div>
 
         <!-- TELA DE RESUMO DE TENTATIVA -->
@@ -1131,15 +1133,25 @@
         let fase = estadoAtual.faseAtual;
         let status = estadoAtual.status;
         
-        document.getElementById('aluno-nome').innerText = alunoNome;
-        document.getElementById('aluno-turma').innerText = alunoTurma;
-        document.getElementById('aluno-fase').innerText = fase;
+        // Proteção contra elementos nulos
+        let nomeElem = document.getElementById('aluno-nome');
+        let turmaElem = document.getElementById('aluno-turma');
+        let faseElem = document.getElementById('aluno-fase');
+        
+        if (nomeElem) nomeElem.innerText = alunoNome;
+        if (turmaElem) turmaElem.innerText = alunoTurma;
+        if (faseElem) faseElem.innerText = fase;
+        
+        let areaJogo = document.getElementById('area-jogo');
+        let areaAguardando = document.getElementById('area-aguardando');
+        let areaResumo = document.getElementById('area-resumo');
+        let areaRankingPausa = document.getElementById('area-ranking-pausa');
         
         if (status === 'em_andamento') {
-            document.getElementById('area-jogo').classList.remove('hidden');
-            document.getElementById('area-aguardando').classList.add('hidden');
-            document.getElementById('area-resumo').classList.add('hidden');
-            document.getElementById('area-ranking-pausa').classList.add('hidden');
+            if (areaJogo) areaJogo.classList.remove('hidden');
+            if (areaAguardando) areaAguardando.classList.add('hidden');
+            if (areaResumo) areaResumo.classList.add('hidden');
+            if (areaRankingPausa) areaRankingPausa.classList.add('hidden');
             
             // Gerar perguntas se ainda não foram geradas (SÍNCRONO)
             if (!perguntasJogo || perguntasJogo.length === 0) {
@@ -1152,10 +1164,10 @@
                 setTimeout(() => exibirPergunta(), 50);
             }
         } else {
-            document.getElementById('area-jogo').classList.add('hidden');
-            document.getElementById('area-aguardando').classList.remove('hidden');
-            document.getElementById('area-resumo').classList.add('hidden');
-            document.getElementById('area-ranking-pausa').classList.add('hidden');
+            if (areaJogo) areaJogo.classList.add('hidden');
+            if (areaAguardando) areaAguardando.classList.remove('hidden');
+            if (areaResumo) areaResumo.classList.add('hidden');
+            if (areaRankingPausa) areaRankingPausa.classList.add('hidden');
         }
     }
     
