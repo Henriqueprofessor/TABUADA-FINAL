@@ -3,281 +3,460 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Copa Tabuada CEIB 2026 - Grande Final 0 a 10</title>
+    <title>Copa Tabuada CEIB 2026 - Fases com Tempo Dinâmico</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-            background: #0a0f1e;
+            background: linear-gradient(135deg, #0a0f1e 0%, #1a1f2e 100%);
             color: #eee;
             padding: 20px;
+            min-height: 100vh;
         }
         .container { max-width: 1400px; margin: 0 auto; }
         .card {
-            background: rgba(12,20,35,0.9);
-            backdrop-filter: blur(4px);
+            background: rgba(12,20,35,0.95);
+            backdrop-filter: blur(10px);
             border-radius: 28px;
             padding: 24px;
             margin-bottom: 24px;
             border: 1px solid rgba(0,255,255,0.2);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         h1, h2, h3 { color: #ffd966; margin-bottom: 16px; }
         button {
             background: #1f3a4b;
             color: #fff;
             border: none;
             border-radius: 40px;
-            padding: 8px 16px;
+            padding: 10px 18px;
             font-weight: bold;
             cursor: pointer;
             transition: 0.2s;
             margin: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         button:hover { background: #2c5a6e; transform: scale(1.02); }
+        button:active { transform: scale(0.98); }
         .btn-primary { background: #e67e22; }
         .btn-primary:hover { background: #f39c12; }
         .btn-success { background: #27ae60; }
+        .btn-success:hover { background: #2ecc71; }
         .btn-danger { background: #c0392b; }
+        .btn-danger:hover { background: #e74c3c; }
         .btn-warning { background: #f39c12; }
-        .btn-small { padding: 4px 8px; font-size: 12px; margin-left: 8px; }
+        .btn-warning:hover { background: #f1c40f; }
+        
+        /* Cronômetro Global */
+        .cronometro-global {
+            background: linear-gradient(135deg, #1e2a3a 0%, #0a0f1e 100%);
+            border: 3px solid #ffd966;
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ffd966;
+            box-shadow: 0 0 30px rgba(255, 217, 102, 0.4);
+            letter-spacing: 2px;
+        }
+        .cronometro-global.critico {
+            border-color: #e74c3c;
+            color: #e74c3c;
+            animation: pulsarCritico 0.5s infinite;
+            box-shadow: 0 0 30px rgba(231, 76, 60, 0.6);
+        }
+        @keyframes pulsarCritico {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* Barra de Progresso */
+        .barra-tempo {
+            width: 100%;
+            height: 24px;
+            background: #2c3e50;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 16px 0;
+            border: 1px solid #555;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .progresso-tempo {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60 0%, #f39c12 50%, #e74c3c 100%);
+            transition: width 0.1s linear;
+            box-shadow: 0 0 10px rgba(255, 217, 102, 0.5);
+        }
+        
+        /* Ranking Table */
         .ranking-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 16px;
-            font-size: 14px;
+            font-size: 13px;
         }
         .ranking-table th, .ranking-table td {
             border-bottom: 1px solid #2c3e50;
-            padding: 10px;
+            padding: 12px;
             text-align: left;
         }
+        .ranking-table th {
+            background: #1e2a3a;
+            font-weight: bold;
+            color: #ffd966;
+            position: sticky;
+            top: 0;
+        }
+        .ranking-table tr:hover {
+            background: rgba(255, 217, 102, 0.08);
+        }
+        .ranking-table tr.linha-corte {
+            border-top: 3px solid #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            font-weight: bold;
+        }
+        .ranking-table tr.hot-seat {
+            background: rgba(243, 156, 18, 0.15);
+            border-left: 4px solid #f39c12;
+        }
+        
+        /* Indicadores */
+        .painel-indicadores {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+            padding: 16px;
+            background: rgba(30, 42, 58, 0.8);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 217, 102, 0.2);
+        }
+        
+        .indicador-card {
+            background: rgba(10, 15, 30, 0.8);
+            border: 2px solid #ffd966;
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .indicador-card:hover {
+            border-color: #f39c12;
+            box-shadow: 0 0 15px rgba(255, 217, 102, 0.2);
+        }
+        
+        .indicador-titulo {
+            font-size: 11px;
+            color: #aaa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .indicador-valor {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffd966;
+        }
+        
+        /* Streak */
+        .streak-indicator {
+            display: inline-block;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 0 4px;
+            box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+        }
+        .streak-indicator.fogo { animation: fogo 0.6s infinite; }
+        @keyframes fogo {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+        
+        /* Delta PB */
+        .delta-pb {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .delta-pb.positivo {
+            color: #2ecc71;
+            background: rgba(46, 204, 113, 0.1);
+        }
+        .delta-pb.negativo {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+        
+        /* Opções de Resposta */
+        .lista-opcoes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin: 24px 0;
+        }
+        .opcao {
+            background: linear-gradient(135deg, #1f3a4b 0%, #2c5a6e 100%);
+            color: white;
+            border: 2px solid #1f3a4b;
+            border-radius: 14px;
+            padding: 24px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .opcao:hover { 
+            background: linear-gradient(135deg, #2c5a6e 0%, #3d7a8e 100%);
+            border-color: #ffd966;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 217, 102, 0.2);
+        }
+        .opcao.correta {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            border-color: #2ecc71;
+            animation: acertoFlash 0.5s;
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
+        }
+        .opcao.incorreta {
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+            border-color: #e74c3c;
+            animation: erroFlash 0.5s;
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
+        }
+        @keyframes acertoFlash {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        @keyframes erroFlash {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        /* Pergunta */
+        .pergunta-container {
+            background: rgba(30, 42, 58, 0.8);
+            border: 2px solid #ffd966;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .pergunta-numero {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+        
+        .pergunta-texto {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffd966;
+            margin: 12px 0;
+        }
+        
+        /* Cronômetro por Pergunta */
+        .cronometro-pergunta {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffd966;
+            margin: 16px 0;
+            text-align: center;
+        }
+        .cronometro-pergunta.critico {
+            color: #e74c3c;
+            animation: pulsarCritico 0.3s infinite;
+        }
+        
+        /* Status Box */
         .status-box {
-            background: #000000aa;
+            background: rgba(0, 0, 0, 0.6);
             border-radius: 20px;
             padding: 16px;
             margin-top: 20px;
             overflow-x: auto;
+            border: 1px solid rgba(255, 217, 102, 0.2);
         }
-        .flex-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
+        
+        /* Toast */
         .toast {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             background: #e67e22;
-            padding: 12px 24px;
+            padding: 14px 28px;
             border-radius: 60px;
             z-index: 1000;
             font-weight: bold;
             color: white;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            animation: slideUp 0.3s ease;
         }
-        .barra-tempo {
-            width: 100%;
-            height: 16px;
-            background: #2c3e50;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 16px 0;
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
         }
-        .progresso-tempo {
-            width: 100%;
-            height: 100%;
-            background: #27ae60;
-            transition: width 0.1s linear, background 0.2s ease;
-        }
-        .progresso-tempo.pulsando { animation: pulse 0.5s ease-in-out infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
-        .pulse-pontos { animation: pontuacaoPulse 0.3s ease-in-out; }
-        @keyframes pontuacaoPulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); color: #f1c40f; } 100% { transform: scale(1); } }
-        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
-        .progresso-aluno { background: #2c3e50; padding: 12px; border-radius: 16px; margin-bottom: 20px; text-align: center; }
-        .btn-jogar { background: #27ae60; font-size: 1.2rem; padding: 12px 24px; margin-top: 10px; }
-        .info-vagas { background: #2c3e50; padding: 12px; border-radius: 12px; margin-bottom: 16px; text-align: center; }
-        .select-fase { background: #1e2a3a; border: 1px solid #ffd966; color: white; padding: 6px 12px; border-radius: 20px; margin: 0 8px; }
-        .trend-up { color: #2ecc71; }
-        .trend-down { color: #e74c3c; }
-        .trend-flat { color: #f39c12; }
-        .loading { text-align: center; padding: 20px; color: #aaa; }
-        .lista-opcoes {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin: 20px 0;
-        }
-        .opcao {
-            background: #1f3a4b;
-            color: white;
-            border: none;
-            border-radius: 40px;
-            padding: 14px;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
+        
+        /* Info Vagas */
+        .info-vagas {
+            background: linear-gradient(135deg, #2c3e50 0%, #1e2a3a 100%);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
             text-align: center;
-            width: 100%;
-        }
-        .opcao:hover { background: #2c5a6e; transform: scale(1.02); }
-        .filtros-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            margin-bottom: 20px;
-            padding: 12px;
-            background: #1e2a3a;
-            border-radius: 20px;
-            align-items: flex-end;
-        }
-        .filtro-group {
-            flex: 1;
-            min-width: 150px;
-        }
-        .filtro-group label {
-            display: block;
-            font-size: 12px;
-            margin-bottom: 4px;
+            border: 1px solid #ffd966;
+            font-weight: bold;
             color: #ffd966;
         }
-        .filtro-group input, .filtro-group select {
-            width: 100%;
-            padding: 8px;
-            border-radius: 20px;
-            background: #0a0f1e;
-            border: 1px solid #ffd966;
-            color: white;
-        }
-        .dialog-turma, .password-dialog, .inscricao-dialog {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #1e2a3a;
-            border-radius: 28px;
-            padding: 24px;
-            z-index: 2000;
-            max-width: 90%;
-            width: 350px;
+        
+        /* Contagem Crítica */
+        .contagem-critica {
+            background: rgba(231, 76, 60, 0.3);
+            border: 2px solid #e74c3c;
+            border-radius: 12px;
+            padding: 16px;
             text-align: center;
-            border: 1px solid #ffd966;
-            box-shadow: 0 8px 28px rgba(0,0,0,0.5);
-        }
-        .dialog-turma select, .password-dialog input, .inscricao-dialog input {
-            width: 100%;
-            padding: 12px;
+            font-weight: bold;
+            color: #e74c3c;
             margin: 16px 0;
-            border-radius: 28px;
-            background: #0a0f1e;
-            color: white;
-            border: 1px solid #ffd966;
+            animation: pulsarCritico 0.5s infinite;
         }
-        .overlay {
+        
+        /* Termômetro */
+        .termometro {
+            width: 100%;
+            height: 32px;
+            background: #2c3e50;
+            border-radius: 16px;
+            overflow: hidden;
+            margin: 12px 0;
+            display: flex;
+            align-items: center;
+            position: relative;
+            border: 1px solid #555;
+        }
+        
+        .termometro-barra {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c 0%, #f39c12 50%, #27ae60 100%);
+            transition: width 0.3s ease;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+        
+        .termometro-label {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            font-size: 12px;
+            color: white;
+            z-index: 10;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+        
+        /* Flex Grid */
+        .flex-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .loading { text-align: center; padding: 20px; color: #aaa; }
+        
+        /* Diálogos */
+        .dialog-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.8);
             z-index: 1999;
-        }
-        .turma-badge {
-            display: inline-block;
-            background: #2c3e50;
-            padding: 4px 12px;
-            border-radius: 12px;
-            margin: 4px;
-        }
-        .classificado-msg { margin-top: 12px; padding: 8px; border-radius: 16px; font-weight: bold; }
-        .classificado-sim { background: rgba(39,174,96,0.2); color: #2ecc71; }
-        .classificado-nao { background: rgba(231,76,60,0.2); color: #e74c3c; }
-        .info-sincronizacao { font-size: 12px; color: #aaa; margin-top: 8px; text-align: center; }
-        .sinc-container { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 8px; }
-        .controles-participantes {
-            background: #1e2a3a;
-            border-radius: 16px;
-            padding: 12px;
-            margin-bottom: 16px;
             display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
             align-items: center;
+            justify-content: center;
         }
-        .controles-participantes input, .controles-participantes select {
+        
+        .dialog-content {
+            background: #1e2a3a;
+            border-radius: 28px;
+            padding: 28px;
+            max-width: 400px;
+            width: 90%;
+            border: 2px solid #ffd966;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        
+        .dialog-content h3 {
+            margin-bottom: 20px;
+        }
+        
+        .dialog-content input, .dialog-content select {
+            width: 100%;
+            padding: 12px;
+            margin: 12px 0;
+            border-radius: 20px;
             background: #0a0f1e;
-            border: 1px solid #ffd966;
             color: white;
-            border-radius: 20px;
-            padding: 8px 12px;
-            flex: 1;
-            min-width: 150px;
-        }
-        .controles-participantes button {
-            margin: 0;
-            padding: 8px 16px;
-        }
-        /* Estilos da Grande Final */
-        .final-placar {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin: 20px 0;
-        }
-        .final-card {
-            background: rgba(0,0,0,0.6);
-            border-radius: 20px;
-            padding: 16px;
-            text-align: center;
             border: 1px solid #ffd966;
+            font-size: 14px;
         }
-        .final-card.campeao { background: rgba(255,215,0,0.2); border: 2px solid gold; }
-        .final-card.vice { background: rgba(192,192,192,0.2); border: 2px solid silver; }
-        .final-card.terceiro { background: rgba(205,127,50,0.2); border: 2px solid #cd7f32; }
-        .final-pontos { font-size: 28px; font-weight: bold; color: #ffd966; }
-        .final-ordem { font-size: 14px; color: #aaa; }
-        .final-jogador { font-size: 18px; font-weight: bold; margin: 8px 0; }
-        /* Lista de inscritos na final (painel professor) */
-        .lista-inscritos {
-            max-height: 300px;
-            overflow-y: auto;
-            margin: 16px 0;
-        }
-        .inscrito-item {
-            background: #1e2a3a;
-            border-radius: 16px;
-            padding: 12px;
-            margin-bottom: 8px;
+        
+        .dialog-buttons {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
         }
-        .inscrito-info { font-weight: bold; }
-        .inscrito-status { font-size: 12px; color: #aaa; }
-        .btn-autorizar { background: #27ae60; padding: 4px 12px; margin: 0; }
-        .btn-autorizar:disabled { background: #555; cursor: not-allowed; }
+        
+        .dialog-buttons button {
+            flex: 1;
+        }
+        
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .lista-opcoes {
+                grid-template-columns: 1fr;
+            }
+            .painel-indicadores {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .cronometro-global {
+                font-size: 2rem;
+            }
+            .pergunta-texto {
+                font-size: 20px;
+            }
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 </head>
 <body>
-<canvas id="confetti-canvas"></canvas>
 <div class="container">
     <!-- TELA PRINCIPAL -->
-    <div class="card">
-        <h1>🏆 COPA TABUADA CEIB 2026 - FASES ELIMINATÓRIAS</h1>
+    <div id="tela-principal" class="card">
+        <h1>🏆 COPA TABUADA CEIB 2026</h1>
+        <p style="font-size: 16px; margin-bottom: 20px;">Fases com Tempo Dinâmico • Ranking em Tempo Real • Indicadores Avançados</p>
         <p>Fase atual: <strong id="fase-atual-titulo">--</strong> • <span id="status-fase">Carregando...</span></p>
-        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0;">
-            <button id="btn-professor" class="btn-primary">👨‍🏫 Entrar como Professor</button>
-            <button id="btn-aluno">🎮 Entrar como Aluno</button>
-            <button id="btn-projecao">📺 Tela de Torcida</button>
-            <button onclick="window.open('https://henriqueprofessor.github.io/Tabuada/', '_blank')" class="btn-success">🏠 Fase Classificatória</button>
-            <button id="btn-sincronizar-principal" class="btn-primary">🔄 Sincronizar agora</button>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0;">
+            <button id="btn-professor" class="btn-primary">👨‍🏫 Professor</button>
+            <button id="btn-aluno" class="btn-success">🎮 Aluno</button>
+            <button id="btn-projecao" class="btn-primary">📺 Torcida</button>
+            <button id="btn-sincronizar" class="btn-warning">🔄 Sincronizar</button>
         </div>
-        <div id="ultima-sincronizacao-principal" class="info-sincronizacao">Última atualização: --</div>
     </div>
 
     <!-- PAINEL DO PROFESSOR -->
@@ -285,1299 +464,835 @@
         <h2>🔧 Painel do Professor</h2>
         <div class="flex-grid">
             <div>
-                <h3>Controle da Fase <span id="fase-num">--</span>/4</h3>
-                <p>Status: <strong id="status-fase-prof">carregando...</strong></p>
-                <button id="btn-liberar-fase" class="btn-success">🔓 Liberar Fase</button>
-                <button id="btn-finalizar-fase" class="btn-danger">🔒 Finalizar Fase</button>
-                <hr>
-                <button id="btn-avancar-fase" class="btn-primary">➡️ Avançar Fase</button>
-                <button id="btn-reset-fase" class="btn-danger">⚠️ Resetar Fase</button>
-                <button id="btn-remover-duplicados" class="btn-warning">🔧 Remover Duplicados</button>
-                <button id="btn-reset-todos-dados" class="btn-danger">🗑️ Resetar Todos</button>
-                <button id="btn-voltar-inicio" class="btn-primary">🏠 Voltar</button>
+                <h3>Controle da Fase</h3>
+                <p style="margin-bottom: 12px;">Fase: <strong id="fase-num">--</strong> • Status: <strong id="status-fase-prof">--</strong></p>
+                <p style="margin-bottom: 16px; color: #ffd966; font-weight: bold;">⏱️ <span id="tempo-restante-prof">12:00</span></p>
+                <button id="btn-iniciar-fase" class="btn-success">▶️ Iniciar (12 min)</button>
+                <button id="btn-pausar-fase" class="btn-warning">⏸️ Pausar</button>
+                <button id="btn-finalizar-fase" class="btn-danger">🔒 Finalizar</button>
+                <hr style="margin: 16px 0; border: none; border-top: 1px solid #2c3e50;">
+                <button id="btn-avancar-fase" class="btn-primary">➡️ Próxima Fase</button>
+                <button id="btn-reset-fase" class="btn-danger">⚠️ Resetar</button>
+                <button id="btn-voltar-prof" class="btn-primary">🏠 Voltar</button>
             </div>
             <div>
-                <h3>Participantes <span id="fase-participantes-num">--</span></h3>
-                <div class="controles-participantes">
-                    <input type="text" id="busca-participante" placeholder="🔍 Buscar por nome..." autocomplete="off">
-                    <select id="ordenacao-participantes">
-                        <option value="nome_asc">📝 Nome (A-Z)</option>
-                        <option value="turma_asc">🏫 Turma (crescente)</option>
-                        <option value="data_desc">🕒 Data de cadastro (mais recente)</option>
-                    </select>
-                    <button id="btn-reset-filtros" class="btn-small">Limpar filtros</button>
-                </div>
-                <div id="lista-participantes" style="max-height: 250px; overflow-y: auto;"></div>
-                <button id="btn-adicionar-aluno" class="btn-primary">➕ Adicionar Aluno</button>
-                <hr>
-                <h3>Gerenciar Turmas</h3>
-                <div id="lista-turmas"></div>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="nova-turma" placeholder="Ex: 3003" style="flex:1;">
-                    <button id="btn-adicionar-turma" class="btn-small">➕ Adicionar</button>
-                </div>
-                <hr>
-                <h3>Histórico</h3>
-                <select id="seletor-fase-historico" class="select-fase">
-                    <option value="1">Fase 1</option>
-                    <option value="2">Fase 2</option>
-                    <option value="3">Fase 3</option>
-                    <option value="4">Fase 4</option>
-                    <option value="5">Grande Final</option>
-                </select>
-                <button id="btn-carregar-historico" class="btn-small">Carregar</button>
+                <h3>Participantes <span id="num-participantes" style="color: #aaa;">(0)</span></h3>
+                <div id="lista-participantes" style="max-height: 300px; overflow-y: auto; margin-bottom: 12px;"></div>
+                <button id="btn-adicionar-aluno" class="btn-primary">➕ Adicionar</button>
             </div>
         </div>
-        <!-- Seção específica para a Grande Final (fase 5) -->
-        <div id="secao-final" class="hidden">
-            <h3>🏆 Grande Final da Tabuada 0 a 10</h3>
-            <div id="lista-inscritos-final" class="lista-inscritos"></div>
-            <button id="btn-resetar-final" class="btn-danger">🔄 Resetar Final (limpar inscrições e resultados)</button>
-        </div>
-        <h3>Ranking da <span id="ranking-titulo">Fase Atual</span></h3>
-        <div id="filtros-professor" class="filtros-container">
-            <div class="filtro-group"><label>Nome</label><input type="text" id="filtro-nome-prof" placeholder="Nome..."></div>
-            <div class="filtro-group"><label>Turma</label><input type="text" id="filtro-turma-prof" placeholder="Turma..."></div>
-            <div class="filtro-group"><label>Melhor Pontuação</label><select id="ordem-melhor-pont-prof"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-            <div class="filtro-group"><label>Evolução (%)</label><select id="ordem-evolucao-prof"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-        </div>
-        <div id="ranking-parcial" class="status-box"><div class="loading">Carregando...</div></div>
+        <h3 style="margin-top: 24px;">Ranking Dinâmico</h3>
+        <div id="ranking-professor" class="status-box"></div>
     </div>
 
-    <!-- TELA DO ALUNO -->
-    <div id="tela-aluno" class="card hidden">
-        <h2 id="aluno-nome">Aluno</h2>
-        <p>Turma: <span id="aluno-turma">-</span></p>
-        <div id="jogo-area" class="hidden">
-            <div class="status-box">
-                <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
-                <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo" style="width:100%; background:#27ae60;"></div></div>
-                <div id="pergunta" style="font-size:48px; text-align:center;">0 x 0 = ?</div>
-                <div class="lista-opcoes" id="opcoes-container">
-                    <button class="opcao" data-idx="0"></button>
-                    <button class="opcao" data-idx="1"></button>
-                    <button class="opcao" data-idx="2"></button>
-                    <button class="opcao" data-idx="3"></button>
+    <!-- PAINEL DO ALUNO -->
+    <div id="painel-aluno" class="card hidden">
+        <div id="area-jogo" class="hidden">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 id="aluno-nome">--</h2>
+                <p style="color: #aaa;">Turma: <span id="aluno-turma">--</span> • Fase: <span id="aluno-fase">--</span></p>
+            </div>
+
+            <!-- Cronômetro Global -->
+            <div class="cronometro-global" id="cronometro-global">12:00</div>
+            <div class="barra-tempo">
+                <div class="progresso-tempo" id="barra-global"></div>
+            </div>
+
+            <!-- Painel de Indicadores -->
+            <div class="painel-indicadores">
+                <div class="indicador-card">
+                    <div class="indicador-titulo">Pontos</div>
+                    <div class="indicador-valor" id="pontos-aluno">0</div>
                 </div>
-                <div><span>Pergunta: <span id="pergunta-num">1</span>/20</span></div>
-                <p>Pontos nesta partida: <strong id="pontos-partida">0</strong></p>
-            </div>
-        </div>
-        <div id="aguardando" class="hidden" style="text-align:center; padding:40px;">⏳ Aguardando liberação da fase...</div>
-        <!-- Área de inscrição e status da Grande Final -->
-        <div id="area-final-aluno" class="hidden">
-            <div class="status-box">
-                <h3>🏆 Grande Final da Tabuada 0 a 10</h3>
-                <div id="status-final-aluno"></div>
-                <button id="btn-inscrever-final" class="btn-success">📝 Inscrever-se na Final</button>
-                <button id="btn-jogar-final" class="btn-jogar hidden">▶️ Iniciar minhas 3 partidas</button>
-            </div>
-        </div>
-        <div class="progresso-aluno">
-            <p><strong>📊 Fase <span id="aluno-fase">--</span> - Seu progresso</strong></p>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0;">
-                <div class="status-box" style="margin-top:0; padding:10px;"><p style="font-size:12px; color:#ffd966;">Partidas</p><p><span id="partidas-feitas">0</span> / 4</p></div>
-                <div class="status-box" style="margin-top:0; padding:10px;"><p style="font-size:12px; color:#ffd966;">Pontos Atuais</p><p><strong id="aluno-pontos-total">0</strong></p></div>
-                <div class="status-box" style="margin-top:0; padding:10px;"><p style="font-size:12px; color:#ffd966;">Posição Geral</p><p><strong id="aluno-posicao-atual">--</strong></p></div>
-                <div class="status-box" style="margin-top:0; padding:10px;"><p style="font-size:12px; color:#ffd966;">Na Rodada</p><p><strong id="aluno-posicao-rodada">--</strong></p></div>
-            </div>
-            <div id="area-projecao" class="status-box" style="margin-top:0; background: rgba(39, 174, 96, 0.1); border: 1px solid #27ae60; margin-bottom: 15px;">
-                <p style="color:#2ecc71; font-weight:bold;">🔮 Projeção Final</p>
-                <div style="display: flex; justify-content: space-around; align-items: center;">
-                    <div><p style="font-size:11px;">Pontos Estimados</p><p><strong id="projecao-pontos">--</strong></p></div>
-                    <div style="width:1px; height:30px; background:rgba(255,255,255,0.2);"></div>
-                    <div><p style="font-size:11px;">Posição Estimada</p><p><strong id="projecao-posicao">--</strong></p></div>
+                <div class="indicador-card">
+                    <div class="indicador-titulo">Streak 🔥</div>
+                    <div class="indicador-valor" id="streak-aluno">0</div>
                 </div>
-                <div id="classificacao-atual" class="classificado-msg"></div>
-                <p id="msg-incentivo" style="font-size:12px; margin-top:8px; font-style:italic; color:#aaa;"></p>
+                <div class="indicador-card">
+                    <div class="indicador-titulo">Melhor</div>
+                    <div class="indicador-valor" id="melhor-aluno">0</div>
+                </div>
+                <div class="indicador-card">
+                    <div class="indicador-titulo">Delta PB</div>
+                    <div class="indicador-valor delta-pb" id="delta-aluno">--</div>
+                </div>
+                <div class="indicador-card">
+                    <div class="indicador-titulo">Ritmo</div>
+                    <div class="indicador-valor" id="pace-aluno">--</div>
+                </div>
+                <div class="indicador-card">
+                    <div class="indicador-titulo">Posição</div>
+                    <div class="indicador-valor" id="posicao-aluno">--</div>
+                </div>
             </div>
-            <button id="btn-jogar-proxima" class="btn-jogar" disabled>▶️ Jogar Próxima Partida</button>
-            <div id="msg-fase-finalizada" class="hidden">🏁 Você completou todas as 4 partidas! Aguarde próxima fase.</div>
-            <div id="msg-fase-bloqueada" class="hidden">⛔ A fase não está liberada. Aguarde o professor.</div>
-        </div>
-        <div id="ranking-aluno" class="status-box">
-            <h3>Ranking da Fase Atual</h3>
-            <div class="filtros-container">
-                <div class="filtro-group"><label>Nome</label><input type="text" id="filtro-nome-aluno" placeholder="Nome..."></div>
-                <div class="filtro-group"><label>Turma</label><input type="text" id="filtro-turma-aluno" placeholder="Turma..."></div>
-                <div class="filtro-group"><label>Melhor Pontuação</label><select id="ordem-melhor-pont-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-                <div class="filtro-group"><label>Evolução (%)</label><select id="ordem-evolucao-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
+
+            <!-- Termômetro -->
+            <p style="font-size: 12px; color: #aaa; margin-top: 16px;">Evolução (últimas tentativas):</p>
+            <div class="termometro">
+                <div class="termometro-barra" id="termometro-barra" style="width: 50%;"></div>
+                <div class="termometro-label" id="termometro-label">Estável</div>
             </div>
-            <div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div>
+
+            <!-- Pergunta -->
+            <div class="pergunta-container">
+                <div class="pergunta-numero" id="pergunta-numero">Pergunta 1/20</div>
+                <div class="pergunta-texto" id="pergunta-texto">Carregando...</div>
+                <div class="cronometro-pergunta" id="cronometro-pergunta">10s</div>
+                <div class="barra-tempo">
+                    <div class="progresso-tempo" id="barra-pergunta"></div>
+                </div>
+            </div>
+
+            <!-- Opções -->
+            <div class="lista-opcoes" id="opcoes-container"></div>
+
+            <!-- Contagem Crítica -->
+            <div id="contagem-critica" class="contagem-critica hidden">
+                ⏰ ÚLTIMOS 2 MINUTOS! Última chance para melhorar sua posição!
+            </div>
+
+            <button id="btn-voltar-aluno" class="btn-primary">🏠 Voltar</button>
         </div>
-        <button id="btn-sair-aluno">⬅️ Sair</button>
+
+        <div id="area-aguardando" class="hidden">
+            <div style="text-align: center; padding: 60px 20px;">
+                <h2>⏳ Aguardando...</h2>
+                <p style="margin-top: 20px; font-size: 16px; color: #aaa;">O professor ainda não liberou a fase.</p>
+                <p style="margin-top: 12px; font-size: 14px; color: #999;">Fique atento ao cronômetro!</p>
+            </div>
+            <button id="btn-voltar-aluno-2" class="btn-primary">🏠 Voltar</button>
+        </div>
     </div>
 
-    <!-- TELA DE PROJEÇÃO -->
-    <div id="tela-projecao" class="card hidden">
-        <h2>📺 COPA TABUADA CEIB 2026 - TORCIDA</h2>
-        <div id="projecao-status" class="status-box">Carregando...</div>
-        <div id="info-vagas" class="info-vagas"></div>
-        <div class="filtros-container">
-            <div class="filtro-group"><label>Nome</label><input type="text" id="filtro-nome-torcida" placeholder="Nome..."></div>
-            <div class="filtro-group"><label>Turma</label><input type="text" id="filtro-turma-torcida" placeholder="Turma..."></div>
-            <div class="filtro-group"><label>Melhor Pontuação</label><select id="ordem-melhor-pont-torcida"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-            <div class="filtro-group"><label>Evolução (%)</label><select id="ordem-evolucao-torcida"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
+    <!-- PAINEL DE TORCIDA -->
+    <div id="painel-torcida" class="card hidden">
+        <h2>📺 Tela de Torcida - Ranking em Tempo Real</h2>
+        
+        <!-- Cronômetro -->
+        <div class="cronometro-global" id="cronometro-torcida">12:00</div>
+        <div class="barra-tempo">
+            <div class="progresso-tempo" id="barra-torcida"></div>
         </div>
-        <div id="projecao-ranking" class="status-box"><div class="loading">Carregando...</div></div>
-        <button id="btn-sair-projecao">⬅️ Voltar</button>
+
+        <div id="info-vagas-torcida"></div>
+        <div id="status-torcida" style="text-align: center; margin-bottom: 16px; color: #ffd966; font-weight: bold;">--</div>
+        
+        <!-- Ranking -->
+        <div id="ranking-torcida" class="status-box"></div>
+        
+        <button id="btn-voltar-torcida" class="btn-primary">🏠 Voltar</button>
     </div>
 </div>
-<div id="toast" class="toast hidden"></div>
+
+<!-- Diálogo de Entrada -->
+<div id="dialog-entrada" class="dialog-overlay hidden">
+    <div class="dialog-content">
+        <h3 id="dialog-titulo">Entrar como Aluno</h3>
+        <input type="text" id="input-nome" placeholder="Seu nome completo" autocomplete="off">
+        <input type="text" id="input-turma" placeholder="Sua turma (ex: 901)" autocomplete="off">
+        <div class="dialog-buttons">
+            <button id="btn-confirmar-entrada" class="btn-success">✓ Entrar</button>
+            <button id="btn-cancelar-entrada" class="btn-danger">✗ Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Diálogo de Senha (Professor) -->
+<div id="dialog-senha" class="dialog-overlay hidden">
+    <div class="dialog-content">
+        <h3>Acesso de Professor</h3>
+        <input type="password" id="input-senha" placeholder="Digite a senha" autocomplete="off">
+        <div class="dialog-buttons">
+            <button id="btn-confirmar-senha" class="btn-success">✓ Confirmar</button>
+            <button id="btn-cancelar-senha" class="btn-danger">✗ Cancelar</button>
+        </div>
+    </div>
+</div>
 
 <script>
-    console.log("Inicializando aplicação...");
-
     // ==================== CONFIGURAÇÃO FIREBASE ====================
+    // IMPORTANTE: Substitua com suas credenciais reais do Firebase
     const firebaseConfig = {
-        apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBz0-o2HVhEE",
-        authDomain: "final-copa-tabuada.firebaseapp.com",
-        databaseURL: "https://final-copa-tabuada-default-rtdb.firebaseio.com",
-        projectId: "final-copa-tabuada",
-        storageBucket: "final-copa-tabuada.firebasestorage.app",
-        messagingSenderId: "488825824115",
-        appId: "1:488825824115:web:50e94f68253473aee91b06"
+        apiKey: "AIzaSyDkNBxZZZZZZZZZZZZZZZZZZZZZZZZZZZ",
+        authDomain: "copa-tabuada.firebaseapp.com",
+        databaseURL: "https://copa-tabuada-default-rtdb.firebaseio.com",
+        projectId: "copa-tabuada",
+        storageBucket: "copa-tabuada.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456789:web:abcdef123456"
     };
-    firebase.initializeApp(firebaseConfig);
+    
+    try {
+        firebase.initializeApp(firebaseConfig);
+    } catch (e) {
+        console.log("Firebase já inicializado ou erro:", e.message);
+    }
+    
     const db = firebase.database();
-
-    // ==================== CACHE LOCAL ====================
-    const STORAGE_ESTADO = "faseFinalCache";
-    const STORAGE_LAST_SYNC = "lastSyncTimeFinal";
-
-    function salvarEstadoLocal(estado) {
-        if (!estado) return;
-        localStorage.setItem(STORAGE_ESTADO, JSON.stringify(estado));
-        localStorage.setItem(STORAGE_LAST_SYNC, Date.now().toString());
-        atualizarDisplayUltimaSincronizacao();
-    }
-
-    function carregarEstadoLocal() {
-        const data = localStorage.getItem(STORAGE_ESTADO);
-        if (data) {
-            try {
-                return JSON.parse(data);
-            } catch(e) { console.warn("Erro ao parsear cache", e); }
-        }
-        return null;
-    }
-
-    function atualizarDisplayUltimaSincronizacao() {
-        const lastSync = localStorage.getItem(STORAGE_LAST_SYNC);
-        const dataStr = lastSync ? `Última atualização: ${new Date(parseInt(lastSync)).toLocaleString()}` : "Última atualização: --";
-        const elemento = document.getElementById("ultima-sincronizacao-principal");
-        if (elemento) elemento.innerText = dataStr;
-    }
-
-    async function forcarSincronizacao() {
-        if (!navigator.onLine) { mostrarToast("Sem conexão com a internet. Conecte-se e tente novamente."); return; }
-        try {
-            const snap = await db.ref('faseFinal').once('value');
-            const estado = snap.val();
-            if (estado) {
-                salvarEstadoLocal(estado);
-                mostrarToast("✅ Dados sincronizados com sucesso!");
-                location.reload();
-            } else {
-                mostrarToast("Erro: estado vazio no Firebase.");
-            }
-        } catch(e) {
-            console.error(e);
-            mostrarToast("Falha na sincronização: " + e.message);
-        }
-    }
-
+    
     // ==================== VARIÁVEIS GLOBAIS ====================
-    let meuTipo = null;
+    let estadoRef, estadoAtual = null, estadoPronto = false;
+    let meuTipo = null; // 'professor', 'aluno', 'torcida'
     let alunoId = null, alunoNome = null, alunoTurma = null;
-    let estadoRef = null;
-    let estadoAtual = null;
-    let jogoAtivo = false;
-    let perguntasPartida = [], perguntaIdx = 0, pontosPartida = 0, respostaCorreta = 0;
-    let timerInterval = null, tempoRestante = 10, barraInterval = null;
-    let temposPartida = [], maiorSequenciaPartida = 0, sequenciaAtualPartida = 0, acertosConsecutivos = 0;
-    let partidaSendoJogada = 1;
-    let estadoPronto = false;
-    const DIFICULDADES = ["Fácil (2-5)", "Médio (6-9)", "Difícil (0-10 peso 7-9)", "Equilibrado (0-10)"];
-    const CLASSIFICADOS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5 }; // Fase 4 com 5 vagas (mas agora a final é fase 5)
-    let turmasDisponiveis = ["901","1001","1002","1003","1004","2001","2002","2003","3001","3002"];
-
-    // Variáveis para a Grande Final (fase 5)
-    let finalPartidaAtual = 1;      // 1 a 3
-    let finalPontosAcumuladosJogador = 0;
-    let finalJogadorId = null;
-
+    
+    // Cronômetro Global
+    let tempoTotalSegundos = 12 * 60; // 12 minutos
+    let tempoRestanteSegundos = tempoTotalSegundos;
+    let cronometroGlobalInterval = null;
+    let faseEmAndamento = false;
+    
+    // Cronômetro por Pergunta
+    let tempoPergunaSegundos = 10;
+    let tempoRestantePergunta = tempoPergunaSegundos;
+    let cronometroPergunaInterval = null;
+    let perguntaAtual = 0;
+    let perguntasJogo = [];
+    
+    // Indicadores
+    let streakAtual = 0;
+    let pontosAtuais = 0;
+    let melhorMarca = 0;
+    let historicoTentativas = [];
+    
+    const CLASSIFICADOS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5 };
+    
     // ==================== FUNÇÕES AUXILIARES ====================
-    function escapeHtml(str) { if(!str) return ''; return str.toString().replace(/[&<>]/g, m => m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'); }
-    function capitalizarNome(nome) { if(!nome) return ''; return nome.toLowerCase().split(' ').map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' '); }
-    function gerarIdEstavel(nome, turma) { return btoa(nome.toLowerCase().trim()+"|"+turma).slice(0,16); }
-    function getParticipantesArray(estado) { 
-        if(!estado || !estado.participantes) return [];
-        return Array.isArray(estado.participantes) ? estado.participantes : Object.values(estado.participantes);
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.toString().replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
     }
-    function alunoJaJogouPartida(estado, alunoId, fase, partida) {
-        if (fase === 5) {
-            // Na final, verificar se já jogou alguma partida (usamos pontosAcumulados)
-            return estado.resultadosFase?.[5]?.[alunoId]?.pontosAcumulados !== undefined;
+    
+    function capitalizarNome(nome) {
+        if (!nome) return '';
+        return nome.toLowerCase().split(' ').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+    }
+    
+    function gerarIdEstavel(nome, turma) {
+        return btoa(nome.toLowerCase().trim() + "|" + turma).slice(0, 16);
+    }
+    
+    function mostrarToast(msg) {
+        let toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+    
+    function formatarTempo(segundos) {
+        let min = Math.floor(segundos / 60);
+        let seg = segundos % 60;
+        return `${min}:${seg.toString().padStart(2, '0')}`;
+    }
+    
+    function mostrarDialog(tipo) {
+        if (tipo === 'entrada') {
+            document.getElementById('dialog-entrada').classList.remove('hidden');
+            document.getElementById('input-nome').focus();
+        } else if (tipo === 'senha') {
+            document.getElementById('dialog-senha').classList.remove('hidden');
+            document.getElementById('input-senha').focus();
         }
-        return !!(estado.resultadosFase?.[fase]?.[`r${partida}p`]?.[alunoId]?.pontos > 0);
     }
-    function getDetalhesAluno(estado, id, fase) {
-        if (fase === 5) {
-            const dados = estado.resultadosFase?.[5]?.[id];
-            if (dados) {
-                return {
-                    total: dados.pontosAcumulados || 0,
-                    jogadas: dados.pontosAcumulados ? 1 : 0,
-                    melhorT: null,
-                    melhorPontuacao: dados.pontosAcumulados || 0,
-                    pontRodadaAnterior: null,
-                    pontRodadaAtual: dados.pontosAcumulados || 0,
-                    ultimaPartida: dados.pontosAcumulados ? 5 : 0
-                };
-            }
-            return {total:0, jogadas:0, melhorT:null, melhorPontuacao:0, pontRodadaAnterior:null, pontRodadaAtual:null, ultimaPartida:0};
+    
+    function fecharDialog(tipo) {
+        if (tipo === 'entrada') {
+            document.getElementById('dialog-entrada').classList.add('hidden');
+        } else if (tipo === 'senha') {
+            document.getElementById('dialog-senha').classList.add('hidden');
         }
-        let total=0, jogadas=0, melhorT=null, melhorPontuacao=0;
-        let pontuacoesPorPartida = [], ultimaPartida=0;
-        for(let i=1;i<=4;i++) {
-            let d = estado.resultadosFase?.[fase]?.[`r${i}p`]?.[id];
-            if(d?.pontos > 0) { 
-                total+=d.pontos; 
-                jogadas++; 
-                if(d.tempoMedio && (melhorT===null || d.tempoMedio<melhorT)) melhorT=d.tempoMedio;
-                if(d.pontos > melhorPontuacao) melhorPontuacao = d.pontos;
-                pontuacoesPorPartida.push({partida:i, pontos:d.pontos});
-                ultimaPartida = i;
-            }
-        }
-        pontuacoesPorPartida.sort((a,b)=>a.partida-b.partida);
-        let pontRodadaAnterior = (pontuacoesPorPartida.length >= 2) ? pontuacoesPorPartida[pontuacoesPorPartida.length-2].pontos : null;
-        let pontRodadaAtual = (pontuacoesPorPartida.length >= 1) ? pontuacoesPorPartida[pontuacoesPorPartida.length-1].pontos : null;
-        return {total, jogadas, melhorT, melhorPontuacao, pontRodadaAnterior, pontRodadaAtual, ultimaPartida};
     }
-    function getPosicaoUltimaPartida(estado, alunoId, fase, ultimaPartida) {
-        if (fase === 5) return null;
-        if(ultimaPartida === 0) return null;
-        let partidaDados = estado.resultadosFase?.[fase]?.[`r${ultimaPartida}p`];
-        if(!partidaDados) return null;
-        let participantes = getParticipantesArray(estado);
-        let ranking = [];
-        for(let p of participantes) {
-            let pts = partidaDados[p.id]?.pontos || 0;
-            if(pts > 0) ranking.push({id:p.id, pontos:pts});
-        }
-        ranking.sort((a,b)=>b.pontos - a.pontos);
-        let pos = ranking.findIndex(r => r.id === alunoId);
-        return pos === -1 ? null : pos + 1;
-    }
-    async function getProgresso(id,fase) {
-        if (fase === 5) return estadoAtual?.resultadosFase?.[5]?.[id]?.pontosAcumulados ? 1 : 0;
-        return (await db.ref(`progressoAluno/${id}/fase${fase}`).once('value')).val() || 0;
-    }
-    async function setProgresso(id,fase,val) {
-        if (fase === 5) return;
-        await db.ref(`progressoAluno/${id}/fase${fase}`).set(val);
-    }
-
-    // ==================== RANKING ====================
-    async function gerarRanking(estado, fase) {
-        let participantes = [];
-        if (fase === 5) {
-            // Para a fase 5, os participantes são os inscritos na final
-            const inscritos = estado.resultadosFase?.[5] || {};
-            participantes = Object.keys(inscritos).map(id => ({
-                id,
-                nome: inscritos[id].nome,
-                turma: inscritos[id].turma,
-                total: inscritos[id].pontosAcumulados || 0,
-                jogadas: inscritos[id].pontosAcumulados ? 1 : 0
-            }));
-        } else {
-            participantes = getParticipantesArray(estado);
-        }
-        if(participantes.length===0) return [];
-        let stats = [];
-        for(let p of participantes) {
-            let {total, jogadas, melhorT, melhorPontuacao, pontRodadaAnterior, pontRodadaAtual, ultimaPartida} = getDetalhesAluno(estado, p.id, fase);
-            let posRodada = getPosicaoUltimaPartida(estado, p.id, fase, ultimaPartida);
-            stats.push({...p, total, jogadas, melhorT, melhorPontuacao, pontRodadaAnterior, pontRodadaAtual, posRodada});
-        }
-        stats.sort((a,b)=>b.total - a.total);
-        let numVagas = CLASSIFICADOS_POR_FASE[fase] || 0;
-        let resultado = [];
-        for(let i=0;i<stats.length;i++) {
-            let p = stats[i];
-            let pos = i+1;
-            let gap = "";
-            if(pos===1) gap = "–";
-            else if(numVagas && pos <= numVagas) gap = `-${stats[i-1].total - p.total}`;
-            else if(numVagas) gap = `-${stats[numVagas-1].total - p.total} (para ${numVagas}º)`;
-            let evol = "—";
-            if(p.pontRodadaAnterior !== null && p.pontRodadaAtual !== null && p.pontRodadaAnterior > 0) {
-                let diff = p.pontRodadaAtual - p.pontRodadaAnterior;
-                let perc = (diff / p.pontRodadaAnterior) * 100;
-                if(perc>0) evol = `<span class="trend-up">▲ +${perc.toFixed(1)}%</span>`;
-                else if(perc<0) evol = `<span class="trend-down">▼ ${Math.abs(perc).toFixed(1)}%</span>`;
-                else evol = `<span class="trend-flat">► 0%</span>`;
-            }
-            resultado.push({
-                id: p.id,
-                pos, nome:p.nome, turma:p.turma, total:p.total, gap,
-                melhorPontuacao: p.melhorPontuacao || 0,
-                pontRodadaAnterior: p.pontRodadaAnterior !== null ? p.pontRodadaAnterior : "–",
-                pontRodadaAtual: p.pontRodadaAtual !== null ? p.pontRodadaAtual : "–",
-                evolucao: evol,
-                posRodada: p.posRodada ? `${p.posRodada}º` : "–",
-                partidas: fase === 5 ? (p.total ? "3/3" : "0/3") : `${p.jogadas}/4`,
-                classificado: (numVagas && pos <= numVagas) ? "✅ Sim" : "❌ Não"
-            });
-        }
-        return resultado;
-    }
-
-    function filtrarEOrdenarRanking(rankingOriginal, filtroNome, filtroTurma, ordemMelhorPont, ordemEvolucao) {
-        let resultado = [...rankingOriginal];
-        if(filtroNome && filtroNome.trim()) resultado = resultado.filter(r => r.nome.toLowerCase().includes(filtroNome.toLowerCase().trim()));
-        if(filtroTurma && filtroTurma.trim()) resultado = resultado.filter(r => r.turma.toLowerCase().includes(filtroTurma.toLowerCase().trim()));
-        if(ordemMelhorPont === 'crescente') resultado.sort((a,b) => a.melhorPontuacao - b.melhorPontuacao);
-        else if(ordemMelhorPont === 'decrescente') resultado.sort((a,b) => b.melhorPontuacao - a.melhorPontuacao);
-        if(ordemEvolucao === 'crescente' || ordemEvolucao === 'decrescente') {
-            const extrair = (evolStr) => { let m = evolStr.match(/([+-]?\d+(?:\.\d+)?)%/); return m ? parseFloat(m[1]) : 0; };
-            resultado.sort((a,b) => ordemEvolucao === 'crescente' ? extrair(a.evolucao) - extrair(b.evolucao) : extrair(b.evolucao) - extrair(a.evolucao));
-        }
-        return resultado;
-    }
-
-    function gerarTabelaRanking(ranking) {
-        if(!ranking || ranking.length===0) return '<div class="loading">Nenhum participante ainda.</div>';
-        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ</th><th>Melhor Pont.</th><th>Rodada Atual</th><th>Rodada Ant.</th><th>Evolução</th><th>Pos Rodada</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
-        for(let r of ranking) {
-            html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
-        }
-        html += `</tbody></tr>`;
-        return html;
-    }
-
-    async function atualizarRankingProfessor() {
-        if(!estadoAtual) return;
-        const fase = estadoAtual.faseAtual;
-        let ranking = await gerarRanking(estadoAtual, fase);
-        let filtroNome = document.getElementById('filtro-nome-prof')?.value || '';
-        let filtroTurma = document.getElementById('filtro-turma-prof')?.value || '';
-        let ordemMelhorPont = document.getElementById('ordem-melhor-pont-prof')?.value || '';
-        let ordemEvolucao = document.getElementById('ordem-evolucao-prof')?.value || '';
-        let filtrado = filtrarEOrdenarRanking(ranking, filtroNome, filtroTurma, ordemMelhorPont, ordemEvolucao);
-        document.getElementById('ranking-parcial').innerHTML = gerarTabelaRanking(filtrado);
-        document.getElementById('ranking-titulo').innerText = fase === 5 ? "Grande Final" : `Fase ${fase} (Atual)`;
-    }
-    async function atualizarRankingAluno() {
-        if(!estadoAtual || !alunoId) return;
-        const fase = estadoAtual.faseAtual;
-        let ranking = await gerarRanking(estadoAtual, fase);
-        let filtroNome = document.getElementById('filtro-nome-aluno')?.value || '';
-        let filtroTurma = document.getElementById('filtro-turma-aluno')?.value || '';
-        let ordemMelhorPont = document.getElementById('ordem-melhor-pont-aluno')?.value || '';
-        let ordemEvolucao = document.getElementById('ordem-evolucao-aluno')?.value || '';
-        let filtrado = filtrarEOrdenarRanking(ranking, filtroNome, filtroTurma, ordemMelhorPont, ordemEvolucao);
-        document.getElementById('conteudo-ranking-aluno').innerHTML = gerarTabelaRanking(filtrado);
-    }
-    async function atualizarRankingTorcida() {
-        if(!estadoAtual) return;
-        const fase = estadoAtual.faseAtual;
-        let ranking = await gerarRanking(estadoAtual, fase);
-        let numVagas = CLASSIFICADOS_POR_FASE[fase] || 0;
-        let filtroNome = document.getElementById('filtro-nome-torcida')?.value || '';
-        let filtroTurma = document.getElementById('filtro-turma-torcida')?.value || '';
-        let ordemMelhorPont = document.getElementById('ordem-melhor-pont-torcida')?.value || '';
-        let ordemEvolucao = document.getElementById('ordem-evolucao-torcida')?.value || '';
-        let filtrado = filtrarEOrdenarRanking(ranking, filtroNome, filtroTurma, ordemMelhorPont, ordemEvolucao);
-        let html = (numVagas ? `<div class="info-vagas">🏆 ${numVagas} vagas para a próxima fase.</div>` : '<div class="info-vagas">🏆 Grande Final</div>') + gerarTabelaRanking(filtrado);
-        document.getElementById('projecao-ranking').innerHTML = html;
-        document.getElementById('projecao-status').innerHTML = fase === 5 ? "Grande Final - Inscrições abertas" : `Fase ${fase} - ${estadoAtual.status === 'em_andamento' ? '🔓 Em andamento' : '🔒 Finalizada'}`;
-        document.getElementById('info-vagas').innerHTML = numVagas ? `<div class="info-vagas">🏆 ${numVagas} vagas</div>` : '<div class="info-vagas">🏆 Grande Final</div>';
-    }
-
-    // ==================== JOGO GENÉRICO ====================
+    
+    // ==================== GERAÇÃO DE PERGUNTAS ====================
     async function gerarBanco(dificuldade) {
         let fatores = [];
-        if(dificuldade.includes("2-5")) fatores=[2,3,4,5];
-        else if(dificuldade.includes("6-9")) fatores=[6,7,8,9];
-        else if(dificuldade.includes("peso")) fatores=[0,1,2,3,4,5,6,7,8,9,10].filter(f=>f>=7||f<=3);
-        else fatores=[0,1,2,3,4,5,6,7,8,9,10];
+        if (dificuldade.includes("2-5")) fatores = [2, 3, 4, 5];
+        else if (dificuldade.includes("6-9")) fatores = [6, 7, 8, 9];
+        else fatores = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         
-        let perguntas=[];
-        let posicoes = [0,0,0,0,0,1,1,1,1,1,2,2,2,2,2,3,3,3,3,3];
+        let perguntas = [];
+        let posicoes = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3];
         posicoes.sort(() => Math.random() - 0.5);
-
-        for(let i=0;i<20;i++) {
-            let a = fatores[Math.floor(Math.random()*fatores.length)];
-            let b = Math.floor(Math.random()*11);
+        
+        for (let i = 0; i < 20; i++) {
+            let a = fatores[Math.floor(Math.random() * fatores.length)];
+            let b = Math.floor(Math.random() * 11);
             let resposta = a * b;
             let incorretas = [];
-            while(incorretas.length < 3) {
-                let r = resposta + (Math.floor(Math.random()*13)-6);
-                if(r>=0 && r !== resposta && !incorretas.includes(r)) incorretas.push(r);
+            
+            while (incorretas.length < 3) {
+                let r = resposta + (Math.floor(Math.random() * 13) - 6);
+                if (r >= 0 && r !== resposta && !incorretas.includes(r)) incorretas.push(r);
             }
+            
             let posDesejada = posicoes[i];
             if (posDesejada === 0) {
-                incorretas = incorretas.map(val => val <= resposta ? resposta + Math.floor(Math.random()*10) + 1 : val);
+                incorretas = incorretas.map(val => val <= resposta ? resposta + Math.floor(Math.random() * 10) + 1 : val);
             } else if (posDesejada === 1) {
                 incorretas = [
-                    resposta - (Math.floor(Math.random()*5) + 1),
-                    resposta + (Math.floor(Math.random()*5) + 1),
-                    resposta + (Math.floor(Math.random()*10) + 6)
+                    resposta - (Math.floor(Math.random() * 5) + 1),
+                    resposta + (Math.floor(Math.random() * 5) + 1),
+                    resposta + (Math.floor(Math.random() * 10) + 6)
                 ].map(v => v < 0 ? 0 : v);
             } else if (posDesejada === 2) {
                 incorretas = [
-                    resposta - (Math.floor(Math.random()*10) + 6),
-                    resposta - (Math.floor(Math.random()*5) + 1),
-                    resposta + (Math.floor(Math.random()*5) + 1)
+                    resposta - (Math.floor(Math.random() * 10) + 6),
+                    resposta - (Math.floor(Math.random() * 5) + 1),
+                    resposta + (Math.floor(Math.random() * 5) + 1)
                 ].map(v => v < 0 ? 0 : v);
             } else {
-                incorretas = incorretas.map(val => val >= resposta ? resposta - Math.floor(Math.random()*10) - 1 : val);
+                incorretas = incorretas.map(val => val >= resposta ? resposta - Math.floor(Math.random() * 10) - 1 : val);
             }
+            
             let todas = [resposta, ...incorretas.map(v => v < 0 ? 0 : v)];
             let set = new Set(todas);
-            while(set.size < 4) {
-                let r = resposta + (Math.floor(Math.random()*20)-10);
-                if(r>=0 && !set.has(r)) set.add(r);
+            
+            while (set.size < 4) {
+                let r = resposta + (Math.floor(Math.random() * 20) - 10);
+                if (r >= 0 && !set.has(r)) set.add(r);
             }
-            let opcoes = Array.from(set).sort((a,b) => a - b);
-            perguntas.push({fA:a, fB:b, resposta:resposta, opcoesOrdenadas: opcoes});
+            
+            let opcoes = Array.from(set).sort((a, b) => a - b);
+            perguntas.push({ fA: a, fB: b, resposta: resposta, opcoes: opcoes });
         }
+        
         return perguntas;
     }
-
-    function dispararConfete() {
-        let canvas = document.getElementById('confetti-canvas');
-        let ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        let parts = [];
-        for(let i=0;i<100;i++) parts.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*5+2, color:`hsl(${Math.random()*360},70%,60%)`, vx:(Math.random()-0.5)*3, vy:(Math.random()-0.5)*3-2, a:1});
-        let anim;
-        function draw(){
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-            let vivos=false;
-            for(let p of parts){
-                if(p.a<=0) continue;
-                vivos=true;
-                p.x+=p.vx; p.y+=p.vy; p.a-=0.02;
-                ctx.globalAlpha=p.a;
-                ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=p.color; ctx.fill();
+    
+    // ==================== CRONÔMETRO GLOBAL ====================
+    function iniciarCronometroGlobal() {
+        faseEmAndamento = true;
+        tempoRestanteSegundos = tempoTotalSegundos;
+        
+        cronometroGlobalInterval = setInterval(() => {
+            tempoRestanteSegundos--;
+            atualizarDisplayCronometroGlobal();
+            
+            if (tempoRestanteSegundos <= 0) {
+                finalizarFaseAutomaticamente();
             }
-            if(vivos) anim=requestAnimationFrame(draw);
-            else cancelAnimationFrame(anim);
-        }
-        draw();
-        setTimeout(()=>cancelAnimationFrame(anim),3000);
+        }, 1000);
     }
-
-    // Funções de jogo específicas para a final (usando IDs da tela de aluno, mas com lógica de 3 partidas)
-    let finalJogoAtivo = false;
-    let finalPerguntasPartida = [], finalPerguntaIdx = 0, finalPontosPartida = 0, finalRespostaCorreta = 0;
-    let finalTimerInterval = null, finalBarraInterval = null, finalTempoRestante = 10;
-    let finalTemposPartida = [], finalMaiorSequencia = 0, finalSequenciaAtual = 0, finalAcertosConsecutivos = 0;
-    let finalPartidasRealizadas = 0;
-    let finalJogadorIdAtual = null;
-
-    function iniciarTimerFinal() {
-        if(finalTimerInterval) clearInterval(finalTimerInterval);
-        if(finalBarraInterval) clearInterval(finalBarraInterval);
-        finalTempoRestante = 10;
-        let barraElem = document.getElementById('progresso-tempo-final');
-        if(!barraElem) return;
-        barraElem.style.width = '100%';
-        barraElem.style.backgroundColor = '#27ae60';
-        barraElem.classList.remove('pulsando');
-        finalTimerInterval = setInterval(() => {
-            if(!finalJogoAtivo) return;
-            finalTempoRestante -= 0.1;
-            if(finalTempoRestante <= 0) { clearInterval(finalTimerInterval); clearInterval(finalBarraInterval); responderFinal(-1); }
-        }, 100);
-        finalBarraInterval = setInterval(() => {
-            if(!finalJogoAtivo) return;
-            let percent = (finalTempoRestante / 10) * 100;
-            barraElem.style.width = Math.max(0, percent) + '%';
-            if(finalTempoRestante <= 2) { barraElem.style.backgroundColor = '#e74c3c'; barraElem.classList.add('pulsando'); }
-            else if(finalTempoRestante <= 5) { barraElem.style.backgroundColor = '#f39c12'; barraElem.classList.remove('pulsando'); }
-        }, 50);
-    }
-
-    function proximaPerguntaFinal() {
-        if(finalPerguntaIdx >= 20) { finalizarPartidaFinal(); return; }
-        let p = finalPerguntasPartida[finalPerguntaIdx];
-        document.getElementById('final-pergunta').innerHTML = `${p.fA} x ${p.fB} = ?`;
-        finalRespostaCorreta = p.resposta;
-        let opcoes = p.opcoesOrdenadas;
-        const botoes = document.querySelectorAll('#final-opcoes .opcao');
-        if (botoes.length >= 4) {
-            for(let i=0;i<4;i++) {
-                botoes[i].innerText = opcoes[i];
-                botoes[i].disabled = false;
-                botoes[i].style.color = "white";
-            }
+    
+    function pausarCronometroGlobal() {
+        if (cronometroGlobalInterval) {
+            clearInterval(cronometroGlobalInterval);
+            cronometroGlobalInterval = null;
+            faseEmAndamento = false;
         }
-        document.getElementById('final-pergunta-num').innerText = finalPerguntaIdx+1;
-        iniciarTimerFinal();
     }
-
-    function responderFinal(escolhaIdx) {
-        if(!finalJogoAtivo) return;
-        clearInterval(finalTimerInterval); clearInterval(finalBarraInterval);
-        let acertou = false;
-        if(escolhaIdx !== -1) {
-            let btn = document.querySelectorAll('#final-opcoes .opcao')[escolhaIdx];
-            if(parseInt(btn.innerText) === finalRespostaCorreta) acertou = true;
-        }
-        if(acertou) {
-            let tempoGasto = 10 - finalTempoRestante;
-            finalPontosPartida += Math.floor(300 + (10 - tempoGasto) * 50);
-            document.getElementById('final-pontos-partida').innerText = finalPontosPartida;
-            document.getElementById('final-pontos-partida').classList.add('pulse-pontos');
-            setTimeout(()=>document.getElementById('final-pontos-partida').classList.remove('pulse-pontos'),300);
-            finalTemposPartida.push(tempoGasto);
-            finalSequenciaAtual++;
-            if(finalSequenciaAtual > finalMaiorSequencia) finalMaiorSequencia = finalSequenciaAtual;
-            finalAcertosConsecutivos++;
-            if(finalAcertosConsecutivos % 3 === 0) dispararConfete();
+    
+    function atualizarDisplayCronometroGlobal() {
+        let display = formatarTempo(tempoRestanteSegundos);
+        document.getElementById('cronometro-global').innerText = display;
+        document.getElementById('cronometro-torcida').innerText = display;
+        document.getElementById('tempo-restante-prof').innerText = display;
+        
+        let percentual = (tempoRestanteSegundos / tempoTotalSegundos) * 100;
+        document.getElementById('barra-global').style.width = percentual + '%';
+        document.getElementById('barra-torcida').style.width = percentual + '%';
+        
+        // Últimos 2 minutos
+        if (tempoRestanteSegundos <= 120 && tempoRestanteSegundos > 0) {
+            document.getElementById('cronometro-global').classList.add('critico');
+            document.getElementById('contagem-critica').classList.remove('hidden');
         } else {
-            finalSequenciaAtual = 0;
-            finalAcertosConsecutivos = 0;
+            document.getElementById('cronometro-global').classList.remove('critico');
+            document.getElementById('contagem-critica').classList.add('hidden');
         }
-        finalPerguntaIdx++;
-        if(finalPerguntaIdx < 20) proximaPerguntaFinal();
-        else finalizarPartidaFinal();
     }
-
-    async function finalizarPartidaFinal() {
-        finalJogoAtivo = false;
-        clearInterval(finalTimerInterval); clearInterval(finalBarraInterval);
-        // Acumula pontos da partida
-        finalPontosAcumuladosJogador += finalPontosPartida;
-        finalPartidasRealizadas++;
-        // Atualiza interface
-        document.getElementById('final-pontos-acumulados').innerText = finalPontosAcumuladosJogador;
-        if (finalPartidasRealizadas < 3) {
-            // Prepara próxima partida
-            finalPartidaAtual++;
-            document.getElementById('final-partida-atual').innerText = finalPartidaAtual;
-            document.getElementById('final-pontos-partida').innerText = "0";
-            finalPontosPartida = 0;
-            finalPerguntaIdx = 0;
-            finalTemposPartida = [];
-            finalMaiorSequencia = 0;
-            finalSequenciaAtual = 0;
-            finalAcertosConsecutivos = 0;
-            // Gera novo banco de perguntas com dificuldade correspondente
-            let dificuldade = DIFICULDADES[finalPartidaAtual-1];
-            let novasPerguntas = await gerarBanco(dificuldade);
-            finalPerguntasPartida = novasPerguntas;
-            // Reinicia jogo
-            proximaPerguntaFinal();
+    
+    function finalizarFaseAutomaticamente() {
+        pausarCronometroGlobal();
+        mostrarToast("⏰ Tempo encerrado!");
+        faseEmAndamento = false;
+    }
+    
+    // ==================== CRONÔMETRO POR PERGUNTA ====================
+    function iniciarCronometroPergunta() {
+        tempoRestantePergunta = tempoPergunaSegundos;
+        
+        if (cronometroPergunaInterval) clearInterval(cronometroPergunaInterval);
+        
+        cronometroPergunaInterval = setInterval(() => {
+            tempoRestantePergunta--;
+            atualizarDisplayCronometroPergunta();
+            
+            if (tempoRestantePergunta <= 0) {
+                passarProximaPergunta();
+            }
+        }, 1000);
+    }
+    
+    function atualizarDisplayCronometroPergunta() {
+        let display = tempoRestantePergunta + 's';
+        let elem = document.getElementById('cronometro-pergunta');
+        elem.innerText = display;
+        
+        let percentual = (tempoRestantePergunta / tempoPergunaSegundos) * 100;
+        document.getElementById('barra-pergunta').style.width = percentual + '%';
+        
+        if (tempoRestantePergunta <= 3) {
+            elem.classList.add('critico');
         } else {
-            // Finalizou as 3 partidas. Salva pontuação no Firebase
-            await salvarResultadoFinal(finalJogadorIdAtual, finalPontosAcumuladosJogador);
-            // Limpa área de jogo e mostra mensagem de conclusão
-            document.getElementById('final-jogo-container').classList.add('hidden');
-            document.getElementById('final-aguardando-container').classList.remove('hidden');
-            document.getElementById('final-aguardando-container').innerHTML = `<p>✅ Você completou suas 3 partidas! Pontuação final: ${finalPontosAcumuladosJogador} pontos.</p><p>Agradecemos por participar da Grande Final!</p>`;
-            // Atualiza ranking e painel do professor
-            if (meuTipo === 'aluno') {
-                await atualizarInterfaceAluno();
-            }
-            if (estadoAtual.faseAtual === 5) {
-                atualizarPainelFinalProfessor();
-                atualizarPlacarFinal();
-            }
+            elem.classList.remove('critico');
         }
     }
-
-    async function salvarResultadoFinal(alunoId, pontos) {
-        const alunoInfo = { 
-            nome: finalJogadorNome, 
-            turma: finalJogadorTurma,
-            pontosAcumulados: pontos,
-            data: Date.now()
-        };
-        await estadoRef.child(`resultadosFase/5/${alunoId}`).set(alunoInfo);
-        mostrarToast("Pontuação da final salva!");
-    }
-
-    async function iniciarJogoFinal() {
-        if (!finalJogadorIdAtual) return;
-        finalPartidaAtual = 1;
-        finalPontosAcumuladosJogador = 0;
-        finalPartidasRealizadas = 0;
-        finalPontosPartida = 0;
-        finalPerguntaIdx = 0;
-        // Gera banco da primeira partida (Fácil)
-        let perguntas = await gerarBanco(DIFICULDADES[0]);
-        finalPerguntasPartida = perguntas;
-        // Exibe container de jogo
-        document.getElementById('final-jogo-container').classList.remove('hidden');
-        document.getElementById('final-aguardando-container').classList.add('hidden');
-        document.getElementById('final-partida-atual').innerText = "1";
-        document.getElementById('final-pontos-partida').innerText = "0";
-        document.getElementById('final-pontos-acumulados').innerText = "0";
-        finalJogoAtivo = true;
-        proximaPerguntaFinal();
-    }
-
-    // ==================== FUNÇÕES DA GRANDE FINAL (PROFESSOR) ====================
-    async function atualizarPainelFinalProfessor() {
-        if (!estadoAtual || estadoAtual.faseAtual !== 5) return;
-        const inscritos = estadoAtual.resultadosFase?.[5] || {};
-        const listaHtml = document.getElementById('lista-inscritos-final');
-        if (!listaHtml) return;
-        let html = '';
-        for (const [id, dados] of Object.entries(inscritos)) {
-            const jaJogou = dados.pontosAcumulados !== undefined;
-            const autorizado = dados.autorizado === true;
-            const podeAutorizar = !jaJogou && !autorizado;
-            html += `<div class="inscrito-item">
-                        <div>
-                            <div class="inscrito-info">${escapeHtml(dados.nome)} (${escapeHtml(dados.turma)})</div>
-                            <div class="inscrito-status">${jaJogou ? '✅ Já jogou - ' + dados.pontosAcumulados + ' pts' : (autorizado ? '🔓 Autorizado a jogar' : '⏳ Aguardando autorização')}</div>
-                        </div>
-                        ${podeAutorizar ? `<button class="btn-autorizar" data-id="${id}" data-nome="${escapeHtml(dados.nome)}" data-turma="${escapeHtml(dados.turma)}">Autorizar</button>` : ''}
-                    </div>`;
+    
+    function passarProximaPergunta() {
+        if (cronometroPergunaInterval) clearInterval(cronometroPergunaInterval);
+        perguntaAtual++;
+        
+        if (perguntaAtual < perguntasJogo.length && faseEmAndamento) {
+            exibirPergunta();
+            iniciarCronometroPergunta();
+        } else if (!faseEmAndamento) {
+            mostrarToast("Fase finalizada!");
         }
-        if (Object.keys(inscritos).length === 0) {
-            html = '<div>Nenhum aluno inscrito na Grande Final.</div>';
+    }
+    
+    // ==================== EXIBIR PERGUNTA ====================
+    function exibirPergunta() {
+        if (perguntaAtual >= perguntasJogo.length) return;
+        
+        let p = perguntasJogo[perguntaAtual];
+        document.getElementById('pergunta-numero').innerText = `Pergunta ${perguntaAtual + 1}/${perguntasJogo.length}`;
+        document.getElementById('pergunta-texto').innerText = `${p.fA} × ${p.fB} = ?`;
+        
+        let container = document.getElementById('opcoes-container');
+        container.innerHTML = '';
+        
+        p.opcoes.forEach((opcao, idx) => {
+            let btn = document.createElement('button');
+            btn.className = 'opcao';
+            btn.innerText = opcao;
+            btn.onclick = () => responderPergunta(opcao, p.resposta);
+            container.appendChild(btn);
+        });
+        
+        iniciarCronometroPergunta();
+    }
+    
+    function responderPergunta(resposta, respostaCorreta) {
+        if (cronometroPergunaInterval) clearInterval(cronometroPergunaInterval);
+        
+        let acertou = resposta === respostaCorreta;
+        let tempoGasto = tempoPergunaSegundos - tempoRestantePergunta;
+        
+        historicoTentativas.push(tempoGasto);
+        
+        if (acertou) {
+            streakAtual++;
+            pontosAtuais += 10;
+            atualizarStreak(true);
+            mostrarToast("✅ Acertou!");
+        } else {
+            streakAtual = 0;
+            atualizarStreak(false);
+            mostrarToast("❌ Errou!");
         }
-        listaHtml.innerHTML = html;
-        // Adicionar eventos aos botões de autorizar
-        document.querySelectorAll('.btn-autorizar').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const id = btn.dataset.id;
-                const nome = btn.dataset.nome;
-                const turma = btn.dataset.turma;
-                await autorizarAlunoFinal(id, nome, turma);
+        
+        atualizarIndicadores();
+        
+        setTimeout(() => {
+            passarProximaPergunta();
+        }, 1000);
+    }
+    
+    // ==================== INDICADORES DINÂMICOS ====================
+    function atualizarStreak(acertou) {
+        document.getElementById('streak-aluno').innerText = streakAtual;
+    }
+    
+    function atualizarIndicadores() {
+        document.getElementById('pontos-aluno').innerText = pontosAtuais;
+        
+        if (melhorMarca === 0) melhorMarca = pontosAtuais;
+        else melhorMarca = Math.max(melhorMarca, pontosAtuais);
+        
+        document.getElementById('melhor-aluno').innerText = melhorMarca;
+        
+        // Delta PB
+        let delta = pontosAtuais - melhorMarca;
+        let elemDelta = document.getElementById('delta-aluno');
+        if (delta > 0) {
+            elemDelta.innerText = '+' + delta;
+            elemDelta.classList.add('positivo');
+            elemDelta.classList.remove('negativo');
+        } else if (delta < 0) {
+            elemDelta.innerText = delta;
+            elemDelta.classList.add('negativo');
+            elemDelta.classList.remove('positivo');
+        } else {
+            elemDelta.innerText = '0';
+            elemDelta.classList.remove('positivo', 'negativo');
+        }
+        
+        // Pace
+        let tempoMedio = historicoTentativas.length > 0 
+            ? historicoTentativas.reduce((a, b) => a + b, 0) / historicoTentativas.length 
+            : 0;
+        
+        let elemPace = document.getElementById('pace-aluno');
+        if (tempoMedio < 5) {
+            elemPace.innerHTML = '▲ Rápido';
+            elemPace.style.color = '#2ecc71';
+        } else if (tempoMedio > 8) {
+            elemPace.innerHTML = '▼ Lento';
+            elemPace.style.color = '#e74c3c';
+        } else {
+            elemPace.innerHTML = '► Normal';
+            elemPace.style.color = '#ffd966';
+        }
+        
+        // Termômetro
+        atualizarTermometroEvolucao();
+    }
+    
+    function atualizarTermometroEvolucao() {
+        if (historicoTentativas.length < 2) return;
+        
+        let ultimasTentativas = historicoTentativas.slice(-5);
+        let melhora = 0, piora = 0;
+        
+        for (let i = 1; i < ultimasTentativas.length; i++) {
+            if (ultimasTentativas[i] < ultimasTentativas[i - 1]) melhora++;
+            else if (ultimasTentativas[i] > ultimasTentativas[i - 1]) piora++;
+        }
+        
+        let percentual = (melhora / (melhora + piora || 1)) * 100;
+        document.getElementById('termometro-barra').style.width = percentual + '%';
+        
+        if (percentual > 60) {
+            document.getElementById('termometro-label').innerText = 'Esquentando 🔥';
+        } else if (percentual < 40) {
+            document.getElementById('termometro-label').innerText = 'Esfriando ❄️';
+        } else {
+            document.getElementById('termometro-label').innerText = 'Estável';
+        }
+    }
+    
+    // ==================== RANKING DINÂMICO ====================
+    async function gerarRankingDinamico(estado, fase) {
+        let participantes = estado.participantes || [];
+        if (participantes.length === 0) return [];
+        
+        let stats = [];
+        for (let p of participantes) {
+            let dados = estado.resultadosFase?.[fase]?.[p.id] || {};
+            let pontos = dados.pontos || 0;
+            
+            stats.push({
+                id: p.id,
+                nome: p.nome,
+                turma: p.turma,
+                pontos: pontos,
+                streak: dados.streak || 0,
+                melhorMarca: dados.melhorMarca || 0,
+                tempoMedio: dados.tempoMedio || 0
             });
-        });
-    }
-
-    async function autorizarAlunoFinal(id, nome, turma) {
-        await estadoRef.child(`resultadosFase/5/${id}/autorizado`).set(true);
-        mostrarToast(`Aluno ${nome} autorizado para jogar a final.`);
-        atualizarPainelFinalProfessor();
-        // Se o aluno estiver logado e for este, atualizar sua interface
-        if (meuTipo === 'aluno' && alunoId === id) {
-            await atualizarInterfaceAluno();
         }
-    }
-
-    async function resetarGrandeFinal() {
-        if (!confirm("⚠️ Resetar a Grande Final? Isso apagará todas as inscrições e resultados.")) return;
-        await estadoRef.child('resultadosFase/5').remove();
-        mostrarToast("Grande Final resetada.");
-        if (estadoAtual.faseAtual === 5) {
-            atualizarPainelFinalProfessor();
-            atualizarPlacarFinal();
-        }
-    }
-
-    function atualizarPlacarFinal() {
-        const container = document.getElementById('final-placar');
-        if (!container) return;
-        const inscritos = estadoAtual?.resultadosFase?.[5] || {};
-        let lista = Object.entries(inscritos).map(([id, dados]) => ({
-            id,
-            nome: dados.nome,
-            turma: dados.turma,
-            pontos: dados.pontosAcumulados || 0,
-            jogou: !!dados.pontosAcumulados
-        }));
-        lista.sort((a,b) => b.pontos - a.pontos);
-        let html = '';
-        for (let i=0; i<lista.length; i++) {
-            let f = lista[i];
+        
+        stats.sort((a, b) => b.pontos - a.pontos);
+        
+        let numVagas = CLASSIFICADOS_POR_FASE[fase] || 0;
+        let resultado = [];
+        
+        for (let i = 0; i < stats.length; i++) {
+            let s = stats[i];
+            let pos = i + 1;
             let classe = '';
-            if (i===0 && f.pontos>0) classe = 'campeao';
-            else if (i===1 && f.pontos>0) classe = 'vice';
-            else if (i===2 && f.pontos>0) classe = 'terceiro';
-            html += `<div class="final-card ${classe}">
-                        <div class="final-ordem">${i+1}º lugar</div>
-                        <div class="final-jogador">${escapeHtml(f.nome)} (${escapeHtml(f.turma)})</div>
-                        <div class="final-pontos">${f.pontos} pts</div>
-                        <div class="final-ordem">${f.jogou ? 'Jogou' : 'Aguardando'}</div>
-                    </div>`;
+            
+            if (numVagas && pos === numVagas) classe = 'linha-corte';
+            if (numVagas && pos >= 28 && pos <= 32) classe = 'hot-seat';
+            
+            let deltaStr = s.melhorMarca > 0 ? (s.pontos - s.melhorMarca) : '--';
+            
+            resultado.push({
+                pos, nome: s.nome, turma: s.turma, pontos: s.pontos,
+                streak: s.streak, delta: deltaStr, classe: classe,
+                melhorMarca: s.melhorMarca
+            });
         }
-        if (lista.length === 0) html = '<div>Nenhum participante ainda.</div>';
-        container.innerHTML = html;
+        
+        return resultado;
     }
-
-    // ==================== FUNÇÕES DO ALUNO NA GRANDE FINAL ====================
-    async function inscreverAlunoFinal(nome, turma) {
-        const id = gerarIdEstavel(nome, turma);
-        const dados = { nome, turma, autorizado: false };
-        await estadoRef.child(`resultadosFase/5/${id}`).set(dados);
-        mostrarToast("Inscrição realizada! Aguarde autorização do professor.");
-        // Atualiza interface do aluno
-        alunoId = id;
-        alunoNome = nome;
-        alunoTurma = turma;
-        await atualizarInterfaceAluno();
-    }
-
-    async function verificarStatusFinalAluno() {
-        if (!alunoId) return { inscrito: false, autorizado: false, jogou: false };
-        const snap = await estadoRef.child(`resultadosFase/5/${alunoId}`).once('value');
-        const dados = snap.val();
-        if (!dados) return { inscrito: false, autorizado: false, jogou: false };
-        return {
-            inscrito: true,
-            autorizado: dados.autorizado === true,
-            jogou: dados.pontosAcumulados !== undefined,
-            pontos: dados.pontosAcumulados || 0
-        };
-    }
-
-    // ==================== FUNÇÕES AUXILIARES DO PROFESSOR ====================
-    async function resetarFaseProf() {
-        if(!confirm("Resetar fase atual? Todos os dados serão perdidos.")) return;
-        let fase = estadoAtual.faseAtual;
-        if (fase === 5) {
-            await resetarGrandeFinal();
-            return;
+    
+    function gerarTabelaRankingDinamico(ranking) {
+        if (!ranking || ranking.length === 0) return '<div class="loading">Nenhum participante ainda.</div>';
+        
+        let html = `<table class="ranking-table">
+            <thead>
+                <tr>
+                    <th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th>
+                    <th>Streak</th><th>Delta PB</th><th>Melhor</th>
+                </tr>
+            </thead>
+            <tbody>`;
+        
+        for (let r of ranking) {
+            let rowClass = r.classe ? ` class="${r.classe}"` : '';
+            html += `<tr${rowClass}>
+                <td style="font-weight: bold;">${r.pos}º</td>
+                <td>${escapeHtml(r.nome)}</td>
+                <td>${escapeHtml(r.turma)}</td>
+                <td><strong>${r.pontos}</strong></td>
+                <td><span class="streak-indicator">${r.streak} 🔥</span></td>
+                <td><span class="delta-pb ${r.delta < 0 ? 'negativo' : 'positivo'}">${r.delta}</span></td>
+                <td>${r.melhorMarca}</td>
+            </tr>`;
         }
-        await estadoRef.child(`resultadosFase/${fase}`).remove();
-        await db.ref('progressoAluno').once('value', snap=>snap.forEach(c=>{if(c.key.includes(`fase${fase}`)) c.ref.remove();}));
-        await estadoRef.update({status:'aguardando'});
-        mostrarToast(`Fase ${fase} resetada.`);
-        location.reload();
+        
+        html += `</tbody></table>`;
+        return html;
     }
-    async function avancarFaseProf() {
-        if(!estadoAtual) return;
-        let faseAtual = estadoAtual.faseAtual;
-        if (faseAtual >= 5) { mostrarToast("Você já está na Grande Final."); return; }
-        // Avança para a próxima fase
-        let novaFase = faseAtual + 1;
-        await estadoRef.update({faseAtual: novaFase, status: (novaFase === 5 ? 'em_andamento' : 'aguardando')});
-        // Se for a Grande Final, inicializa estrutura vazia
-        if (novaFase === 5) {
-            if (!estadoAtual.resultadosFase[5]) {
-                await estadoRef.child('resultadosFase/5').set({});
-            }
-        }
-        mostrarToast(`Avançou para Fase ${novaFase === 5 ? 'Grande Final' : novaFase}.`);
-        location.reload();
-    }
-    async function removerDuplicadosProf() {
-        let participantes = getParticipantesArray(estadoAtual);
-        let mapa = new Map(), dups = [];
-        for(let p of participantes) {
-            let chave = `${p.nome.toLowerCase().trim()}|${p.turma}`;
-            if(mapa.has(chave)) dups.push(p.id);
-            else mapa.set(chave, p);
-        }
-        if(dups.length===0) { mostrarToast("Nenhum duplicado."); return; }
-        let novos = participantes.filter(p=>!dups.includes(p.id));
-        await estadoRef.child('participantes').set(novos);
-        mostrarToast(`${dups.length} duplicados removidos.`);
-        location.reload();
-    }
-    async function resetarTodosDados() {
-        if(!confirm("⚠️ ATENÇÃO! Isso irá apagar TODOS os dados da competição.")) return;
-        try {
-            await db.ref('faseFinal').remove();
-            await db.ref('progressoAluno').remove();
-            await db.ref('fases').remove();
-            await db.ref('faseFinal').set({ faseAtual: 1, status: 'aguardando', participantes: [], resultadosFase: {1:{}}, bancosFase: {} });
-            mostrarToast("✅ Dados resetados!"); setTimeout(() => location.reload(), 2000);
-        } catch(e) { console.error(e); mostrarToast("❌ Erro ao resetar."); }
-    }
-    async function carregarTurmas() {
-        let snap = await db.ref('turmas').once('value');
-        if(snap.exists()) turmasDisponiveis = snap.val();
-        else await db.ref('turmas').set(turmasDisponiveis);
-    }
-    async function mostrarRankingHistorico(fase) {
-        let snap = await db.ref(`fases/${fase}`).once('value');
-        if(!snap.exists()) { document.getElementById('ranking-parcial').innerHTML = '<p>Nenhum dado.</p>'; return; }
-        let dados = snap.val();
-        let estadoFake = {participantes: dados.participantes || [], resultadosFase: {[fase]: dados.resultados || {}}};
-        let ranking = await gerarRanking(estadoFake, fase);
-        let filtrado = filtrarEOrdenarRanking(ranking, '', '', '', '');
-        document.getElementById('ranking-parcial').innerHTML = gerarTabelaRanking(filtrado);
-        document.getElementById('ranking-titulo').innerText = fase === 5 ? "Grande Final" : `Fase ${fase}`;
-    }
-
-    // ==================== RENDERIZAÇÃO DA LISTA DE PARTICIPANTES ====================
-    let participantesCache = [];
-    function ordenarParticipantes(participantes, criterio) {
-        let copia = [...participantes];
-        switch(criterio) {
-            case 'nome_asc': copia.sort((a,b) => a.nome.localeCompare(b.nome)); break;
-            case 'turma_asc': copia.sort((a,b) => { if (a.turma === b.turma) return a.nome.localeCompare(b.nome); return a.turma.localeCompare(b.turma); }); break;
-            case 'data_desc': copia.sort((a,b) => (b.dataCadastro || 0) - (a.dataCadastro || 0)); break;
-            default: copia.sort((a,b) => a.nome.localeCompare(b.nome));
-        }
-        return copia;
-    }
-    function filtrarParticipantes(participantes, busca) {
-        if (!busca.trim()) return participantes;
-        return participantes.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase().trim()));
-    }
-    function renderizarListaParticipantes() {
+    
+    async function atualizarRankingTorcida() {
         if (!estadoAtual) return;
-        let participantes = getParticipantesArray(estadoAtual);
-        participantesCache = [...participantes];
-        const busca = document.getElementById('busca-participante')?.value || '';
-        const criterio = document.getElementById('ordenacao-participantes')?.value || 'nome_asc';
-        let filtrados = filtrarParticipantes(participantesCache, busca);
-        let ordenados = ordenarParticipantes(filtrados, criterio);
-        const container = document.getElementById('lista-participantes');
-        if (!container) return;
-        if (ordenados.length === 0) {
-            container.innerHTML = '<div style="padding: 12px; text-align: center;">Nenhum participante encontrado.</div>';
-            document.getElementById('fase-participantes-num').innerText = '0';
-            return;
-        }
-        let html = '<ul style="list-style: none; padding: 0;">';
-        ordenados.forEach(p => {
-            html += `<li style="padding: 8px; border-bottom: 1px solid #2c3e50; display: flex; justify-content: space-between; align-items: center;">
-                        <span>${escapeHtml(p.nome)} (${escapeHtml(p.turma)})</span>
-                        <span>
-                            <button class="btn-editar-aluno" data-id="${p.id}" style="padding: 4px 12px;">✏️</button>
-                            <button class="btn-excluir-aluno" data-id="${p.id}" style="padding: 4px 12px; background: #c0392b;">🗑️</button>
-                        </span>
-                     </li>`;
-        });
-        html += '</ul>';
-        container.innerHTML = html;
-        document.getElementById('fase-participantes-num').innerText = ordenados.length;
+        const fase = estadoAtual.faseAtual;
+        let ranking = await gerarRankingDinamico(estadoAtual, fase);
+        let numVagas = CLASSIFICADOS_POR_FASE[fase] || 0;
+        
+        let html = (numVagas ? `<div class="info-vagas">🏆 ${numVagas} vagas para a próxima fase</div>` : '<div class="info-vagas">🏆 Grande Final</div>');
+        html += gerarTabelaRankingDinamico(ranking);
+        
+        document.getElementById('ranking-torcida').innerHTML = html;
+        document.getElementById('status-torcida').innerHTML = `Fase ${fase} - ${faseEmAndamento ? '🔓 Em andamento' : '🔒 Aguardando'}`;
+        document.getElementById('info-vagas-torcida').innerHTML = numVagas ? `<div class="info-vagas">🏆 ${numVagas} vagas</div>` : '<div class="info-vagas">🏆 Grande Final</div>';
     }
-    async function adicionarParticipanteComData(nome, turma) {
-        const id = gerarIdEstavel(nome, turma);
-        const dataCadastro = Date.now();
-        const novoParticipante = { id, nome, turma, dataCadastro };
-        let lista = getParticipantesArray(estadoAtual);
-        if (lista.find(p => p.id === id)) return false;
-        lista.push(novoParticipante);
-        await estadoRef.child('participantes').set(lista);
-        return true;
+    
+    async function atualizarRankingProfessor() {
+        if (!estadoAtual) return;
+        const fase = estadoAtual.faseAtual;
+        let ranking = await gerarRankingDinamico(estadoAtual, fase);
+        document.getElementById('ranking-professor').innerHTML = gerarTabelaRankingDinamico(ranking);
     }
-
+    
     // ==================== INICIALIZAÇÃO ====================
     async function inicializarEstado() {
         estadoRef = db.ref('faseFinal');
         try {
             let snap = await estadoRef.once('value');
             if (snap.exists()) {
-                const estado = snap.val();
-                if (estado.participantes && Array.isArray(estado.participantes)) {
-                    let modificado = false;
-                    estado.participantes.forEach(p => { if (!p.dataCadastro) { p.dataCadastro = 0; modificado = true; } });
-                    if (modificado) await estadoRef.child('participantes').set(estado.participantes);
-                }
-                salvarEstadoLocal(estado);
+                estadoAtual = snap.val();
             } else {
-                const estadoInicial = { faseAtual:1, status:'aguardando', participantes:[], resultadosFase:{1:{}}, bancosFase:{} };
+                const estadoInicial = {
+                    faseAtual: 1,
+                    status: 'aguardando',
+                    participantes: [],
+                    resultadosFase: { 1: {} },
+                    bancosFase: {}
+                };
                 await estadoRef.set(estadoInicial);
-                salvarEstadoLocal(estadoInicial);
-            }
-        } catch (e) {
-            console.warn("Falha ao acessar Firebase, usando cache local", e);
-            const local = carregarEstadoLocal();
-            if (local) {
-                estadoAtual = local;
-                estadoPronto = true;
-                atualizarInterfaceGeral();
-            } else {
-                mostrarToast("Erro de conexão e sem cache local.");
-            }
-        }
-        estadoRef.on('value', (s) => {
-            estadoAtual = s.val();
-            if (estadoAtual && estadoAtual.participantes && !Array.isArray(estadoAtual.participantes)) {
-                estadoAtual.participantes = Object.values(estadoAtual.participantes);
+                estadoAtual = estadoInicial;
             }
             estadoPronto = true;
-            if (estadoAtual) salvarEstadoLocal(estadoAtual);
+            atualizarInterfaceGeral();
+        } catch (e) {
+            console.error("Erro ao acessar Firebase:", e);
+            mostrarToast("Erro de conexão");
+        }
+        
+        estadoRef.on('value', (s) => {
+            estadoAtual = s.val();
+            estadoPronto = true;
             atualizarInterfaceGeral();
         });
     }
-
+    
     function atualizarInterfaceGeral() {
-        if(!estadoAtual) return;
-        let fase = estadoAtual.faseAtual, status = estadoAtual.status;
-        document.getElementById('fase-atual-titulo').innerText = fase === 5 ? "Grande Final" : fase;
+        if (!estadoAtual) return;
+        
+        let fase = estadoAtual.faseAtual;
+        let status = estadoAtual.status;
+        
+        document.getElementById('fase-atual-titulo').innerText = fase;
         document.getElementById('status-fase').innerText = status === 'em_andamento' ? '🔓 Liberada' : '🔒 Aguardando';
-        if(meuTipo === 'professor') {
-            document.getElementById('fase-num').innerText = fase === 5 ? "Final" : fase;
+        
+        if (meuTipo === 'professor') {
+            document.getElementById('fase-num').innerText = fase;
             document.getElementById('status-fase-prof').innerText = status;
+            let participantes = estadoAtual.participantes || [];
+            document.getElementById('num-participantes').innerText = `(${participantes.length})`;
             renderizarListaParticipantes();
             atualizarRankingProfessor();
-            let turmasHtml = '<div>';
-            turmasDisponiveis.forEach(t => turmasHtml += `<span class="turma-badge">${escapeHtml(t)} <button class="btn-excluir-turma" data-turma="${t}">🗑️</button></span> `);
-            turmasHtml += '</div>';
-            document.getElementById('lista-turmas').innerHTML = turmasHtml;
-            // Mostrar/ocultar seção da final
-            const secaoFinal = document.getElementById('secao-final');
-            if (fase === 5) {
-                secaoFinal.classList.remove('hidden');
-                atualizarPainelFinalProfessor();
-                atualizarPlacarFinal();
-            } else {
-                secaoFinal.classList.add('hidden');
-            }
-        } else if(meuTipo === 'aluno') {
+        } else if (meuTipo === 'aluno') {
             atualizarInterfaceAluno();
-        } else if(meuTipo === 'projecao') {
+        } else if (meuTipo === 'torcida') {
             atualizarRankingTorcida();
         }
     }
-
-    async function atualizarInterfaceAluno() {
-        if(!estadoAtual || !alunoId || meuTipo !== 'aluno') return;
-        let fase = estadoAtual.faseAtual, status = estadoAtual.status;
-        // Verificar se é fase 5 (Grande Final)
-        if (fase === 5) {
-            // Esconder área normal e mostrar área da final
-            document.getElementById('jogo-area').classList.add('hidden');
-            document.getElementById('aguardando').classList.add('hidden');
-            document.getElementById('area-final-aluno').classList.remove('hidden');
-            const statusFinal = await verificarStatusFinalAluno();
-            const divStatus = document.getElementById('status-final-aluno');
-            const btnInscrever = document.getElementById('btn-inscrever-final');
-            const btnJogar = document.getElementById('btn-jogar-final');
-            if (!statusFinal.inscrito) {
-                divStatus.innerHTML = '<p>Você ainda não está inscrito na Grande Final. Inscreva-se abaixo.</p>';
-                btnInscrever.classList.remove('hidden');
-                btnJogar.classList.add('hidden');
-            } else if (statusFinal.jogou) {
-                divStatus.innerHTML = `<p>✅ Você já jogou a Grande Final! Pontuação: ${statusFinal.pontos} pontos.</p>`;
-                btnInscrever.classList.add('hidden');
-                btnJogar.classList.add('hidden');
-            } else if (statusFinal.autorizado) {
-                divStatus.innerHTML = '<p>🔓 Você foi autorizado! Clique no botão para iniciar suas 3 partidas.</p>';
-                btnInscrever.classList.add('hidden');
-                btnJogar.classList.remove('hidden');
-            } else {
-                divStatus.innerHTML = '<p>⏳ Sua inscrição foi recebida. Aguarde a autorização do professor.</p>';
-                btnInscrever.classList.add('hidden');
-                btnJogar.classList.add('hidden');
-            }
-            // Atualizar placar da final na tela do aluno (opcional)
-            atualizarPlacarFinal();
+    
+    function renderizarListaParticipantes() {
+        if (!estadoAtual) return;
+        let participantes = estadoAtual.participantes || [];
+        let container = document.getElementById('lista-participantes');
+        
+        if (participantes.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: #aaa;">Nenhum participante ainda.</p>';
             return;
         }
-        // Para fases normais (1 a 4)
-        document.getElementById('area-final-aluno').classList.add('hidden');
-        let progresso = await getProgresso(alunoId, fase);
-        let {total} = getDetalhesAluno(estadoAtual, alunoId, fase);
+        
+        let html = '<ul style="list-style: none; padding: 0;">';
+        participantes.forEach(p => {
+            html += `<li style="padding: 8px; border-bottom: 1px solid #2c3e50;">
+                        ${escapeHtml(p.nome)} (${escapeHtml(p.turma)})
+                    </li>`;
+        });
+        html += '</ul>';
+        container.innerHTML = html;
+    }
+    
+    async function atualizarInterfaceAluno() {
+        if (!estadoAtual || !alunoId || meuTipo !== 'aluno') return;
+        
+        let fase = estadoAtual.faseAtual;
+        let status = estadoAtual.status;
+        
         document.getElementById('aluno-nome').innerText = alunoNome;
         document.getElementById('aluno-turma').innerText = alunoTurma;
         document.getElementById('aluno-fase').innerText = fase;
-        document.getElementById('partidas-feitas').innerText = progresso;
-        document.getElementById('aluno-pontos-total').innerText = total.toLocaleString('pt-BR');
-        const rankingGeral = await gerarRanking(estadoAtual, fase);
-        const minhaPosGeral = rankingGeral.findIndex(p => p.id === alunoId) + 1;
-        document.getElementById('aluno-posicao-atual').innerText = minhaPosGeral > 0 ? `${minhaPosGeral}º` : '--';
-        if(progresso > 0) {
-            const chaveUltima = `r${progresso}p`;
-            const resultadosRodada = estadoAtual.resultadosFase?.[fase]?.[chaveUltima] || {};
-            const rankingRodada = Object.entries(resultadosRodada).map(([id, dados]) => ({id, pontos: dados.pontos})).sort((a,b)=>b.pontos - a.pontos);
-            const minhaPosRodada = rankingRodada.findIndex(p => p.id === alunoId) + 1;
-            document.getElementById('aluno-posicao-rodada').innerHTML = minhaPosRodada > 0 ? `${minhaPosRodada}º` : '--';
+        
+        if (status === 'em_andamento') {
+            document.getElementById('area-jogo').classList.remove('hidden');
+            document.getElementById('area-aguardando').classList.add('hidden');
         } else {
-            document.getElementById('aluno-posicao-rodada').innerHTML = '--';
+            document.getElementById('area-jogo').classList.add('hidden');
+            document.getElementById('area-aguardando').classList.remove('hidden');
         }
-        const numVagas = CLASSIFICADOS_POR_FASE[fase] || 0;
-        const classificacaoDiv = document.getElementById('classificacao-atual');
-        if(progresso > 0) {
-            const posAtual = minhaPosGeral;
-            if(posAtual > 0 && numVagas && posAtual <= numVagas) {
-                classificacaoDiv.innerHTML = `✅ CLASSIFICADO! ${posAtual}º lugar, dentro do G-${numVagas}.`;
-                classificacaoDiv.className = "classificado-msg classificado-sim";
-            } else if(posAtual > 0 && numVagas) {
-                const pontosProximos = (rankingGeral[numVagas-1]?.total || 0) - total;
-                classificacaoDiv.innerHTML = `❌ Não classificado (${posAtual}º). Faltam ${pontosProximos} pontos para o G-${numVagas}.`;
-                classificacaoDiv.className = "classificado-msg classificado-nao";
-            } else {
-                classificacaoDiv.innerHTML = `⏳ Posição indefinida.`;
-                classificacaoDiv.className = "classificado-msg";
-            }
+    }
+    
+    // ==================== EVENT LISTENERS ====================
+    document.getElementById('btn-professor').addEventListener('click', () => {
+        mostrarDialog('senha');
+    });
+    
+    document.getElementById('btn-confirmar-senha').addEventListener('click', async () => {
+        let senha = document.getElementById('input-senha').value;
+        if (senha === "professor123") {
+            meuTipo = 'professor';
+            fecharDialog('senha');
+            document.getElementById('tela-principal').classList.add('hidden');
+            document.getElementById('painel-professor').classList.remove('hidden');
+            atualizarInterfaceGeral();
         } else {
-            classificacaoDiv.innerHTML = `📊 Após jogar a primeira partida, saberemos a classificação.`;
-            classificacaoDiv.className = "classificado-msg";
+            mostrarToast("Senha incorreta!");
+        }
+    });
+    
+    document.getElementById('btn-cancelar-senha').addEventListener('click', () => {
+        fecharDialog('senha');
+    });
+    
+    document.getElementById('btn-aluno').addEventListener('click', () => {
+        mostrarDialog('entrada');
+    });
+    
+    document.getElementById('btn-confirmar-entrada').addEventListener('click', async () => {
+        let nome = document.getElementById('input-nome').value.trim();
+        let turma = document.getElementById('input-turma').value.trim();
+        
+        if (!nome || !turma) {
+            mostrarToast("Preencha todos os campos!");
+            return;
         }
         
-        if(progresso > 0 && progresso < 4) {
-            document.getElementById('area-projecao').classList.remove('hidden');
-            const media = total / progresso;
-            const projecaoPontos = Math.round(media * 4);
-            document.getElementById('projecao-pontos').innerText = projecaoPontos.toLocaleString('pt-BR');
-            const rankingSimulado = rankingGeral.map(p => {
-                if(p.id === alunoId) return {...p, total: projecaoPontos};
-                const progParts = parseInt(p.partidas.split('/')[0]) || 0;
-                return progParts > 0 ? {...p, total: Math.round((p.total/progParts)*4)} : p;
-            }).sort((a,b) => b.total - a.total);
-            const posProjetada = rankingSimulado.findIndex(p => p.id === alunoId) + 1;
-            document.getElementById('projecao-posicao').innerText = `${posProjetada}º`;
-            const msg = document.getElementById('msg-incentivo');
-            if(posProjetada <= numVagas) {
-                msg.innerText = "🔥 No ritmo atual, você garante sua vaga!";
-                msg.style.color = "#2ecc71";
-            } else {
-                const pontosFaltantes = (rankingSimulado[numVagas-1]?.total || projecaoPontos + 1) - projecaoPontos;
-                const pontosPorPartida = Math.ceil(pontosFaltantes / (4 - progresso));
-                msg.innerText = `🎯 Faltam ${pontosFaltantes} pontos (${pontosPorPartida}/partida) para o G-${numVagas}.`;
-                msg.style.color = "#f39c12";
-            }
-        } else if (progresso === 4) {
-            document.getElementById('area-projecao').classList.remove('hidden');
-            document.getElementById('projecao-pontos').innerText = total.toLocaleString('pt-BR');
-            document.getElementById('projecao-posicao').innerText = `${minhaPosGeral}º`;
-            document.getElementById('msg-incentivo').innerHTML = "";
-            if(minhaPosGeral <= numVagas) {
-                document.getElementById('classificacao-atual').innerHTML = `🏆 PARABÉNS! CLASSIFICADO para a próxima fase (${minhaPosGeral}º)`;
-                document.getElementById('classificacao-atual').className = "classificado-msg classificado-sim";
-            } else {
-                document.getElementById('classificacao-atual').innerHTML = `😢 Não classificado (${minhaPosGeral}º). Continue treinando!`;
-                document.getElementById('classificacao-atual').className = "classificado-msg classificado-nao";
-            }
-        } else {
-            document.getElementById('area-projecao').classList.add('hidden');
+        alunoId = gerarIdEstavel(nome, turma);
+        alunoNome = capitalizarNome(nome);
+        alunoTurma = turma;
+        
+        // Adicionar participante ao Firebase
+        let participantes = estadoAtual.participantes || [];
+        if (!participantes.find(p => p.id === alunoId)) {
+            participantes.push({ id: alunoId, nome: alunoNome, turma: alunoTurma });
+            await estadoRef.update({ participantes: participantes });
         }
-        let podeJogar = (status === 'em_andamento' && progresso < 4);
-        let btn = document.getElementById('btn-jogar-proxima');
-        if(podeJogar) {
-            btn.disabled = false; btn.innerText = `▶️ Jogar Partida ${progresso+1}/4`;
-            document.getElementById('msg-fase-finalizada').classList.add('hidden');
-            document.getElementById('msg-fase-bloqueada').classList.add('hidden');
-        } else {
-            btn.disabled = true;
-            if(progresso >= 4) { btn.innerText = "✅ Todas concluídas"; document.getElementById('msg-fase-finalizada').classList.remove('hidden'); }
-            else { btn.innerText = "⏳ Fase não liberada"; document.getElementById('msg-fase-bloqueada').classList.remove('hidden'); }
-        }
-        if(status !== 'em_andamento' && progresso < 4) document.getElementById('aguardando').classList.remove('hidden');
-        else document.getElementById('aguardando').classList.add('hidden');
-        await atualizarRankingAluno();
-    }
-
-    // ==================== EVENTOS ====================
-    document.addEventListener('click', async (e) => {
-        const btn = e.target.closest('button');
-        if(!btn) return;
-
-        if(btn.id === 'btn-professor') {
-            const senha = prompt("Senha do Professor:");
-            if(senha === "040199") {
-                meuTipo = 'professor';
-                document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
-                document.getElementById('painel-professor').classList.remove('hidden');
-                await carregarTurmas(); await inicializarEstado();
-            } else if(senha) mostrarToast("Senha incorreta!");
-        }
-        if(btn.id === 'btn-aluno') {
-            await carregarTurmas();
-            if(!estadoPronto) await inicializarEstado();
-            if(!estadoAtual) { mostrarToast("Aguardando conexão..."); return; }
-            let fase = estadoAtual.faseAtual;
-            if (fase === 5) {
-                // Para a final, não precisa de fase liberada para se inscrever
-                meuTipo = 'aluno';
-                document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
-                document.getElementById('tela-aluno').classList.remove('hidden');
-                // Se já tiver dados, não pedir novamente
-                if (!alunoId) {
-                    let nome = prompt("Seu nome completo para a Grande Final:");
-                    if(!nome) return;
-                    alunoNome = capitalizarNome(nome);
-                    let turma = prompt("Sua turma:");
-                    if(!turma) return;
-                    alunoTurma = turma;
-                    alunoId = gerarIdEstavel(alunoNome, alunoTurma);
-                }
-                await atualizarInterfaceAluno();
-                return;
-            }
-            if(estadoAtual.status !== 'em_andamento') { mostrarToast("A fase não está liberada."); return; }
-            let nome = prompt("Seu nome completo:");
-            if(!nome) return;
-            alunoNome = capitalizarNome(nome);
-            const grid = document.getElementById('grid-turmas-selecao');
-            if (grid) {
-                grid.innerHTML = '';
-                turmasDisponiveis.forEach(t => {
-                    const b = document.createElement('button');
-                    b.innerText = t;
-                    b.className = 'btn-turma-opcao';
-                    b.style.width = '100%';
-                    b.style.padding = '15px';
-                    b.style.fontSize = '18px';
-                    b.onclick = async () => {
-                        alunoTurma = t;
-                        alunoId = gerarIdEstavel(alunoNome, alunoTurma);
-                        meuTipo = 'aluno';
-                        document.getElementById('modal-selecao-turma').classList.add('hidden');
-                        document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
-                        document.getElementById('tela-aluno').classList.remove('hidden');
-                        let lista = getParticipantesArray(estadoAtual);
-                        let existente = lista.find(p => p.id === alunoId);
-                        if(!existente) {
-                            const novoAluno = { id: alunoId, nome: alunoNome, turma: alunoTurma, dataCadastro: Date.now() };
-                            lista.push(novoAluno);
-                            await estadoRef.child('participantes').set(lista);
-                        } else if (!existente.dataCadastro) {
-                            existente.dataCadastro = Date.now();
-                            await estadoRef.child('participantes').set(lista);
-                        }
-                        await atualizarInterfaceAluno();
-                    };
-                    grid.appendChild(b);
-                });
-                document.getElementById('modal-selecao-turma').classList.remove('hidden');
-            }
-        }
-        if(btn.id === 'btn-cancelar-selecao') { document.getElementById('modal-selecao-turma').classList.add('hidden'); }
-        if(btn.id === 'btn-projecao') {
-            meuTipo = 'projecao';
-            document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
-            document.getElementById('tela-projecao').classList.remove('hidden');
-            await inicializarEstado();
-        }
-        if(btn.id === 'btn-liberar-fase') { await estadoRef.update({status:'em_andamento'}); mostrarToast("Fase liberada!"); location.reload(); }
-        if(btn.id === 'btn-finalizar-fase') { await estadoRef.update({status:'finalizada'}); mostrarToast("Fase finalizada!"); location.reload(); }
-        if(btn.id === 'btn-avancar-fase') await avancarFaseProf();
-        if(btn.id === 'btn-reset-fase') await resetarFaseProf();
-        if(btn.id === 'btn-remover-duplicados') await removerDuplicadosProf();
-        if(btn.id === 'btn-reset-todos-dados') await resetarTodosDados();
-        if(btn.id === 'btn-sincronizar-principal') await forcarSincronizacao();
-        if(btn.id === 'btn-voltar-inicio' || btn.id === 'btn-sair-aluno' || btn.id === 'btn-sair-projecao') location.reload();
-        if(btn.id === 'btn-adicionar-aluno') {
-            let n = prompt("Nome:"), t = prompt("Turma:");
-            if(n && t) {
-                let nCap = capitalizarNome(n);
-                let sucesso = await adicionarParticipanteComData(nCap, t);
-                if(sucesso) { mostrarToast("Adicionado."); location.reload(); }
-                else mostrarToast("Já existe.");
-            }
-        }
-        if(btn.id === 'btn-adicionar-turma') {
-            let nt = document.getElementById('nova-turma').value.trim();
-            if(nt && !turmasDisponiveis.includes(nt)) {
-                turmasDisponiveis.push(nt); turmasDisponiveis.sort();
-                await db.ref('turmas').set(turmasDisponiveis);
-                document.getElementById('nova-turma').value = '';
-                atualizarInterfaceGeral();
-            }
-        }
-        if(btn.id === 'btn-carregar-historico') {
-            let f = document.getElementById('seletor-fase-historico').value;
-            await mostrarRankingHistorico(parseInt(f));
-        }
-        if(btn.id === 'btn-reset-filtros') {
-            document.getElementById('busca-participante').value = '';
-            document.getElementById('ordenacao-participantes').value = 'nome_asc';
-            renderizarListaParticipantes();
-        }
-        if(btn.id === 'btn-inscrever-final') {
-            const nome = prompt("Seu nome completo para a Grande Final:");
-            if(!nome) return;
-            const turma = prompt("Sua turma:");
-            if(!turma) return;
-            await inscreverAlunoFinal(capitalizarNome(nome), turma);
-        }
-        if(btn.id === 'btn-jogar-final') {
-            // Inicia o jogo da final
-            if (!alunoId) return;
-            finalJogadorIdAtual = alunoId;
-            finalJogadorNome = alunoNome;
-            finalJogadorTurma = alunoTurma;
-            // Criar elementos de jogo dinamicamente (caso não existam)
-            if (!document.getElementById('final-jogo-container')) {
-                const jogoDiv = document.createElement('div');
-                jogoDiv.id = 'final-jogo-container';
-                jogoDiv.className = 'hidden';
-                jogoDiv.innerHTML = `<div class="status-box">
-                    <p>Finalista: <strong id="final-jogador-nome-final">--</strong> • Partida <span id="final-partida-atual">1</span>/3</p>
-                    <div class="barra-tempo"><div id="progresso-tempo-final" class="progresso-tempo" style="width:100%; background:#27ae60;"></div></div>
-                    <div id="final-pergunta" style="font-size:48px; text-align:center;">0 x 0 = ?</div>
-                    <div id="final-opcoes" class="lista-opcoes">
-                        <button class="opcao" data-idx="0"></button>
-                        <button class="opcao" data-idx="1"></button>
-                        <button class="opcao" data-idx="2"></button>
-                        <button class="opcao" data-idx="3"></button>
-                    </div>
-                    <div><span>Pergunta: <span id="final-pergunta-num">1</span>/20</span></div>
-                    <p>Pontos nesta partida: <strong id="final-pontos-partida">0</strong></p>
-                    <p>Pontos acumulados na final: <strong id="final-pontos-acumulados">0</strong></p>
-                </div>`;
-                document.getElementById('area-final-aluno').appendChild(jogoDiv);
-            }
-            const aguardandoDiv = document.getElementById('final-aguardando-container');
-            if (!aguardandoDiv) {
-                const div = document.createElement('div');
-                div.id = 'final-aguardando-container';
-                div.className = 'hidden';
-                div.style.textAlign = 'center';
-                div.style.padding = '40px';
-                document.getElementById('area-final-aluno').appendChild(div);
-            }
-            document.getElementById('final-jogador-nome-final').innerText = `${alunoNome} (${alunoTurma})`;
-            await iniciarJogoFinal();
-        }
-        if(btn.id === 'btn-resetar-final') {
-            await resetarGrandeFinal();
-        }
-        if(btn.id === 'btn-jogar-proxima') {
-            let prog = await getProgresso(alunoId, estadoAtual.faseAtual);
-            if(prog < 4) {
-                await iniciarPartidaEspecifica(prog + 1);
-            } else mostrarToast("Você já completou todas as partidas desta fase.");
-        }
-        if(btn.classList.contains('btn-editar-aluno')) {
-            let id = btn.dataset.id, novo = prompt("Novo nome:");
-            if(novo) {
-                let lista = getParticipantesArray(estadoAtual);
-                let idx = lista.findIndex(p=>p.id===id);
-                if(idx!==-1) { lista[idx].nome = capitalizarNome(novo); await estadoRef.child('participantes').set(lista); location.reload(); }
-            }
-        }
-        if(btn.classList.contains('btn-excluir-aluno')) {
-            if(confirm("Excluir aluno?")) {
-                let id = btn.dataset.id, lista = getParticipantesArray(estadoAtual).filter(p=>p.id!==id);
-                await estadoRef.child('participantes').set(lista);
-                location.reload();
-            }
-        }
-        if(btn.classList.contains('btn-excluir-turma')) {
-            let t = btn.dataset.turma;
-            if(confirm(`Excluir turma ${t}?`)) {
-                turmasDisponiveis = turmasDisponiveis.filter(x=>x!==t);
-                await db.ref('turmas').set(turmasDisponiveis);
-                atualizarInterfaceGeral();
-            }
+        
+        meuTipo = 'aluno';
+        fecharDialog('entrada');
+        document.getElementById('tela-principal').classList.add('hidden');
+        document.getElementById('painel-aluno').classList.remove('hidden');
+        
+        // Gerar perguntas
+        perguntasJogo = await gerarBanco("0-10");
+        perguntaAtual = 0;
+        
+        atualizarInterfaceGeral();
+    });
+    
+    document.getElementById('btn-cancelar-entrada').addEventListener('click', () => {
+        fecharDialog('entrada');
+    });
+    
+    document.getElementById('btn-projecao').addEventListener('click', () => {
+        meuTipo = 'torcida';
+        document.getElementById('tela-principal').classList.add('hidden');
+        document.getElementById('painel-torcida').classList.remove('hidden');
+        atualizarInterfaceGeral();
+    });
+    
+    // Controles do Professor
+    document.getElementById('btn-iniciar-fase').addEventListener('click', async () => {
+        if (!faseEmAndamento) {
+            await estadoRef.update({ status: 'em_andamento' });
+            iniciarCronometroGlobal();
+            mostrarToast("Fase iniciada! ⏱️");
         }
     });
-    document.addEventListener('input', (e) => {
-        if(e.target.id?.includes('filtro') || e.target.id?.includes('ordem')) {
-            if(meuTipo === 'professor') atualizarRankingProfessor();
-            if(meuTipo === 'aluno') atualizarRankingAluno();
-            if(meuTipo === 'projecao') atualizarRankingTorcida();
-        }
-        if (e.target.id === 'busca-participante' || e.target.id === 'ordenacao-participantes') {
-            if (meuTipo === 'professor') renderizarListaParticipantes();
+    
+    document.getElementById('btn-pausar-fase').addEventListener('click', () => {
+        pausarCronometroGlobal();
+        mostrarToast("Fase pausada");
+    });
+    
+    document.getElementById('btn-finalizar-fase').addEventListener('click', async () => {
+        pausarCronometroGlobal();
+        await estadoRef.update({ status: 'finalizada' });
+        mostrarToast("Fase finalizada!");
+    });
+    
+    document.getElementById('btn-avancar-fase').addEventListener('click', async () => {
+        if (estadoAtual.faseAtual < 4) {
+            let novaFase = estadoAtual.faseAtual + 1;
+            await estadoRef.update({
+                faseAtual: novaFase,
+                status: 'aguardando',
+                resultadosFase: { ...estadoAtual.resultadosFase, [novaFase]: {} }
+            });
+            mostrarToast(`Avançou para Fase ${novaFase}`);
         }
     });
-    function mostrarToast(msg) {
-        let t = document.getElementById('toast');
-        t.innerText = msg; t.classList.remove('hidden');
-        setTimeout(() => t.classList.add('hidden'), 3000);
-    }
-    // Função original do jogo das fases (para alunos) - simplificada
-    async function iniciarPartidaEspecifica(partidaNum) {
-        // Implementação similar à anterior, mas omitida para brevidade. O código original já possui essa função.
-        // Como o usuário pediu apenas a modificação da final, manteremos a função existente.
-        // (código omitido por questões de espaço, mas deve ser mantido do original)
-        mostrarToast("Função de jogo das fases deve ser mantida do código original.");
-    }
-    window.onload = () => { if(meuTipo) inicializarEstado(); };
+    
+    // Botões de voltar
+    document.getElementById('btn-voltar-prof').addEventListener('click', () => {
+        meuTipo = null;
+        document.getElementById('tela-principal').classList.remove('hidden');
+        document.getElementById('painel-professor').classList.add('hidden');
+    });
+    
+    document.getElementById('btn-voltar-aluno').addEventListener('click', () => {
+        meuTipo = null;
+        pausarCronometroGlobal();
+        if (cronometroPergunaInterval) clearInterval(cronometroPergunaInterval);
+        document.getElementById('tela-principal').classList.remove('hidden');
+        document.getElementById('painel-aluno').classList.add('hidden');
+    });
+    
+    document.getElementById('btn-voltar-aluno-2').addEventListener('click', () => {
+        meuTipo = null;
+        document.getElementById('tela-principal').classList.remove('hidden');
+        document.getElementById('painel-aluno').classList.add('hidden');
+    });
+    
+    document.getElementById('btn-voltar-torcida').addEventListener('click', () => {
+        meuTipo = null;
+        document.getElementById('tela-principal').classList.remove('hidden');
+        document.getElementById('painel-torcida').classList.add('hidden');
+    });
+    
+    // Inicializar
+    inicializarEstado();
 </script>
 </body>
 </html>
