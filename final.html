@@ -2,352 +2,260 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-
-    <title>Copa Tabuada CEIB 2026 - Fases com Tempo Dinâmico</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;">
+    <title>Copa da Tabuada - Jogo Educativo</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-            background: linear-gradient(135deg, #0a0f1e 0%, #1a1f2e 100%);
-            color: #eee;
-            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1f2e 0%, #16213e 100%);
+            color: #ecf0f1;
             min-height: 100vh;
+            padding: 20px;
         }
-        .container { max-width: 1400px; margin: 0 auto; }
-        .card {
-            background: rgba(12,20,35,0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 28px;
-            padding: 24px;
-            margin-bottom: 24px;
-            border: 1px solid rgba(0,255,255,0.2);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
-        .hidden { display: none !important; }
+        
         h1, h2, h3 { color: #ffd966; margin-bottom: 16px; }
-        button {
-            background: #1f3a4b;
-            color: #fff;
+        
+        /* Botões */
+        .btn-primary, .btn-success, .btn-danger {
+            padding: 12px 24px;
             border: none;
-            border-radius: 40px;
-            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
-            transition: 0.2s;
-            margin: 4px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            margin: 8px;
         }
-        button:hover { background: #2c5a6e; transform: scale(1.02); }
-        button:active { transform: scale(0.98); }
-        .btn-primary { background: #e67e22; }
-        .btn-primary:hover { background: #f39c12; }
-        .btn-success { background: #27ae60; }
-        .btn-success:hover { background: #2ecc71; }
-        .btn-danger { background: #c0392b; }
-        .btn-danger:hover { background: #e74c3c; }
-        .btn-warning { background: #f39c12; }
-        .btn-warning:hover { background: #f1c40f; }
         
-        /* Cronômetro Global */
-        .cronometro-global {
-            background: linear-gradient(135deg, #1e2a3a 0%, #0a0f1e 100%);
-            border: 3px solid #ffd966;
-            border-radius: 20px;
-            padding: 24px;
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #2ecc71;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+        
+        /* Tela Principal */
+        #tela-principal {
             text-align: center;
-            margin: 20px 0;
-            font-size: 3rem;
-            font-weight: bold;
-            color: #ffd966;
-            box-shadow: 0 0 30px rgba(255, 217, 102, 0.4);
-            letter-spacing: 2px;
-        }
-        .cronometro-global.critico {
-            border-color: #e74c3c;
-            color: #e74c3c;
-            animation: pulsarCritico 0.5s infinite;
-            box-shadow: 0 0 30px rgba(231, 76, 60, 0.6);
-        }
-        @keyframes pulsarCritico {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
+            padding: 60px 20px;
         }
         
-        /* Barra de Progresso */
-        .barra-tempo {
-            width: 100%;
-            height: 24px;
+        #tela-principal h1 {
+            font-size: 48px;
+            margin-bottom: 32px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        
+        #tela-principal .botoes-entrada {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        #tela-principal .botoes-entrada button {
+            padding: 16px 32px;
+            font-size: 16px;
+        }
+        
+        /* Painéis */
+        .painel {
+            background: #1e2a3a;
+            border-radius: 16px;
+            padding: 24px;
+            border: 2px solid #ffd966;
+        }
+        
+        .painel h2 {
+            margin-bottom: 24px;
+            font-size: 24px;
+        }
+        
+        .hidden { display: none !important; }
+        
+        /* Cronômetro */
+        .cronometro-container {
             background: #2c3e50;
             border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #ffd966;
+            text-align: center;
+        }
+        
+        #cronometro-global, #cronometro-torcida, #tempo-restante-prof {
+            font-size: 48px;
+            font-weight: bold;
+            color: #2ecc71;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #cronometro-global.critico, #cronometro-torcida.critico, #tempo-restante-prof.critico {
+            color: #e74c3c;
+            animation: pulse 0.5s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { opacity: 1; }
+            to { opacity: 0.6; }
+        }
+        
+        .barra-tempo {
+            width: 100%;
+            height: 12px;
+            background: #34495e;
+            border-radius: 6px;
             overflow: hidden;
-            margin: 16px 0;
-            border: 1px solid #555;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+            margin-top: 12px;
         }
+        
         .progresso-tempo {
-            width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, #27ae60 0%, #f39c12 50%, #e74c3c 100%);
-            transition: width 0.1s linear;
-            box-shadow: 0 0 10px rgba(255, 217, 102, 0.5);
-        }
-        
-        /* Ranking Table */
-        .ranking-table {
+            background: linear-gradient(90deg, #2ecc71 0%, #f39c12 50%, #e74c3c 100%);
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-            font-size: 13px;
-        }
-        .ranking-table th, .ranking-table td {
-            border-bottom: 1px solid #2c3e50;
-            padding: 12px;
-            text-align: left;
-        }
-        .ranking-table th {
-            background: #1e2a3a;
-            font-weight: bold;
-            color: #ffd966;
-            position: sticky;
-            top: 0;
-        }
-        .ranking-table tr:hover {
-            background: rgba(255, 217, 102, 0.08);
-        }
-        .ranking-table tr.linha-corte {
-            border-top: 3px solid #e74c3c;
-            background: rgba(231, 76, 60, 0.1);
-            font-weight: bold;
-        }
-        .ranking-table tr.hot-seat {
-            background: rgba(243, 156, 18, 0.15);
-            border-left: 4px solid #f39c12;
+            transition: width 0.1s linear;
         }
         
-        /* Indicadores */
+        /* Painel de Indicadores */
         .painel-indicadores {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 12px;
-            margin: 20px 0;
-            padding: 16px;
-            background: rgba(30, 42, 58, 0.8);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 217, 102, 0.2);
+            margin-bottom: 20px;
         }
         
         .indicador-card {
-            background: rgba(10, 15, 30, 0.8);
-            border: 2px solid #ffd966;
+            background: #2c3e50;
             border-radius: 12px;
-            padding: 14px;
+            padding: 16px;
+            border: 2px solid #ffd966;
             text-align: center;
-            transition: 0.2s;
-        }
-        .indicador-card:hover {
-            border-color: #f39c12;
-            box-shadow: 0 0 15px rgba(255, 217, 102, 0.2);
         }
         
         .indicador-titulo {
-            font-size: 11px;
+            font-size: 12px;
             color: #aaa;
             margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
         
         .indicador-valor {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
             color: #ffd966;
         }
         
-        /* Streak */
-        .streak-indicator {
-            display: inline-block;
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-weight: bold;
-            margin: 0 4px;
-            box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
-        }
-        .streak-indicator.fogo { animation: fogo 0.6s infinite; }
-        @keyframes fogo {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
-        }
-        
-        /* Delta PB */
-        .delta-pb {
-            font-weight: bold;
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-        .delta-pb.positivo {
-            color: #2ecc71;
-            background: rgba(46, 204, 113, 0.1);
-        }
-        .delta-pb.negativo {
-            color: #e74c3c;
-            background: rgba(231, 76, 60, 0.1);
-        }
-        
-        /* Opções de Resposta */
-        .lista-opcoes {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-            margin: 24px 0;
-        }
-        .opcao {
-            background: linear-gradient(135deg, #1f3a4b 0%, #2c5a6e 100%);
-            color: white;
-            border: 2px solid #1f3a4b;
-            border-radius: 14px;
-            padding: 24px;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        .opcao:hover { 
-            background: linear-gradient(135deg, #2c5a6e 0%, #3d7a8e 100%);
-            border-color: #ffd966;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(255, 217, 102, 0.2);
-        }
-        .opcao.correta {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-            border-color: #2ecc71;
-            animation: acertoFlash 0.5s;
-            box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
-        }
-        .opcao.incorreta {
-            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
-            border-color: #e74c3c;
-            animation: erroFlash 0.5s;
-            box-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
-        }
-        @keyframes acertoFlash {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        @keyframes erroFlash {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
+        .delta-pb.positivo { color: #2ecc71; }
+        .delta-pb.negativo { color: #e74c3c; }
         
         /* Pergunta */
         .pergunta-container {
-            background: rgba(30, 42, 58, 0.8);
+            background: #2c3e50;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
             border: 2px solid #ffd966;
-            border-radius: 16px;
-            padding: 20px;
-            margin: 20px 0;
             text-align: center;
         }
         
         .pergunta-numero {
             font-size: 12px;
             color: #aaa;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
         
         .pergunta-texto {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffd966;
+            margin-bottom: 16px;
+        }
+        
+        .cronometro-pergunta {
             font-size: 28px;
             font-weight: bold;
-            color: #ffd966;
-            margin: 12px 0;
+            color: #2ecc71;
+            font-family: 'Courier New', monospace;
         }
         
-        /* Cronômetro por Pergunta */
-        .cronometro-pergunta {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #ffd966;
-            margin: 16px 0;
-            text-align: center;
-        }
         .cronometro-pergunta.critico {
             color: #e74c3c;
-            animation: pulsarCritico 0.3s infinite;
+            animation: pulse 0.5s infinite alternate;
         }
         
-        /* Status Box */
-        .status-box {
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 20px;
-            padding: 16px;
-            margin-top: 20px;
-            overflow-x: auto;
-            border: 1px solid rgba(255, 217, 102, 0.2);
+        /* Opções */
+        .lista-opcoes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
         }
         
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #e67e22;
-            padding: 14px 28px;
-            border-radius: 60px;
-            z-index: 1000;
-            font-weight: bold;
-            color: white;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-            animation: slideUp 0.3s ease;
-        }
-        @keyframes slideUp {
-            from { transform: translateX(-50%) translateY(100px); opacity: 0; }
-            to { transform: translateX(-50%) translateY(0); opacity: 1; }
-        }
-        
-        /* Info Vagas */
-        .info-vagas {
-            background: linear-gradient(135deg, #2c3e50 0%, #1e2a3a 100%);
-            padding: 16px;
+        .opcao {
+            background: #2c3e50;
+            border: 2px solid #ffd966;
             border-radius: 12px;
-            margin-bottom: 16px;
-            text-align: center;
-            border: 1px solid #ffd966;
+            padding: 20px;
+            font-size: 18px;
             font-weight: bold;
             color: #ffd966;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
         
-        /* Contagem Crítica */
-        .contagem-critica {
-            background: rgba(231, 76, 60, 0.3);
-            border: 2px solid #e74c3c;
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-            font-weight: bold;
-            color: #e74c3c;
-            margin: 16px 0;
-            animation: pulsarCritico 0.5s infinite;
+        .opcao:hover {
+            background: #ffd966;
+            color: #1e2a3a;
+            transform: scale(1.05);
+        }
+        
+        .opcao:active {
+            transform: scale(0.98);
         }
         
         /* Termômetro */
         .termometro {
-            width: 100%;
-            height: 32px;
-            background: #2c3e50;
-            border-radius: 16px;
-            overflow: hidden;
-            margin: 12px 0;
-            display: flex;
-            align-items: center;
             position: relative;
-            border: 1px solid #555;
+            width: 100%;
+            height: 20px;
+            background: #34495e;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
         }
         
         .termometro-barra {
@@ -398,21 +306,20 @@
             max-width: 400px;
             width: 90%;
             border: 2px solid #ffd966;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
         
         .dialog-content h3 {
             margin-bottom: 20px;
         }
         
-        .dialog-content input, .dialog-content select {
+        .dialog-content input {
             width: 100%;
             padding: 12px;
-            margin: 12px 0;
-            border-radius: 20px;
-            background: #0a0f1e;
-            color: white;
+            margin-bottom: 12px;
+            background: #2c3e50;
             border: 1px solid #ffd966;
+            border-radius: 8px;
+            color: #ecf0f1;
             font-size: 14px;
         }
         
@@ -424,82 +331,123 @@
         
         .dialog-buttons button {
             flex: 1;
+            padding: 12px;
         }
         
-        /* Responsivo */
+        /* Ranking */
+        .ranking-item {
+            background: #2c3e50;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #ffd966;
+        }
+        
+        .ranking-posicao {
+            font-weight: bold;
+            color: #ffd966;
+            font-size: 16px;
+            min-width: 30px;
+        }
+        
+        .ranking-nome {
+            flex: 1;
+            margin-left: 12px;
+        }
+        
+        .ranking-pontos {
+            font-weight: bold;
+            color: #2ecc71;
+            font-size: 16px;
+        }
+        
+        .ranking-bolha {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+        
+        .ranking-hot-seat {
+            border-left-color: #f39c12;
+            background: rgba(243, 156, 18, 0.1);
+        }
+        
+        .contagem-critica {
+            background: #e74c3c;
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+            animation: pulse 1s infinite;
+        }
+        
         @media (max-width: 768px) {
             .lista-opcoes {
                 grid-template-columns: 1fr;
             }
+            
             .painel-indicadores {
                 grid-template-columns: repeat(2, 1fr);
             }
-            .cronometro-global {
-                font-size: 2rem;
-            }
-            .pergunta-texto {
-                font-size: 20px;
+            
+            #tela-principal h1 {
+                font-size: 32px;
             }
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <!-- TELA PRINCIPAL -->
-    <div id="tela-principal" class="card">
-        <h1>🏆 COPA TABUADA CEIB 2026</h1>
-        <p style="font-size: 16px; margin-bottom: 20px;">Fases com Tempo Dinâmico • Ranking em Tempo Real • Indicadores Avançados</p>
-        <p>Fase atual: <strong id="fase-atual-titulo">--</strong> • <span id="status-fase">Carregando...</span></p>
-        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0;">
-            <button id="btn-professor" class="btn-primary">👨‍🏫 Professor</button>
-            <button id="btn-aluno" class="btn-success">🎮 Aluno</button>
-            <button id="btn-projecao" class="btn-primary">📺 Torcida</button>
-            <button id="btn-sincronizar" class="btn-warning">🔄 Sincronizar</button>
+    <div class="container">
+        <!-- TELA PRINCIPAL -->
+        <div id="tela-principal">
+            <h1>🏆 Copa da Tabuada</h1>
+            <div class="botoes-entrada">
+                <button id="btn-professor" class="btn-primary">👨‍🏫 Professor</button>
+                <button id="btn-aluno" class="btn-primary">👨‍🎓 Aluno</button>
+                <button id="btn-projecao" class="btn-primary">📺 Torcida</button>
+            </div>
         </div>
-        <div id="info-conexao" style="text-align: center; color: #aaa; font-size: 12px; margin-top: 16px;">
-            Status: <span id="status-conexao">Conectando...</span>
-        </div>
-    </div>
 
-    <!-- PAINEL DO PROFESSOR -->
-    <div id="painel-professor" class="card hidden">
-        <h2>🔧 Painel do Professor</h2>
-        <div class="flex-grid">
-            <div>
-                <h3>Controle da Fase</h3>
-                <p style="margin-bottom: 12px;">Fase: <strong id="fase-num">--</strong> • Status: <strong id="status-fase-prof">--</strong></p>
-                <p style="margin-bottom: 16px; color: #ffd966; font-weight: bold;">⏱️ <span id="tempo-restante-prof">12:00</span></p>
+        <!-- PAINEL DO PROFESSOR -->
+        <div id="painel-professor" class="painel hidden">
+            <h2>👨‍🏫 Painel do Professor</h2>
+            
+            <div class="cronometro-container">
+                <div>Tempo Restante:</div>
+                <div id="tempo-restante-prof">12:00</div>
+                <div class="barra-tempo">
+                    <div class="progresso-tempo" id="barra-prof"></div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
                 <button id="btn-iniciar-fase" class="btn-success">▶️ Iniciar (12 min)</button>
-                <button id="btn-pausar-fase" class="btn-warning">⏸️ Pausar</button>
-                <button id="btn-finalizar-fase" class="btn-danger">🔒 Finalizar</button>
-                <hr style="margin: 16px 0; border: none; border-top: 1px solid #2c3e50;">
-                <button id="btn-avancar-fase" class="btn-primary">➡️ Próxima Fase</button>
-                <button id="btn-reset-fase" class="btn-danger">⚠️ Resetar</button>
-                <button id="btn-voltar-prof" class="btn-primary">🏠 Voltar</button>
+                <button id="btn-pausar-fase" class="btn-primary">⏸️ Pausar</button>
+                <button id="btn-finalizar-fase" class="btn-danger">⏹️ Finalizar</button>
+                <button id="btn-avancar-fase" class="btn-success">⏭️ Próxima Fase</button>
+                <button id="btn-reset-fase" class="btn-danger">🔄 Resetar</button>
             </div>
-            <div>
-                <h3>Participantes <span id="num-participantes" style="color: #aaa;">(0)</span></h3>
-                <div id="lista-participantes" style="max-height: 300px; overflow-y: auto; margin-bottom: 12px;"></div>
-                <button id="btn-adicionar-aluno" class="btn-primary">➕ Adicionar</button>
-            </div>
-        </div>
-        <h3 style="margin-top: 24px;">Ranking Dinâmico</h3>
-        <div id="ranking-professor" class="status-box"></div>
-    </div>
 
-    <!-- PAINEL DO ALUNO -->
-    <div id="painel-aluno" class="card hidden">
-        <div id="area-jogo" class="hidden">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h2 id="aluno-nome">--</h2>
-                <p style="color: #aaa;">Turma: <span id="aluno-turma">--</span> • Fase: <span id="aluno-fase">--</span></p>
-            </div>
+            <h3>Fase Atual: <span id="fase-atual">1</span></h3>
+            <div id="ranking-professor" class="flex-grid"></div>
+            <button id="btn-voltar-prof" class="btn-primary">🏠 Voltar</button>
+        </div>
+
+        <!-- PAINEL DO ALUNO -->
+        <div id="painel-aluno" class="painel hidden">
+            <h2 id="aluno-nome">Aluno</h2>
+            <p style="font-size: 14px; color: #aaa;">Turma: <span id="aluno-turma">--</span> | Fase: <span id="aluno-fase">1</span></p>
 
             <!-- Cronômetro Global -->
-            <div class="cronometro-global" id="cronometro-global">12:00</div>
-            <div class="barra-tempo">
-                <div class="progresso-tempo" id="barra-global"></div>
-            </div>
+            <div class="cronometro-container">
+                <div id="cronometro-global">12:00</div>
+                <div class="barra-tempo">
+                    <div class="progresso-tempo" id="barra-global"></div>
+                </div>
 
             <!-- Painel de Indicadores -->
             <div class="painel-indicadores">
@@ -557,6 +505,37 @@
             <button id="btn-voltar-aluno" class="btn-primary">🏠 Voltar</button>
         </div>
 
+        <!-- TELA DE RESUMO DE TENTATIVA -->
+        <div id="area-resumo" class="hidden" style="text-align: center; padding: 40px 20px;">
+            <h2 style="color: #ffd966; font-size: 28px; margin-bottom: 20px;">Tentativa Concluída!</h2>
+            
+            <div style="background: #2c3e50; border-radius: 16px; padding: 30px; margin: 20px 0; border: 2px solid #ffd966;">
+                <div style="font-size: 14px; color: #aaa; margin-bottom: 8px;">Pontos desta tentativa:</div>
+                <div style="font-size: 48px; color: #2ecc71; font-weight: bold;" id="resumo-pontos">0</div>
+                <div style="font-size: 12px; color: #aaa; margin-top: 16px;">
+                    <span id="resumo-acertos">0</span> acertos | 
+                    <span id="resumo-erros">0</span> erros
+                </div>
+            </div>
+            
+            <div style="background: #1e2a3a; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                <div style="font-size: 12px; color: #aaa; margin-bottom: 8px;">Sua Posição no Ranking:</div>
+                <div style="font-size: 36px; color: #ffd966; font-weight: bold;" id="resumo-posicao">--</div>
+            </div>
+            
+            <div style="margin-top: 30px;">
+                <button id="btn-ver-ranking" class="btn-success" style="width: 100%; padding: 16px; font-size: 16px; margin-bottom: 12px;">Ver Ranking</button>
+                <button id="btn-nova-tentativa" class="btn-success" style="width: 100%; padding: 16px; font-size: 16px;">Nova Tentativa</button>
+            </div>
+        </div>
+
+        <!-- TELA DE RANKING DURANTE PAUSA -->
+        <div id="area-ranking-pausa" class="hidden" style="padding: 20px;">
+            <h2 style="color: #ffd966; margin-bottom: 20px;">Ranking Atual</h2>
+            <div id="ranking-pausa-container" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;"></div>
+            <button id="btn-voltar-resumo" class="btn-primary" style="width: 100%; padding: 12px;">Voltar ao Resumo</button>
+        </div>
+
         <div id="area-aguardando" class="hidden">
             <div style="text-align: center; padding: 60px 20px;">
                 <h2>⏳ Aguardando...</h2>
@@ -568,49 +547,44 @@
     </div>
 
     <!-- PAINEL DE TORCIDA -->
-    <div id="painel-torcida" class="card hidden">
-        <h2>📺 Tela de Torcida - Ranking em Tempo Real</h2>
+    <div id="painel-torcida" class="painel hidden" style="margin-top: 20px;">
+        <h2>📺 Transmissão - Ranking em Tempo Real</h2>
         
-        <!-- Cronômetro -->
-        <div class="cronometro-global" id="cronometro-torcida">12:00</div>
-        <div class="barra-tempo">
-            <div class="progresso-tempo" id="barra-torcida"></div>
+        <div class="cronometro-container">
+            <div id="cronometro-torcida">12:00</div>
+            <div class="barra-tempo">
+                <div class="progresso-tempo" id="barra-torcida"></div>
+            </div>
         </div>
 
-        <div id="info-vagas-torcida"></div>
-        <div id="status-torcida" style="text-align: center; margin-bottom: 16px; color: #ffd966; font-weight: bold;">--</div>
-        
-        <!-- Ranking -->
-        <div id="ranking-torcida" class="status-box"></div>
-        
+        <div id="ranking-torcida" class="flex-grid"></div>
         <button id="btn-voltar-torcida" class="btn-primary">🏠 Voltar</button>
     </div>
-</div>
 
-<!-- Diálogo de Entrada -->
-<div id="dialog-entrada" class="dialog-overlay hidden">
-    <div class="dialog-content">
-        <h3 id="dialog-titulo">Entrar como Aluno</h3>
-        <input type="text" id="input-nome" placeholder="Seu nome completo" autocomplete="off">
-        <input type="text" id="input-turma" placeholder="Sua turma (ex: 901)" autocomplete="off">
-        <div class="dialog-buttons">
-            <button id="btn-confirmar-entrada" class="btn-success">✓ Entrar</button>
-            <button id="btn-cancelar-entrada" class="btn-danger">✗ Cancelar</button>
+    <!-- Diálogo de Entrada -->
+    <div id="dialog-entrada" class="dialog-overlay hidden">
+        <div class="dialog-content">
+            <h3 id="dialog-titulo">Entrar como Aluno</h3>
+            <input type="text" id="input-nome" placeholder="Seu nome completo" autocomplete="off">
+            <input type="text" id="input-turma" placeholder="Sua turma (ex: 901)" autocomplete="off">
+            <div class="dialog-buttons">
+                <button id="btn-confirmar-entrada" class="btn-success">✓ Entrar</button>
+                <button id="btn-cancelar-entrada" class="btn-danger">✗ Cancelar</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Diálogo de Senha (Professor) -->
-<div id="dialog-senha" class="dialog-overlay hidden">
-    <div class="dialog-content">
-        <h3>Acesso de Professor</h3>
-        <input type="password" id="input-senha" placeholder="Digite a senha" autocomplete="off">
-        <div class="dialog-buttons">
-            <button id="btn-confirmar-senha" class="btn-success">✓ Confirmar</button>
-            <button id="btn-cancelar-senha" class="btn-danger">✗ Cancelar</button>
+    <!-- Diálogo de Senha (Professor) -->
+    <div id="dialog-senha" class="dialog-overlay hidden">
+        <div class="dialog-content">
+            <h3>Acesso de Professor</h3>
+            <input type="password" id="input-senha" placeholder="Digite a senha" autocomplete="off">
+            <div class="dialog-buttons">
+                <button id="btn-confirmar-senha" class="btn-success">✓ Confirmar</button>
+                <button id="btn-cancelar-senha" class="btn-danger">✗ Cancelar</button>
+            </div>
         </div>
     </div>
-</div>
 
 <script>
     // ==================== VARIÁVEIS GLOBAIS ====================
@@ -636,6 +610,9 @@
     let pontosAtuais = 0;
     let melhorMarca = 0;
     let historicoTentativas = [];
+    let acertosTentativa = 0; // Acertos na tentativa atual
+    let errosTentativa = 0;   // Erros na tentativa atual
+    let tentativaEmPausa = false; // Flag para saber se está em pausa
     
     const CLASSIFICADOS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5 };
     
@@ -649,79 +626,60 @@
     }
     
     function capitalizarNome(nome) {
-        if (!nome) return '';
-        return nome.toLowerCase().split(' ').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+        return nome.split(' ').map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
     }
     
     function gerarIdEstavel(nome, turma) {
-        return btoa(nome.toLowerCase().trim() + "|" + turma).slice(0, 16);
-    }
-    
-    function mostrarToast(msg) {
-        let toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerText = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        return (nome + turma).toLowerCase().replace(/\s/g, '_');
     }
     
     function formatarTempo(segundos) {
         let min = Math.floor(segundos / 60);
         let seg = segundos % 60;
-        return `${min}:${seg.toString().padStart(2, '0')}`;
+        return `${min}:${seg < 10 ? '0' : ''}${seg}`;
     }
     
-    function mostrarDialog(tipo) {
-        if (tipo === 'entrada') {
-            document.getElementById('dialog-entrada').classList.remove('hidden');
-            document.getElementById('input-nome').focus();
-        } else if (tipo === 'senha') {
-            document.getElementById('dialog-senha').classList.remove('hidden');
-            document.getElementById('input-senha').focus();
-        }
+    function mostrarToast(msg) {
+        let toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#2ecc71;color:white;padding:16px 24px;border-radius:8px;z-index:2000;font-weight:bold;';
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
     }
     
-    function fecharDialog(tipo) {
-        if (tipo === 'entrada') {
-            document.getElementById('dialog-entrada').classList.add('hidden');
-        } else if (tipo === 'senha') {
-            document.getElementById('dialog-senha').classList.add('hidden');
-        }
+    function mostrarDialog(id) {
+        document.getElementById(`dialog-${id}`).classList.remove('hidden');
+    }
+    
+    function fecharDialog(id) {
+        document.getElementById(`dialog-${id}`).classList.add('hidden');
     }
     
     // ==================== ARMAZENAMENTO LOCAL ====================
-    function salvarDados() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(estadoAtual));
-    }
-    
-    function carregarDados() {
-        let dados = localStorage.getItem(STORAGE_KEY);
-        if (dados) {
-            try {
-                estadoAtual = JSON.parse(dados);
-                return true;
-            } catch (e) {
-                console.error("Erro ao carregar dados:", e);
-                return false;
-            }
-        }
-        return false;
-    }
-    
     function inicializarEstadoLocal() {
-        if (!carregarDados()) {
+        let dados = localStorage.getItem(STORAGE_KEY);
+        if (!dados) {
             estadoAtual = {
                 faseAtual: 1,
                 status: 'aguardando',
                 participantes: [],
-                resultadosFase: { 1: {} },
-                bancosFase: {}
+                resultadosFase: { 1: {}, 2: {}, 3: {}, 4: {} }
             };
-            salvarDados();
+        } else {
+            estadoAtual = JSON.parse(dados);
         }
         estadoPronto = true;
         atualizarInterfaceGeral();
-        document.getElementById('status-conexao').innerText = 'Usando armazenamento local';
+    }
+    
+    function salvarDados() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(estadoAtual));
+    }
+    
+    function atualizarInterfaceGeral() {
+        if (meuTipo === 'professor') atualizarInterfaceProfessor();
+        if (meuTipo === 'aluno') atualizarInterfaceAluno();
+        if (meuTipo === 'torcida') atualizarRankingTorcida();
     }
     
     // ==================== GERAÇÃO DE PERGUNTAS ====================
@@ -812,6 +770,7 @@
         let percentual = (tempoRestanteSegundos / tempoTotalSegundos) * 100;
         document.getElementById('barra-global').style.width = percentual + '%';
         document.getElementById('barra-torcida').style.width = percentual + '%';
+        document.getElementById('barra-prof').style.width = percentual + '%';
         
         // Últimos 2 minutos
         if (tempoRestanteSegundos <= 120 && tempoRestanteSegundos > 0) {
@@ -864,11 +823,24 @@
         if (cronometroPergunaInterval) clearInterval(cronometroPergunaInterval);
         perguntaAtual++;
         
-        if (perguntaAtual < perguntasJogo.length && faseEmAndamento) {
+        // Se chegou ao final das 20 perguntas, mostrar resumo
+        if (perguntaAtual >= perguntasJogo.length) {
+            if (faseEmAndamento) {
+                // Mostrar tela de resumo
+                mostrarResumoTentativa();
+                tentativaEmPausa = true;
+            } else {
+                // Fase encerrada
+                document.getElementById('pergunta-texto').innerText = 'Fase finalizada!';
+                mostrarToast("⏰ Tempo encerrado!");
+            }
+            return;
+        }
+        
+        // Se a fase ainda está em andamento, continuar com a próxima pergunta
+        if (faseEmAndamento && !tentativaEmPausa) {
             exibirPergunta();
             iniciarCronometroPergunta();
-        } else if (!faseEmAndamento) {
-            mostrarToast("Fase finalizada!");
         }
     }
     
@@ -879,9 +851,9 @@
             return;
         }
         
-        if (perguntaAtual >= perguntasJogo.length) {
-            document.getElementById('pergunta-texto').innerText = 'Fase concluída!';
-            return;
+        // Garantir que o índice está dentro dos limites
+        if (perguntaAtual < 0 || perguntaAtual >= perguntasJogo.length) {
+            perguntaAtual = 0; // Resetar para a primeira pergunta
         }
         
         let p = perguntasJogo[perguntaAtual];
@@ -913,10 +885,12 @@
         if (acertou) {
             streakAtual++;
             pontosAtuais += 10;
+            acertosTentativa++; // Incrementar acertos da tentativa
             atualizarStreak(true);
             mostrarToast("✅ Acertou!");
         } else {
             streakAtual = 0;
+            errosTentativa++; // Incrementar erros da tentativa
             atualizarStreak(false);
             mostrarToast("❌ Errou!");
         }
@@ -1001,6 +975,73 @@
         }
     }
     
+    // ==================== RESUMO DE TENTATIVA ====================
+    function mostrarResumoTentativa() {
+        // Esconder área de jogo
+        document.getElementById('area-jogo').classList.add('hidden');
+        
+        // Atualizar dados do resumo
+        let pontosNaTentativa = acertosTentativa * 10;
+        document.getElementById('resumo-pontos').innerText = pontosNaTentativa;
+        document.getElementById('resumo-acertos').innerText = acertosTentativa;
+        document.getElementById('resumo-erros').innerText = errosTentativa;
+        
+        // Calcular posição no ranking
+        let ranking = gerarRankingSimples();
+        let minhaPosicao = ranking.findIndex(r => r.id === alunoId) + 1;
+        document.getElementById('resumo-posicao').innerText = minhaPosicao || '--';
+        
+        // Mostrar tela de resumo
+        document.getElementById('area-resumo').classList.remove('hidden');
+    }
+    
+    function gerarRankingSimples() {
+        let participantes = estadoAtual.participantes || [];
+        let ranking = participantes.map(p => {
+            let resultado = estadoAtual.resultadosFase[estadoAtual.faseAtual][p.id] || { pontos: 0 };
+            return { id: p.id, nome: p.nome, pontos: resultado.pontos || 0 };
+        });
+        return ranking.sort((a, b) => b.pontos - a.pontos);
+    }
+    
+    function iniciarNovaTentativa() {
+        // Resetar contadores
+        acertosTentativa = 0;
+        errosTentativa = 0;
+        perguntaAtual = 0;
+        tentativaEmPausa = false;
+        streakAtual = 0;
+        
+        // Gerar novo banco de perguntas
+        perguntasJogo = gerarBanco("0-10");
+        
+        // Esconder resumo e mostrar jogo
+        document.getElementById('area-resumo').classList.add('hidden');
+        document.getElementById('area-ranking-pausa').classList.add('hidden');
+        document.getElementById('area-jogo').classList.remove('hidden');
+        
+        // Exibir primeira pergunta
+        exibirPergunta();
+    }
+    
+    function mostrarRankingEmPausa() {
+        let ranking = gerarRankingSimples();
+        let html = '';
+        
+        ranking.forEach((r, idx) => {
+            let classe = idx === 29 ? 'ranking-bolha' : (idx >= 27 && idx <= 31) ? 'ranking-hot-seat' : '';
+            html += `<div class="ranking-item ${classe}">
+                <div class="ranking-posicao">${idx + 1}º</div>
+                <div class="ranking-nome">${escapeHtml(r.nome)}</div>
+                <div class="ranking-pontos">${r.pontos} pts</div>
+            </div>`;
+        });
+        
+        document.getElementById('ranking-pausa-container').innerHTML = html;
+        document.getElementById('area-resumo').classList.add('hidden');
+        document.getElementById('area-ranking-pausa').classList.remove('hidden');
+    }
+    
     // ==================== RANKING DINÂMICO ====================
     async function gerarRankingDinamico(estado, fase) {
         let participantes = estado.participantes || [];
@@ -1008,124 +1049,67 @@
         
         let stats = [];
         for (let p of participantes) {
-            let dados = estado.resultadosFase?.[fase]?.[p.id] || {};
-            let pontos = dados.pontos || 0;
-            
+            let resultado = estado.resultadosFase[fase][p.id] || { pontos: 0, acertos: 0, erros: 0, tentativas: 0 };
             stats.push({
                 id: p.id,
                 nome: p.nome,
-                turma: p.turma,
-                pontos: pontos,
-                streak: dados.streak || 0,
-                melhorMarca: dados.melhorMarca || 0,
-                tempoMedio: dados.tempoMedio || 0
+                pontos: resultado.pontos || 0,
+                acertos: resultado.acertos || 0,
+                erros: resultado.erros || 0,
+                tentativas: resultado.tentativas || 0
             });
         }
         
-        stats.sort((a, b) => b.pontos - a.pontos);
-        
-        let numVagas = CLASSIFICADOS_POR_FASE[fase] || 0;
-        let resultado = [];
-        
-        for (let i = 0; i < stats.length; i++) {
-            let s = stats[i];
-            let pos = i + 1;
-            let classe = '';
-            
-            if (numVagas && pos === numVagas) classe = 'linha-corte';
-            if (numVagas && pos >= 28 && pos <= 32) classe = 'hot-seat';
-            
-            let deltaStr = s.melhorMarca > 0 ? (s.pontos - s.melhorMarca) : '--';
-            
-            resultado.push({
-                pos, nome: s.nome, turma: s.turma, pontos: s.pontos,
-                streak: s.streak, delta: deltaStr, classe: classe,
-                melhorMarca: s.melhorMarca
-            });
-        }
-        
-        return resultado;
+        return stats.sort((a, b) => b.pontos - a.pontos);
     }
     
-    function gerarTabelaRankingDinamico(ranking) {
-        if (!ranking || ranking.length === 0) return '<div class="loading">Nenhum participante ainda.</div>';
-        
-        let html = `<table class="ranking-table">
-            <thead>
-                <tr>
-                    <th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th>
-                    <th>Streak</th><th>Delta PB</th><th>Melhor</th>
-                </tr>
-            </thead>
-            <tbody>`;
-        
-        for (let r of ranking) {
-            let rowClass = r.classe ? ` class="${r.classe}"` : '';
-            html += `<tr${rowClass}>
-                <td style="font-weight: bold;">${r.pos}º</td>
-                <td>${escapeHtml(r.nome)}</td>
-                <td>${escapeHtml(r.turma)}</td>
-                <td><strong>${r.pontos}</strong></td>
-                <td><span class="streak-indicator">${r.streak} 🔥</span></td>
-                <td><span class="delta-pb ${r.delta < 0 ? 'negativo' : 'positivo'}">${r.delta}</span></td>
-                <td>${r.melhorMarca}</td>
-            </tr>`;
-        }
-        
-        html += `</tbody></table>`;
-        return html;
-    }
-    
-    async function atualizarRankingTorcida() {
-        if (!estadoAtual) return;
-        const fase = estadoAtual.faseAtual;
-        let ranking = await gerarRankingDinamico(estadoAtual, fase);
-        let numVagas = CLASSIFICADOS_POR_FASE[fase] || 0;
-        
-        let html = (numVagas ? `<div class="info-vagas">🏆 ${numVagas} vagas para a próxima fase</div>` : '<div class="info-vagas">🏆 Grande Final</div>');
-        html += gerarTabelaRankingDinamico(ranking);
-        
-        document.getElementById('ranking-torcida').innerHTML = html;
-        document.getElementById('status-torcida').innerHTML = `Fase ${fase} - ${faseEmAndamento ? '🔓 Em andamento' : '🔒 Aguardando'}`;
-        document.getElementById('info-vagas-torcida').innerHTML = numVagas ? `<div class="info-vagas">🏆 ${numVagas} vagas</div>` : '<div class="info-vagas">🏆 Grande Final</div>';
-    }
-    
-    async function atualizarRankingProfessor() {
-        if (!estadoAtual) return;
-        const fase = estadoAtual.faseAtual;
-        let ranking = await gerarRankingDinamico(estadoAtual, fase);
-        document.getElementById('ranking-professor').innerHTML = gerarTabelaRankingDinamico(ranking);
-    }
-    
-    // ==================== INICIALIZAÇÃO ====================
-    function atualizarInterfaceGeral() {
+    function atualizarRankingProfessor() {
         if (!estadoAtual) return;
         
         let fase = estadoAtual.faseAtual;
-        let status = estadoAtual.status;
+        let participantes = estadoAtual.participantes || [];
+        let html = '';
         
-        document.getElementById('fase-atual-titulo').innerText = fase;
-        document.getElementById('status-fase').innerText = status === 'em_andamento' ? '🔓 Liberada' : '🔒 Aguardando';
+        participantes.forEach((p, idx) => {
+            let resultado = estadoAtual.resultadosFase[fase][p.id] || { pontos: 0 };
+            let classe = idx === 29 ? 'ranking-bolha' : (idx >= 27 && idx <= 31) ? 'ranking-hot-seat' : '';
+            html += `<div class="ranking-item ${classe}">
+                <div class="ranking-posicao">${idx + 1}º</div>
+                <div class="ranking-nome">${escapeHtml(p.nome)}</div>
+                <div class="ranking-pontos">${resultado.pontos || 0} pts</div>
+            </div>`;
+        });
         
-        if (meuTipo === 'professor') {
-            document.getElementById('fase-num').innerText = fase;
-            document.getElementById('status-fase-prof').innerText = status;
-            let participantes = estadoAtual.participantes || [];
-            document.getElementById('num-participantes').innerText = `(${participantes.length})`;
-            renderizarListaParticipantes();
-            atualizarRankingProfessor();
-        } else if (meuTipo === 'aluno') {
-            atualizarInterfaceAluno();
-        } else if (meuTipo === 'torcida') {
-            atualizarRankingTorcida();
-        }
+        let container = document.getElementById('ranking-professor');
+        if (container) container.innerHTML = html || '<p class="loading">Nenhum participante ainda.</p>';
     }
     
-    function renderizarListaParticipantes() {
+    function atualizarRankingTorcida() {
         if (!estadoAtual) return;
-        let participantes = estadoAtual.participantes || [];
-        let container = document.getElementById('lista-participantes');
         
+        let fase = estadoAtual.faseAtual;
+        let participantes = estadoAtual.participantes || [];
+        let html = '';
+        
+        participantes.forEach((p, idx) => {
+            let resultado = estadoAtual.resultadosFase[fase][p.id] || { pontos: 0 };
+            let classe = idx === 29 ? 'ranking-bolha' : (idx >= 27 && idx <= 31) ? 'ranking-hot-seat' : '';
+            html += `<div class="ranking-item ${classe}">
+                <div class="ranking-posicao">${idx + 1}º</div>
+                <div class="ranking-nome">${escapeHtml(p.nome)}</div>
+                <div class="ranking-pontos">${resultado.pontos || 0} pts</div>
+            </div>`;
+        });
+        
+        let container = document.getElementById('ranking-torcida');
+        if (container) container.innerHTML = html || '<p class="loading">Nenhum participante ainda.</p>';
+    }
+    
+    function atualizarListaParticipantes() {
+        let container = document.getElementById('lista-participantes');
+        if (!container) return;
+        
+        let participantes = estadoAtual.participantes || [];
         if (participantes.length === 0) {
             container.innerHTML = '<p style="text-align: center; color: #aaa;">Nenhum participante ainda.</p>';
             return;
@@ -1154,6 +1138,8 @@
         if (status === 'em_andamento') {
             document.getElementById('area-jogo').classList.remove('hidden');
             document.getElementById('area-aguardando').classList.add('hidden');
+            document.getElementById('area-resumo').classList.add('hidden');
+            document.getElementById('area-ranking-pausa').classList.add('hidden');
             
             // Gerar perguntas se ainda não foram geradas (SÍNCRONO)
             if (!perguntasJogo || perguntasJogo.length === 0) {
@@ -1162,13 +1148,21 @@
             }
             
             // Exibir primeira pergunta se ainda não foi exibida
-            if (perguntaAtual === 0 && perguntasJogo.length > 0 && !cronometroPergunaInterval) {
+            if (perguntaAtual === 0 && perguntasJogo.length > 0 && !cronometroPergunaInterval && !tentativaEmPausa) {
                 setTimeout(() => exibirPergunta(), 50);
             }
         } else {
             document.getElementById('area-jogo').classList.add('hidden');
             document.getElementById('area-aguardando').classList.remove('hidden');
+            document.getElementById('area-resumo').classList.add('hidden');
+            document.getElementById('area-ranking-pausa').classList.add('hidden');
         }
+    }
+    
+    function atualizarInterfaceProfessor() {
+        if (!estadoAtual || meuTipo !== 'professor') return;
+        document.getElementById('fase-atual').innerText = estadoAtual.faseAtual;
+        atualizarRankingProfessor();
     }
     
     // ==================== EVENT LISTENERS ====================
@@ -1178,7 +1172,7 @@
     
     document.getElementById('btn-confirmar-senha').addEventListener('click', () => {
         let senha = document.getElementById('input-senha').value;
-        if (senha === "040199") {
+        if (senha === '040199') {
             meuTipo = 'professor';
             fecharDialog('senha');
             document.getElementById('tela-principal').classList.add('hidden');
@@ -1250,7 +1244,6 @@
         atualizarInterfaceGeral();
     });
     
-    // Controles do Professor
     document.getElementById('btn-iniciar-fase').addEventListener('click', () => {
         if (!faseEmAndamento) {
             estadoAtual.status = 'em_andamento';
@@ -1302,6 +1295,7 @@
     // Botões de voltar
     document.getElementById('btn-voltar-prof').addEventListener('click', () => {
         meuTipo = null;
+        pausarCronometroGlobal();
         document.getElementById('tela-principal').classList.remove('hidden');
         document.getElementById('painel-professor').classList.add('hidden');
     });
@@ -1326,9 +1320,18 @@
         document.getElementById('painel-torcida').classList.add('hidden');
     });
     
-    document.getElementById('btn-sincronizar').addEventListener('click', () => {
-        atualizarInterfaceGeral();
-        mostrarToast("Sincronizado!");
+    // Botões de resumo e ranking
+    document.getElementById('btn-ver-ranking').addEventListener('click', () => {
+        mostrarRankingEmPausa();
+    });
+    
+    document.getElementById('btn-voltar-resumo').addEventListener('click', () => {
+        document.getElementById('area-ranking-pausa').classList.add('hidden');
+        document.getElementById('area-resumo').classList.remove('hidden');
+    });
+    
+    document.getElementById('btn-nova-tentativa').addEventListener('click', () => {
+        iniciarNovaTentativa();
     });
     
     // Atualizar ranking a cada 2 segundos
