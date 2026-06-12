@@ -291,55 +291,24 @@
             </div>
             <div>
                 <h3>Participantes <span id="fase-participantes-num">--</span></h3>
-                <div class="controles-participantes">
-                    <input type="text" id="busca-participante" placeholder="🔍 Buscar por nome..." autocomplete="off">
-                    <select id="ordenacao-participantes">
-                        <option value="nome_asc">📝 Nome (A-Z)</option>
-                        <option value="turma_asc">🏫 Turma (crescente)</option>
-                        <option value="data_desc">🕒 Data de cadastro (mais recente)</option>
-                    </select>
-                    <button id="btn-reset-filtros" class="btn-small">Limpar filtros</button>
-                </div>
                 <div id="lista-participantes" style="max-height: 250px; overflow-y: auto;"></div>
-                <button id="btn-adicionar-aluno" class="btn-primary">➕ Adicionar Aluno</button>
                 <hr>
                 <h3>Gerenciar Turmas</h3>
                 <div id="lista-turmas"></div>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="nova-turma" placeholder="Ex: 3003" style="flex:1;">
-                    <button id="btn-adicionar-turma" class="btn-small">➕ Adicionar</button>
-                </div>
-                <hr>
-                <h3>Histórico</h3>
-                <select id="seletor-fase-historico" class="select-fase">
-                    <option value="1">Fase 1</option>
-                    <option value="2">Fase 2</option>
-                    <option value="3">Fase 3</option>
-                    <option value="4">Fase 4</option>
-                    <option value="5">Grande Final</option>
-                </select>
-                <button id="btn-carregar-historico" class="btn-small">Carregar</button>
             </div>
         </div>
         <div id="secao-final" class="hidden">
             <h3>🏆 Grande Final da Tabuada 0 a 10</h3>
             <div id="lista-inscritos-final" class="lista-inscritos"></div>
-            <button id="btn-resetar-final" class="btn-danger">🔄 Resetar Final (limpar inscrições e resultados)</button>
         </div>
-        <h3>Ranking da <span id="ranking-titulo">Fase Atual</span></h3>
-        <div id="filtros-professor" class="filtros-container">
-            <div class="filtro-group"><label>Nome</label><input type="text" id="filtro-nome-prof" placeholder="Nome..."></div>
-            <div class="filtro-group"><label>Turma</label><input type="text" id="filtro-turma-prof" placeholder="Turma..."></div>
-            <div class="filtro-group"><label>Melhor Pontuação</label><select id="ordem-melhor-pont-prof"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-            <div class="filtro-group"><label>Evolução (%)</label><select id="ordem-evolucao-prof"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-        </div>
-        <div id="ranking-parcial" class="status-box"><div class="loading">Carregando...</div></div>
+        <div id="ranking-parcial" class="status-box"><div class="loading">Carregando ranking...</div></div>
     </div>
 
     <!-- TELA DO ALUNO -->
     <div id="tela-aluno" class="card hidden">
         <h2 id="aluno-nome">Aluno</h2>
         <p>Turma: <span id="aluno-turma">-</span></p>
+        
         <div id="jogo-area" class="hidden">
             <div class="status-box">
                 <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
@@ -355,7 +324,9 @@
                 <p>Pontos nesta partida: <strong id="pontos-partida">0</strong></p>
             </div>
         </div>
+
         <div id="aguardando" class="hidden" style="text-align:center; padding:40px;">⏳ Aguardando liberação da fase...</div>
+        
         <div id="area-final-aluno" class="hidden">
             <div class="status-box">
                 <h3>🏆 Grande Final da Tabuada 0 a 10</h3>
@@ -364,36 +335,20 @@
                 <button id="btn-jogar-final" class="btn-jogar hidden">▶️ Iniciar minhas 3 partidas</button>
             </div>
         </div>
-        <div class="progresso-aluno">
+
+        <div id="progresso-aluno" class="progresso-aluno">
             <p><strong>📊 Fase <span id="aluno-fase">--</span> - Seu progresso</strong></p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0;">
                 <div class="status-box" style="margin-top:0; padding:10px;"><p style="font-size:12px; color:#ffd966;">Partidas</p><p><span id="partidas-feitas">0</span> / 4</p></div>
                 <div class="status-box" style="margin-top:0; padding:10px;"><p style="font-size:12px; color:#ffd966;">Pontos Atuais</p><p><strong id="aluno-pontos-total">0</strong></p></div>
-                <div class="status-box" style="margin-top:0; padding:10px;"><p style="font-size:12px; color:#ffd966;">Posição Geral</p><p><strong id="aluno-posicao-atual">--</strong></p></div>
-                <div class="status-box" style="margin-top:0; padding:10px;"><p style="font-size:12px; color:#ffd966;">Na Rodada</p><p><strong id="aluno-posicao-rodada">--</strong></p></div>
-            </div>
-            <div id="area-projecao" class="status-box" style="margin-top:0; background: rgba(39, 174, 96, 0.1); border: 1px solid #27ae60; margin-bottom: 15px;">
-                <p style="color:#2ecc71; font-weight:bold;">🔮 Projeção Final</p>
-                <div style="display: flex; justify-content: space-around; align-items: center;">
-                    <div><p style="font-size:11px;">Pontos Estimados</p><p><strong id="projecao-pontos">--</strong></p></div>
-                    <div style="width:1px; height:30px; background:rgba(255,255,255,0.2);"></div>
-                    <div><p style="font-size:11px;">Posição Estimada</p><p><strong id="projecao-posicao">--</strong></p></div>
-                </div>
-                <div id="classificacao-atual" class="classificado-msg"></div>
-                <p id="msg-incentivo" style="font-size:12px; margin-top:8px; font-style:italic; color:#aaa;"></p>
             </div>
             <button id="btn-jogar-proxima" class="btn-jogar" disabled>▶️ Jogar Próxima Partida</button>
             <div id="msg-fase-finalizada" class="hidden">🏁 Você completou todas as 4 partidas! Aguarde próxima fase.</div>
             <div id="msg-fase-bloqueada" class="hidden">⛔ A fase não está liberada. Aguarde o professor.</div>
         </div>
+
         <div id="ranking-aluno" class="status-box">
             <h3>Ranking da Fase Atual</h3>
-            <div class="filtros-container">
-                <div class="filtro-group"><label>Nome</label><input type="text" id="filtro-nome-aluno" placeholder="Nome..."></div>
-                <div class="filtro-group"><label>Turma</label><input type="text" id="filtro-turma-aluno" placeholder="Turma..."></div>
-                <div class="filtro-group"><label>Melhor Pontuação</label><select id="ordem-melhor-pont-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-                <div class="filtro-group"><label>Evolução (%)</label><select id="ordem-evolucao-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-            </div>
             <div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div>
         </div>
         <button id="btn-sair-aluno">⬅️ Sair</button>
@@ -402,14 +357,6 @@
     <!-- TELA DE PROJEÇÃO -->
     <div id="tela-projecao" class="card hidden">
         <h2>📺 COPA TABUADA CEIB 2026 - TORCIDA</h2>
-        <div id="projecao-status" class="status-box">Carregando...</div>
-        <div id="info-vagas" class="info-vagas"></div>
-        <div class="filtros-container">
-            <div class="filtro-group"><label>Nome</label><input type="text" id="filtro-nome-torcida" placeholder="Nome..."></div>
-            <div class="filtro-group"><label>Turma</label><input type="text" id="filtro-turma-torcida" placeholder="Turma..."></div>
-            <div class="filtro-group"><label>Melhor Pontuação</label><select id="ordem-melhor-pont-torcida"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-            <div class="filtro-group"><label>Evolução (%)</label><select id="ordem-evolucao-torcida"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-        </div>
         <div id="projecao-ranking" class="status-box"><div class="loading">Carregando...</div></div>
         <button id="btn-sair-projecao">⬅️ Voltar</button>
     </div>
@@ -441,40 +388,14 @@
     const db = firebase.database();
 
     const STORAGE_ESTADO = "faseFinalCache";
-    const STORAGE_LAST_SYNC = "lastSyncTimeFinal";
-
-    let meuTipo = null;
-    let alunoId = null, alunoNome = null, alunoTurma = null;
-    let estadoRef = null;
-    let estadoAtual = null;
-    let jogoAtivo = false;
-    let perguntasPartida = [], perguntaIdx = 0, pontosPartida = 0, respostaCorreta = 0;
-    let timerInterval = null, tempoRestante = 10, barraInterval = null;
-    let temposPartida = [], maiorSequenciaPartida = 0, sequenciaAtualPartida = 0, acertosConsecutivos = 0;
-    let partidaSendoJogada = 1;
-    let estadoPronto = false;
+    let meuTipo = null, alunoId = null, alunoNome = null, alunoTurma = null;
+    let estadoAtual = null, estadoPronto = false;
     let turmasDisponiveis = ["901","1001","1002","1003","1004","2001","2002","2003","3001","3002"];
     const CLASSIFICADOS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5 };
     const DIFICULDADES = ["Fácil (2-5)", "Médio (6-9)", "Difícil (0-10 peso 7-9)", "Equilibrado (0-10)"];
 
-    function salvarEstadoLocal(estado) {
-        if (!estado) return;
-        localStorage.setItem(STORAGE_ESTADO, JSON.stringify(estado));
-        localStorage.setItem(STORAGE_LAST_SYNC, Date.now().toString());
-        const el = document.getElementById("ultima-sincronizacao-principal");
-        if (el) el.innerText = `Última atualização: ${new Date().toLocaleString()}`;
-    }
-
-    function carregarEstadoLocal() {
-        const data = localStorage.getItem(STORAGE_ESTADO);
-        return data ? JSON.parse(data) : null;
-    }
-
-    async function forcarSincronizacao() {
-        const snap = await db.ref('faseFinal').once('value');
-        if (snap.exists()) { salvarEstadoLocal(snap.val()); location.reload(); }
-    }
-
+    function salvarEstadoLocal(estado) { localStorage.setItem(STORAGE_ESTADO, JSON.stringify(estado)); }
+    function carregarEstadoLocal() { const d = localStorage.getItem(STORAGE_ESTADO); return d ? JSON.parse(d) : null; }
     function escapeHtml(str) { if(!str) return ''; return str.toString().replace(/[&<>]/g, m => m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'); }
     function capitalizarNome(nome) { if(!nome) return ''; return nome.toLowerCase().split(' ').map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' '); }
     function gerarIdEstavel(nome, turma) { return btoa(nome.toLowerCase().trim()+"|"+turma).slice(0,16); }
@@ -483,54 +404,41 @@
     function getDetalhesAluno(estado, id, fase) {
         if (fase === 5) {
             const d = estado.resultadosFase?.[5]?.[id];
-            return d ? {total: d.pontosAcumulados || 0, jogadas: d.pontosAcumulados ? 1 : 0, melhorT: null, melhorPontuacao: d.pontosAcumulados || 0, pontRodadaAnterior: null, pontRodadaAtual: d.pontosAcumulados || 0, ultimaPartida: d.pontosAcumulados ? 5 : 0} : {total:0, jogadas:0, melhorT:null, melhorPontuacao:0, pontRodadaAnterior:null, pontRodadaAtual:null, ultimaPartida:0};
+            return d ? {total: d.pontosAcumulados || 0, jogadas: d.pontosAcumulados ? 1 : 0} : {total:0, jogadas:0};
         }
-        let total=0, jogadas=0, melhorT=null, melhorPontuacao=0, pontuacoes=[];
+        let total=0, jogadas=0, pontuacoes=[];
         for(let i=1;i<=4;i++) {
             let d = estado.resultadosFase?.[fase]?.[`r${i}p`]?.[id];
-            if(d?.pontos > 0) { total+=d.pontos; jogadas++; if(d.tempoMedio && (melhorT===null || d.tempoMedio<melhorT)) melhorT=d.tempoMedio; if(d.pontos > melhorPontuacao) melhorPontuacao = d.pontos; pontuacoes.push(d.pontos); }
+            if(d?.pontos > 0) { total+=d.pontos; jogadas++; pontuacoes.push(d.pontos); }
         }
-        return {total, jogadas, melhorT, melhorPontuacao, pontRodadaAnterior: pontuacoes.length >= 2 ? pontuacoes[pontuacoes.length-2] : null, pontRodadaAtual: pontuacoes.length >= 1 ? pontuacoes[pontuacoes.length-1] : null, ultimaPartida: jogadas};
+        return {total, jogadas, pontRodadaAnterior: pontuacoes.length >= 2 ? pontuacoes[pontuacoes.length-2] : null, pontRodadaAtual: pontuacoes.length >= 1 ? pontuacoes[pontuacoes.length-1] : null};
     }
 
     async function getProgresso(id,fase) { if (fase === 5) return estadoAtual?.resultadosFase?.[5]?.[id]?.pontosAcumulados ? 1 : 0; return (await db.ref(`progressoAluno/${id}/fase${fase}`).once('value')).val() || 0; }
-    async function setProgresso(id,fase,val) { if (fase !== 5) await db.ref(`progressoAluno/${id}/fase${fase}`).set(val); }
 
     async function gerarRanking(estado, fase) {
         let participantes = fase === 5 ? Object.entries(estado.resultadosFase?.[5] || {}).map(([id, d]) => ({id, nome: d.nome, turma: d.turma})) : getParticipantesArray(estado);
-        let stats = participantes.map(p => {
-            let d = getDetalhesAluno(estado, p.id, fase);
-            return {...p, ...d};
-        }).sort((a,b)=>b.total - a.total);
-        let numVagas = CLASSIFICADOS_POR_FASE[fase] || 0;
+        let stats = participantes.map(p => { let d = getDetalhesAluno(estado, p.id, fase); return {...p, ...d}; }).sort((a,b)=>b.total - a.total);
         return stats.map((p, i) => {
-            let pos = i+1;
-            let gap = pos===1 ? "–" : (numVagas && pos <= numVagas ? `-${stats[i-1].total - p.total}` : (numVagas ? `-${stats[numVagas-1].total - p.total} (para ${numVagas}º)` : ""));
-            let evol = "—";
+            let pos = i+1, evol = "—";
             if(p.pontRodadaAnterior > 0 && p.pontRodadaAtual !== null) {
                 let perc = ((p.pontRodadaAtual - p.pontRodadaAnterior) / p.pontRodadaAnterior) * 100;
-                evol = perc>0 ? `<span class="trend-up">▲ +${perc.toFixed(1)}%</span>` : (perc<0 ? `<span class="trend-down">▼ ${Math.abs(perc).toFixed(1)}%</span>` : `<span class="trend-flat">► 0%</span>`);
+                evol = perc>0 ? `▲ +${perc.toFixed(1)}%` : (perc<0 ? `▼ ${Math.abs(perc).toFixed(1)}%` : `► 0%`);
             }
-            return { ...p, pos, gap, evolucao: evol, classificado: (numVagas && pos <= numVagas) ? "✅ Sim" : "❌ Não", partidas: fase === 5 ? (p.total ? "3/3" : "0/3") : `${p.jogadas}/4` };
+            return { ...p, pos, evolucao: evol, partidas: fase === 5 ? (p.total ? "3/3" : "0/3") : `${p.jogadas}/4` };
         });
-    }
-
-    function filtrarEOrdenarRanking(ranking, n, t, p, e) {
-        let res = ranking.filter(r => (!n || r.nome.toLowerCase().includes(n.toLowerCase().trim())) && (!t || r.turma.toLowerCase().includes(t.toLowerCase().trim())));
-        if(p==='crescente') res.sort((a,b)=>a.melhorPontuacao-b.melhorPontuacao); else if(p==='decrescente') res.sort((a,b)=>b.melhorPontuacao-a.melhorPontuacao);
-        return res;
     }
 
     function gerarTabelaRanking(ranking) {
         if(!ranking.length) return '<div class="loading">Nenhum participante.</div>';
-        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ</th><th>Evolução</th><th>Partidas</th></tr></thead><tbody>';
-        ranking.forEach(r => html += `<tr><td>${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td>${r.total}</td><td>${r.gap}</td><td>${r.evolucao}</td><td>${r.partidas}</td></tr>`);
+        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Evolução</th><th>Partidas</th></tr></thead><tbody>';
+        ranking.forEach(r => html += `<tr><td>${r.pos}º</td><td>${escapeHtml(r.nome)}</td><td>${escapeHtml(r.turma)}</td><td>${r.total}</td><td>${r.evolucao}</td><td>${r.partidas}</td></tr>`);
         return html + '</tbody></table>';
     }
 
-    async function atualizarRankingProfessor() { if(!estadoAtual) return; let r = await gerarRanking(estadoAtual, estadoAtual.faseAtual); let f = filtrarEOrdenarRanking(r, document.getElementById('filtro-nome-prof')?.value, document.getElementById('filtro-turma-prof')?.value, document.getElementById('ordem-melhor-pont-prof')?.value); document.getElementById('ranking-parcial').innerHTML = gerarTabelaRanking(f); }
-    async function atualizarRankingAluno() { if(!estadoAtual || !alunoId) return; let r = await gerarRanking(estadoAtual, estadoAtual.faseAtual); let f = filtrarEOrdenarRanking(r, document.getElementById('filtro-nome-aluno')?.value, document.getElementById('filtro-turma-aluno')?.value, document.getElementById('ordem-melhor-pont-aluno')?.value); document.getElementById('conteudo-ranking-aluno').innerHTML = gerarTabelaRanking(f); }
-    async function atualizarRankingTorcida() { if(!estadoAtual) return; let r = await gerarRanking(estadoAtual, estadoAtual.faseAtual); let f = filtrarEOrdenarRanking(r, document.getElementById('filtro-nome-torcida')?.value, document.getElementById('filtro-turma-torcida')?.value, document.getElementById('ordem-melhor-pont-torcida')?.value); document.getElementById('projecao-ranking').innerHTML = gerarTabelaRanking(f); }
+    async function atualizarRankingProfessor() { if(!estadoAtual) return; let r = await gerarRanking(estadoAtual, estadoAtual.faseAtual); document.getElementById('ranking-parcial').innerHTML = gerarTabelaRanking(r); }
+    async function atualizarRankingAluno() { if(!estadoAtual || !alunoId) return; let r = await gerarRanking(estadoAtual, estadoAtual.faseAtual); document.getElementById('conteudo-ranking-aluno').innerHTML = gerarTabelaRanking(r); }
+    async function atualizarRankingTorcida() { if(!estadoAtual) return; let r = await gerarRanking(estadoAtual, estadoAtual.faseAtual); document.getElementById('projecao-ranking').innerHTML = gerarTabelaRanking(r); }
 
     async function gerarBanco(d) {
         let fatores = d.includes("2-5") ? [2,3,4,5] : (d.includes("6-9") ? [6,7,8,9] : [0,1,2,3,4,5,6,7,8,9,10]);
@@ -538,7 +446,7 @@
         for(let i=0; i<20; i++) {
             let a = fatores[Math.floor(Math.random()*fatores.length)], b = Math.floor(Math.random()*11), r = a*b;
             let ops = new Set([r]); while(ops.size < 4) ops.add(Math.max(0, r + Math.floor(Math.random()*21)-10));
-            perguntas.push({fA:a, fB:b, resposta:r, opcoesOrdenadas: Array.from(ops).sort((x,y)=>x-y)});
+            perguntas.push({fA:a, fB:b, resposta:r, opcoes: Array.from(ops).sort((x,y)=>x-y)});
         }
         return perguntas;
     }
@@ -546,57 +454,82 @@
     function dispararConfete() {
         let canvas = document.getElementById('confetti-canvas'), ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        let parts = []; for(let i=0;i<50;i++) parts.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*5+2, color:`hsl(${Math.random()*360},70%,60%)`, vx:(Math.random()-0.5)*5, vy:(Math.random()-0.5)*5, a:1});
+        let parts = []; for(let i=0;i<30;i++) parts.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*5+2, color:`hsl(${Math.random()*360},70%,60%)`, vx:(Math.random()-0.5)*5, vy:(Math.random()-0.5)*5, a:1});
         function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height); let v=false; parts.forEach(p=>{ if(p.a>0){ v=true; p.x+=p.vx; p.y+=p.vy; p.a-=0.02; ctx.globalAlpha=p.a; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=p.color; ctx.fill(); }}); if(v) requestAnimationFrame(draw); }
         draw();
     }
 
-    let finalJogoAtivo = false, finalPerguntas = [], finalIdx = 0, finalPtsPartida = 0, finalPtsTotal = 0, finalPartidas = 0, finalTimer = null, finalTempo = 10;
-    function iniciarTimerFinal() {
-        finalTempo = 10; let b = document.getElementById('progresso-tempo-final'); b.style.width = '100%'; b.style.backgroundColor = '#27ae60';
-        finalTimer = setInterval(() => { finalTempo -= 0.1; b.style.width = (finalTempo*10) + '%'; if(finalTempo <= 0){ clearInterval(finalTimer); responderFinal(-1); } }, 100);
+    let gameActive = false, currentQuestions = [], qIdx = 0, currentPts = 0, gameTimer = null, timeLeft = 10, gameMode = 'fase', currentPartidaNum = 1;
+    let finalPtsTotal = 0, finalPartidasDone = 0;
+
+    function startTimer() {
+        timeLeft = 10; let b = document.getElementById(gameMode === 'final' ? 'progresso-tempo-final' : 'progresso-tempo');
+        b.style.width = '100%'; b.style.backgroundColor = '#27ae60';
+        gameTimer = setInterval(() => { timeLeft -= 0.1; b.style.width = (timeLeft*10) + '%'; if(timeLeft <= 0){ clearInterval(gameTimer); submitAnswer(-1); } }, 100);
     }
-    function proximaPerguntaFinal() {
-        if(finalIdx >= 20){ finalizarPartidaFinal(); return; }
-        let p = finalPerguntas[finalIdx]; document.getElementById('final-pergunta').innerText = `${p.fA} x ${p.fB} = ?`;
-        let btns = document.querySelectorAll('#final-opcoes .opcao'); btns.forEach((btn, i) => { btn.innerText = p.opcoesOrdenadas[i]; btn.onclick = () => responderFinal(i); });
-        document.getElementById('final-pergunta-num').innerText = finalIdx + 1; iniciarTimerFinal();
+
+    function nextQuestion() {
+        if(qIdx >= 20){ finishGame(); return; }
+        let p = currentQuestions[qIdx];
+        document.getElementById(gameMode === 'final' ? 'final-pergunta' : 'pergunta').innerText = `${p.fA} x ${p.fB} = ?`;
+        let containerId = gameMode === 'final' ? 'final-opcoes' : 'opcoes-container';
+        let btns = document.querySelectorAll(`#${containerId} .opcao`);
+        btns.forEach((btn, i) => { btn.innerText = p.opcoes[i]; btn.onclick = () => submitAnswer(i); });
+        document.getElementById(gameMode === 'final' ? 'final-pergunta-num' : 'pergunta-num').innerText = qIdx + 1;
+        startTimer();
     }
-    function responderFinal(idx) {
-        clearInterval(finalTimer);
-        if(idx !== -1 && parseInt(document.querySelectorAll('#final-opcoes .opcao')[idx].innerText) === finalPerguntas[finalIdx].resposta) {
-            finalPtsPartida += Math.floor(300 + finalTempo * 50);
-            document.getElementById('final-pontos-partida').innerText = finalPtsPartida;
-            if(finalIdx % 5 === 0) dispararConfete();
+
+    function submitAnswer(idx) {
+        clearInterval(gameTimer);
+        if(idx !== -1 && parseInt(document.querySelectorAll(`#${gameMode === 'final' ? 'final-opcoes' : 'opcoes-container'} .opcao`)[idx].innerText) === currentQuestions[qIdx].resposta) {
+            currentPts += Math.floor(300 + timeLeft * 50);
+            document.getElementById(gameMode === 'final' ? 'final-pontos-partida' : 'pontos-partida').innerText = currentPts;
+            if(qIdx % 5 === 0) dispararConfete();
         }
-        finalIdx++; proximaPerguntaFinal();
+        qIdx++; nextQuestion();
     }
-    async function finalizarPartidaFinal() {
-        finalPtsTotal += finalPtsPartida; finalPartidas++;
-        document.getElementById('final-pontos-acumulados').innerText = finalPtsTotal;
-        if(finalPartidas < 3) {
-            finalPtsPartida = 0; finalIdx = 0; document.getElementById('final-partida-atual').innerText = finalPartidas + 1;
-            finalPerguntas = await gerarBanco(DIFICULDADES[finalPartidas]); proximaPerguntaFinal();
+
+    async function finishGame() {
+        if(gameMode === 'final') {
+            finalPtsTotal += currentPts; finalPartidasDone++;
+            document.getElementById('final-pontos-acumulados').innerText = finalPtsTotal;
+            if(finalPartidasDone < 3) {
+                currentPts = 0; qIdx = 0; document.getElementById('final-partida-atual').innerText = finalPartidasDone + 1;
+                currentQuestions = await gerarBanco(DIFICULDADES[finalPartidasDone]); nextQuestion();
+            } else {
+                await db.ref(`faseFinal/resultadosFase/5/${alunoId}`).update({pontosAcumulados: finalPtsTotal});
+                document.getElementById('final-jogo-container').classList.add('hidden');
+                mostrarToast("Final concluída!"); location.reload();
+            }
         } else {
-            await db.ref(`faseFinal/resultadosFase/5/${alunoId}`).update({pontosAcumulados: finalPtsTotal});
-            document.getElementById('final-jogo-container').classList.add('hidden');
-            document.getElementById('status-final-aluno').innerHTML = `<p>✅ Finalizado! Pontuação: ${finalPtsTotal}</p>`;
-            atualizarInterfaceAluno();
+            await db.ref(`faseFinal/resultadosFase/${estadoAtual.faseAtual}/r${currentPartidaNum}p/${alunoId}`).set({pontos: currentPts, data: Date.now()});
+            await db.ref(`progressoAluno/${alunoId}/fase${estadoAtual.faseAtual}`).set(currentPartidaNum);
+            document.getElementById('jogo-area').classList.add('hidden');
+            mostrarToast("Partida concluída!"); location.reload();
         }
     }
+
+    async function iniciarPartidaEspecifica(num) {
+        gameMode = 'fase'; currentPartidaNum = num; currentPts = 0; qIdx = 0;
+        currentQuestions = await gerarBanco(DIFICULDADES[num-1] || DIFICULDADES[0]);
+        document.getElementById('jogo-area').classList.remove('hidden');
+        document.getElementById('progresso-aluno').classList.add('hidden');
+        document.getElementById('partida-atual-jogo').innerText = num;
+        document.getElementById('dificuldade-jogo').innerText = DIFICULDADES[num-1] || "Normal";
+        nextQuestion();
+    }
+
     async function iniciarJogoFinal() {
-        finalPtsTotal = 0; finalPartidas = 0; finalPtsPartida = 0; finalIdx = 0;
-        finalPerguntas = await gerarBanco(DIFICULDADES[0]);
+        gameMode = 'final'; finalPtsTotal = 0; finalPartidasDone = 0; currentPts = 0; qIdx = 0;
+        currentQuestions = await gerarBanco(DIFICULDADES[0]);
         document.getElementById('final-jogo-container').classList.remove('hidden');
-        document.getElementById('btn-jogar-final').classList.add('hidden');
-        proximaPerguntaFinal();
+        nextQuestion();
     }
 
     async function inicializarEstado() {
-        estadoRef = db.ref('faseFinal');
-        estadoRef.on('value', snap => {
+        db.ref('faseFinal').on('value', snap => {
             estadoAtual = snap.val(); if(estadoAtual && estadoAtual.participantes && !Array.isArray(estadoAtual.participantes)) estadoAtual.participantes = Object.values(estadoAtual.participantes);
-            estadoPronto = true; salvarEstadoLocal(estadoAtual); atualizarInterfaceGeral();
+            estadoPronto = true; atualizarInterfaceGeral();
         });
     }
 
@@ -610,7 +543,7 @@
             document.getElementById('status-fase-prof').innerText = s;
             atualizarRankingProfessor();
             let thtml = ''; turmasDisponiveis.forEach(t => thtml += `<span class="turma-badge">${t}</span> `); document.getElementById('lista-turmas').innerHTML = thtml;
-            if(f===5) { document.getElementById('secao-final').classList.remove('hidden'); renderizarInscritosFinal(); }
+            if(f===5) { document.getElementById('secao-final').classList.remove('hidden'); renderInscritos(); }
         } else if(meuTipo === 'aluno') {
             atualizarInterfaceAluno();
         } else if(meuTipo === 'projecao') {
@@ -634,23 +567,26 @@
             document.getElementById('area-final-aluno').classList.add('hidden');
             document.getElementById('progresso-aluno').classList.remove('hidden');
             let prog = await getProgresso(alunoId, f); document.getElementById('partidas-feitas').innerText = prog;
-            document.getElementById('btn-jogar-proxima').disabled = !(s === 'em_andamento' && prog < 4);
+            document.getElementById('aluno-fase').innerText = f;
+            let total = getDetalhesAluno(estadoAtual, alunoId, f).total;
+            document.getElementById('aluno-pontos-total').innerText = total;
+            let canPlay = (s === 'em_andamento' && prog < 4);
+            document.getElementById('btn-jogar-proxima').disabled = !canPlay;
+            document.getElementById('btn-jogar-proxima').innerText = `▶️ Jogar Partida ${prog+1}/4`;
+            if(prog >= 4) document.getElementById('msg-fase-finalizada').classList.remove('hidden');
+            else if(s !== 'em_andamento') document.getElementById('msg-fase-bloqueada').classList.remove('hidden');
             atualizarRankingAluno();
         }
     }
 
-    function renderizarInscritosFinal() {
+    function renderInscritos() {
         let ins = estadoAtual.resultadosFase?.[5] || {}, html = '';
-        Object.entries(ins).forEach(([id, d]) => {
-            html += `<div class="inscrito-item"><span>${d.nome} (${d.turma})</span> 
-            ${!d.autorizado && !d.pontosAcumulados ? `<button onclick="autorizar('${id}')">Autorizar</button>` : `<span>${d.pontosAcumulados || 'Autorizado'}</span>`}</div>`;
-        });
-        document.getElementById('lista-inscritos-final').innerHTML = html || 'Ninguém.';
+        Object.entries(ins).forEach(([id, d]) => { html += `<div class="inscrito-item"><span>${d.nome} (${d.turma})</span> ${!d.autorizado ? `<button onclick="db.ref('faseFinal/resultadosFase/5/${id}/autorizado').set(true)">Autorizar</button>` : '<span>OK</span>'}</div>`; });
+        document.getElementById('lista-inscritos-final').innerHTML = html;
     }
-    async function autorizar(id) { await db.ref(`faseFinal/resultadosFase/5/${id}`).update({autorizado: true}); }
 
     document.getElementById('btn-aluno').onclick = async () => {
-        let nome = prompt("Nome completo:"); if(!nome) return;
+        let nome = prompt("Nome:"); if(!nome) return;
         alunoNome = capitalizarNome(nome);
         let grid = document.getElementById('grid-turmas-selecao'); grid.innerHTML = '';
         turmasDisponiveis.forEach(t => {
@@ -660,26 +596,22 @@
                 document.getElementById('modal-selecao-turma').classList.add('hidden');
                 document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
                 document.getElementById('tela-aluno').classList.remove('hidden');
-                await inicializarEstado();
+                inicializarEstado();
             };
             grid.appendChild(b);
         });
         document.getElementById('modal-selecao-turma').classList.remove('hidden');
     };
 
-    document.getElementById('btn-professor').onclick = () => {
-        if(prompt("Senha:") === "040199") { meuTipo = 'professor'; document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden')); document.getElementById('painel-professor').classList.remove('hidden'); inicializarEstado(); }
-    };
-
-    document.getElementById('btn-inscrever-final').onclick = async () => { await db.ref(`faseFinal/resultadosFase/5/${alunoId}`).set({nome: alunoNome, turma: alunoTurma, autorizado: false}); };
+    document.getElementById('btn-professor').onclick = () => { if(prompt("Senha:") === "040199") { meuTipo = 'professor'; document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden')); document.getElementById('painel-professor').classList.remove('hidden'); inicializarEstado(); } };
+    document.getElementById('btn-inscrever-final').onclick = () => db.ref(`faseFinal/resultadosFase/5/${alunoId}`).set({nome: alunoNome, turma: alunoTurma, autorizado: false});
     document.getElementById('btn-jogar-final').onclick = iniciarJogoFinal;
-    document.getElementById('btn-cancelar-selecao').onclick = () => document.getElementById('modal-selecao-turma').classList.add('hidden');
+    document.getElementById('btn-jogar-proxima').onclick = async () => { let prog = await getProgresso(alunoId, estadoAtual.faseAtual); iniciarPartidaEspecifica(prog + 1); };
     document.getElementById('btn-sair-aluno').onclick = () => location.reload();
     document.getElementById('btn-voltar-inicio').onclick = () => location.reload();
-    document.getElementById('btn-liberar-fase').onclick = () => db.ref('faseFinal/status').set('em_andamento');
-    document.getElementById('btn-finalizar-fase').onclick = () => db.ref('faseFinal/status').set('finalizada');
-
-    window.onload = () => { inicializarEstado(); };
+    document.getElementById('btn-cancelar-selecao').onclick = () => document.getElementById('modal-selecao-turma').classList.add('hidden');
+    function mostrarToast(m) { let t = document.getElementById('toast'); t.innerText = m; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'), 2000); }
+    window.onload = inicializarEstado;
 </script>
 
 <div id="final-jogo-container" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#0a0f1e; z-index:3000; padding:20px;">
@@ -691,8 +623,8 @@
             <button class="opcao"></button><button class="opcao"></button><button class="opcao"></button><button class="opcao"></button>
         </div>
         <p>Pergunta: <span id="final-pergunta-num">1</span>/20</p>
-        <p>Pontos Partida: <strong id="final-pontos-partida">0</strong></p>
-        <p>Total Final: <strong id="final-pontos-acumulados">0</strong></p>
+        <p>Pontos: <strong id="final-pontos-partida">0</strong></p>
+        <p>Total: <strong id="final-pontos-acumulados">0</strong></p>
     </div>
 </div>
 </body>
