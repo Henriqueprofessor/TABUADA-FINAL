@@ -268,12 +268,12 @@
         <div id="ranking-parcial" class="status-box"><div class="loading">Carregando...</div></div>
     </div>
 
-    <!-- TELA DO ALUNO - JOGO ANTES DO BLOCO DE PROGRESSO -->
+    <!-- TELA DO ALUNO - JOGO E PROGRESSO (SEM RANKING) -->
     <div id="tela-aluno" class="card hidden">
         <h2 id="aluno-nome">Aluno</h2>
         <p>Turma: <span id="aluno-turma">-</span></p>
 
-        <!-- ÁREA DO JOGO (AGORA NO TOPO, ANTES DO PROGRESSO) -->
+        <!-- ÁREA DO JOGO -->
         <div id="jogo-area" class="hidden">
             <div class="status-box">
                 <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
@@ -328,18 +328,6 @@
             <button id="btn-jogar-proxima" class="btn-jogar" disabled>▶️ Jogar Próxima Partida</button>
             <div id="msg-fase-finalizada" class="hidden">🏁 Você completou todas as 4 partidas! Aguarde próxima fase.</div>
             <div id="msg-fase-bloqueada" class="hidden">⛔ A fase não está liberada. Aguarde o professor.</div>
-        </div>
-
-        <!-- RANKING -->
-        <div id="ranking-aluno" class="status-box">
-            <h3>Ranking da Fase Atual</h3>
-            <div class="filtros-container">
-                <div class="filtro-group"><label>Nome</label><input type="text" id="filtro-nome-aluno" placeholder="Nome..."></div>
-                <div class="filtro-group"><label>Turma</label><input type="text" id="filtro-turma-aluno" placeholder="Turma..."></div>
-                <div class="filtro-group"><label>Melhor Pontuação</label><select id="ordem-melhor-pont-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-                <div class="filtro-group"><label>Evolução (%)</label><select id="ordem-evolucao-aluno"><option value="">--</option><option value="crescente">Menor → Maior</option><option value="decrescente">Maior → Menor</option></select></div>
-            </div>
-            <div id="conteudo-ranking-aluno"><div class="loading">Carregando...</div></div>
         </div>
 
         <button id="btn-sair-aluno">⬅️ Sair</button>
@@ -438,7 +426,7 @@
     async function getProgresso(id,fase) { return (await db.ref(`progressoAluno/${id}/fase${fase}`).once('value')).val() || 0; }
     async function setProgresso(id,fase,val) { await db.ref(`progressoAluno/${id}/fase${fase}`).set(val); }
 
-    // RANKING
+    // RANKING (funções mantidas para professor e torcida)
     async function gerarRanking(estado, fase) {
         let participantes = getParticipantesArray(estado);
         if(participantes.length===0) return [];
@@ -498,9 +486,22 @@
         if(!ranking || ranking.length===0) return '<div class="loading">Nenhum participante ainda.</div>';
         let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Pontos</th><th>Δ</th><th>Melhor Pont.</th><th>Rodada Atual</th><th>Rodada Ant.</th><th>Evolução</th><th>Pos Rodada</th><th>Partidas</th><th>Classificado</th></tr></thead><tbody>`;
         for(let r of ranking) {
-            html += `<tr><td style="text-align:center">${r.pos}º</td><td style="text-align:left">${escapeHtml(r.nome)}</td><td style="text-align:center">${escapeHtml(r.turma)}</td><td style="text-align:center">${r.total}</td><td style="text-align:center">${r.gap}</td><td style="text-align:center">${r.melhorPontuacao}</td><td style="text-align:center">${r.pontRodadaAtual}</td><td style="text-align:center">${r.pontRodadaAnterior}</td><td style="text-align:center">${r.evolucao}</td><td style="text-align:center">${r.posRodada}</td><td style="text-align:center">${r.partidas}</td><td style="text-align:center">${r.classificado}</td></tr>`;
+            html += `<tr>
+                <td style="text-align:center">${r.pos}º</td>
+                <td style="text-align:left">${escapeHtml(r.nome)}</td>
+                <td style="text-align:center">${escapeHtml(r.turma)}</td>
+                <td style="text-align:center">${r.total}</td>
+                <td style="text-align:center">${r.gap}</td>
+                <td style="text-align:center">${r.melhorPontuacao}</td>
+                <td style="text-align:center">${r.pontRodadaAtual}</td>
+                <td style="text-align:center">${r.pontRodadaAnterior}</td>
+                <td style="text-align:center">${r.evolucao}</td>
+                <td style="text-align:center">${r.posRodada}</td>
+                <td style="text-align:center">${r.partidas}</td>
+                <td style="text-align:center">${r.classificado}</td>
+            </tr>`;
         }
-        html += `</tbody></td>`;
+        html += `</tbody><table>`;
         return html;
     }
 
@@ -515,16 +516,7 @@
         document.getElementById('ranking-parcial').innerHTML = gerarTabelaRanking(filtrado);
         document.getElementById('ranking-titulo').innerText = `Fase ${estadoAtual.faseAtual} (Atual)`;
     }
-    async function atualizarRankingAluno() {
-        if(!estadoAtual || !alunoId) return;
-        let ranking = await gerarRanking(estadoAtual, estadoAtual.faseAtual);
-        let filtroNome = document.getElementById('filtro-nome-aluno')?.value || '';
-        let filtroTurma = document.getElementById('filtro-turma-aluno')?.value || '';
-        let ordemMelhorPont = document.getElementById('ordem-melhor-pont-aluno')?.value || '';
-        let ordemEvolucao = document.getElementById('ordem-evolucao-aluno')?.value || '';
-        let filtrado = filtrarEOrdenarRanking(ranking, filtroNome, filtroTurma, ordemMelhorPont, ordemEvolucao);
-        document.getElementById('conteudo-ranking-aluno').innerHTML = gerarTabelaRanking(filtrado);
-    }
+    
     async function atualizarRankingTorcida() {
         if(!estadoAtual) return;
         let fase = estadoAtual.faseAtual;
@@ -860,7 +852,6 @@
         }
         if(status !== 'em_andamento' && progresso < 4) document.getElementById('aguardando').classList.remove('hidden');
         else document.getElementById('aguardando').classList.add('hidden');
-        await atualizarRankingAluno();
     }
 
     // Funções do professor
@@ -1089,7 +1080,6 @@
     document.addEventListener('input', (e) => {
         if(e.target.id?.includes('filtro') || e.target.id?.includes('ordem')) {
             if(meuTipo === 'professor') atualizarRankingProfessor();
-            if(meuTipo === 'aluno') atualizarRankingAluno();
             if(meuTipo === 'projecao') atualizarRankingTorcida();
         }
     });
