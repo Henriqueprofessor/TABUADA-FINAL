@@ -133,6 +133,8 @@
             <div>
                 <p>Fase atual: <strong id="fase-atual-titulo">--</strong></p>
                 <div id="timer-fase" class="timer-display">00:00</div>
+                <div style="font-size: 12px; margin-top: 5px;">Última Sinc: <span id="last-sync-time">--</span></div>
+                <button id="btn-sincronizar" class="btn-small" style="margin-top: 5px;">🔄 Sincronizar</button>
             </div>
             <div id="online-stats" class="online-badge hidden">Online: <span id="jogadores-online">0</span></div>
         </div>
@@ -140,6 +142,7 @@
             <button id="btn-professor" class="btn-primary">👨‍🏫 Professor</button>
             <button id="btn-aluno">🎮 Aluno</button>
             <button id="btn-projecao">📺 Torcida</button>
+            <a href="https://henriqueprofessor.github.io/Tabuada/" target="_blank" class="btn-primary" style="text-decoration: none;">🔗 Fase Classificatória</a>
         </div>
     </div>
 
@@ -256,6 +259,7 @@
     }
 
     function atualizarUI() {
+        updateLastSyncTime();
         document.getElementById('fase-atual-titulo').innerText = estadoAtual.fase;
         
         if (estadoAtual.status === 'em_andamento') {
@@ -513,6 +517,18 @@
 
     document.getElementById('btn-sair-aluno').onclick = () => location.reload();
     document.getElementById('btn-sair-torcida').onclick = () => location.reload();
+
+    document.getElementById('btn-sincronizar').onclick = () => {
+        updateLastSyncTime();
+        toast('Sincronizado!');
+    };
+
+    function updateLastSyncTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dateString = now.toLocaleDateString('pt-BR');
+        document.getElementById('last-sync-time').innerText = `${dateString} ${timeString}`;
+    }
 
     init();
 </script>
