@@ -421,7 +421,7 @@
     function escapeHtml(str) { if(!str) return ''; return str.toString().replace(/[&<>]/g, m => m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'); }
     function capitalizarNome(nome) { if(!nome) return ''; return nome.toLowerCase().split(' ').map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' '); }
     function gerarIdEstavel(nome, turma) { return btoa(nome.toLowerCase().trim()+"|"+turma).slice(0,16); }
-    function getParticipantesArray(estado) { 
+    function getParticipantesArray(estado) {
         if(!estado || !estado.participantes) return [];
         return Array.isArray(estado.participantes) ? estado.participantes : Object.values(estado.participantes);
     }
@@ -433,9 +433,9 @@
         let pontuacoesPorPartida = [], ultimaPartida=0;
         for(let i=1;i<=4;i++) {
             let d = estado.resultadosFase?.[fase]?.[`r${i}p`]?.[id];
-            if(d?.pontos > 0) { 
-                total+=d.pontos; 
-                jogadas++; 
+            if(d?.pontos > 0) {
+                total+=d.pontos;
+                jogadas++;
                 if(d.tempoMedio && (melhorT===null || d.tempoMedio<melhorT)) melhorT=d.tempoMedio;
                 if(d.pontos > melhorPontuacao) melhorPontuacao = d.pontos;
                 pontuacoesPorPartida.push({partida:i, pontos:d.pontos});
@@ -564,10 +564,10 @@
         let ordemMelhorPont = document.getElementById('ordem-melhor-pont-torcida')?.value || '';
         let ordemEvolucao = document.getElementById('ordem-evolucao-torcida')?.value || '';
         let filtrado = filtrarEOrdenarRanking(ranking, filtroNome, filtroTurma, ordemMelhorPont, ordemEvolucao);
-        let html = `<div class="info-vagas">🏆 ${numVagas} vagas para a próxima fase.</div>` + gerarTabelaRanking(filtrado);
+        let html = gerarTabelaRanking(filtrado);
         document.getElementById('projecao-ranking').innerHTML = html;
         document.getElementById('projecao-status').innerHTML = `Fase ${fase} - ${estadoAtual.status === 'em_andamento' ? '🔓 Em andamento' : '🔒 Finalizada'}`;
-        document.getElementById('info-vagas').innerHTML = `<div class="info-vagas">🏆 ${numVagas} vagas</div>`;
+        document.getElementById('info-vagas').innerHTML = `🏆 ${numVagas} vagas para a próxima fase.`;
     }
 
     // ==================== FUNÇÃO GERAR BANCO CORRIGIDA ====================
@@ -595,7 +595,8 @@
                 if (candidato >= 0 && candidato !== resposta) {
                     incorretas.add(candidato);
                 } else {
-                    let extra = resposta + Math.floor(Math.random() * 13) + 1;
+                    // Fallback: generate a completely random incorrect answer if the offset one is invalid
+                    let extra = Math.floor(Math.random() * 121); // Max 10 * 10 = 100, so up to 120 is reasonable
                     if (extra !== resposta) incorretas.add(extra);
                 }
             }
@@ -683,10 +684,11 @@
         let opcoes = p.opcoesOrdenadas;
         const botoes = document.querySelectorAll('.opcao');
         if (botoes.length >= 4) {
-            botoes[0].innerText = opcoes[0];
-            botoes[1].innerText = opcoes[2];
-            botoes[2].innerText = opcoes[1];
-            botoes[3].innerText = opcoes[3];
+            // Ordem das opções: Superior Esquerdo, Inferior Esquerdo, Superior Direito, Inferior Direito
+            botoes[0].innerText = opcoes[0]; // Superior Esquerdo
+            botoes[1].innerText = opcoes[1]; // Inferior Esquerdo
+            botoes[2].innerText = opcoes[2]; // Superior Direito
+            botoes[3].innerText = opcoes[3]; // Inferior Direito
             botoes.forEach(btn => { btn.disabled = false; btn.style.color = "white"; });
         }
         document.getElementById('pergunta-num').innerText = perguntaIdx+1;
