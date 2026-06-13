@@ -194,6 +194,45 @@
         .classificado-msg { margin-top: 12px; padding: 8px; border-radius: 16px; font-weight: bold; }
         .classificado-sim { background: rgba(39,174,96,0.2); color: #2ecc71; }
         .classificado-nao { background: rgba(231,76,60,0.2); color: #e74c3c; }
+        /* Estilos para o resumo da partida */
+        .resumo-partida {
+            background: #0a0f1e;
+            border: 2px solid #ffd966;
+            border-radius: 28px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .resumo-partida h3 {
+            color: #ffd966;
+            margin-bottom: 20px;
+        }
+        .stats-resumo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #1e2a3a;
+            border-radius: 20px;
+            padding: 12px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #aaa;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2ecc71;
+        }
+        .ranking-rodada {
+            background: #1e2a3a;
+            border-radius: 20px;
+            padding: 12px;
+            margin-top: 10px;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -268,7 +307,7 @@
         <div id="ranking-parcial" class="status-box"><div class="loading">Carregando...</div></div>
     </div>
 
-    <!-- TELA DO ALUNO - JOGO E PROGRESSO (SEM RANKING) -->
+    <!-- TELA DO ALUNO - JOGO E PROGRESSO -->
     <div id="tela-aluno" class="card hidden">
         <h2 id="aluno-nome">Aluno</h2>
         <p>Turma: <span id="aluno-turma">-</span></p>
@@ -288,6 +327,14 @@
                 <div><span>Pergunta: <span id="pergunta-num">1</span>/20</span></div>
                 <p>Pontos nesta partida: <strong id="pontos-partida">0</strong></p>
             </div>
+        </div>
+
+        <!-- RESUMO DA PARTIDA (exibido após cada rodada) -->
+        <div id="resumo-partida" class="hidden resumo-partida">
+            <h3>📊 RESULTADO DA PARTIDA</h3>
+            <div class="stats-resumo" id="stats-resumo"></div>
+            <div id="ranking-rodada-detalhe" class="ranking-rodada"></div>
+            <button id="btn-fechar-resumo" class="btn-primary">Continuar</button>
         </div>
 
         <div id="aguardando" class="hidden" style="text-align:center; padding:40px;">⏳ Aguardando liberação da fase...</div>
@@ -374,6 +421,7 @@
     let perguntasPartida = [], perguntaIdx = 0, pontosPartida = 0, respostaCorreta = 0;
     let timerInterval = null, tempoRestante = 10, barraInterval = null;
     let temposPartida = [], maiorSequenciaPartida = 0, sequenciaAtualPartida = 0, acertosConsecutivos = 0;
+    let acertosPartida = 0; // NOVO: conta quantas respostas certas na partida
     let partidaSendoJogada = 1;
     let estadoPronto = false;
     const DIFICULDADES = ["Fácil (2-5)", "Médio (6-9)", "Difícil (0-10 peso 7-9)", "Equilibrado (0-10)"];
@@ -499,9 +547,9 @@
                 <td style="text-align:center">${r.posRodada}</td>
                 <td style="text-align:center">${r.partidas}</td>
                 <td style="text-align:center">${r.classificado}</td>
-            </tr>`;
+             </tr>`;
         }
-        html += `</tbody><table>`;
+        html += `</tbody></table>`;
         return html;
     }
 
@@ -684,7 +732,7 @@
         clearInterval(timerInterval); clearInterval(barraInterval);
         const fase = estadoAtual.faseAtual;
         const tMedio = temposPartida.length > 0 ? temposPartida.reduce((a,b)=>a+b,0)/temposPartida.length : 10;
-        const dados = { pontos: pontosPartida, tempoMedio: tMedio, maiorSequencia: maiorSequenciaPartida };
+        const dados = { pontos: pontosPartida, tempoMedio: tMedio, maiorSequencia: maiorSequenciaPartida, acertos: acertosPartida };
         const chave = `r${partidaSendoJogada}p`;
         const path = `resultadosFase/${fase}/${chave}/${alunoId}`;
         
@@ -695,10 +743,76 @@
         let progresso = await getProgresso(alunoId, fase);
         if(partidaSendoJogada > progresso) await setProgresso(alunoId, fase, partidaSendoJogada);
         
-        document.getElementById('jogo-area').classList.add('hidden');
-        document.getElementById('aguardando').classList.remove('hidden');
-        mostrarToast(`Partida ${partidaSendoJogada} finalizada! Pontos: ${pontosPartida}`);
+        // Exibir resumo da partida
+        await exibirResumoPartida(partidaSendoJogada, pontosPartida, acertosPartida, tMedio);
+        
         if(meuTipo === 'aluno') await atualizarInterfaceAluno();
+    }
+
+    // Função para exibir o resumo detalhado da partida recém-concluída
+    async function exibirResumoPartida(partidaNum, pontos, acertos, tempoMedio) {
+        const fase = estadoAtual.faseAtual;
+        const chave = `r${partidaNum}p`;
+        const partidaDados = estadoAtual.resultadosFase?.[fase]?.[chave] || {};
+        
+        // Calcular ranking desta partida
+        let rankingRodada = [];
+        for(let id in partidaDados) {
+            rankingRodada.push({ id, pontos: partidaDados[id].pontos });
+        }
+        rankingRodada.sort((a,b) => b.pontos - a.pontos);
+        const minhaPos = rankingRodada.findIndex(r => r.id === alunoId) + 1;
+        const totalParticipantes = rankingRodada.length;
+        
+        // Calcular percentual
+        const percentual = Math.round((minhaPos / totalParticipantes) * 100);
+        let mensagemPosicao = "";
+        if(minhaPos === 1) mensagemPosicao = "🥇 Você foi o MELHOR desta rodada! Parabéns!";
+        else if(minhaPos <= Math.ceil(totalParticipantes * 0.2)) mensagemPosicao = "🏅 Excelente! Você está entre os 20% melhores.";
+        else if(minhaPos <= Math.ceil(totalParticipantes * 0.5)) mensagemPosicao = "👍 Bom desempenho! Continue assim.";
+        else mensagemPosicao = "💪 Continue treinando para melhorar sua posição.";
+        
+        // Construir HTML do resumo
+        const statsDiv = document.getElementById('stats-resumo');
+        statsDiv.innerHTML = `
+            <div class="stat-card">
+                <div class="stat-label">🎯 Pontuação</div>
+                <div class="stat-value">${pontos.toLocaleString('pt-BR')}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">✅ Acertos</div>
+                <div class="stat-value">${acertos} / 20</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">⏱️ Tempo médio</div>
+                <div class="stat-value">${tempoMedio.toFixed(1)} s</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">🎖️ Posição na rodada</div>
+                <div class="stat-value">${minhaPos}º de ${totalParticipantes}</div>
+            </div>
+        `;
+        
+        const rankingDetalhe = document.getElementById('ranking-rodada-detalhe');
+        rankingDetalhe.innerHTML = `
+            <p><strong>Comparativo com os demais:</strong></p>
+            <p>Você está à frente de ${totalParticipantes - minhaPos} competidor(es).</p>
+            <p>Percentil: aproximadamente ${percentual}%</p>
+            <p style="margin-top: 10px; font-style: italic;">${mensagemPosicao}</p>
+            <hr>
+            <p><strong>🏆 Top 3 da rodada:</strong></p>
+            <ol style="text-align: left; margin-left: 20px;">
+                ${rankingRodada.slice(0,3).map((r, idx) => {
+                    const nomeAluno = estadoAtual.participantes.find(p => p.id === r.id)?.nome || "Desconhecido";
+                    return `<li>${escapeHtml(nomeAluno)} - ${r.pontos.toLocaleString('pt-BR')} pts</li>`;
+                }).join('')}
+            </ol>
+        `;
+        
+        // Esconder área de jogo e mostrar resumo
+        document.getElementById('jogo-area').classList.add('hidden');
+        document.getElementById('resumo-partida').classList.remove('hidden');
+        document.getElementById('aguardando').classList.add('hidden');
     }
 
     window.responder = function(escolhaIdx) {
@@ -719,6 +833,7 @@
             sequenciaAtualPartida++;
             if(sequenciaAtualPartida > maiorSequenciaPartida) maiorSequenciaPartida = sequenciaAtualPartida;
             acertosConsecutivos++;
+            acertosPartida++; // contabiliza acerto
             if(acertosConsecutivos % 3 === 0) dispararConfete();
         } else {
             sequenciaAtualPartida = 0;
@@ -746,8 +861,10 @@
         }
         perguntasPartida = estadoAtual.bancosFase[bancoKey];
         perguntaIdx = 0; pontosPartida = 0; temposPartida = []; maiorSequenciaPartida = 0; sequenciaAtualPartida = 0; acertosConsecutivos = 0;
+        acertosPartida = 0; // zera acertos da partida
         jogoAtivo = true; partidaSendoJogada = partidaNum;
         document.getElementById('jogo-area').classList.remove('hidden');
+        document.getElementById('resumo-partida').classList.add('hidden');
         document.getElementById('aguardando').classList.add('hidden');
         document.getElementById('partida-atual-jogo').innerText = partidaNum;
         document.getElementById('dificuldade-jogo').innerText = dificuldade;
@@ -854,7 +971,7 @@
         else document.getElementById('aguardando').classList.add('hidden');
     }
 
-    // Funções do professor
+    // Funções do professor (mantidas iguais)
     async function resetarFaseProf() {
         if(!confirm("Resetar fase atual? Todos os dados serão perdidos.")) return;
         let fase = estadoAtual.faseAtual;
@@ -1050,6 +1167,17 @@
             let prog = await getProgresso(alunoId, estadoAtual.faseAtual);
             if(prog < 4) iniciarPartidaEspecifica(prog + 1);
             else mostrarToast("Você já completou todas as partidas desta fase.");
+        }
+        // Botão fechar resumo da partida
+        if(btn.id === 'btn-fechar-resumo') {
+            document.getElementById('resumo-partida').classList.add('hidden');
+            let progresso = await getProgresso(alunoId, estadoAtual.faseAtual);
+            if(progresso >= 4) {
+                document.getElementById('aguardando').classList.add('hidden');
+            } else {
+                document.getElementById('aguardando').classList.remove('hidden');
+            }
+            await atualizarInterfaceAluno();
         }
         // Editar/excluir aluno/turma
         if(btn.classList.contains('btn-editar-aluno')) {
