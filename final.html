@@ -347,6 +347,7 @@
     let intervaloTorcida = null;
     let intervaloRankingProfessor = null;
     let atualizacaoRankingAuto = true;
+    let faseSelecionadaProf = 1; // guarda a fase selecionada manualmente pelo professor
 
     const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
     const MODALIDADE_CONFIG = {
@@ -365,7 +366,7 @@
         if (span) span.innerText = new Date().toLocaleString('pt-BR');
         toast("Sincronizado!");
     }
-    function confete() { /* mantido igual - não alterado */ 
+    function confete() { 
         const canvas = document.getElementById('confetti-canvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -423,10 +424,16 @@
             const partidas = child.val();
             if (partidas && partidas.length) {
                 const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
-                const info = participantes[child.key] || { nome: "Anônimo", turma: "?" };
+                // Tenta buscar o nome da fase atual, se não existir, busca da fase anterior (para casos de transição)
+                let info = participantes[child.key];
+                if (!info && faseNum > 1 && estadoAtual.participantes?.[faseNum-1]?.[child.key]) {
+                    info = estadoAtual.participantes[faseNum-1][child.key];
+                }
+                const nome = info?.nome || melhor.nome || "Anônimo";
+                const turma = info?.turma || melhor.turma || "?";
                 mapa.set(child.key, {
-                    nome: info.nome,
-                    turma: info.turma,
+                    nome: nome,
+                    turma: turma,
                     pontos: melhor.pontos,
                     acertos: melhor.acertos,
                     tempo: melhor.tempo,
@@ -457,20 +464,32 @@
         }
         const maxPontos = lista[0].pontos;
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
-        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Maior Pontuação</th><th>Delta Líder</th><th>Velocidade Média (s/acerto)</th>${exibirStatusClassificacao ? '<th>Status</th>' : '<th>Status Jogo</th>'}</tr></thead><tbody>`;
+        // Determina se mostra coluna de classificação (exibirStatusClassificacao) ou status de jogo
+        // Na torcida, queremos mostrar a classificação também (vamos forçar exibirStatusClassificacao = true para torcida)
+        const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirStatusClassificacao;
+        
+        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Maior Pontuação</th><th>Delta Líder</th><th>Velocidade Média (s/acerto)</th><th>${mostrarClassificacao ? 'Classificação' : 'Status Jogo'}</th></tr></thead><tbody>`;
         lista.forEach((j, idx) => {
             const delta = maxPontos - j.pontos;
             const deltaText = delta === 0 ? "🏆 Líder" : `+${delta} pts`;
             let velocidade = "-";
             if (j.acertos > 0) velocidade = (j.tempo / j.acertos).toFixed(1) + " s";
             let colunaStatus = "";
-            if (exibirStatusClassificacao) {
+            if (mostrarClassificacao) {
                 const classificado = idx < vagas;
                 colunaStatus = `<td class="${classificado ? 'classificado-sim' : 'classificado-nao'}">${classificado ? `✅ Classificado (Top ${vagas})` : '❌ Eliminado'}</td>`;
             } else {
                 colunaStatus = `<td>${j.isTemp ? "🟢 Em jogo" : "✅ Finalizado"}</td>`;
             }
-            html += `<tr> <td>${idx+1}º</td> <td>${j.nome}</td> <td>${j.turma}</td> <td>${j.pontos}</td> <td>${deltaText}</td> <td>${velocidade}</td> ${colunaStatus} </tr>`;
+            html += `<td>
+                <td>${idx+1}º</td>
+                <td>${j.nome}</td>
+                <td>${j.turma}</td>
+                <td>${j.pontos}</td>
+                <td>${deltaText}</td>
+                <td>${velocidade}</td>
+                ${colunaStatus}
+            </tr>`;
         });
         html += '</tbody></table>';
         document.getElementById(containerId).innerHTML = html;
@@ -482,8 +501,12 @@
     // Atualização automática para o professor (aba ranking por fase)
     async function atualizarRankingProfessor() {
         if (meuTipo === 'professor' && atualizacaoRankingAuto && document.getElementById('tab-ranking-fase') && !document.getElementById('tab-ranking-fase').classList.contains('hidden')) {
+            // Usa a fase que está selecionada no dropdown (faseSelecionadaProf)
             const faseSelecionada = document.getElementById('select-fase-ranking').value;
-            if (faseSelecionada) await renderRankingDinamico(parseInt(faseSelecionada), 'ranking-parcial', true);
+            if (faseSelecionada) {
+                faseSelecionadaProf = parseInt(faseSelecionada);
+                await renderRankingDinamico(faseSelecionadaProf, 'ranking-parcial', true);
+            }
         }
     }
     function iniciarAtualizacaoProfessor() {
@@ -491,7 +514,9 @@
         intervaloRankingProfessor = setInterval(() => { atualizarRankingProfessor(); }, 4000);
     }
     async function atualizarTorcida() {
-        if (meuTipo === 'projecao' && estadoAtual) await renderRankingDinamico(estadoAtual.fase, 'ranking-torcida-container', false);
+        if (meuTipo === 'projecao' && estadoAtual) {
+            await renderRankingDinamico(estadoAtual.fase, 'ranking-torcida-container', true); // Agora mostra classificação na torcida
+        }
     }
     function iniciarAtualizacaoTorcida() {
         if (intervaloTorcida) clearInterval(intervaloTorcida);
@@ -516,8 +541,12 @@
                 const partidas = resultadosFase[id];
                 if (!partidas || partidas.length === 0) continue;
                 const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
-                const nome = participantesFase[id]?.nome || "Anônimo";
-                const turma = participantesFase[id]?.turma || "?";
+                let nome = participantesFase[id]?.nome;
+                if (!nome && fase > 1 && participantesPorFase[fase-1]?.[id]) nome = participantesPorFase[fase-1][id].nome;
+                if (!nome) nome = "Anônimo";
+                let turma = participantesFase[id]?.turma;
+                if (!turma && fase > 1 && participantesPorFase[fase-1]?.[id]) turma = participantesPorFase[fase-1][id].turma;
+                if (!turma) turma = "?";
                 if (!jogadores.has(id)) {
                     jogadores.set(id, { id, nome, turma, melhorPontuacao: melhor.pontos, melhorAcertos: melhor.acertos, melhorTempo: melhor.tempo, ultimaFase: fase, faseEliminacao: null });
                 } else {
@@ -553,7 +582,7 @@
         document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
     }
 
-    function renderPodioFinal() { /* igual ao original, omitido para encurtar mas mantido */ 
+    function renderPodioFinal() { 
         if (!estadoAtual || estadoAtual.fase < 5) return;
         const resultadosFase5 = estadoAtual.resultados?.[5] || {};
         const participantesFase5 = estadoAtual.participantes?.[5] || {};
@@ -562,7 +591,13 @@
             const partidas = resultadosFase5[id];
             if (partidas && partidas.length) {
                 const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
-                lista.push({ id, nome: participantesFase5[id]?.nome || "Anônimo", turma: participantesFase5[id]?.turma || "?", pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo });
+                let nome = participantesFase5[id]?.nome;
+                if (!nome && estadoAtual.participantes?.[4]?.[id]) nome = estadoAtual.participantes[4][id].nome;
+                if (!nome) nome = "Anônimo";
+                let turma = participantesFase5[id]?.turma;
+                if (!turma && estadoAtual.participantes?.[4]?.[id]) turma = estadoAtual.participantes[4][id].turma;
+                if (!turma) turma = "?";
+                lista.push({ id, nome, turma, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo });
             }
         }
         lista.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
@@ -594,6 +629,27 @@
         const vagas = VAGAS_POR_FASE[faseAtual];
         const classificadosIds = lista.slice(0, vagas).map(l => l.id);
         await db.ref(`copaV2/classificados/${faseAtual}`).set(classificadosIds);
+        
+        // Copiar os dados dos participantes classificados para a próxima fase (para manter nomes)
+        const participantesAtual = estadoAtual.participantes?.[faseAtual] || {};
+        const participantesProxima = {};
+        for (let id of classificadosIds) {
+            if (participantesAtual[id]) {
+                participantesProxima[id] = participantesAtual[id];
+            } else {
+                // Buscar de fases anteriores se necessário
+                for (let f = faseAtual-1; f >= 1; f--) {
+                    if (estadoAtual.participantes?.[f]?.[id]) {
+                        participantesProxima[id] = estadoAtual.participantes[f][id];
+                        break;
+                    }
+                }
+            }
+        }
+        if (Object.keys(participantesProxima).length > 0) {
+            await db.ref(`copaV2/participantes/${faseAtual+1}`).set(participantesProxima);
+        }
+        
         if (faseAtual === 5) {
             toast("🏆 COMPETIÇÃO FINALIZADA! Pódio gerado.");
             await db.ref('copaV2/status').set('finalizado');
@@ -620,7 +676,6 @@
                     <button class="btn-excluir-aluno btn-danger" data-id="${id}">🗑️ Excluir</button></div></div>`;
         }
         container.innerHTML = html;
-        // Listeners dinâmicos (simplificados, mas funcionais)
         document.querySelectorAll('.btn-editar-aluno').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const id = btn.getAttribute('data-id');
@@ -756,7 +811,6 @@
 
     // ---------- INICIALIZAÇÃO ----------
     async function init() {
-        // Listener principal do Firebase
         db.ref('copaV2').on('value', snap => {
             estadoAtual = snap.val() || { fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: "2-5", classificados: {}, resultados: {}, participantes: {} };
             if (!estadoAtual.resultados) estadoAtual.resultados = {};
@@ -767,16 +821,26 @@
             if (meuTipo === 'professor') {
                 const select = document.getElementById('select-fase-ranking');
                 if (select) {
+                    // Preserva o valor selecionado atualmente
+                    const valorAnterior = select.value;
                     let options = '';
                     for (let i = 1; i <= 5; i++) options += `<option value="${i}">Fase ${i}</option>`;
                     select.innerHTML = options;
+                    // Se o valor anterior ainda é válido, restaura; senão, mantém a fase atual
+                    if (valorAnterior && [...select.options].some(opt => opt.value === valorAnterior)) {
+                        select.value = valorAnterior;
+                        faseSelecionadaProf = parseInt(valorAnterior);
+                    } else {
+                        select.value = estadoAtual.fase;
+                        faseSelecionadaProf = estadoAtual.fase;
+                    }
                 }
                 const modalSelect = document.getElementById('select-modalidade');
                 if (modalSelect) modalSelect.value = estadoAtual.modalidade;
             }
         });
 
-        // Eventos só após garantir que os elementos existem
+        // Eventos
         const btnAplicar = document.getElementById('btn-aplicar-modalidade');
         if (btnAplicar) btnAplicar.onclick = async () => {
             const novaModalidade = document.getElementById('select-modalidade').value;
@@ -791,7 +855,6 @@
         const btnAvancar = document.getElementById('btn-avancar-fase');
         if (btnAvancar) btnAvancar.onclick = async () => { if(confirm("Finalizar fase?")) await avancarFase(); };
         
-        // Abas do professor
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -828,6 +891,11 @@
             if (estadoAtual && estadoAtual.fase > 1 && !(estadoAtual.classificados?.[estadoAtual.fase-1] || []).includes(alunoId)) {
                 alert("Você não está classificado para esta fase.");
                 return;
+            }
+            // Garantir que o aluno tenha registro na fase atual (copiar da fase anterior se necessário)
+            const participantesAtual = estadoAtual.participantes?.[estadoAtual.fase] || {};
+            if (!participantesAtual[alunoId] && estadoAtual.fase > 1 && estadoAtual.participantes?.[estadoAtual.fase-1]?.[alunoId]) {
+                await db.ref(`copaV2/participantes/${estadoAtual.fase}/${alunoId}`).set(estadoAtual.participantes[estadoAtual.fase-1][alunoId]);
             }
             meuTipo = 'aluno';
             document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
@@ -866,7 +934,6 @@
         document.getElementById('btn-sync-torcida').onclick = () => { updateLastSyncTime(); atualizarTorcida(); };
         document.getElementById('btn-atualizar-lista-alunos').onclick = () => renderListaAlunosGerenciar();
         
-        // Listener de online
         db.ref('.info/connected').on('value', snap => {
             if (snap.val() === true && alunoId && meuTipo === 'aluno') {
                 const ref = db.ref(`online/${alunoId}`);
@@ -886,7 +953,6 @@
         });
     }
 
-    // Inicializar após carregamento completo do DOM
     document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
