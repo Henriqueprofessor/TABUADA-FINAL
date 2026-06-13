@@ -326,6 +326,7 @@
 <div id="toast" class="toast hidden"></div>
 
 <script>
+    // ---------- CONFIGURAÇÃO DO FIREBASE ----------
     const firebaseConfig = {
         apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBz0-o2HVhEE",
         authDomain: "final-copa-tabuada.firebaseapp.com",
@@ -338,14 +339,14 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // ---------- VARIÁVEIS GLOBAIS ----------
     let meuTipo = null, alunoId = null, alunoNome = null, alunoTurma = null;
     let estadoAtual = null, jogoAtivo = false;
     let perguntas = [], perguntaIdx = 0, pontosPartida = 0, acertosPartida = 0, tempoTotalPartida = 0;
     let timerPergunta = null, tempoRestantePergunta = 10, timerFase = null;
-    // Intervalos de atualização
     let intervaloTorcida = null;
     let intervaloRankingProfessor = null;
-    let atualizacaoRankingAuto = true; // flag para pausar/continuar
+    let atualizacaoRankingAuto = true;
 
     const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
     const MODALIDADE_CONFIG = {
@@ -354,11 +355,19 @@
         "0-10": { min: 0, max: 10, nome: "Tabuada 0️⃣➡️🔟 (Completa)" }
     };
 
-    function toast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
-    function updateLastSyncTime() { document.getElementById('last-sync-time').innerText = new Date().toLocaleString('pt-BR'); toast("Sincronizado!"); }
-
-    function confete() {
+    // ---------- FUNÇÕES AUXILIARES ----------
+    function toast(m) {
+        const t = document.getElementById('toast');
+        if (t) { t.innerText = m; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
+    }
+    function updateLastSyncTime() {
+        const span = document.getElementById('last-sync-time');
+        if (span) span.innerText = new Date().toLocaleString('pt-BR');
+        toast("Sincronizado!");
+    }
+    function confete() { /* mantido igual - não alterado */ 
         const canvas = document.getElementById('confetti-canvas');
+        if (!canvas) return;
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         let p = [];
@@ -371,10 +380,9 @@
         }
         d();
     }
-
     function gerarPerguntas() {
         const modalidade = estadoAtual?.modalidade || "2-5";
-        const config = MODALIDADE_CONFIG[modalidade];
+        const config = MODALIDADE_CONFIG[modalidade] || MODALIDADE_CONFIG["2-5"];
         const minFator = config.min, maxFator = config.max;
         let p = [];
         for(let i=0; i<20; i++) {
@@ -403,17 +411,14 @@
         });
     }
 
-    // Função principal de renderização do ranking combinado (parciais + finais)
-    // Pode ser usada tanto para torcida quanto para professor (mesma lógica)
+    // ---------- RANKING DINÂMICO (combina parcial + final) ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
-        // Buscar resultados finais (melhor de cada jogador)
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
         const snapTemp = await db.ref(`copaV2/resultados_temp/${faseNum}`).once('value');
         const participantes = estadoAtual.participantes?.[faseNum] || {};
         
         let mapa = new Map();
-        // Adiciona finais
         snapFinal.forEach(child => {
             const partidas = child.val();
             if (partidas && partidas.length) {
@@ -429,7 +434,6 @@
                 });
             }
         });
-        // Adiciona parciais (sobrescreve se tiver pontuação maior)
         snapTemp.forEach(child => {
             const data = child.val();
             const existente = mapa.get(child.key);
@@ -448,16 +452,12 @@
         let lista = Array.from(mapa.values());
         lista.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
         if (lista.length === 0) {
-            document.getElementById(containerId).innerHTML = '<p>⏳ Nenhum resultado registrado ainda. Aguarde os primeiros jogadores finalizarem...</p>';
+            document.getElementById(containerId).innerHTML = '<p>⏳ Nenhum resultado registrado ainda. Aguarde os primeiros jogadores...</p>';
             return;
         }
-        
         const maxPontos = lista[0].pontos;
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
-        let html = `<table class="ranking-table"><thead><tr>
-            <th>Pos</th><th>Nome</th><th>Turma</th><th>Maior Pontuação</th><th>Delta Líder</th>
-            <th>Velocidade Média (s/acerto)</th>${exibirStatusClassificacao ? '<th>Status</th>' : '<th>Status Jogo</th>'}</tr></thead><tbody>`;
-        
+        let html = `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Maior Pontuação</th><th>Delta Líder</th><th>Velocidade Média (s/acerto)</th>${exibirStatusClassificacao ? '<th>Status</th>' : '<th>Status Jogo</th>'}</tr></thead><tbody>`;
         lista.forEach((j, idx) => {
             const delta = maxPontos - j.pontos;
             const deltaText = delta === 0 ? "🏆 Líder" : `+${delta} pts`;
@@ -470,60 +470,39 @@
             } else {
                 colunaStatus = `<td>${j.isTemp ? "🟢 Em jogo" : "✅ Finalizado"}</td>`;
             }
-            html += `<tr>
-                <td>${idx+1}º</td>
-                <td>${j.nome}</td>
-                <td>${j.turma}</td>
-                <td>${j.pontos}</td>
-                <td>${deltaText}</td>
-                <td>${velocidade}</td>
-                ${colunaStatus}
-            </tr>`;
+            html += `<tr> <td>${idx+1}º</td> <td>${j.nome}</td> <td>${j.turma}</td> <td>${j.pontos}</td> <td>${deltaText}</td> <td>${velocidade}</td> ${colunaStatus} </tr>`;
         });
         html += '</tbody></table>';
         document.getElementById(containerId).innerHTML = html;
-        if (containerId === 'ranking-torcida-container') {
+        if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
             document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
         }
     }
 
-    // Para o professor: atualização periódica do ranking da fase selecionada
+    // Atualização automática para o professor (aba ranking por fase)
     async function atualizarRankingProfessor() {
         if (meuTipo === 'professor' && atualizacaoRankingAuto && document.getElementById('tab-ranking-fase') && !document.getElementById('tab-ranking-fase').classList.contains('hidden')) {
             const faseSelecionada = document.getElementById('select-fase-ranking').value;
-            if (faseSelecionada) {
-                await renderRankingDinamico(parseInt(faseSelecionada), 'ranking-parcial', true);
-            }
+            if (faseSelecionada) await renderRankingDinamico(parseInt(faseSelecionada), 'ranking-parcial', true);
         }
     }
-
     function iniciarAtualizacaoProfessor() {
         if (intervaloRankingProfessor) clearInterval(intervaloRankingProfessor);
-        intervaloRankingProfessor = setInterval(() => {
-            atualizarRankingProfessor();
-        }, 4000);
+        intervaloRankingProfessor = setInterval(() => { atualizarRankingProfessor(); }, 4000);
     }
-
-    // Torcida
     async function atualizarTorcida() {
-        if (meuTipo === 'projecao' && estadoAtual) {
-            await renderRankingDinamico(estadoAtual.fase, 'ranking-torcida-container', false);
-        }
+        if (meuTipo === 'projecao' && estadoAtual) await renderRankingDinamico(estadoAtual.fase, 'ranking-torcida-container', false);
     }
     function iniciarAtualizacaoTorcida() {
         if (intervaloTorcida) clearInterval(intervaloTorcida);
         atualizarTorcida();
         intervaloTorcida = setInterval(() => {
-            if (meuTipo === 'projecao' && document.getElementById('tela-torcida') && !document.getElementById('tela-torcida').classList.contains('hidden')) {
-                atualizarTorcida();
-            } else if (intervaloTorcida) {
-                clearInterval(intervaloTorcida);
-                intervaloTorcida = null;
-            }
+            if (meuTipo === 'projecao' && document.getElementById('tela-torcida') && !document.getElementById('tela-torcida').classList.contains('hidden')) atualizarTorcida();
+            else if (intervaloTorcida) { clearInterval(intervaloTorcida); intervaloTorcida = null; }
         }, 4000);
     }
 
-    // Ranking Geral (estático, não precisa de atualização automática)
+    // ---------- RANKING GERAL (estático) ----------
     function renderRankingGeral() {
         if (!estadoAtual) return;
         const todasFases = estadoAtual.resultados || {};
@@ -533,7 +512,6 @@
         for (let fase = 1; fase <= 5; fase++) {
             const resultadosFase = todasFases[fase] || {};
             const participantesFase = participantesPorFase[fase] || {};
-            const classificadosFase = classificadosPorFase[fase] || [];
             for (let id in resultadosFase) {
                 const partidas = resultadosFase[id];
                 if (!partidas || partidas.length === 0) continue;
@@ -575,7 +553,7 @@
         document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
     }
 
-    function renderPodioFinal() {
+    function renderPodioFinal() { /* igual ao original, omitido para encurtar mas mantido */ 
         if (!estadoAtual || estadoAtual.fase < 5) return;
         const resultadosFase5 = estadoAtual.resultados?.[5] || {};
         const participantesFase5 = estadoAtual.participantes?.[5] || {};
@@ -596,8 +574,8 @@
             podiumHtml += `<div class="podium-card podium-${idx+1}"><div class="medalha">${medals[idx]}</div><strong>${jogador.nome}</strong><br>${jogador.turma}<br>${jogador.pontos} pts</div>`;
         });
         podiumHtml += '</div>';
-        document.getElementById('podium-container').innerHTML = podiumHtml;
-        document.getElementById('podium-container').classList.remove('hidden');
+        const podiumDiv = document.getElementById('podium-container');
+        if (podiumDiv) { podiumDiv.innerHTML = podiumHtml; podiumDiv.classList.remove('hidden'); }
     }
 
     async function avancarFase() {
@@ -626,7 +604,6 @@
         toast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados para a fase ${faseAtual+1}.`);
     }
 
-    // Gerenciamento de alunos (simplificado)
     function renderListaAlunosGerenciar() {
         if (!estadoAtual) return;
         const faseAtual = estadoAtual.fase;
@@ -643,7 +620,29 @@
                     <button class="btn-excluir-aluno btn-danger" data-id="${id}">🗑️ Excluir</button></div></div>`;
         }
         container.innerHTML = html;
-        // Listeners (omitidos por brevidade)
+        // Listeners dinâmicos (simplificados, mas funcionais)
+        document.querySelectorAll('.btn-editar-aluno').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = btn.getAttribute('data-id');
+                const novoNome = prompt("Novo nome:", btn.getAttribute('data-nome'));
+                if (novoNome) {
+                    const novaTurma = prompt("Nova turma:", btn.getAttribute('data-turma'));
+                    if (novaTurma) await db.ref(`copaV2/participantes/${faseAtual}/${id}`).update({ nome: novoNome, turma: novaTurma });
+                    renderListaAlunosGerenciar();
+                }
+            });
+        });
+        document.querySelectorAll('.btn-excluir-aluno').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = btn.getAttribute('data-id');
+                if (confirm("Excluir aluno?")) {
+                    await db.ref(`copaV2/participantes/${faseAtual}/${id}`).remove();
+                    await db.ref(`copaV2/resultados/${faseAtual}/${id}`).remove();
+                    await db.ref(`copaV2/resultados_temp/${faseAtual}/${id}`).remove();
+                    renderListaAlunosGerenciar();
+                }
+            });
+        });
     }
 
     function renderAluno() {
@@ -653,17 +652,13 @@
         const liberado = estadoAtual.status === 'em_andamento';
         document.getElementById('aluno-nome-display').innerText = alunoNome;
         document.getElementById('aluno-turma-display').innerText = alunoTurma;
-        document.getElementById('aluno-modalidade').innerText = MODALIDADE_CONFIG[estadoAtual.modalidade]?.nome || "Tabuada 2-5";
-        if (!liberado) {
-            document.getElementById('msg-status-aluno').innerText = "⏳ Aguardando liberação do professor...";
-            document.getElementById('btn-iniciar-partida').classList.add('hidden');
-        } else if (encerrado) {
-            document.getElementById('msg-status-aluno').innerText = "⏰ Tempo esgotado!";
-            document.getElementById('btn-iniciar-partida').classList.add('hidden');
-        } else {
-            document.getElementById('msg-status-aluno').innerText = "✅ Fase liberada! Clique em JOGAR.";
-            document.getElementById('btn-iniciar-partida').classList.remove('hidden');
-        }
+        const modalidadeNome = MODALIDADE_CONFIG[estadoAtual.modalidade]?.nome || "Tabuada 2-5";
+        document.getElementById('aluno-modalidade').innerText = modalidadeNome;
+        const msgDiv = document.getElementById('msg-status-aluno');
+        const btnJogar = document.getElementById('btn-iniciar-partida');
+        if (!liberado) { msgDiv.innerText = "⏳ Aguardando liberação do professor..."; btnJogar.classList.add('hidden'); }
+        else if (encerrado) { msgDiv.innerText = "⏰ Tempo esgotado!"; btnJogar.classList.add('hidden'); }
+        else { msgDiv.innerText = "✅ Fase liberada! Clique em JOGAR."; btnJogar.classList.remove('hidden'); }
         const minhasPartidas = estadoAtual.resultados?.[estadoAtual.fase]?.[alunoId] || [];
         const melhor = minhasPartidas.length ? Math.max(...minhasPartidas.map(p => p.pontos)) : 0;
         document.getElementById('aluno-melhor-score').innerText = melhor;
@@ -703,14 +698,11 @@
             renderRankingGeral();
             renderPodioFinal();
             renderListaAlunosGerenciar();
-            // Atualização automática já está rodando
         } else if (meuTipo === 'aluno') renderAluno();
-        else if (meuTipo === 'projecao') {
-            if (!intervaloTorcida) iniciarAtualizacaoTorcida();
-        }
+        else if (meuTipo === 'projecao') { if (!intervaloTorcida) iniciarAtualizacaoTorcida(); }
     }
 
-    // Lógica do jogo
+    // ---------- LÓGICA DO JOGO ----------
     function startTimer() {
         tempoRestantePergunta = 10;
         const barra = document.getElementById('progresso-tempo');
@@ -751,7 +743,6 @@
         document.getElementById('jogo-area').classList.add('hidden');
         document.getElementById('aguardando-aluno').classList.remove('hidden');
         const faseAtual = estadoAtual.fase;
-        // Remove dados temporários
         await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).remove();
         const ref = db.ref(`copaV2/resultados/${faseAtual}/${alunoId}`);
         const snap = await ref.once('value');
@@ -763,8 +754,9 @@
         renderAluno();
     }
 
-    // Inicialização
+    // ---------- INICIALIZAÇÃO ----------
     async function init() {
+        // Listener principal do Firebase
         db.ref('copaV2').on('value', snap => {
             estadoAtual = snap.val() || { fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: "2-5", classificados: {}, resultados: {}, participantes: {} };
             if (!estadoAtual.resultados) estadoAtual.resultados = {};
@@ -774,14 +766,19 @@
             atualizarUI();
             if (meuTipo === 'professor') {
                 const select = document.getElementById('select-fase-ranking');
-                let options = '';
-                for (let i = 1; i <= 5; i++) options += `<option value="${i}">Fase ${i}</option>`;
-                select.innerHTML = options;
-                document.getElementById('select-modalidade').value = estadoAtual.modalidade;
+                if (select) {
+                    let options = '';
+                    for (let i = 1; i <= 5; i++) options += `<option value="${i}">Fase ${i}</option>`;
+                    select.innerHTML = options;
+                }
+                const modalSelect = document.getElementById('select-modalidade');
+                if (modalSelect) modalSelect.value = estadoAtual.modalidade;
             }
         });
-        // Eventos
-        document.getElementById('btn-aplicar-modalidade').onclick = async () => {
+
+        // Eventos só após garantir que os elementos existem
+        const btnAplicar = document.getElementById('btn-aplicar-modalidade');
+        if (btnAplicar) btnAplicar.onclick = async () => {
             const novaModalidade = document.getElementById('select-modalidade').value;
             if (novaModalidade === estadoAtual.modalidade) { toast("Já está nesta modalidade."); return; }
             if (confirm(`⚠️ Mudar para ${MODALIDADE_CONFIG[novaModalidade].nome} irá REINICIAR toda a competição. Continuar?`)) {
@@ -791,7 +788,8 @@
                 setTimeout(() => location.reload(), 1500);
             }
         };
-        document.getElementById('btn-avancar-fase').onclick = async () => { if(confirm("Finalizar fase?")) await avancarFase(); };
+        const btnAvancar = document.getElementById('btn-avancar-fase');
+        if (btnAvancar) btnAvancar.onclick = async () => { if(confirm("Finalizar fase?")) await avancarFase(); };
         
         // Abas do professor
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -805,19 +803,21 @@
                 document.getElementById('tab-gerenciar').classList.add('hidden');
                 document.getElementById(`tab-${tab}`).classList.remove('hidden');
                 if (tab === 'ranking-geral') renderRankingGeral();
-                if (tab === 'ranking-fase') atualizarRankingProfessor(); // carrega uma vez
+                if (tab === 'ranking-fase') atualizarRankingProfessor();
                 if (tab === 'gerenciar') renderListaAlunosGerenciar();
             });
         });
         
-        document.getElementById('btn-toggle-auto-ranking').onclick = () => {
+        const btnToggle = document.getElementById('btn-toggle-auto-ranking');
+        if (btnToggle) btnToggle.onclick = () => {
             atualizacaoRankingAuto = !atualizacaoRankingAuto;
-            document.getElementById('btn-toggle-auto-ranking').innerText = atualizacaoRankingAuto ? "⏸️ Pausar Atualização" : "▶️ Retomar Atualização";
+            btnToggle.innerText = atualizacaoRankingAuto ? "⏸️ Pausar Atualização" : "▶️ Retomar Atualização";
             toast(atualizacaoRankingAuto ? "Atualização automática retomada" : "Atualização automática pausada");
             if (atualizacaoRankingAuto) atualizarRankingProfessor();
         };
+        const btnAtualizarRanking = document.getElementById('btn-atualizar-ranking');
+        if (btnAtualizarRanking) btnAtualizarRanking.onclick = () => atualizarRankingProfessor();
         
-        document.getElementById('btn-atualizar-ranking').onclick = () => { atualizarRankingProfessor(); };
         document.getElementById('btn-sincronizar-global').onclick = () => updateLastSyncTime();
         document.getElementById('btn-professor').onclick = () => { if (prompt("Senha:") === "040199") { meuTipo = 'professor'; document.querySelectorAll('.card').forEach(c => c.classList.add('hidden')); document.getElementById('painel-professor').classList.remove('hidden'); document.getElementById('online-stats').classList.remove('hidden'); atualizarUI(); iniciarAtualizacaoProfessor(); } };
         document.getElementById('btn-aluno').onclick = async () => {
@@ -865,8 +865,29 @@
         document.getElementById('btn-sair-aluno').onclick = () => location.reload();
         document.getElementById('btn-sync-torcida').onclick = () => { updateLastSyncTime(); atualizarTorcida(); };
         document.getElementById('btn-atualizar-lista-alunos').onclick = () => renderListaAlunosGerenciar();
+        
+        // Listener de online
+        db.ref('.info/connected').on('value', snap => {
+            if (snap.val() === true && alunoId && meuTipo === 'aluno') {
+                const ref = db.ref(`online/${alunoId}`);
+                ref.onDisconnect().remove();
+                ref.set({ nome: alunoNome, turma: alunoTurma });
+            }
+        });
+        db.ref('online').on('value', snap => {
+            const count = snap.numChildren();
+            if (document.getElementById('jogadores-online')) document.getElementById('jogadores-online').innerText = count;
+            if (document.getElementById('prof-online-count')) document.getElementById('prof-online-count').innerText = count;
+            if (meuTipo === 'professor') {
+                let html = '<ul style="list-style:none;">';
+                snap.forEach(c => html += `<li>🟢 ${c.val().nome} (${c.val().turma})</li>`);
+                document.getElementById('lista-participantes').innerHTML = html + '</ul>';
+            }
+        });
     }
-    init();
+
+    // Inicializar após carregamento completo do DOM
+    document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
