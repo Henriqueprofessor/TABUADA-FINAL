@@ -194,7 +194,6 @@
         .classificado-msg { margin-top: 12px; padding: 8px; border-radius: 16px; font-weight: bold; }
         .classificado-sim { background: rgba(39,174,96,0.2); color: #2ecc71; }
         .classificado-nao { background: rgba(231,76,60,0.2); color: #e74c3c; }
-        /* Estilos para o resumo da partida */
         .resumo-partida {
             background: #0a0f1e;
             border: 2px solid #ffd966;
@@ -202,10 +201,6 @@
             padding: 20px;
             margin: 20px 0;
             text-align: center;
-        }
-        .resumo-partida h3 {
-            color: #ffd966;
-            margin-bottom: 20px;
         }
         .stats-resumo {
             display: grid;
@@ -307,12 +302,11 @@
         <div id="ranking-parcial" class="status-box"><div class="loading">Carregando...</div></div>
     </div>
 
-    <!-- TELA DO ALUNO - JOGO E PROGRESSO -->
+    <!-- TELA DO ALUNO -->
     <div id="tela-aluno" class="card hidden">
         <h2 id="aluno-nome">Aluno</h2>
         <p>Turma: <span id="aluno-turma">-</span></p>
 
-        <!-- ÁREA DO JOGO -->
         <div id="jogo-area" class="hidden">
             <div class="status-box">
                 <p>Partida <span id="partida-atual-jogo">1</span>/4 • Dificuldade: <span id="dificuldade-jogo">-</span></p>
@@ -329,7 +323,6 @@
             </div>
         </div>
 
-        <!-- RESUMO DA PARTIDA (exibido após cada rodada) -->
         <div id="resumo-partida" class="hidden resumo-partida">
             <h3>📊 RESULTADO DA PARTIDA</h3>
             <div class="stats-resumo" id="stats-resumo"></div>
@@ -339,7 +332,6 @@
 
         <div id="aguardando" class="hidden" style="text-align:center; padding:40px;">⏳ Aguardando liberação da fase...</div>
 
-        <!-- BLOCO DE PROGRESSO -->
         <div class="progresso-aluno">
             <p><strong>📊 Fase <span id="aluno-fase">--</span> - Seu progresso</strong></p>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0;">
@@ -361,7 +353,7 @@
                 </div>
             </div>
 
-            <div id="area-projecao" class="status-box" style="margin-top:0; background: rgba(39, 174, 96, 0.1); border: 1px solid #27ae60; margin-bottom: 15px;">
+            <div id="area-projecao" class="status-box" style="margin-top:0; background: rgba(39,174,96,0.1); border: 1px solid #27ae60; margin-bottom: 15px;">
                 <p style="color:#2ecc71; font-weight:bold;">🔮 Projeção Final</p>
                 <div style="display: flex; justify-content: space-around; align-items: center;">
                     <div><p style="font-size:11px;">Pontos Estimados</p><p><strong id="projecao-pontos">--</strong></p></div>
@@ -399,7 +391,6 @@
 
 <script>
     console.log("Inicializando aplicação...");
-    // CONFIGURAÇÃO FIREBASE
     const firebaseConfig = {
         apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBz0-o2HVhEE",
         authDomain: "final-copa-tabuada.firebaseapp.com",
@@ -412,7 +403,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // VARIÁVEIS GLOBAIS
     let meuTipo = null;
     let alunoId = null, alunoNome = null, alunoTurma = null;
     let estadoRef = null;
@@ -421,7 +411,7 @@
     let perguntasPartida = [], perguntaIdx = 0, pontosPartida = 0, respostaCorreta = 0;
     let timerInterval = null, tempoRestante = 10, barraInterval = null;
     let temposPartida = [], maiorSequenciaPartida = 0, sequenciaAtualPartida = 0, acertosConsecutivos = 0;
-    let acertosPartida = 0; // NOVO: conta quantas respostas certas na partida
+    let acertosPartida = 0;
     let partidaSendoJogada = 1;
     let estadoPronto = false;
     const DIFICULDADES = ["Fácil (2-5)", "Médio (6-9)", "Difícil (0-10 peso 7-9)", "Equilibrado (0-10)"];
@@ -474,7 +464,6 @@
     async function getProgresso(id,fase) { return (await db.ref(`progressoAluno/${id}/fase${fase}`).once('value')).val() || 0; }
     async function setProgresso(id,fase,val) { await db.ref(`progressoAluno/${id}/fase${fase}`).set(val); }
 
-    // RANKING (funções mantidas para professor e torcida)
     async function gerarRanking(estado, fase) {
         let participantes = getParticipantesArray(estado);
         if(participantes.length===0) return [];
@@ -547,7 +536,7 @@
                 <td style="text-align:center">${r.posRodada}</td>
                 <td style="text-align:center">${r.partidas}</td>
                 <td style="text-align:center">${r.classificado}</td>
-             </tr>`;
+            </tr>`;
         }
         html += `</tbody></table>`;
         return html;
@@ -581,77 +570,63 @@
         document.getElementById('info-vagas').innerHTML = `<div class="info-vagas">🏆 ${numVagas} vagas</div>`;
     }
 
-    // JOGO
+    // ==================== FUNÇÃO GERAR BANCO CORRIGIDA ====================
     async function gerarBanco(dificuldade) {
         console.log("Gerando banco de perguntas para dificuldade:", dificuldade);
         let fatores = [];
-        if(dificuldade.includes("2-5")) fatores=[2,3,4,5];
-        else if(dificuldade.includes("6-9")) fatores=[6,7,8,9];
-        else if(dificuldade.includes("peso")) fatores=[0,1,2,3,4,5,6,7,8,9,10].filter(f=>f>=7||f<=3);
-        else fatores=[0,1,2,3,4,5,6,7,8,9,10];
-        
-        let perguntas=[];
-        let posicoes = [0,0,0,0,0,1,1,1,1,1,2,2,2,2,2,3,3,3,3,3];
+        if (dificuldade.includes("2-5")) fatores = [2, 3, 4, 5];
+        else if (dificuldade.includes("6-9")) fatores = [6, 7, 8, 9];
+        else if (dificuldade.includes("peso")) fatores = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(f => f >= 7 || f <= 3);
+        else fatores = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+        let perguntas = [];
+        let posicoes = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3];
         posicoes.sort(() => Math.random() - 0.5);
 
-        for(let i=0;i<20;i++) {
-            let a = fatores[Math.floor(Math.random()*fatores.length)];
-            let b = Math.floor(Math.random()*11);
+        for (let i = 0; i < 20; i++) {
+            let a = fatores[Math.floor(Math.random() * fatores.length)];
+            let b = Math.floor(Math.random() * 11);
             let resposta = a * b;
-            
-            let incorretas = [];
-            while(incorretas.length < 3) {
-                let r = resposta + (Math.floor(Math.random()*13)-6);
-                if(r>=0 && r !== resposta && !incorretas.includes(r)) incorretas.push(r);
-            }
-            
-            let posDesejada = posicoes[i];
-            if (posDesejada === 0) {
-                incorretas = incorretas.map(val => val <= resposta ? resposta + Math.floor(Math.random()*10) + 1 : val);
-            } else if (posDesejada === 1) {
-                incorretas = [
-                    resposta - (Math.floor(Math.random()*5) + 1),
-                    resposta + (Math.floor(Math.random()*5) + 1),
-                    resposta + (Math.floor(Math.random()*10) + 6)
-                ].map(v => v < 0 ? 0 : v);
-            } else if (posDesejada === 2) {
-                incorretas = [
-                    resposta - (Math.floor(Math.random()*10) + 6),
-                    resposta - (Math.floor(Math.random()*5) + 1),
-                    resposta + (Math.floor(Math.random()*5) + 1)
-                ].map(v => v < 0 ? 0 : v);
-            } else {
-                incorretas = incorretas.map(val => val >= resposta ? resposta - Math.floor(Math.random()*10) - 1 : val);
-            }
-            
-            let todas = [resposta, ...incorretas.map(v => v < 0 ? 0 : v)];
-            let set = new Set(todas);
-            while(set.size < 4) {
-                let r = resposta + (Math.floor(Math.random()*20)-10);
-                if(r>=0 && !set.has(r)) set.add(r);
-            }
-            todas = Array.from(set).sort((a,b) => a-b);
-            
-            let idxAtual = todas.indexOf(resposta);
-            if(idxAtual !== posDesejada) {
-                let temp = todas[posDesejada];
-                todas[posDesejada] = todas[idxAtual];
-                todas[idxAtual] = temp;
-                let correta = todas[posDesejada];
-                let menores = todas.filter((v, idx) => idx !== posDesejada && v < correta).sort((a,b) => a-b);
-                let maiores = todas.filter((v, idx) => idx !== posDesejada && v > correta).sort((a,b) => a-b);
-                let finalArr = [];
-                for(let k=0; k<4; k++) {
-                    if(k < posDesejada) finalArr.push(menores.shift());
-                    else if(k === posDesejada) finalArr.push(correta);
-                    else finalArr.push(maiores.shift());
+
+            let incorretas = new Set();
+            while (incorretas.size < 3) {
+                let offset = Math.floor(Math.random() * 13) - 6; // -6 .. +6
+                let candidato = resposta + offset;
+                if (candidato >= 0 && candidato !== resposta) {
+                    incorretas.add(candidato);
+                } else {
+                    let extra = resposta + Math.floor(Math.random() * 13) + 1;
+                    if (extra !== resposta) incorretas.add(extra);
                 }
-                todas = finalArr;
             }
-            perguntas.push({fA:a, fB:b, resposta:resposta, opcoesOrdenadas: todas});
+            let incorretasArray = Array.from(incorretas);
+            let opcoes = [resposta, ...incorretasArray];
+            opcoes.sort((x, y) => x - y);
+
+            let posAtual = opcoes.indexOf(resposta);
+            let posDesejada = posicoes[i];
+            if (posAtual !== posDesejada) {
+                let temp = opcoes[posDesejada];
+                opcoes[posDesejada] = resposta;
+                opcoes[posAtual] = temp;
+            }
+
+            if (opcoes.length !== 4 || opcoes.some(v => v === undefined || isNaN(v))) {
+                console.warn("Banco inválido, recriando pergunta", i);
+                i--;
+                continue;
+            }
+
+            perguntas.push({
+                fA: a,
+                fB: b,
+                resposta: resposta,
+                opcoesOrdenadas: opcoes
+            });
         }
         return perguntas;
     }
+    // ================================================================
 
     function dispararConfete() {
         let canvas = document.getElementById('confetti-canvas');
@@ -706,14 +681,6 @@
         document.getElementById('pergunta').innerHTML = `${p.fA} x ${p.fB} = ?`;
         respostaCorreta = p.resposta;
         let opcoes = p.opcoesOrdenadas;
-        if (!opcoes || !Array.isArray(opcoes)) {
-            opcoes = [respostaCorreta];
-            while(opcoes.length < 4) {
-                let r = respostaCorreta + (Math.floor(Math.random()*13)-6);
-                if(r>=0 && !opcoes.includes(r)) opcoes.push(r);
-            }
-            opcoes.sort((a, b) => a - b);
-        }
         const botoes = document.querySelectorAll('.opcao');
         if (botoes.length >= 4) {
             botoes[0].innerText = opcoes[0];
@@ -743,19 +710,15 @@
         let progresso = await getProgresso(alunoId, fase);
         if(partidaSendoJogada > progresso) await setProgresso(alunoId, fase, partidaSendoJogada);
         
-        // Exibir resumo da partida
         await exibirResumoPartida(partidaSendoJogada, pontosPartida, acertosPartida, tMedio);
-        
         if(meuTipo === 'aluno') await atualizarInterfaceAluno();
     }
 
-    // Função para exibir o resumo detalhado da partida recém-concluída
     async function exibirResumoPartida(partidaNum, pontos, acertos, tempoMedio) {
         const fase = estadoAtual.faseAtual;
         const chave = `r${partidaNum}p`;
         const partidaDados = estadoAtual.resultadosFase?.[fase]?.[chave] || {};
         
-        // Calcular ranking desta partida
         let rankingRodada = [];
         for(let id in partidaDados) {
             rankingRodada.push({ id, pontos: partidaDados[id].pontos });
@@ -763,8 +726,6 @@
         rankingRodada.sort((a,b) => b.pontos - a.pontos);
         const minhaPos = rankingRodada.findIndex(r => r.id === alunoId) + 1;
         const totalParticipantes = rankingRodada.length;
-        
-        // Calcular percentual
         const percentual = Math.round((minhaPos / totalParticipantes) * 100);
         let mensagemPosicao = "";
         if(minhaPos === 1) mensagemPosicao = "🥇 Você foi o MELHOR desta rodada! Parabéns!";
@@ -772,27 +733,13 @@
         else if(minhaPos <= Math.ceil(totalParticipantes * 0.5)) mensagemPosicao = "👍 Bom desempenho! Continue assim.";
         else mensagemPosicao = "💪 Continue treinando para melhorar sua posição.";
         
-        // Construir HTML do resumo
         const statsDiv = document.getElementById('stats-resumo');
         statsDiv.innerHTML = `
-            <div class="stat-card">
-                <div class="stat-label">🎯 Pontuação</div>
-                <div class="stat-value">${pontos.toLocaleString('pt-BR')}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">✅ Acertos</div>
-                <div class="stat-value">${acertos} / 20</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">⏱️ Tempo médio</div>
-                <div class="stat-value">${tempoMedio.toFixed(1)} s</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">🎖️ Posição na rodada</div>
-                <div class="stat-value">${minhaPos}º de ${totalParticipantes}</div>
-            </div>
+            <div class="stat-card"><div class="stat-label">🎯 Pontuação</div><div class="stat-value">${pontos.toLocaleString('pt-BR')}</div></div>
+            <div class="stat-card"><div class="stat-label">✅ Acertos</div><div class="stat-value">${acertos} / 20</div></div>
+            <div class="stat-card"><div class="stat-label">⏱️ Tempo médio</div><div class="stat-value">${tempoMedio.toFixed(1)} s</div></div>
+            <div class="stat-card"><div class="stat-label">🎖️ Posição na rodada</div><div class="stat-value">${minhaPos}º de ${totalParticipantes}</div></div>
         `;
-        
         const rankingDetalhe = document.getElementById('ranking-rodada-detalhe');
         rankingDetalhe.innerHTML = `
             <p><strong>Comparativo com os demais:</strong></p>
@@ -808,8 +755,6 @@
                 }).join('')}
             </ol>
         `;
-        
-        // Esconder área de jogo e mostrar resumo
         document.getElementById('jogo-area').classList.add('hidden');
         document.getElementById('resumo-partida').classList.remove('hidden');
         document.getElementById('aguardando').classList.add('hidden');
@@ -833,7 +778,7 @@
             sequenciaAtualPartida++;
             if(sequenciaAtualPartida > maiorSequenciaPartida) maiorSequenciaPartida = sequenciaAtualPartida;
             acertosConsecutivos++;
-            acertosPartida++; // contabiliza acerto
+            acertosPartida++;
             if(acertosConsecutivos % 3 === 0) dispararConfete();
         } else {
             sequenciaAtualPartida = 0;
@@ -851,7 +796,6 @@
         if(alunoJaJogouPartida(estadoAtual, alunoId, fase, partidaNum)) { mostrarToast("Você já jogou esta partida!"); return; }
         let dificuldade = DIFICULDADES[partidaNum-1];
         let bancoKey = `f${fase}p${partidaNum}`;
-        console.log("Banco key:", bancoKey);
         if(!estadoAtual.bancosFase || !estadoAtual.bancosFase[bancoKey]) {
             console.log("Gerando novo banco de perguntas...");
             let perguntas = await gerarBanco(dificuldade);
@@ -861,7 +805,7 @@
         }
         perguntasPartida = estadoAtual.bancosFase[bancoKey];
         perguntaIdx = 0; pontosPartida = 0; temposPartida = []; maiorSequenciaPartida = 0; sequenciaAtualPartida = 0; acertosConsecutivos = 0;
-        acertosPartida = 0; // zera acertos da partida
+        acertosPartida = 0;
         jogoAtivo = true; partidaSendoJogada = partidaNum;
         document.getElementById('jogo-area').classList.remove('hidden');
         document.getElementById('resumo-partida').classList.add('hidden');
@@ -971,7 +915,6 @@
         else document.getElementById('aguardando').classList.add('hidden');
     }
 
-    // Funções do professor (mantidas iguais)
     async function resetarFaseProf() {
         if(!confirm("Resetar fase atual? Todos os dados serão perdidos.")) return;
         let fase = estadoAtual.faseAtual;
@@ -1073,7 +1016,6 @@
         }
     }
 
-    // EVENTOS
     document.addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
         if(!btn) return;
@@ -1168,7 +1110,6 @@
             if(prog < 4) iniciarPartidaEspecifica(prog + 1);
             else mostrarToast("Você já completou todas as partidas desta fase.");
         }
-        // Botão fechar resumo da partida
         if(btn.id === 'btn-fechar-resumo') {
             document.getElementById('resumo-partida').classList.add('hidden');
             let progresso = await getProgresso(alunoId, estadoAtual.faseAtual);
@@ -1179,7 +1120,6 @@
             }
             await atualizarInterfaceAluno();
         }
-        // Editar/excluir aluno/turma
         if(btn.classList.contains('btn-editar-aluno')) {
             let id = btn.dataset.id, novo = prompt("Novo nome:");
             if(novo) {
