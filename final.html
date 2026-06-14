@@ -374,7 +374,7 @@
         <div id="podium-aluno-container" class="status-box hidden"></div>
     </div>
 
-    <!-- TELA DE TORCIDA (com seletor Individual/Equipes) -->
+    <!-- TELA DE TORCIDA -->
     <div id="tela-torcida" class="card hidden">
         <div class="header-actions">
             <h2>📺 RANKING EM TEMPO REAL <span class="live-badge">AO VIVO</span></h2>
@@ -486,7 +486,7 @@
         });
     }
 
-    // ---------- RANKING POR TURMA (média das melhores pontuações) ----------
+    // ---------- RANKING POR TURMA (MÉDIA DAS MELHORES PONTUAÇÕES) - CORRIGIDO ----------
     async function renderRankingTurmas(containerId, exibirNaTorcida = false) {
         if (!estadoAtual) return;
         let turmasMap = new Map();
@@ -555,7 +555,7 @@
             document.getElementById(containerId).innerHTML = '<p>📭 Nenhum dado registrado ainda.</p>';
             return;
         }
-        let html = `<table class="ranking-table"><thead><td>
+        let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th><th>Turma</th><th>Média da Turma</th><th>Participantes</th><th>Maior Pontuação (Aluno)</th>
         </tr></thead><tbody>`;
         ranking.forEach((r, idx) => {
@@ -563,11 +563,11 @@
                 <td>${idx+1}º</td>
                 <td>${escapeHtml(r.turma)}</td>
                 <td>${r.media.toFixed(1)} pts</td>
-                <td>${r.totalAlunos}学子
+                <td>${r.totalAlunos}</td>
                 <td>${escapeHtml(r.melhorNome)} (${r.melhorPontos} pts)</td>
             </tr>`;
         });
-        html += '</tbody><table>';
+        html += '</tbody></table>';
         document.getElementById(containerId).innerHTML = html;
     }
 
@@ -740,7 +740,6 @@
         intervaloRankingProfessor = setInterval(() => { atualizarRankingProfessor(); }, 4000);
     }
     
-    // Funções da torcida com dois intervalos diferentes
     async function atualizarTorcidaIndividual() {
         if (meuTipo === 'projecao' && modoTorcida === 'individual' && estadoAtual) {
             await renderRankingDinamico(estadoAtual.fase, 'ranking-torcida-container', true);
@@ -752,7 +751,6 @@
         }
     }
     function iniciarAtualizacaoTorcida() {
-        // Intervalo para individual (4 segundos)
         if (intervaloTorcidaIndividual) clearInterval(intervaloTorcidaIndividual);
         intervaloTorcidaIndividual = setInterval(() => {
             if (meuTipo === 'projecao' && modoTorcida === 'individual' && 
@@ -761,7 +759,6 @@
             }
         }, 4000);
         
-        // Intervalo para equipes (60 segundos)
         if (intervaloTorcidaEquipes) clearInterval(intervaloTorcidaEquipes);
         intervaloTorcidaEquipes = setInterval(() => {
             if (meuTipo === 'projecao' && modoTorcida === 'equipes' && 
@@ -770,7 +767,6 @@
             }
         }, 60000);
         
-        // Carrega imediatamente o modo atual
         if (modoTorcida === 'individual') atualizarTorcidaIndividual();
         else atualizarTorcidaEquipes();
     }
@@ -781,7 +777,7 @@
         intervaloTorcidaEquipes = null;
     }
 
-    // ---------- RELATÓRIOS (mantido igual) ----------
+    // ---------- RELATÓRIOS ----------
     async function gerarRelatorio() {
         if (!estadoAtual) return;
         const container = document.getElementById('relatorio-container');
@@ -999,7 +995,7 @@
                 <td>${escapeHtml(r.turma)}</td>
             </tr>`;
         });
-        document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
+        document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></tr>';
     }
 
     function renderPodioFinal(containerId) {
@@ -1373,7 +1369,6 @@
                 modoTorcida = 'individual';
                 btnIndiv.classList.add('ativo');
                 btnEquipes.classList.remove('ativo');
-                // Forçar atualização imediata
                 atualizarTorcidaIndividual();
             };
             btnEquipes.onclick = () => {
