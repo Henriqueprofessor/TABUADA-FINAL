@@ -214,6 +214,19 @@
             padding: 15px;
             margin-bottom: 15px;
         }
+        .modo-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .btn-modo {
+            background: #1f3a4b;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        .btn-modo.ativo {
+            background: #e67e22;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -256,6 +269,7 @@
             <div class="tab-btn active" data-tab="controle">🎮 Controle</div>
             <div class="tab-btn" data-tab="ranking-geral">🏆 Ranking Geral</div>
             <div class="tab-btn" data-tab="ranking-fase">📊 Ranking por Fase <span class="live-badge" id="live-badge-prof">LIVE</span></div>
+            <div class="tab-btn" data-tab="ranking-turmas">🏆 Ranking por Turma</div>
             <div class="tab-btn" data-tab="relatorios">📈 Relatórios</div>
             <div class="tab-btn" data-tab="gerenciar">✏️ Gerenciar Alunos</div>
         </div>
@@ -305,6 +319,13 @@
             </div>
             <div id="ranking-parcial" class="status-box">Aguardando dados...</div>
         </div>
+        <div id="tab-ranking-turmas" class="tab-content hidden">
+            <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
+            <div style="margin-bottom: 15px;">
+                <button id="btn-atualizar-ranking-turmas" class="btn-secondary">🔄 Atualizar</button>
+            </div>
+            <div id="ranking-turmas-container" class="status-box">Carregando...</div>
+        </div>
         <div id="tab-relatorios" class="tab-content hidden">
             <h3>📈 Relatório de Desempenho da Competição</h3>
             <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">
@@ -353,7 +374,7 @@
         <div id="podium-aluno-container" class="status-box hidden"></div>
     </div>
 
-    <!-- TELA DE TORCIDA -->
+    <!-- TELA DE TORCIDA (com seletor Individual/Equipes) -->
     <div id="tela-torcida" class="card hidden">
         <div class="header-actions">
             <h2>📺 RANKING EM TEMPO REAL <span class="live-badge">AO VIVO</span></h2>
@@ -362,9 +383,13 @@
                 <button id="btn-sair-torcida" class="btn-danger">🏠 Voltar</button>
             </div>
         </div>
+        <div class="modo-buttons">
+            <button id="btn-modo-individual" class="btn-modo ativo">👤 Ranking Individual</button>
+            <button id="btn-modo-equipes" class="btn-modo">👥 Ranking por Equipes</button>
+        </div>
         <div style="margin: 15px 0;">
             <p>Modalidade: <strong id="torcida-modalidade">--</strong> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;">--:--</strong></p>
-            <p><small>Atualização automática a cada 4 segundos | Última atualização: <span id="torcida-last-update">--</span></small></p>
+            <p><small>Individual: atualização a cada 4s | Equipes: atualização a cada 60s | Última atualização: <span id="torcida-last-update">--</span></small></p>
         </div>
         <div id="ranking-torcida-container" class="status-box">Carregando ranking ao vivo...</div>
         <div id="podium-torcida-container" class="status-box hidden"></div>
@@ -391,10 +416,12 @@
     let estadoAtual = null, jogoAtivo = false;
     let perguntas = [], perguntaIdx = 0, pontosPartida = 0, acertosPartida = 0, tempoTotalPartida = 0;
     let timerPergunta = null, tempoRestantePergunta = 10, timerFase = null;
-    let intervaloTorcida = null;
+    let intervaloTorcidaIndividual = null;
+    let intervaloTorcidaEquipes = null;
     let intervaloRankingProfessor = null;
     let atualizacaoRankingAuto = true;
     let faseSelecionadaProf = 1;
+    let modoTorcida = 'individual';
 
     const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
     const MODALIDADE_CONFIG = {
@@ -459,7 +486,92 @@
         });
     }
 
-    // ---------- RANKING DINÂMICO CORRIGIDO ----------
+    // ---------- RANKING POR TURMA (média das melhores pontuações) ----------
+    async function renderRankingTurmas(containerId, exibirNaTorcida = false) {
+        if (!estadoAtual) return;
+        let turmasMap = new Map();
+        for (let fase = 1; fase <= 5; fase++) {
+            const resultados = estadoAtual.resultados?.[fase] || {};
+            const participantes = estadoAtual.participantes?.[fase] || {};
+            for (let id in resultados) {
+                const partidas = resultados[id];
+                if (!partidas || partidas.length === 0) continue;
+                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                let turma = participantes[id]?.turma;
+                if (!turma && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) {
+                    turma = estadoAtual.participantes[fase-1][id].turma;
+                }
+                if (!turma) turma = "?";
+                let nome = participantes[id]?.nome;
+                if (!nome && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) {
+                    nome = estadoAtual.participantes[fase-1][id].nome;
+                }
+                if (!nome) nome = "Anônimo";
+                
+                if (!turmasMap.has(turma)) {
+                    turmasMap.set(turma, {
+                        alunos: new Map(),
+                        totalAlunos: 0,
+                        somaPontos: 0,
+                        melhorAlunoNome: "",
+                        melhorAlunoPontos: 0
+                    });
+                }
+                let turmaData = turmasMap.get(turma);
+                if (!turmaData.alunos.has(id) || melhor.pontos > turmaData.alunos.get(id).pontos) {
+                    turmaData.alunos.set(id, { pontos: melhor.pontos, nome: nome });
+                }
+            }
+        }
+        for (let [turma, data] of turmasMap.entries()) {
+            let soma = 0;
+            let melhorPontos = 0;
+            let melhorNome = "";
+            for (let [id, info] of data.alunos.entries()) {
+                soma += info.pontos;
+                if (info.pontos > melhorPontos) {
+                    melhorPontos = info.pontos;
+                    melhorNome = info.nome;
+                }
+            }
+            data.somaPontos = soma;
+            data.totalAlunos = data.alunos.size;
+            data.melhorAlunoPontos = melhorPontos;
+            data.melhorAlunoNome = melhorNome;
+        }
+        let ranking = [];
+        for (let [turma, data] of turmasMap.entries()) {
+            let media = data.totalAlunos > 0 ? (data.somaPontos / data.totalAlunos) : 0;
+            ranking.push({
+                turma: turma,
+                media: media,
+                totalAlunos: data.totalAlunos,
+                melhorNome: data.melhorAlunoNome,
+                melhorPontos: data.melhorAlunoPontos
+            });
+        }
+        ranking.sort((a,b) => b.media - a.media);
+        if (ranking.length === 0) {
+            document.getElementById(containerId).innerHTML = '<p>📭 Nenhum dado registrado ainda.</p>';
+            return;
+        }
+        let html = `<table class="ranking-table"><thead><td>
+            <th>Pos</th><th>Turma</th><th>Média da Turma</th><th>Participantes</th><th>Maior Pontuação (Aluno)</th>
+        </tr></thead><tbody>`;
+        ranking.forEach((r, idx) => {
+            html += `<tr>
+                <td>${idx+1}º</td>
+                <td>${escapeHtml(r.turma)}</td>
+                <td>${r.media.toFixed(1)} pts</td>
+                <td>${r.totalAlunos}学子
+                <td>${escapeHtml(r.melhorNome)} (${r.melhorPontos} pts)</td>
+            </tr>`;
+        });
+        html += '</tbody><table>';
+        document.getElementById(containerId).innerHTML = html;
+    }
+
+    // ---------- RANKING DINÂMICO (individual) ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -527,7 +639,6 @@
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirStatusClassificacao;
 
-        // Cabeçalho fixo (ordem correta)
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th><th>Nome</th><th>Pontuação</th>
             <th>Proj. Final</th><th>Δ Recorde</th><th>Delta Líder</th>
@@ -583,7 +694,6 @@
                 colunaStatus = `<td>${j.isTemp ? "🟢 Em jogo" : "✅ Finalizado"}</td>`;
             }
             
-            // Montagem de cada linha com células bem formatadas
             html += `<tr>
                 <td>${idx+1}º</td>
                 <td>${escapeHtml(j.nome)}</td>
@@ -629,29 +739,56 @@
         if (intervaloRankingProfessor) clearInterval(intervaloRankingProfessor);
         intervaloRankingProfessor = setInterval(() => { atualizarRankingProfessor(); }, 4000);
     }
-    async function atualizarTorcida() {
-        if (meuTipo === 'projecao' && estadoAtual) {
+    
+    // Funções da torcida com dois intervalos diferentes
+    async function atualizarTorcidaIndividual() {
+        if (meuTipo === 'projecao' && modoTorcida === 'individual' && estadoAtual) {
             await renderRankingDinamico(estadoAtual.fase, 'ranking-torcida-container', true);
         }
     }
+    async function atualizarTorcidaEquipes() {
+        if (meuTipo === 'projecao' && modoTorcida === 'equipes' && estadoAtual) {
+            await renderRankingTurmas('ranking-torcida-container', true);
+        }
+    }
     function iniciarAtualizacaoTorcida() {
-        if (intervaloTorcida) clearInterval(intervaloTorcida);
-        atualizarTorcida();
-        intervaloTorcida = setInterval(() => {
-            if (meuTipo === 'projecao' && document.getElementById('tela-torcida') && !document.getElementById('tela-torcida').classList.contains('hidden')) atualizarTorcida();
-            else if (intervaloTorcida) { clearInterval(intervaloTorcida); intervaloTorcida = null; }
+        // Intervalo para individual (4 segundos)
+        if (intervaloTorcidaIndividual) clearInterval(intervaloTorcidaIndividual);
+        intervaloTorcidaIndividual = setInterval(() => {
+            if (meuTipo === 'projecao' && modoTorcida === 'individual' && 
+                document.getElementById('tela-torcida') && !document.getElementById('tela-torcida').classList.contains('hidden')) {
+                atualizarTorcidaIndividual();
+            }
         }, 4000);
+        
+        // Intervalo para equipes (60 segundos)
+        if (intervaloTorcidaEquipes) clearInterval(intervaloTorcidaEquipes);
+        intervaloTorcidaEquipes = setInterval(() => {
+            if (meuTipo === 'projecao' && modoTorcida === 'equipes' && 
+                document.getElementById('tela-torcida') && !document.getElementById('tela-torcida').classList.contains('hidden')) {
+                atualizarTorcidaEquipes();
+            }
+        }, 60000);
+        
+        // Carrega imediatamente o modo atual
+        if (modoTorcida === 'individual') atualizarTorcidaIndividual();
+        else atualizarTorcidaEquipes();
+    }
+    function pararAtualizacaoTorcida() {
+        if (intervaloTorcidaIndividual) clearInterval(intervaloTorcidaIndividual);
+        if (intervaloTorcidaEquipes) clearInterval(intervaloTorcidaEquipes);
+        intervaloTorcidaIndividual = null;
+        intervaloTorcidaEquipes = null;
     }
 
-    // ---------- RELATÓRIOS ----------
+    // ---------- RELATÓRIOS (mantido igual) ----------
     async function gerarRelatorio() {
         if (!estadoAtual) return;
         const container = document.getElementById('relatorio-container');
         container.innerHTML = '<p>⏳ Gerando relatório... Aguarde.</p>';
         
         let todosAlunos = new Map();
-        let fases = [1,2,3,4,5];
-        for (let fase of fases) {
+        for (let fase = 1; fase <= 5; fase++) {
             const resultados = estadoAtual.resultados?.[fase] || {};
             const participantes = estadoAtual.participantes?.[fase] || {};
             const classificados = estadoAtual.classificados?.[fase] || [];
@@ -720,7 +857,7 @@
             <th>Pos</th><th>Nome</th><th>Turma</th><th>Melhor Pontuação</th>
             <th>Fase Máxima</th><th>Partidas</th><th>Velocidade Média (s/acerto)</th>
             <th>Finalista?</th>
-        </td></thead><tbody>`;
+        </tr></thead><tbody>`;
         ranking.forEach((aluno, idx) => {
             let velocidade = (aluno.melhorAcertos > 0) ? (aluno.melhorTempo / aluno.melhorAcertos).toFixed(1) + " s" : "-";
             let finalista = aluno.classificouFinal ? "✅ Sim" : "❌ Não";
@@ -803,7 +940,7 @@
         toast("✅ CSV exportado com sucesso!");
     }
 
-    // ---------- RANKING GERAL (estático) ----------
+    // ---------- RANKING GERAL ----------
     function renderRankingGeral() {
         if (!estadoAtual) return;
         const todasFases = estadoAtual.resultados || {};
@@ -1107,11 +1244,14 @@
             if (estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) renderPodioFinal('podium-container');
             else { const pd = document.getElementById('podium-container'); if(pd) pd.classList.add('hidden'); }
             renderListaAlunosGerenciar();
+            if (document.getElementById('tab-ranking-turmas') && !document.getElementById('tab-ranking-turmas').classList.contains('hidden')) {
+                renderRankingTurmas('ranking-turmas-container', false);
+            }
         } else if (meuTipo === 'aluno') renderAluno();
         else if (meuTipo === 'projecao') {
             if (estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) renderPodioFinal('podium-torcida-container');
             else { const pt = document.getElementById('podium-torcida-container'); if(pt) pt.classList.add('hidden'); }
-            if (!intervaloTorcida) iniciarAtualizacaoTorcida();
+            if (!intervaloTorcidaIndividual && !intervaloTorcidaEquipes) iniciarAtualizacaoTorcida();
         }
     }
 
@@ -1200,7 +1340,51 @@
             }
         });
 
-        // Eventos
+        // Eventos das abas
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const tab = btn.getAttribute('data-tab');
+                document.getElementById('tab-controle').classList.add('hidden');
+                document.getElementById('tab-ranking-geral').classList.add('hidden');
+                document.getElementById('tab-ranking-fase').classList.add('hidden');
+                document.getElementById('tab-ranking-turmas').classList.add('hidden');
+                document.getElementById('tab-relatorios').classList.add('hidden');
+                document.getElementById('tab-gerenciar').classList.add('hidden');
+                document.getElementById(`tab-${tab}`).classList.remove('hidden');
+                if (tab === 'ranking-geral') renderRankingGeral();
+                if (tab === 'ranking-fase') atualizarRankingProfessor();
+                if (tab === 'ranking-turmas') renderRankingTurmas('ranking-turmas-container', false);
+                if (tab === 'relatorios') gerarRelatorio();
+                if (tab === 'gerenciar') renderListaAlunosGerenciar();
+            });
+        });
+
+        // Botão atualizar ranking turmas
+        const btnAtualizarTurmas = document.getElementById('btn-atualizar-ranking-turmas');
+        if (btnAtualizarTurmas) btnAtualizarTurmas.onclick = () => renderRankingTurmas('ranking-turmas-container', false);
+        
+        // Botões da torcida para alternar modo
+        const btnIndiv = document.getElementById('btn-modo-individual');
+        const btnEquipes = document.getElementById('btn-modo-equipes');
+        if (btnIndiv && btnEquipes) {
+            btnIndiv.onclick = () => {
+                modoTorcida = 'individual';
+                btnIndiv.classList.add('ativo');
+                btnEquipes.classList.remove('ativo');
+                // Forçar atualização imediata
+                atualizarTorcidaIndividual();
+            };
+            btnEquipes.onclick = () => {
+                modoTorcida = 'equipes';
+                btnEquipes.classList.add('ativo');
+                btnIndiv.classList.remove('ativo');
+                atualizarTorcidaEquipes();
+            };
+        }
+
+        // Demais eventos
         const btnAplicar = document.getElementById('btn-aplicar-modalidade');
         if (btnAplicar) btnAplicar.onclick = async () => {
             const novaModalidade = document.getElementById('select-modalidade').value;
@@ -1216,29 +1400,6 @@
         if (btnAvancar) btnAvancar.onclick = async () => { if(confirm("Finalizar fase?")) await avancarFase(); };
         const btnResetFase = document.getElementById('btn-reset-fase');
         if (btnResetFase) btnResetFase.onclick = async () => { await resetarFase(); };
-        
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                const tab = btn.getAttribute('data-tab');
-                document.getElementById('tab-controle').classList.add('hidden');
-                document.getElementById('tab-ranking-geral').classList.add('hidden');
-                document.getElementById('tab-ranking-fase').classList.add('hidden');
-                document.getElementById('tab-relatorios').classList.add('hidden');
-                document.getElementById('tab-gerenciar').classList.add('hidden');
-                document.getElementById(`tab-${tab}`).classList.remove('hidden');
-                if (tab === 'ranking-geral') renderRankingGeral();
-                if (tab === 'ranking-fase') atualizarRankingProfessor();
-                if (tab === 'relatorios') gerarRelatorio();
-                if (tab === 'gerenciar') renderListaAlunosGerenciar();
-            });
-        });
-        
-        const btnGerarRelatorio = document.getElementById('btn-gerar-relatorio');
-        if (btnGerarRelatorio) btnGerarRelatorio.onclick = () => gerarRelatorio();
-        const btnExportarCSV = document.getElementById('btn-exportar-csv');
-        if (btnExportarCSV) btnExportarCSV.onclick = () => exportarCSV();
         const btnToggle = document.getElementById('btn-toggle-auto-ranking');
         if (btnToggle) btnToggle.onclick = () => {
             atualizacaoRankingAuto = !atualizacaoRankingAuto;
@@ -1295,7 +1456,7 @@
             iniciarAtualizacaoTorcida();
         };
         const btnSairTorcida = document.getElementById('btn-sair-torcida');
-        if (btnSairTorcida) btnSairTorcida.onclick = () => { if(intervaloTorcida) clearInterval(intervaloTorcida); intervaloTorcida = null; location.reload(); };
+        if (btnSairTorcida) btnSairTorcida.onclick = () => { pararAtualizacaoTorcida(); location.reload(); };
         const btnSyncProf = document.getElementById('btn-sync-prof');
         if (btnSyncProf) btnSyncProf.onclick = () => updateLastSyncTime();
         const btnVoltarMenuProf = document.getElementById('btn-voltar-menu-prof');
@@ -1309,9 +1470,13 @@
         const btnSairAluno = document.getElementById('btn-sair-aluno');
         if (btnSairAluno) btnSairAluno.onclick = () => location.reload();
         const btnSyncTorcida = document.getElementById('btn-sync-torcida');
-        if (btnSyncTorcida) btnSyncTorcida.onclick = () => { updateLastSyncTime(); atualizarTorcida(); };
+        if (btnSyncTorcida) btnSyncTorcida.onclick = () => { updateLastSyncTime(); if (modoTorcida === 'individual') atualizarTorcidaIndividual(); else atualizarTorcidaEquipes(); };
         const btnAtualizarLista = document.getElementById('btn-atualizar-lista-alunos');
         if (btnAtualizarLista) btnAtualizarLista.onclick = () => renderListaAlunosGerenciar();
+        const btnGerarRelatorio = document.getElementById('btn-gerar-relatorio');
+        if (btnGerarRelatorio) btnGerarRelatorio.onclick = () => gerarRelatorio();
+        const btnExportarCSV = document.getElementById('btn-exportar-csv');
+        if (btnExportarCSV) btnExportarCSV.onclick = () => exportarCSV();
 
         // online tracking
         db.ref('.info/connected').on('value', snap => {
