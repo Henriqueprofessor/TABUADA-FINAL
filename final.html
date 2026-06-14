@@ -85,7 +85,6 @@
         }
         .classificado-sim { color: #2ecc71; font-weight: bold; }
         .classificado-nao { color: #e74c3c; font-weight: bold; }
-        /* Estilos para Δ Recorde */
         .delta-positivo { color: #2ecc71; font-weight: bold; }
         .delta-negativo { color: #e74c3c; font-weight: bold; }
         .delta-igual { color: #f39c12; }
@@ -233,6 +232,18 @@
         .btn-modo.ativo {
             background: #e67e22;
         }
+        .fase-info {
+            font-size: 14px;
+            background: #1f3a4b;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-left: 15px;
+        }
+        .header-actions .fase-info {
+            margin-left: auto;
+            margin-right: 15px;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -248,7 +259,7 @@
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
             <div>
-                <p>Fase atual: <strong id="fase-atual-titulo">--</strong></p>
+                <p>Fase atual: <strong id="fase-atual-titulo">--</strong> <span id="fase-progresso" class="fase-info"></span></p>
                 <div id="timer-fase" class="timer-display">00:00</div>
                 <div style="font-size: 12px; margin-top: 5px;">Última Sinc: <span id="last-sync-time">--</span></div>
                 <button id="btn-sincronizar-global" class="btn-small" style="margin-top: 5px;">🔄 Sincronizar</button>
@@ -265,7 +276,7 @@
     <!-- PAINEL DO PROFESSOR -->
     <div id="painel-professor" class="card hidden">
         <div class="header-actions">
-            <h2>🔧 Painel do Professor</h2>
+            <h2>🔧 Painel do Professor <span id="prof-fase-info" class="fase-info"></span></h2>
             <div>
                 <button id="btn-sync-prof" class="btn-warning">🔄 Sincronizar</button>
                 <button id="btn-voltar-menu-prof" class="btn-danger">🏠 Voltar ao Menu</button>
@@ -355,7 +366,7 @@
             <h2 id="aluno-nome-display">Aluno</h2>
             <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
         </div>
-        <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong></p>
+        <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong> <span id="aluno-fase-info" class="fase-info"></span></p>
         <div id="jogo-area" class="hidden">
             <div class="status-box">
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
@@ -394,7 +405,7 @@
             <button id="btn-modo-equipes" class="btn-modo">👥 Ranking por Equipes</button>
         </div>
         <div style="margin: 15px 0;">
-            <p>Modalidade: <strong id="torcida-modalidade">--</strong> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;">--:--</strong></p>
+            <p>Modalidade: <strong id="torcida-modalidade">--</strong> | <span id="torcida-fase-info" class="fase-info"></span> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;">--:--</strong></p>
             <p><small>Individual: atualização a cada 4s | Equipes: atualização a cada 60s | Última atualização: <span id="torcida-last-update">--</span></small></p>
         </div>
         <div id="ranking-torcida-container" class="status-box">Carregando ranking ao vivo...</div>
@@ -428,6 +439,7 @@
     let atualizacaoRankingAuto = true;
     let faseSelecionadaProf = 1;
     let modoTorcida = 'individual';
+    const TOTAL_FASES = 5;
 
     const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
     const MODALIDADE_CONFIG = {
@@ -492,11 +504,31 @@
         });
     }
 
+    // ---------- FUNÇÃO PARA ATUALIZAR EXIBIÇÃO DA FASE ----------
+    function atualizarExibicaoFase() {
+        if (!estadoAtual) return;
+        const faseAtual = estadoAtual.fase;
+        const texto = `${faseAtual}/${TOTAL_FASES}`;
+        // Atualizar todos os elementos que mostram a fase
+        const elementos = [
+            document.getElementById('fase-progresso'),
+            document.getElementById('prof-fase-info'),
+            document.getElementById('aluno-fase-info'),
+            document.getElementById('torcida-fase-info')
+        ];
+        elementos.forEach(el => {
+            if (el) el.innerText = texto;
+        });
+        // Também atualizar o título principal
+        const tituloFase = document.getElementById('fase-atual-titulo');
+        if (tituloFase) tituloFase.innerText = faseAtual;
+    }
+
     // ---------- RANKING POR TURMA (MÉDIA DAS MELHORES PONTUAÇÕES) ----------
     async function renderRankingTurmas(containerId, exibirNaTorcida = false) {
         if (!estadoAtual) return;
         let turmasMap = new Map();
-        for (let fase = 1; fase <= 5; fase++) {
+        for (let fase = 1; fase <= TOTAL_FASES; fase++) {
             const resultados = estadoAtual.resultados?.[fase] || {};
             const participantes = estadoAtual.participantes?.[fase] || {};
             for (let id in resultados) {
@@ -573,11 +605,11 @@
                 <td>${escapeHtml(r.melhorNome)} (${r.melhorPontos} pts)</td>
             </tr>`;
         });
-        html += '</tbody></table>';
+        html += '</tbody></tr>';
         document.getElementById(containerId).innerHTML = html;
     }
 
-    // ---------- RANKING DINÂMICO (individual) COM Δ RECORDE ESTILIZADO ----------
+    // ---------- RANKING DINÂMICO (individual) ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -668,8 +700,6 @@
             const projecaoFormat = projecao > 0 ? Math.round(projecao) : "—";
             
             const melhorHistorico = melhoresHistoricos.get(j.id) || 0;
-            
-            // ========== Δ RECORDE ESTILIZADO ==========
             let deltaRec = "";
             let deltaClass = "delta-semdados";
             if (projecao > 0 && melhorHistorico > 0) {
@@ -692,7 +722,6 @@
                 deltaRec = "—";
                 deltaClass = "delta-semdados";
             }
-            // =======================================
             
             let ameaca = "";
             if (projecao > maxPontos && j.pontos !== maxPontos) {
@@ -726,7 +755,7 @@
                 <td>${escapeHtml(j.turma)}</td>
             </tr>`;
         }
-        html += '</tbody></table>';
+        html += '</tbody><td>';
         document.getElementById(containerId).innerHTML = html;
         if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
             document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
@@ -798,15 +827,14 @@
         intervaloTorcidaEquipes = null;
     }
 
-    // ---------- RELATÓRIOS, RANKING GERAL, E DEMAIS FUNÇÕES ----------
-    // (mantidas exatamente iguais ao original, por questões de espaço)
+    // ---------- RELATÓRIOS ----------
     async function gerarRelatorio() {
         if (!estadoAtual) return;
         const container = document.getElementById('relatorio-container');
         container.innerHTML = '<p>⏳ Gerando relatório... Aguarde.</p>';
         
         let todosAlunos = new Map();
-        for (let fase = 1; fase <= 5; fase++) {
+        for (let fase = 1; fase <= TOTAL_FASES; fase++) {
             const resultados = estadoAtual.resultados?.[fase] || {};
             const participantes = estadoAtual.participantes?.[fase] || {};
             const classificados = estadoAtual.classificados?.[fase] || [];
@@ -888,7 +916,7 @@
                 <td>${aluno.partidas}</td>
                 <td>${velocidade}</td>
                 <td>${finalista}</td>
-            </tr>`;
+            <tr>`;
         });
         html += '</tbody></table>';
         container.innerHTML = html;
@@ -900,7 +928,7 @@
         linhas.push(["Nome", "Turma", "Melhor Pontuação", "Fase Máxima", "Partidas", "Velocidade Média (s/acerto)", "Finalista?"]);
         
         let todosAlunos = new Map();
-        for (let fase = 1; fase <= 5; fase++) {
+        for (let fase = 1; fase <= TOTAL_FASES; fase++) {
             const resultados = estadoAtual.resultados?.[fase] || {};
             const participantes = estadoAtual.participantes?.[fase] || {};
             const classificados = estadoAtual.classificados?.[fase] || [];
@@ -958,13 +986,14 @@
         toast("✅ CSV exportado com sucesso!");
     }
 
+    // ---------- RANKING GERAL ----------
     function renderRankingGeral() {
         if (!estadoAtual) return;
         const todasFases = estadoAtual.resultados || {};
         const participantesPorFase = estadoAtual.participantes || {};
         const classificadosPorFase = estadoAtual.classificados || {};
         let jogadores = new Map();
-        for (let fase = 1; fase <= 5; fase++) {
+        for (let fase = 1; fase <= TOTAL_FASES; fase++) {
             const resultadosFase = todasFases[fase] || {};
             const participantesFase = participantesPorFase[fase] || {};
             for (let id in resultadosFase) {
@@ -1085,7 +1114,7 @@
 
     async function avancarFase() {
         const faseAtual = estadoAtual.fase;
-        if (faseAtual > 5) { toast("Competição já finalizada!"); return; }
+        if (faseAtual > TOTAL_FASES) { toast("Competição já finalizada!"); return; }
         const res = estadoAtual.resultados?.[faseAtual] || {};
         let lista = [];
         for (let id in res) {
@@ -1113,7 +1142,7 @@
             }
         }
         if (Object.keys(participantesProxima).length > 0) await db.ref(`copaV2/participantes/${faseAtual+1}`).set(participantesProxima);
-        if (faseAtual === 5) {
+        if (faseAtual === TOTAL_FASES) {
             toast("🏆 COMPETIÇÃO FINALIZADA!");
             await db.ref('copaV2').update({ status: 'finalizado', fim: 0, tempoRestantePausa: null });
             renderPodioFinal('podium-container');
@@ -1208,6 +1237,8 @@
         document.getElementById('modalidade-titulo').innerText = modalidadeNome;
         if (document.getElementById('torcida-modalidade')) document.getElementById('torcida-modalidade').innerText = modalidadeNome;
         document.getElementById('fase-atual-titulo').innerText = estadoAtual.fase;
+        atualizarExibicaoFase(); // Atualiza todos os indicadores de fase
+        
         if (estadoAtual.status === 'em_andamento') {
             if (timerFase) clearInterval(timerFase);
             timerFase = setInterval(() => {
@@ -1337,7 +1368,7 @@
                 const select = document.getElementById('select-fase-ranking');
                 if (select) {
                     let options = '';
-                    for (let i = 1; i <= 5; i++) options += `<option value="${i}">Fase ${i}</option>`;
+                    for (let i = 1; i <= TOTAL_FASES; i++) options += `<option value="${i}">Fase ${i}</option>`;
                     select.innerHTML = options;
                     select.value = faseSelecionadaProf;
                 }
