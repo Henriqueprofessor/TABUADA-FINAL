@@ -209,6 +209,12 @@
                 padding: 4px 3px;
             }
         }
+        .resumo-card {
+            background: #1f3a4b;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -251,6 +257,7 @@
             <div class="tab-btn active" data-tab="controle">🎮 Controle</div>
             <div class="tab-btn" data-tab="ranking-geral">🏆 Ranking Geral</div>
             <div class="tab-btn" data-tab="ranking-fase">📊 Ranking por Fase <span class="live-badge" id="live-badge-prof">LIVE</span></div>
+            <div class="tab-btn" data-tab="relatorios">📈 Relatórios</div>
             <div class="tab-btn" data-tab="gerenciar">✏️ Gerenciar Alunos</div>
         </div>
         <div id="tab-controle" class="tab-content">
@@ -298,6 +305,17 @@
                 <button id="btn-toggle-auto-ranking" class="btn-secondary">⏸️ Pausar Atualização</button>
             </div>
             <div id="ranking-parcial" class="status-box">Aguardando dados...</div>
+        </div>
+        <!-- NOVA ABA: RELATÓRIOS -->
+        <div id="tab-relatorios" class="tab-content hidden">
+            <h3>📈 Relatório de Desempenho da Competição</h3>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">
+                <button id="btn-gerar-relatorio" class="btn-primary">🔄 Gerar Relatório</button>
+                <button id="btn-exportar-csv" class="btn-success">📎 Exportar CSV</button>
+            </div>
+            <div id="relatorio-container" class="status-box">
+                <p>Clique em "Gerar Relatório" para visualizar os dados consolidados.</p>
+            </div>
         </div>
         <div id="tab-gerenciar" class="tab-content hidden">
             <h3>📝 Gerenciar Alunos da Fase Atual</h3>
@@ -444,7 +462,7 @@
         });
     }
 
-    // ---------- RANKING DINÂMICO (TABELA CORRIGIDA) ----------
+    // ---------- RANKING DINÂMICO ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -512,7 +530,6 @@
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirStatusClassificacao;
 
-        // Construção da tabela com células bem formatadas
         let rows = [];
         for (let idx = 0; idx < listaComId.length; idx++) {
             const j = listaComId[idx];
@@ -581,14 +598,13 @@
             <th>Veloc.<br>Média</th><th>Ameaça</th>
             ${mostrarClassificacao ? '<th>Classificação</th>' : '<th>Status Jogo</th>'}
             <th>Turma</th>
-        </tr></thead><tbody>${rows.join('')}</tbody></table>`;
+        </table></thead><tbody>${rows.join('')}</tbody></table>`;
         document.getElementById(containerId).innerHTML = header;
         if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
             document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
         }
     }
 
-    // Função auxiliar para escapar HTML (evita injeção)
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -626,6 +642,169 @@
             if (meuTipo === 'projecao' && document.getElementById('tela-torcida') && !document.getElementById('tela-torcida').classList.contains('hidden')) atualizarTorcida();
             else if (intervaloTorcida) { clearInterval(intervaloTorcida); intervaloTorcida = null; }
         }, 4000);
+    }
+
+    // ---------- RELATÓRIOS ----------
+    async function gerarRelatorio() {
+        if (!estadoAtual) return;
+        const container = document.getElementById('relatorio-container');
+        container.innerHTML = '<p>⏳ Gerando relatório... Aguarde.</p>';
+        
+        // Coletar dados de todas as fases
+        let todosAlunos = new Map(); // key: id, value: { nome, turma, melhorPontuacao, faseMaxima, partidas, melhorTempo, melhorAcertos }
+        let fases = [1,2,3,4,5];
+        for (let fase of fases) {
+            const resultados = estadoAtual.resultados?.[fase] || {};
+            const participantes = estadoAtual.participantes?.[fase] || {};
+            const classificados = estadoAtual.classificados?.[fase] || [];
+            for (let id in resultados) {
+                const partidas = resultados[id];
+                if (!partidas || partidas.length === 0) continue;
+                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                let nome = participantes[id]?.nome;
+                if (!nome && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) nome = estadoAtual.participantes[fase-1][id].nome;
+                if (!nome) nome = "Anônimo";
+                let turma = participantes[id]?.turma;
+                if (!turma && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) turma = estadoAtual.participantes[fase-1][id].turma;
+                if (!turma) turma = "?";
+                
+                if (!todosAlunos.has(id)) {
+                    todosAlunos.set(id, {
+                        id, nome, turma,
+                        melhorPontuacao: melhor.pontos,
+                        faseMaxima: fase,
+                        melhorTempo: melhor.tempo,
+                        melhorAcertos: melhor.acertos,
+                        partidas: 1,
+                        classificouFinal: classificados.includes(id)
+                    });
+                } else {
+                    let existente = todosAlunos.get(id);
+                    if (fase > existente.faseMaxima) {
+                        existente.faseMaxima = fase;
+                        existente.melhorPontuacao = melhor.pontos;
+                        existente.melhorTempo = melhor.tempo;
+                        existente.melhorAcertos = melhor.acertos;
+                    }
+                    existente.partidas++;
+                    if (classificados.includes(id)) existente.classificouFinal = true;
+                }
+            }
+        }
+        
+        let ranking = Array.from(todosAlunos.values());
+        ranking.sort((a,b) => b.melhorPontuacao - a.melhorPontuacao);
+        
+        if (ranking.length === 0) {
+            container.innerHTML = '<p>📭 Nenhum dado registrado ainda.</p>';
+            return;
+        }
+        
+        // Tabela de desempenho individual
+        let html = '<div class="resumo-card"><strong>📊 Resumo por Turma</strong><br>';
+        let turmasMap = new Map();
+        for (let aluno of ranking) {
+            if (!turmasMap.has(aluno.turma)) {
+                turmasMap.set(aluno.turma, { total: 0, somaPontos: 0, finalistas: 0 });
+            }
+            let turmaData = turmasMap.get(aluno.turma);
+            turmaData.total++;
+            turmaData.somaPontos += aluno.melhorPontuacao;
+            if (aluno.classificouFinal) turmaData.finalistas++;
+        }
+        for (let [turma, dados] of turmasMap.entries()) {
+            let media = (dados.somaPontos / dados.total).toFixed(1);
+            html += `🎓 ${escapeHtml(turma)}: ${dados.total} alunos | Média: ${media} pts | Finalistas: ${dados.finalistas}<br>`;
+        }
+        html += '</div>';
+        
+        html += '<h4>🏅 Desempenho Individual (Melhor pontuação da competição)</h4>';
+        html += `<table class="ranking-table"><thead><tr>
+            <th>Pos</th><th>Nome</th><th>Turma</th><th>Melhor Pontuação</th>
+            <th>Fase Máxima</th><th>Partidas</th><th>Velocidade Média (s/acerto)</th>
+            <th>Finalista?</th>
+        </tr></thead><tbody>`;
+        ranking.forEach((aluno, idx) => {
+            let velocidade = (aluno.melhorAcertos > 0) ? (aluno.melhorTempo / aluno.melhorAcertos).toFixed(1) + " s" : "-";
+            let finalista = aluno.classificouFinal ? "✅ Sim" : "❌ Não";
+            html += `<tr>
+                <td>${idx+1}º</td>
+                <td>${escapeHtml(aluno.nome)}</td>
+                <td>${escapeHtml(aluno.turma)}</td>
+                <td>${aluno.melhorPontuacao}</td>
+                <td>Fase ${aluno.faseMaxima}</td>
+                <td>${aluno.partidas}</td>
+                <td>${velocidade}</td>
+                <td>${finalista}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+    
+    function exportarCSV() {
+        if (!estadoAtual) return;
+        let linhas = [];
+        linhas.push(["Nome", "Turma", "Melhor Pontuação", "Fase Máxima", "Partidas", "Velocidade Média (s/acerto)", "Finalista?"]);
+        
+        // Recolher dados (mesma lógica do gerarRelatorio)
+        let todosAlunos = new Map();
+        for (let fase = 1; fase <= 5; fase++) {
+            const resultados = estadoAtual.resultados?.[fase] || {};
+            const participantes = estadoAtual.participantes?.[fase] || {};
+            const classificados = estadoAtual.classificados?.[fase] || [];
+            for (let id in resultados) {
+                const partidas = resultados[id];
+                if (!partidas || partidas.length === 0) continue;
+                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                let nome = participantes[id]?.nome;
+                if (!nome && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) nome = estadoAtual.participantes[fase-1][id].nome;
+                if (!nome) nome = "Anônimo";
+                let turma = participantes[id]?.turma;
+                if (!turma && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) turma = estadoAtual.participantes[fase-1][id].turma;
+                if (!turma) turma = "?";
+                if (!todosAlunos.has(id)) {
+                    todosAlunos.set(id, { nome, turma, melhorPontuacao: melhor.pontos, faseMaxima: fase, partidas: 1, melhorTempo: melhor.tempo, melhorAcertos: melhor.acertos, classificouFinal: classificados.includes(id) });
+                } else {
+                    let existente = todosAlunos.get(id);
+                    if (fase > existente.faseMaxima) {
+                        existente.faseMaxima = fase;
+                        existente.melhorPontuacao = melhor.pontos;
+                        existente.melhorTempo = melhor.tempo;
+                        existente.melhorAcertos = melhor.acertos;
+                    }
+                    existente.partidas++;
+                    if (classificados.includes(id)) existente.classificouFinal = true;
+                }
+            }
+        }
+        let ranking = Array.from(todosAlunos.values());
+        ranking.sort((a,b) => b.melhorPontuacao - a.melhorPontuacao);
+        
+        for (let aluno of ranking) {
+            let velocidade = (aluno.melhorAcertos > 0) ? (aluno.melhorTempo / aluno.melhorAcertos).toFixed(1) : "-";
+            linhas.push([
+                aluno.nome,
+                aluno.turma,
+                aluno.melhorPontuacao,
+                `Fase ${aluno.faseMaxima}`,
+                aluno.partidas,
+                velocidade,
+                aluno.classificouFinal ? "Sim" : "Não"
+            ]);
+        }
+        
+        let csvContent = linhas.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+        let blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+        let link = document.createElement("a");
+        let url = URL.createObjectURL(blob);
+        link.href = url;
+        link.setAttribute("download", "relatorio_copa_tabuada.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast("✅ CSV exportado com sucesso!");
     }
 
     // ---------- RANKING GERAL (estático) ----------
@@ -687,7 +866,7 @@
                 <td>${escapeHtml(r.turma)}</td>
             </tr>`;
         });
-        document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
+        document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></tr>';
     }
 
     function renderPodioFinal(containerId) {
@@ -1013,7 +1192,6 @@
                 const modalSelect = document.getElementById('select-modalidade');
                 if (modalSelect) {
                     modalSelect.value = estadoAtual.modalidade;
-                    // Permite alterar apenas se a competição ainda não começou (fase 1 e sem resultados)
                     const hasResults = Object.keys(estadoAtual.resultados).some(f => Object.keys(estadoAtual.resultados[f] || {}).length > 0);
                     if (estadoAtual.fase > 1 || hasResults) {
                         modalSelect.disabled = true;
@@ -1052,13 +1230,20 @@
                 document.getElementById('tab-controle').classList.add('hidden');
                 document.getElementById('tab-ranking-geral').classList.add('hidden');
                 document.getElementById('tab-ranking-fase').classList.add('hidden');
+                document.getElementById('tab-relatorios').classList.add('hidden');
                 document.getElementById('tab-gerenciar').classList.add('hidden');
                 document.getElementById(`tab-${tab}`).classList.remove('hidden');
                 if (tab === 'ranking-geral') renderRankingGeral();
                 if (tab === 'ranking-fase') atualizarRankingProfessor();
+                if (tab === 'relatorios') gerarRelatorio();
                 if (tab === 'gerenciar') renderListaAlunosGerenciar();
             });
         });
+        
+        const btnGerarRelatorio = document.getElementById('btn-gerar-relatorio');
+        if (btnGerarRelatorio) btnGerarRelatorio.onclick = () => gerarRelatorio();
+        const btnExportarCSV = document.getElementById('btn-exportar-csv');
+        if (btnExportarCSV) btnExportarCSV.onclick = () => exportarCSV();
         
         const btnToggle = document.getElementById('btn-toggle-auto-ranking');
         if (btnToggle) btnToggle.onclick = () => {
