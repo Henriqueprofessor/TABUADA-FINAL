@@ -587,7 +587,7 @@
             document.getElementById(containerId).innerHTML = '<p>📭 Nenhum dado registrado ainda.</p>';
             return;
         }
-        let html = `<table class="ranking-table"><thead></td>
+        let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th><th>Turma</th><th>Média da Turma</th><th>Participantes</th><th>Maior Pontuação (Aluno)</th>
         </tr></thead><tbody>`;
         ranking.forEach((r, idx) => {
@@ -924,7 +924,7 @@
             <th>Pos</th><th>Nome</th><th>Turma</th><th>Melhor Pontuação</th>
             <th>Fase Máxima</th><th>Partidas</th><th>Velocidade Média (s/acerto)</th>
             <th>Finalista?</th>
-        </table></thead><tbody>`;
+        </tr></thead><tbody>`;
         ranking.forEach((aluno, idx) => {
             let velocidade = (aluno.melhorAcertos > 0) ? (aluno.melhorTempo / aluno.melhorAcertos).toFixed(1) + " s" : "-";
             let finalista = aluno.classificouFinal ? "✅ Sim" : "❌ Não";
@@ -939,7 +939,7 @@
                 <td>${finalista}</td>
             </tr>`;
         });
-        html += '</tbody><table>';
+        html += '</tbody></table>';
         container.innerHTML = html;
     }
     
@@ -1051,7 +1051,7 @@
             return b.melhorPontuacao - a.melhorPontuacao || b.melhorAcertos - a.melhorAcertos || a.melhorTempo - b.melhorTempo;
         });
         if (rankingArray.length === 0) { document.getElementById('ranking-geral-container').innerHTML = '<p>Nenhum dado ainda.</p>'; return; }
-        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Status</th><th>Turma</th></td></thead><tbody>';
+        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Status</th><th>Turma</th></table></thead><tbody>';
         rankingArray.forEach((r, i) => {
             let status = `🎯 Fase ${r.ultimaFase}`;
             if (r.faseEliminacao) status += ` (Eliminado na Fase ${r.faseEliminacao})`;
@@ -1361,12 +1361,6 @@
         document.getElementById('pergunta-num').innerText = perguntaIdx + 1;
         startTimer();
     }
-    
-    // ========== PONTUAÇÃO ALTERADA ==========
-    // Nova fórmula: pontos = 10 × (tempoRestante + 1)
-    // Onde tempoRestante é o tempo que sobrou (0 a 9 segundos)
-    // Resposta em 1s (restante 9) → 100 pontos
-    // Resposta em 10s (restante 0) → 10 pontos
     window.responder = async function(idx) {
         if (timerPergunta) clearInterval(timerPergunta);
         const tempoGasto = 10 - Math.max(0, tempoRestantePergunta);
@@ -1376,17 +1370,13 @@
             const p = perguntas[perguntaIdx];
             if (resp === p.a * p.b) {
                 acertosPartida++;
-                // NOVA REGRA DE PONTUAÇÃO
-                const tempoRestanteValido = Math.max(0, tempoRestantePergunta);
-                pontosPartida += 10 * (tempoRestanteValido + 1);
+                pontosPartida += Math.round(100 * (Math.max(0, tempoRestantePergunta) / 10));
             }
         }
         perguntaIdx++;
         await atualizarPontuacaoParcial();
         setTimeout(proxima, 200);
     };
-    // =====================================
-    
     async function finalizar() {
         jogoAtivo = false;
         document.getElementById('jogo-area').classList.add('hidden');
