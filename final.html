@@ -694,7 +694,7 @@
                 colunaStatus = `<td>${j.isTemp ? "🟢 Em jogo" : "✅ Finalizado"}</td>`;
             }
             
-            html += `<tr>
+            html += `</tr>
                 <td>${idx+1}º</td>
                 <td>${escapeHtml(j.nome)}</td>
                 <td>${j.pontos}</td>
@@ -740,16 +740,22 @@
         intervaloRankingProfessor = setInterval(() => { atualizarRankingProfessor(); }, 4000);
     }
     
+    // ========== SOLUÇÃO 1: VERIFICAÇÃO DE STATUS NAS FUNÇÕES DA TORCIDA ==========
     async function atualizarTorcidaIndividual() {
-        if (meuTipo === 'projecao' && modoTorcida === 'individual' && estadoAtual) {
-            await renderRankingDinamico(estadoAtual.fase, 'ranking-torcida-container', true);
-        }
+        // Só executa se a torcida estiver no modo individual, a fase estiver ativa e o status for 'em_andamento'
+        if (meuTipo !== 'projecao' || modoTorcida !== 'individual') return;
+        if (!estadoAtual || estadoAtual.status !== 'em_andamento') return;
+        await renderRankingDinamico(estadoAtual.fase, 'ranking-torcida-container', true);
     }
+
     async function atualizarTorcidaEquipes() {
-        if (meuTipo === 'projecao' && modoTorcida === 'equipes' && estadoAtual) {
-            await renderRankingTurmas('ranking-torcida-container', true);
-        }
+        // Só executa se a torcida estiver no modo equipes, a fase estiver ativa e o status for 'em_andamento'
+        if (meuTipo !== 'projecao' || modoTorcida !== 'equipes') return;
+        if (!estadoAtual || estadoAtual.status !== 'em_andamento') return;
+        await renderRankingTurmas('ranking-torcida-container', true);
     }
+    // =======================================================================
+
     function iniciarAtualizacaoTorcida() {
         if (intervaloTorcidaIndividual) clearInterval(intervaloTorcidaIndividual);
         intervaloTorcidaIndividual = setInterval(() => {
@@ -995,7 +1001,7 @@
                 <td>${escapeHtml(r.turma)}</td>
             </tr>`;
         });
-        document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></tr>';
+        document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
     }
 
     function renderPodioFinal(containerId) {
