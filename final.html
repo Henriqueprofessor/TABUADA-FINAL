@@ -90,6 +90,9 @@
         .delta-igual { color: #f39c12; }
         .delta-estreante { color: #3498db; }
         .delta-semdados { color: #7f8c8d; }
+        /* Cores para a posição */
+        .posicao-subiu { color: #2ecc71; font-weight: bold; }
+        .posicao-desceu { color: #e74c3c; font-weight: bold; }
         .podium {
             display: flex;
             justify-content: center;
@@ -504,27 +507,25 @@
         });
     }
 
-    // ---------- FUNÇÃO PARA ATUALIZAR EXIBIÇÃO DA FASE ----------
-    function atualizarExibicaoFase() {
-        if (!estadoAtual) return;
-        const faseAtual = estadoAtual.fase;
-        const texto = `${faseAtual}/${TOTAL_FASES}`;
-        // Atualizar todos os elementos que mostram a fase
-        const elementos = [
-            document.getElementById('fase-progresso'),
-            document.getElementById('prof-fase-info'),
-            document.getElementById('aluno-fase-info'),
-            document.getElementById('torcida-fase-info')
-        ];
-        elementos.forEach(el => {
-            if (el) el.innerText = texto;
-        });
-        // Também atualizar o título principal
-        const tituloFase = document.getElementById('fase-atual-titulo');
-        if (tituloFase) tituloFase.innerText = faseAtual;
+    // ---------- FUNÇÕES PARA COR DA POSIÇÃO (verde/vermelho) ----------
+    // Salvar posição de referência quando o aluno finaliza uma partida
+    async function salvarPosicaoReferencia(alunoId, fase, posicao) {
+        await db.ref(`copaV2/ultima_posicao/${fase}/${alunoId}`).set(posicao);
     }
 
-    // ---------- RANKING POR TURMA (MÉDIA DAS MELHORES PONTUAÇÕES) ----------
+    // Obter posição de referência para um jogador na fase
+    async function getPosicaoReferencia(alunoId, fase) {
+        const snap = await db.ref(`copaV2/ultima_posicao/${fase}/${alunoId}`).once('value');
+        return snap.val();
+    }
+
+    // Para uso em lote (otimização), vamos carregar todas as referências de uma fase de uma vez
+    async function carregarTodasReferencias(fase) {
+        const snap = await db.ref(`copaV2/ultima_posicao/${fase}`).once('value');
+        return snap.val() || {};
+    }
+
+    // ---------- RANKING POR TURMA ----------
     async function renderRankingTurmas(containerId, exibirNaTorcida = false) {
         if (!estadoAtual) return;
         let turmasMap = new Map();
@@ -605,11 +606,11 @@
                 <td>${escapeHtml(r.melhorNome)} (${r.melhorPontos} pts)</td>
             </tr>`;
         });
-        html += '</tbody></tr>';
+        html += '</tbody></table>';
         document.getElementById(containerId).innerHTML = html;
     }
 
-    // ---------- RANKING DINÂMICO (individual) ----------
+    // ---------- RANKING DINÂMICO (individual) COM CORES NA POSIÇÃO ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -673,6 +674,9 @@
             return;
         }
 
+        // Carregar todas as posições de referência para esta fase
+        const referencias = await carregarTodasReferencias(faseNum);
+
         const maxPontos = listaComId[0].pontos;
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirStatusClassificacao;
@@ -687,6 +691,14 @@
 
         for (let idx = 0; idx < listaComId.length; idx++) {
             const j = listaComId[idx];
+            const posAtual = idx + 1;
+            const posReferencia = referencias[j.id] || null;
+            let classePos = '';
+            if (posReferencia !== null && posReferencia > 0) {
+                if (posAtual < posReferencia) classePos = 'posicao-subiu';
+                else if (posAtual > posReferencia) classePos = 'posicao-desceu';
+            }
+            
             const deltaLider = maxPontos - j.pontos;
             const deltaText = deltaLider === 0 ? "🏆 Líder" : `+${deltaLider}`;
             let velocidade = (j.acertos > 0) ? (j.tempo / j.acertos).toFixed(1) + " s" : "-";
@@ -743,7 +755,7 @@
             }
             
             html += `<tr>
-                <td>${idx+1}º</td>
+                <td class="${classePos}">${idx+1}º</td>
                 <td>${escapeHtml(j.nome)}</td>
                 <td>${j.pontos}</td>
                 <td>${projecaoFormat}</td>
@@ -755,7 +767,7 @@
                 <td>${escapeHtml(j.turma)}</td>
             </tr>`;
         }
-        html += '</tbody><td>';
+        html += '</tbody></table>';
         document.getElementById(containerId).innerHTML = html;
         if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
             document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
@@ -916,7 +928,7 @@
                 <td>${aluno.partidas}</td>
                 <td>${velocidade}</td>
                 <td>${finalista}</td>
-            <tr>`;
+            </td>`;
         });
         html += '</tbody></table>';
         container.innerHTML = html;
@@ -986,7 +998,7 @@
         toast("✅ CSV exportado com sucesso!");
     }
 
-    // ---------- RANKING GERAL ----------
+    // ---------- RANKING GERAL (sem cores de posição) ----------
     function renderRankingGeral() {
         if (!estadoAtual) return;
         const todasFases = estadoAtual.resultados || {};
@@ -1030,7 +1042,7 @@
             return b.melhorPontuacao - a.melhorPontuacao || b.melhorAcertos - a.melhorAcertos || a.melhorTempo - b.melhorTempo;
         });
         if (rankingArray.length === 0) { document.getElementById('ranking-geral-container').innerHTML = '<p>Nenhum dado ainda.</p>'; return; }
-        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Status</th><th>Turma</th></tr></thead><tbody>';
+        let html = '<table class="ranking-table"><thead><td><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Status</th><th>Turma</th></tr></thead><tbody>';
         rankingArray.forEach((r, i) => {
             let status = `🎯 Fase ${r.ultimaFase}`;
             if (r.faseEliminacao) status += ` (Eliminado na Fase ${r.faseEliminacao})`;
@@ -1107,6 +1119,7 @@
         await db.ref(`copaV2/participantes/${faseAtual}`).remove();
         await db.ref(`copaV2/resultados_temp/${faseAtual}`).remove();
         await db.ref(`copaV2/classificados/${faseAtual}`).remove();
+        await db.ref(`copaV2/ultima_posicao/${faseAtual}`).remove(); // limpa referências
         await db.ref('copaV2').update({ status: 'aguardando', fim: 0, tempoRestantePausa: null });
         toast(`✅ Fase ${faseAtual} resetada! Os alunos devem se recadastrar e jogar novamente.`);
         atualizarUI();
@@ -1188,6 +1201,7 @@
                     await db.ref(`copaV2/participantes/${faseAtual}/${id}`).remove();
                     await db.ref(`copaV2/resultados/${faseAtual}/${id}`).remove();
                     await db.ref(`copaV2/resultados_temp/${faseAtual}/${id}`).remove();
+                    await db.ref(`copaV2/ultima_posicao/${faseAtual}/${id}`).remove();
                     renderListaAlunosGerenciar();
                 }
             });
@@ -1231,13 +1245,28 @@
         }
     }
 
+    function atualizarExibicaoFase() {
+        if (!estadoAtual) return;
+        const faseAtual = estadoAtual.fase;
+        const texto = `${faseAtual}/${TOTAL_FASES}`;
+        const elementos = [
+            document.getElementById('fase-progresso'),
+            document.getElementById('prof-fase-info'),
+            document.getElementById('aluno-fase-info'),
+            document.getElementById('torcida-fase-info')
+        ];
+        elementos.forEach(el => { if (el) el.innerText = texto; });
+        const tituloFase = document.getElementById('fase-atual-titulo');
+        if (tituloFase) tituloFase.innerText = faseAtual;
+    }
+
     function atualizarUI() {
         if (!estadoAtual) return;
         const modalidadeNome = MODALIDADE_CONFIG[estadoAtual.modalidade]?.nome || "Tabuada 2-5";
         document.getElementById('modalidade-titulo').innerText = modalidadeNome;
         if (document.getElementById('torcida-modalidade')) document.getElementById('torcida-modalidade').innerText = modalidadeNome;
         document.getElementById('fase-atual-titulo').innerText = estadoAtual.fase;
-        atualizarExibicaoFase(); // Atualiza todos os indicadores de fase
+        atualizarExibicaoFase();
         
         if (estadoAtual.status === 'em_andamento') {
             if (timerFase) clearInterval(timerFase);
@@ -1303,6 +1332,7 @@
         }
     }
 
+    // ---------- LÓGICA DO JOGO (com salvamento da posição de referência) ----------
     function startTimer() {
         tempoRestantePergunta = 10;
         const barra = document.getElementById('progresso-tempo');
@@ -1343,12 +1373,35 @@
         document.getElementById('jogo-area').classList.add('hidden');
         document.getElementById('aguardando-aluno').classList.remove('hidden');
         const faseAtual = estadoAtual.fase;
-        await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).remove();
-        const ref = db.ref(`copaV2/resultados/${faseAtual}/${alunoId}`);
-        const snap = await ref.once('value');
+        // Salvar resultado final
+        const refResultado = db.ref(`copaV2/resultados/${faseAtual}/${alunoId}`);
+        const snap = await refResultado.once('value');
         const lista = snap.val() || [];
         lista.push({ pontos: pontosPartida, acertos: acertosPartida, tempo: tempoTotalPartida });
-        await ref.set(lista);
+        await refResultado.set(lista);
+        // Remover dados temporários
+        await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).remove();
+        
+        // Calcular a posição atual do jogador no ranking da fase (após salvar)
+        // Para isso, precisamos recarregar o ranking da fase e encontrar a posição
+        const snapRanking = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
+        const participantes = estadoAtual.participantes?.[faseAtual] || {};
+        let rankingPosicoes = [];
+        snapRanking.forEach(child => {
+            const partidas = child.val();
+            if (partidas && partidas.length) {
+                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                const nome = participantes[child.key]?.nome || "Anônimo";
+                const turma = participantes[child.key]?.turma || "?";
+                rankingPosicoes.push({ id: child.key, pontos: melhor.pontos, nome, turma });
+            }
+        });
+        rankingPosicoes.sort((a,b) => b.pontos - a.pontos);
+        const posicao = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
+        if (posicao > 0) {
+            await salvarPosicaoReferencia(alunoId, faseAtual, posicao);
+        }
+        
         toast(`✅ Partida finalizada! Pontos: ${pontosPartida}`);
         confete();
         renderAluno();
