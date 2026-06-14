@@ -432,7 +432,7 @@
         });
     }
 
-    // ---------- RANKING DINÂMICO COM NOVOS INDICADORES ----------
+    // ---------- RANKING DINÂMICO COM NOVOS INDICADORES E ORDEM ALTERADA ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -501,12 +501,13 @@
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirStatusClassificacao;
 
+        // NOVO CABEÇALHO: ordem -> Pos, Nome, Pontuação, Proj. Final, Δ Recorde, Delta Líder, Veloc. Média, Ameaça, Classificação, Turma
         let html = `<table class="ranking-table"><thead><tr>
-            <th>Pos</th><th>Nome</th><th>Turma</th><th>Pontuação</th>
-            <th>Ritmo<br>(pts/q)</th><th>Proj. Final</th><th>Δ Recorde</th>
-            <th>Delta Líder</th><th>Veloc.<br>Média</th>
-            <th>${mostrarClassificacao ? 'Classificação' : 'Status Jogo'}</th>
-            <th>Ameaça</th>
+            <th>Pos</th><th>Nome</th><th>Pontuação</th>
+            <th>Proj. Final</th><th>Δ Recorde</th><th>Delta Líder</th>
+            <th>Veloc.<br>Média</th><th>Ameaça</th>
+            ${mostrarClassificacao ? '<th>Classificação</th>' : '<th>Status Jogo</th>'}
+            <th>Turma</th>
         </tr></thead><tbody>`;
 
         for (let idx = 0; idx < listaComId.length; idx++) {
@@ -516,12 +517,11 @@
             let velocidade = (j.acertos > 0) ? (j.tempo / j.acertos).toFixed(1) + " s" : "-";
             
             const perguntasResp = j.perguntas || 0;
-            let ritmo = 0, projecao = 0;
+            let projecao = 0;
             if (perguntasResp > 0) {
-                ritmo = j.pontos / perguntasResp;
+                const ritmo = j.pontos / perguntasResp;
                 projecao = ritmo * 20;
             }
-            const ritmoFormat = ritmo > 0 ? ritmo.toFixed(1) : "—";
             const projecaoFormat = projecao > 0 ? Math.round(projecao) : "—";
             
             const melhorHistorico = melhoresHistoricos.get(j.id) || 0;
@@ -560,18 +560,17 @@
             html += `<tr>
                 <td>${idx+1}º</td>
                 <td>${j.nome}</td>
-                <td>${j.turma}</td>
                 <td>${j.pontos}</td>
-                <td>${ritmoFormat}</td>
                 <td>${projecaoFormat}</td>
                 <td>${deltaRec}</td>
                 <td>${deltaText}</td>
                 <td>${velocidade}</td>
-                ${colunaStatus}
                 <td>${ameaca ? `<span class="ameaca-icon">${ameaca}</span>` : "—"}</td>
+                ${colunaStatus}
+                <td>${j.turma}</td>
             </tr>`;
         }
-        html += '</tbody><tr>';
+        html += '</tbody></table>';
         document.getElementById(containerId).innerHTML = html;
         if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
             document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
@@ -649,7 +648,7 @@
             return b.melhorPontuacao - a.melhorPontuacao || b.melhorAcertos - a.melhorAcertos || a.melhorTempo - b.melhorTempo;
         });
         if (rankingArray.length === 0) { document.getElementById('ranking-geral-container').innerHTML = '<p>Nenhum dado ainda.</p>'; return; }
-        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Status</th></tr></thead><tbody>';
+        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Status</th><th>Turma</th></tr></thead><tbody>';
         rankingArray.forEach((r, i) => {
             let status = `🎯 Fase ${r.ultimaFase}`;
             if (r.faseEliminacao) status += ` (Eliminado na Fase ${r.faseEliminacao})`;
@@ -658,13 +657,13 @@
             html += `<tr>
                 <td>${i+1}º</td>
                 <td>${r.nome}</td>
-                <td>${r.turma}</td>
                 <td>${r.melhorPontuacao}</td>
                 <td>${r.ultimaFase}</td>
                 <td>${status}</td>
+                <td>${r.turma}</td>
             </tr>`;
         });
-        document.getElementById('ranking-geral-container').innerHTML = html + '</tbody><table>';
+        document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
     }
 
     function renderPodioFinal(containerId) {
@@ -979,7 +978,7 @@
             }
         });
 
-        // Atribuição de eventos COM VERIFICAÇÃO DE EXISTÊNCIA
+        // Atribuição de eventos COM VERIFICAÇÃO DE EXISTÊNCIA (mesmo do código anterior, já seguro)
         const btnAplicar = document.getElementById('btn-aplicar-modalidade');
         if (btnAplicar) btnAplicar.onclick = async () => {
             const novaModalidade = document.getElementById('select-modalidade').value;
