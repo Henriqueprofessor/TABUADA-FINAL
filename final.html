@@ -723,7 +723,7 @@
             <th>Pos</th><th>Nome</th><th>Turma</th><th>Melhor Pontuação</th>
             <th>Fase Máxima</th><th>Partidas</th><th>Velocidade Média (s/acerto)</th>
             <th>Finalista?</th>
-        </tr></thead><tbody>`;
+        </table></thead><tbody>`;
         ranking.forEach((aluno, idx) => {
             let velocidade = (aluno.melhorAcertos > 0) ? (aluno.melhorTempo / aluno.melhorAcertos).toFixed(1) + " s" : "-";
             let finalista = aluno.classificouFinal ? "✅ Sim" : "❌ Não";
@@ -866,7 +866,7 @@
                 <td>${escapeHtml(r.turma)}</td>
             </tr>`;
         });
-        document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></tr>';
+        document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
     }
 
     function renderPodioFinal(containerId) {
@@ -1258,7 +1258,7 @@
         const btnSincGlobal = document.getElementById('btn-sincronizar-global');
         if (btnSincGlobal) btnSincGlobal.onclick = () => updateLastSyncTime();
         const btnProfessor = document.getElementById('btn-professor');
-        if (btnProfessor) btnProfessor.onclick = () => { if (prompt("Senha:") === "040199") { meuTipo = 'professor'; document.querySelectorAll('.card').forEach(c => c.classList.add('hidden')); document.getElementById('painel-professor').classList.remove('hidden'); document.getElementById('online-stats').classList.remove('hidden'); atualizarUI(); iniciarAtualizacaoProfessor(); } };
+        if (btnProfessor) btnProfessor.onclick = () => { if (prompt("Senha:") === "......") { meuTipo = 'professor'; document.querySelectorAll('.card').forEach(c => c.classList.add('hidden')); document.getElementById('painel-professor').classList.remove('hidden'); document.getElementById('online-stats').classList.remove('hidden'); atualizarUI(); iniciarAtualizacaoProfessor(); } };
         const btnAluno = document.getElementById('btn-aluno');
         if (btnAluno) btnAluno.onclick = async () => {
             const nome = prompt("Seu nome completo:"); if (!nome) return;
