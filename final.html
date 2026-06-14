@@ -74,11 +74,14 @@
             border-collapse: collapse;
             margin-top: 16px;
             font-size: 13px;
+            word-break: break-word;
+            white-space: normal;
         }
         .ranking-table th, .ranking-table td {
             border-bottom: 1px solid #2c3e50;
             padding: 8px 6px;
             text-align: left;
+            vertical-align: top;
         }
         .classificado-sim { color: #2ecc71; font-weight: bold; }
         .classificado-nao { color: #e74c3c; font-weight: bold; }
@@ -198,6 +201,13 @@
         .ameaca-icon {
             color: #e67e22;
             font-weight: bold;
+        }
+        /* Ajuste para a tabela não quebrar em telas pequenas */
+        @media (max-width: 768px) {
+            .ranking-table th, .ranking-table td {
+                font-size: 11px;
+                padding: 4px 3px;
+            }
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -404,6 +414,7 @@
     function gerarPerguntas() {
         const modalidade = estadoAtual?.modalidade || "2-5";
         const config = MODALIDADE_CONFIG[modalidade];
+        if (!config) return [];
         const minFator = config.min, maxFator = config.max;
         let p = [];
         for(let i=0; i<20; i++) {
@@ -417,7 +428,7 @@
         return p;
     }
 
-    // Salvar pontuação parcial durante o jogo – agora com perguntasRespondidas
+    // Salvar pontuação parcial durante o jogo
     async function atualizarPontuacaoParcial() {
         if (!alunoId || !estadoAtual) return;
         const faseAtual = estadoAtual.fase;
@@ -433,7 +444,7 @@
         });
     }
 
-    // ---------- RANKING DINÂMICO COM NOVOS INDICADORES E ORDEM ALTERADA ----------
+    // ---------- RANKING DINÂMICO (TABELA CORRIGIDA) ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -477,7 +488,6 @@
             }
         });
 
-        // Melhores históricos
         const melhoresHistoricos = new Map();
         snapFinal.forEach(child => {
             const partidas = child.val();
@@ -502,15 +512,8 @@
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirStatusClassificacao;
 
-        // NOVO CABEÇALHO: ordem -> Pos, Nome, Pontuação, Proj. Final, Δ Recorde, Delta Líder, Veloc. Média, Ameaça, Classificação, Turma
-        let html = `<table class="ranking-table"><thead><tr>
-            <th>Pos</th><th>Nome</th><th>Pontuação</th>
-            <th>Proj. Final</th><th>Δ Recorde</th><th>Delta Líder</th>
-            <th>Veloc.<br>Média</th><th>Ameaça</th>
-            ${mostrarClassificacao ? '<th>Classificação</th>' : '<th>Status Jogo</th>'}
-            <th>Turma</th>
-        </table></thead><tbody>`;
-
+        // Construção da tabela com células bem formatadas
+        let rows = [];
         for (let idx = 0; idx < listaComId.length; idx++) {
             const j = listaComId[idx];
             const deltaLider = maxPontos - j.pontos;
@@ -558,9 +561,9 @@
                 colunaStatus = `<td>${j.isTemp ? "🟢 Em jogo" : "✅ Finalizado"}</td>`;
             }
             
-            html += `<tr>
+            rows.push(`<tr>
                 <td>${idx+1}º</td>
-                <td>${j.nome}</td>
+                <td>${escapeHtml(j.nome)}</td>
                 <td>${j.pontos}</td>
                 <td>${projecaoFormat}</td>
                 <td>${deltaRec}</td>
@@ -568,14 +571,34 @@
                 <td>${velocidade}</td>
                 <td>${ameaca ? `<span class="ameaca-icon">${ameaca}</span>` : "—"}</td>
                 ${colunaStatus}
-                <td>${j.turma}</td>
-            </tr>`;
+                <td>${escapeHtml(j.turma)}</td>
+            </tr>`);
         }
-        html += '</tbody></table>';
-        document.getElementById(containerId).innerHTML = html;
+
+        const header = `<table class="ranking-table"><thead><tr>
+            <th>Pos</th><th>Nome</th><th>Pontuação</th>
+            <th>Proj. Final</th><th>Δ Recorde</th><th>Delta Líder</th>
+            <th>Veloc.<br>Média</th><th>Ameaça</th>
+            ${mostrarClassificacao ? '<th>Classificação</th>' : '<th>Status Jogo</th>'}
+            <th>Turma</th>
+        </tr></thead><tbody>${rows.join('')}</tbody></table>`;
+        document.getElementById(containerId).innerHTML = header;
         if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
             document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
         }
+    }
+
+    // Função auxiliar para escapar HTML (evita injeção)
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
     }
 
     async function atualizarRankingProfessor() {
@@ -657,11 +680,11 @@
             else status += ` (Classificado para Fase ${r.ultimaFase+1})`;
             html += `<tr>
                 <td>${i+1}º</td>
-                <td>${r.nome}</td>
+                <td>${escapeHtml(r.nome)}</td>
                 <td>${r.melhorPontuacao}</td>
                 <td>${r.ultimaFase}</td>
                 <td>${status}</td>
-                <td>${r.turma}</td>
+                <td>${escapeHtml(r.turma)}</td>
             </tr>`;
         });
         document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
@@ -695,7 +718,7 @@
         top5.forEach((jogador, idx) => {
             podiumHtml += `<div class="podium-card podium-${idx+1}">
                             <div class="medalha">${medals[idx]}</div>
-                            <strong>${jogador.nome}</strong><br>${jogador.turma}<br>${jogador.pontos} pts
+                            <strong>${escapeHtml(jogador.nome)}</strong><br>${escapeHtml(jogador.turma)}<br>${jogador.pontos} pts
                            </div>`;
         });
         podiumHtml += '</div>';
@@ -719,23 +742,15 @@
         toast("▶️ Fase retomada!");
     }
 
-    // NOVA FUNÇÃO: Resetar apenas a fase atual
     async function resetarFase() {
         const faseAtual = estadoAtual.fase;
         if (!confirm(`⚠️ Resetar a Fase ${faseAtual}? Todos os resultados, cadastros e classificações desta fase serão apagados. As fases anteriores permanecem intactas.`)) return;
-        // Apagar todos os dados da fase atual
         await db.ref(`copaV2/resultados/${faseAtual}`).remove();
         await db.ref(`copaV2/participantes/${faseAtual}`).remove();
         await db.ref(`copaV2/resultados_temp/${faseAtual}`).remove();
         await db.ref(`copaV2/classificados/${faseAtual}`).remove();
-        // Resetar o status da fase
-        await db.ref('copaV2').update({
-            status: 'aguardando',
-            fim: 0,
-            tempoRestantePausa: null
-        });
+        await db.ref('copaV2').update({ status: 'aguardando', fim: 0, tempoRestantePausa: null });
         toast(`✅ Fase ${faseAtual} resetada! Os alunos devem se recadastrar e jogar novamente.`);
-        // Forçar atualização da UI
         atualizarUI();
     }
 
@@ -792,7 +807,7 @@
         let html = '';
         for (let id of ids) {
             const aluno = participantes[id];
-            html += `<div class="aluno-item"><div class="aluno-info"><strong>${aluno.nome}</strong> (${aluno.turma})<br><small>ID: ${id.substring(0,8)}...</small></div>
+            html += `<div class="aluno-item"><div class="aluno-info"><strong>${escapeHtml(aluno.nome)}</strong> (${escapeHtml(aluno.turma)})<br><small>ID: ${id.substring(0,8)}...</small></div>
                     <div class="aluno-actions"><button class="btn-editar-aluno btn-warning" data-id="${id}" data-nome="${aluno.nome}" data-turma="${aluno.turma}">✏️ Editar</button>
                     <button class="btn-excluir-aluno btn-danger" data-id="${id}">🗑️ Excluir</button></div></div>`;
         }
@@ -996,14 +1011,17 @@
                     select.value = faseSelecionadaProf;
                 }
                 const modalSelect = document.getElementById('select-modalidade');
-                if (modalSelect) modalSelect.value = estadoAtual.modalidade;
-                // Desabilitar seletor de modalidade durante a competição (após iniciar qualquer fase)
-                // Mas permitir apenas reiniciar toda a copa se precisar mudar
-                if (estadoAtual.fase > 1 || (estadoAtual.resultados && Object.keys(estadoAtual.resultados).length > 0)) {
-                    modalSelect.disabled = true;
-                    modalSelect.title = "Modalidade fixa durante a competição. Para mudar, use 'Aplicar e Reiniciar Copa'.";
-                } else {
-                    modalSelect.disabled = false;
+                if (modalSelect) {
+                    modalSelect.value = estadoAtual.modalidade;
+                    // Permite alterar apenas se a competição ainda não começou (fase 1 e sem resultados)
+                    const hasResults = Object.keys(estadoAtual.resultados).some(f => Object.keys(estadoAtual.resultados[f] || {}).length > 0);
+                    if (estadoAtual.fase > 1 || hasResults) {
+                        modalSelect.disabled = true;
+                        modalSelect.title = "Modalidade fixa durante a competição. Para mudar, use 'Aplicar e Reiniciar Copa'.";
+                    } else {
+                        modalSelect.disabled = false;
+                        modalSelect.title = "";
+                    }
                 }
             }
         });
@@ -1130,7 +1148,7 @@
             if (document.getElementById('prof-online-count')) document.getElementById('prof-online-count').innerText = count;
             if (meuTipo === 'professor') {
                 let html = '<ul style="list-style:none;">';
-                snap.forEach(c => html += `<li>🟢 ${c.val().nome} (${c.val().turma})</li>`);
+                snap.forEach(c => html += `<li>🟢 ${escapeHtml(c.val().nome)} (${escapeHtml(c.val().turma)})</li>`);
                 const listaDiv = document.getElementById('lista-participantes');
                 if (listaDiv) listaDiv.innerHTML = html + '</ul>';
             }
