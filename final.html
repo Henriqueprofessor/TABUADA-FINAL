@@ -85,6 +85,12 @@
         }
         .classificado-sim { color: #2ecc71; font-weight: bold; }
         .classificado-nao { color: #e74c3c; font-weight: bold; }
+        /* Estilos para Δ Recorde */
+        .delta-positivo { color: #2ecc71; font-weight: bold; }
+        .delta-negativo { color: #e74c3c; font-weight: bold; }
+        .delta-igual { color: #f39c12; }
+        .delta-estreante { color: #3498db; }
+        .delta-semdados { color: #7f8c8d; }
         .podium {
             display: flex;
             justify-content: center;
@@ -486,7 +492,7 @@
         });
     }
 
-    // ---------- RANKING POR TURMA (MÉDIA DAS MELHORES PONTUAÇÕES) - CORRIGIDO ----------
+    // ---------- RANKING POR TURMA (MÉDIA DAS MELHORES PONTUAÇÕES) ----------
     async function renderRankingTurmas(containerId, exibirNaTorcida = false) {
         if (!estadoAtual) return;
         let turmasMap = new Map();
@@ -571,7 +577,7 @@
         document.getElementById(containerId).innerHTML = html;
     }
 
-    // ---------- RANKING DINÂMICO (individual) ----------
+    // ---------- RANKING DINÂMICO (individual) COM Δ RECORDE ESTILIZADO ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -662,18 +668,31 @@
             const projecaoFormat = projecao > 0 ? Math.round(projecao) : "—";
             
             const melhorHistorico = melhoresHistoricos.get(j.id) || 0;
+            
+            // ========== Δ RECORDE ESTILIZADO ==========
             let deltaRec = "";
+            let deltaClass = "delta-semdados";
             if (projecao > 0 && melhorHistorico > 0) {
                 const diff = projecao - melhorHistorico;
-                deltaRec = (diff > 0 ? "+" : "") + Math.round(diff);
-                if (diff > 0) deltaRec = "↑ " + deltaRec;
-                else if (diff < 0) deltaRec = "↓ " + deltaRec;
-                else deltaRec = "=";
+                const absDiff = Math.abs(Math.round(diff));
+                if (diff > 0) {
+                    deltaRec = `↑ +${absDiff}`;
+                    deltaClass = "delta-positivo";
+                } else if (diff < 0) {
+                    deltaRec = `↓ -${absDiff}`;
+                    deltaClass = "delta-negativo";
+                } else {
+                    deltaRec = "=";
+                    deltaClass = "delta-igual";
+                }
             } else if (projecao > 0) {
-                deltaRec = "(1ª vez)";
+                deltaRec = "🆕 1ª vez";
+                deltaClass = "delta-estreante";
             } else {
                 deltaRec = "—";
+                deltaClass = "delta-semdados";
             }
+            // =======================================
             
             let ameaca = "";
             if (projecao > maxPontos && j.pontos !== maxPontos) {
@@ -694,12 +713,12 @@
                 colunaStatus = `<td>${j.isTemp ? "🟢 Em jogo" : "✅ Finalizado"}</td>`;
             }
             
-            html += `</tr>
+            html += `<tr>
                 <td>${idx+1}º</td>
                 <td>${escapeHtml(j.nome)}</td>
                 <td>${j.pontos}</td>
                 <td>${projecaoFormat}</td>
-                <td>${deltaRec}</td>
+                <td class="${deltaClass}">${deltaRec}</td>
                 <td>${deltaText}</td>
                 <td>${velocidade}</td>
                 <td>${ameaca ? `<span class="ameaca-icon">${ameaca}</span>` : "—"}</td>
@@ -740,21 +759,17 @@
         intervaloRankingProfessor = setInterval(() => { atualizarRankingProfessor(); }, 4000);
     }
     
-    // ========== SOLUÇÃO 1: VERIFICAÇÃO DE STATUS NAS FUNÇÕES DA TORCIDA ==========
     async function atualizarTorcidaIndividual() {
-        // Só executa se a torcida estiver no modo individual, a fase estiver ativa e o status for 'em_andamento'
         if (meuTipo !== 'projecao' || modoTorcida !== 'individual') return;
         if (!estadoAtual || estadoAtual.status !== 'em_andamento') return;
         await renderRankingDinamico(estadoAtual.fase, 'ranking-torcida-container', true);
     }
 
     async function atualizarTorcidaEquipes() {
-        // Só executa se a torcida estiver no modo equipes, a fase estiver ativa e o status for 'em_andamento'
         if (meuTipo !== 'projecao' || modoTorcida !== 'equipes') return;
         if (!estadoAtual || estadoAtual.status !== 'em_andamento') return;
         await renderRankingTurmas('ranking-torcida-container', true);
     }
-    // =======================================================================
 
     function iniciarAtualizacaoTorcida() {
         if (intervaloTorcidaIndividual) clearInterval(intervaloTorcidaIndividual);
@@ -783,7 +798,8 @@
         intervaloTorcidaEquipes = null;
     }
 
-    // ---------- RELATÓRIOS ----------
+    // ---------- RELATÓRIOS, RANKING GERAL, E DEMAIS FUNÇÕES ----------
+    // (mantidas exatamente iguais ao original, por questões de espaço)
     async function gerarRelatorio() {
         if (!estadoAtual) return;
         const container = document.getElementById('relatorio-container');
@@ -942,7 +958,6 @@
         toast("✅ CSV exportado com sucesso!");
     }
 
-    // ---------- RANKING GERAL ----------
     function renderRankingGeral() {
         if (!estadoAtual) return;
         const todasFases = estadoAtual.resultados || {};
@@ -1257,7 +1272,6 @@
         }
     }
 
-    // ---------- LÓGICA DO JOGO ----------
     function startTimer() {
         tempoRestantePergunta = 10;
         const barra = document.getElementById('progresso-tempo');
@@ -1342,7 +1356,6 @@
             }
         });
 
-        // Eventos das abas
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1363,11 +1376,9 @@
             });
         });
 
-        // Botão atualizar ranking turmas
         const btnAtualizarTurmas = document.getElementById('btn-atualizar-ranking-turmas');
         if (btnAtualizarTurmas) btnAtualizarTurmas.onclick = () => renderRankingTurmas('ranking-turmas-container', false);
         
-        // Botões da torcida para alternar modo
         const btnIndiv = document.getElementById('btn-modo-individual');
         const btnEquipes = document.getElementById('btn-modo-equipes');
         if (btnIndiv && btnEquipes) {
@@ -1385,7 +1396,6 @@
             };
         }
 
-        // Demais eventos
         const btnAplicar = document.getElementById('btn-aplicar-modalidade');
         if (btnAplicar) btnAplicar.onclick = async () => {
             const novaModalidade = document.getElementById('select-modalidade').value;
@@ -1479,7 +1489,6 @@
         const btnExportarCSV = document.getElementById('btn-exportar-csv');
         if (btnExportarCSV) btnExportarCSV.onclick = () => exportarCSV();
 
-        // online tracking
         db.ref('.info/connected').on('value', snap => {
             if (snap.val() === true && alunoId && meuTipo === 'aluno') {
                 db.ref(`online/${alunoId}`).onDisconnect().remove();
