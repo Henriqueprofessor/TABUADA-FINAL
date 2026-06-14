@@ -263,6 +263,7 @@
                         <button id="btn-iniciar-fase" class="btn-success">▶️ Iniciar Fase</button>
                         <button id="btn-continuar-parar-fase" class="btn-danger">⏹️ Parar Fase</button>
                         <button id="btn-avancar-fase" class="btn-primary" style="margin-top: 10px; width: 100%;">➡️ Finalizar Fase e Classificar</button>
+                        <button id="btn-reset-fase" class="btn-warning" style="margin-top: 10px; width: 100%;">🔄 Resetar Fase (apagar dados atuais)</button>
                         <button id="btn-reset-total" class="btn-danger" style="margin-top: 10px; width: 100%;">⚠️ Resetar Competição</button>
                     </div>
                 </div>
@@ -508,7 +509,7 @@
             <th>Veloc.<br>Média</th><th>Ameaça</th>
             ${mostrarClassificacao ? '<th>Classificação</th>' : '<th>Status Jogo</th>'}
             <th>Turma</th>
-        </tr></thead><tbody>`;
+        </table></thead><tbody>`;
 
         for (let idx = 0; idx < listaComId.length; idx++) {
             const j = listaComId[idx];
@@ -717,6 +718,27 @@
         await db.ref('copaV2').update({ status: 'em_andamento', fim: novoFim, tempoRestantePausa: null });
         toast("▶️ Fase retomada!");
     }
+
+    // NOVA FUNÇÃO: Resetar apenas a fase atual
+    async function resetarFase() {
+        const faseAtual = estadoAtual.fase;
+        if (!confirm(`⚠️ Resetar a Fase ${faseAtual}? Todos os resultados, cadastros e classificações desta fase serão apagados. As fases anteriores permanecem intactas.`)) return;
+        // Apagar todos os dados da fase atual
+        await db.ref(`copaV2/resultados/${faseAtual}`).remove();
+        await db.ref(`copaV2/participantes/${faseAtual}`).remove();
+        await db.ref(`copaV2/resultados_temp/${faseAtual}`).remove();
+        await db.ref(`copaV2/classificados/${faseAtual}`).remove();
+        // Resetar o status da fase
+        await db.ref('copaV2').update({
+            status: 'aguardando',
+            fim: 0,
+            tempoRestantePausa: null
+        });
+        toast(`✅ Fase ${faseAtual} resetada! Os alunos devem se recadastrar e jogar novamente.`);
+        // Forçar atualização da UI
+        atualizarUI();
+    }
+
     async function avancarFase() {
         const faseAtual = estadoAtual.fase;
         if (faseAtual > 5) { toast("Competição já finalizada!"); return; }
@@ -955,7 +977,7 @@
         renderAluno();
     }
 
-    // ---------- INICIALIZAÇÃO COM VERIFICAÇÕES ----------
+    // ---------- INICIALIZAÇÃO ----------
     async function init() {
         db.ref('copaV2').on('value', snap => {
             estadoAtual = snap.val() || { fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: "2-5", classificados: {}, resultados: {}, participantes: {} };
@@ -975,10 +997,18 @@
                 }
                 const modalSelect = document.getElementById('select-modalidade');
                 if (modalSelect) modalSelect.value = estadoAtual.modalidade;
+                // Desabilitar seletor de modalidade durante a competição (após iniciar qualquer fase)
+                // Mas permitir apenas reiniciar toda a copa se precisar mudar
+                if (estadoAtual.fase > 1 || (estadoAtual.resultados && Object.keys(estadoAtual.resultados).length > 0)) {
+                    modalSelect.disabled = true;
+                    modalSelect.title = "Modalidade fixa durante a competição. Para mudar, use 'Aplicar e Reiniciar Copa'.";
+                } else {
+                    modalSelect.disabled = false;
+                }
             }
         });
 
-        // Atribuição de eventos COM VERIFICAÇÃO DE EXISTÊNCIA (mesmo do código anterior, já seguro)
+        // Eventos
         const btnAplicar = document.getElementById('btn-aplicar-modalidade');
         if (btnAplicar) btnAplicar.onclick = async () => {
             const novaModalidade = document.getElementById('select-modalidade').value;
@@ -992,6 +1022,9 @@
         };
         const btnAvancar = document.getElementById('btn-avancar-fase');
         if (btnAvancar) btnAvancar.onclick = async () => { if(confirm("Finalizar fase?")) await avancarFase(); };
+        
+        const btnResetFase = document.getElementById('btn-reset-fase');
+        if (btnResetFase) btnResetFase.onclick = async () => { await resetarFase(); };
         
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
