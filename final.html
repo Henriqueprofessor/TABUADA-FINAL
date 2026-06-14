@@ -507,19 +507,12 @@
         });
     }
 
-    // ---------- FUNÇÕES PARA COR DA POSIÇÃO (verde/vermelho) ----------
-    // Salvar posição de referência quando o aluno finaliza uma partida
+    // ---------- FUNÇÕES PARA COR DA POSIÇÃO (REFERÊNCIA POR ÚLTIMA PARTIDA) ----------
     async function salvarPosicaoReferencia(alunoId, fase, posicao) {
         await db.ref(`copaV2/ultima_posicao/${fase}/${alunoId}`).set(posicao);
+        console.log(`[Referência] Salvo: ${alunoId} na fase ${fase} = ${posicao}º`);
     }
 
-    // Obter posição de referência para um jogador na fase
-    async function getPosicaoReferencia(alunoId, fase) {
-        const snap = await db.ref(`copaV2/ultima_posicao/${fase}/${alunoId}`).once('value');
-        return snap.val();
-    }
-
-    // Para uso em lote (otimização), vamos carregar todas as referências de uma fase de uma vez
     async function carregarTodasReferencias(fase) {
         const snap = await db.ref(`copaV2/ultima_posicao/${fase}`).once('value');
         return snap.val() || {};
@@ -610,7 +603,7 @@
         document.getElementById(containerId).innerHTML = html;
     }
 
-    // ---------- RANKING DINÂMICO (individual) COM CORES NA POSIÇÃO ----------
+    // ---------- RANKING DINÂMICO (individual) COM CORES PERSISTENTES ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -674,8 +667,24 @@
             return;
         }
 
-        // Carregar todas as posições de referência para esta fase
-        const referencias = await carregarTodasReferencias(faseNum);
+        // Carregar referências existentes
+        let referencias = await carregarTodasReferencias(faseNum);
+        // Criar referência automaticamente para jogadores que já têm partidas finalizadas mas não têm referência
+        let referenciasAtualizadas = false;
+        for (let i = 0; i < listaComId.length; i++) {
+            const jogador = listaComId[i];
+            const temPartidasFinalizadas = snapFinal.child(jogador.id).exists() && Object.keys(snapFinal.child(jogador.id).val() || {}).length > 0;
+            if (temPartidasFinalizadas && (referencias[jogador.id] === undefined || referencias[jogador.id] === null)) {
+                const posAtual = i + 1;
+                await salvarPosicaoReferencia(jogador.id, faseNum, posAtual);
+                referencias[jogador.id] = posAtual;
+                referenciasAtualizadas = true;
+                console.log(`[Referência automática] Criada para ${jogador.nome} (ID ${jogador.id}) posição ${posAtual}`);
+            }
+        }
+        if (referenciasAtualizadas) {
+            referencias = await carregarTodasReferencias(faseNum);
+        }
 
         const maxPontos = listaComId[0].pontos;
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
@@ -928,7 +937,7 @@
                 <td>${aluno.partidas}</td>
                 <td>${velocidade}</td>
                 <td>${finalista}</td>
-            </td>`;
+            </tr>`;
         });
         html += '</tbody></table>';
         container.innerHTML = html;
@@ -998,7 +1007,7 @@
         toast("✅ CSV exportado com sucesso!");
     }
 
-    // ---------- RANKING GERAL (sem cores de posição) ----------
+    // ---------- RANKING GERAL ----------
     function renderRankingGeral() {
         if (!estadoAtual) return;
         const todasFases = estadoAtual.resultados || {};
@@ -1042,7 +1051,7 @@
             return b.melhorPontuacao - a.melhorPontuacao || b.melhorAcertos - a.melhorAcertos || a.melhorTempo - b.melhorTempo;
         });
         if (rankingArray.length === 0) { document.getElementById('ranking-geral-container').innerHTML = '<p>Nenhum dado ainda.</p>'; return; }
-        let html = '<table class="ranking-table"><thead><td><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Status</th><th>Turma</th></tr></thead><tbody>';
+        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Status</th><th>Turma</th></table></thead><tbody>';
         rankingArray.forEach((r, i) => {
             let status = `🎯 Fase ${r.ultimaFase}`;
             if (r.faseEliminacao) status += ` (Eliminado na Fase ${r.faseEliminacao})`;
@@ -1332,7 +1341,7 @@
         }
     }
 
-    // ---------- LÓGICA DO JOGO (com salvamento da posição de referência) ----------
+    // ---------- LÓGICA DO JOGO ----------
     function startTimer() {
         tempoRestantePergunta = 10;
         const barra = document.getElementById('progresso-tempo');
@@ -1383,7 +1392,6 @@
         await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).remove();
         
         // Calcular a posição atual do jogador no ranking da fase (após salvar)
-        // Para isso, precisamos recarregar o ranking da fase e encontrar a posição
         const snapRanking = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
         const participantes = estadoAtual.participantes?.[faseAtual] || {};
         let rankingPosicoes = [];
