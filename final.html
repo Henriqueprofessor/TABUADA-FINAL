@@ -263,7 +263,7 @@
             align-items: center;
             gap: 8px;
         }
-        /* Feedback de pontos (posicionado fixo acima da pergunta) */
+        /* Feedback de pontos */
         .feedback-pontos {
             position: fixed;
             top: 30%;
@@ -284,6 +284,51 @@
         @keyframes fadeUp {
             0% { opacity: 1; transform: translateX(-50%) translateY(0); }
             100% { opacity: 0; transform: translateX(-50%) translateY(-80px); }
+        }
+        /* Modal de resultados pós-partida */
+        .modal-resultados {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #0f172a;
+            border-radius: 32px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            z-index: 10000;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+            border: 2px solid #ffd966;
+            text-align: center;
+        }
+        .modal-resultados .fechar {
+            margin-top: 20px;
+            background: #e67e22;
+        }
+        .modal-resultados .jogar-novamente {
+            background: #27ae60;
+            margin-left: 10px;
+        }
+        .progresso-bar {
+            width: 100%;
+            height: 20px;
+            background: #2c3e50;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .progresso-fill {
+            height: 100%;
+            background: #f39c12;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        .dica {
+            background: #1e293b;
+            padding: 12px;
+            border-radius: 20px;
+            margin: 15px 0;
+            font-size: 0.9rem;
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -401,7 +446,7 @@
         </div>
     </div>
 
-    <!-- TELA DO ALUNO: com indicador de posição e pontuação, sem troféu -->
+    <!-- TELA DO ALUNO -->
     <div id="tela-aluno" class="card hidden">
         <div class="header-actions">
             <h2 id="aluno-nome-display">Aluno</h2>
@@ -492,9 +537,10 @@
     let modoTorcida = 'individual';
     const TOTAL_FASES = 5;
 
-    // Variáveis para o indicador de posição
+    // Variáveis para indicador de posição e última partida
     let ultimaPosicao = null;
     let pollingPosicaoInterval = null;
+    let ultimaPartida = null; // armazena { pontos, acertos, tempo } da partida anterior
 
     const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
     const MODALIDADE_CONFIG = {
@@ -691,7 +737,7 @@
         }
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th><th>Turma</th><th>Média da Turma</th><th>Participantes</th><th>Maior Pontuação (Aluno)</th>
-        </td></thead><tbody>`;
+        </tr></thead><tbody>`;
         ranking.forEach((r, idx) => {
             html += `<tr>
                 <td>${idx+1}º</td>
@@ -875,7 +921,7 @@
                 <td>${escapeHtml(j.turma)}</td>
             </tr>`;
         }
-        html += '</tbody></table>';
+        html += '</tbody></tr>';
         document.getElementById(containerId).innerHTML = html;
         if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
             document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
@@ -1023,7 +1069,7 @@
             <th>Pos</th><th>Nome</th><th>Turma</th><th>Melhor Pontuação</th>
             <th>Fase Máxima</th><th>Partidas</th><th>Velocidade Média (s/acerto)</th>
             <th>Finalista?</th>
-        </tr></thead><tbody>`;
+        </table></thead><tbody>`;
         ranking.forEach((aluno, idx) => {
             let velocidade = (aluno.melhorAcertos > 0) ? (aluno.melhorTempo / aluno.melhorAcertos).toFixed(1) + " s" : "-";
             let finalista = aluno.classificouFinal ? "✅ Sim" : "❌ Não";
@@ -1440,7 +1486,7 @@
         }
     }
 
-    // ---------- LÓGICA DO JOGO (feedback de pontos reposicionado) ----------
+    // ---------- LÓGICA DO JOGO (com modal de resultados pós-partida) ----------
     function mostrarFeedbackPontos(pontos) {
         const div = document.createElement('div');
         div.className = 'feedback-pontos';
@@ -1482,7 +1528,6 @@
                 mostrarFeedbackPontos(pontosGanhos);
             }
         }
-        // Atualiza exibição da pontuação acumulada
         const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
         if (pontuacaoSpan) pontuacaoSpan.innerText = pontosPartida;
         
@@ -1490,19 +1535,105 @@
         await atualizarPontuacaoParcial();
         setTimeout(proxima, 200);
     };
+
+    // Função que exibe o modal com estatísticas detalhadas da partida
+    function exibirModalResultados(posicao, melhorPontuacao, faltamClassificacao, distanciaProximo) {
+        const tempoMedio = (tempoTotalPartida / 20).toFixed(1);
+        const evolucaoPontos = ultimaPartida ? pontosPartida - ultimaPartida.pontos : null;
+        const evolucaoAcertos = ultimaPartida ? acertosPartida - ultimaPartida.acertos : null;
+        const novoRecorde = (melhorPontuacao > 0 && pontosPartida > melhorPontuacao);
+        
+        // Dica personalizada
+        let dica = "";
+        if (acertosPartida < 10) dica = "📚 Revise a tabuada e treine mais! Tente novamente.";
+        else if (acertosPartida >= 15 && tempoMedio > 6) dica = "⚡ Você acerta bastante, mas pode ganhar mais pontos respondendo mais rápido!";
+        else if (acertosPartida >= 15 && tempoMedio <= 6) dica = "🚀 Excelente! Você está muito rápido e preciso. Continue assim!";
+        else if (acertosPartida >= 12) dica = "💪 Bom desempenho! Tente manter a consistência e diminuir o tempo.";
+        else dica = "🎯 Foque em acertar mais perguntas. A prática leva à perfeição!";
+        
+        let htmlModal = `
+            <div class="modal-resultados" id="modal-pos-jogo">
+                <h2>🏁 RESULTADO DA PARTIDA</h2>
+                <div style="font-size: 48px; margin: 15px 0;">⭐ ${pontosPartida} pts</div>
+                <div>✅ Acertos: ${acertosPartida}/20</div>
+                <div>⏱️ Tempo médio: ${tempoMedio} s/pergunta</div>
+        `;
+        if (novoRecorde) {
+            htmlModal += `<div style="color:#f1c40f; margin:10px 0;">🎉 NOVO RECORDE PESSOAL! +${pontosPartida - melhorPontuacao} pontos 🎉</div>`;
+        }
+        if (evolucaoPontos !== null) {
+            const sinal = evolucaoPontos >= 0 ? "+" : "";
+            htmlModal += `<div>📈 Evolução em relação à última partida: <strong>${sinal}${evolucaoPontos} pts</strong> (${evolucaoAcertos >=0 ? "+"+evolucaoAcertos : evolucaoAcertos} acertos)</div>`;
+        }
+        htmlModal += `<div>🏆 Posição no ranking: ${posicao}º lugar</div>`;
+        
+        if (faltamClassificacao !== null && faltamClassificacao > 0) {
+            htmlModal += `<div>🎯 Faltam ${faltamClassificacao} pontos para entrar na zona de classificação!</div>`;
+            const percentual = Math.min(100, Math.floor((pontosPartida / (pontosPartida + faltamClassificacao)) * 100));
+            htmlModal += `<div class="progresso-bar"><div class="progresso-fill" style="width: ${percentual}%;"></div></div>`;
+        } else if (distanciaProximo !== null && distanciaProximo > 0) {
+            htmlModal += `<div>📊 Apenas ${distanciaProximo} pontos separam você do próximo colocado!</div>`;
+        }
+        
+        htmlModal += `
+                <div class="dica">💡 DICA: ${dica}</div>
+                <div style="margin-top: 20px;">
+                    <button class="fechar" id="btn-fechar-modal">Fechar</button>
+                    ${estadoAtual?.status === 'em_andamento' && Date.now() < estadoAtual.fim ? '<button class="jogar-novamente" id="btn-jogar-novamente">🔄 Jogar novamente</button>' : ''}
+                </div>
+            </div>
+        `;
+        // Remove modal anterior se existir
+        const modalExistente = document.getElementById('modal-pos-jogo');
+        if (modalExistente) modalExistente.remove();
+        document.body.insertAdjacentHTML('beforeend', htmlModal);
+        
+        document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
+            document.getElementById('modal-pos-jogo')?.remove();
+        });
+        const btnNovamente = document.getElementById('btn-jogar-novamente');
+        if (btnNovamente) {
+            btnNovamente.addEventListener('click', () => {
+                document.getElementById('modal-pos-jogo')?.remove();
+                // Inicia nova partida imediatamente
+                iniciarNovaPartida();
+            });
+        }
+    }
+    
+    async function iniciarNovaPartida() {
+        if (jogoAtivo) return;
+        if (estadoAtual.status !== 'em_andamento') { toast("Fase inativa ou pausada!"); return; }
+        if (Date.now() >= estadoAtual.fim) { toast("Tempo esgotado!"); return; }
+        ultimaPosicao = await obterPosicaoAtual(alunoId, estadoAtual.fase);
+        perguntas = gerarPerguntas();
+        perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
+        const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
+        if (pontuacaoSpan) pontuacaoSpan.innerText = "0";
+        jogoAtivo = true;
+        document.getElementById('jogo-area').classList.remove('hidden');
+        document.getElementById('aguardando-aluno').classList.add('hidden');
+        iniciarPollingPosicao();
+        proxima();
+    }
+    
     async function finalizar() {
         jogoAtivo = false;
         pararPollingPosicao();
         document.getElementById('jogo-area').classList.add('hidden');
         document.getElementById('aguardando-aluno').classList.remove('hidden');
+        
         const faseAtual = estadoAtual.fase;
+        // Salvar resultado final
         const refResultado = db.ref(`copaV2/resultados/${faseAtual}/${alunoId}`);
         const snap = await refResultado.once('value');
         const lista = snap.val() || [];
-        lista.push({ pontos: pontosPartida, acertos: acertosPartida, tempo: tempoTotalPartida });
+        const novaPartida = { pontos: pontosPartida, acertos: acertosPartida, tempo: tempoTotalPartida };
+        lista.push(novaPartida);
         await refResultado.set(lista);
         await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).remove();
         
+        // Calcular posição final
         const snapRanking = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
         const participantes = estadoAtual.participantes?.[faseAtual] || {};
         let rankingPosicoes = [];
@@ -1517,13 +1648,33 @@
         });
         rankingPosicoes.sort((a,b) => b.pontos - a.pontos);
         const posicao = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
-        if (posicao > 0) {
-            await salvarPosicaoReferencia(alunoId, faseAtual, posicao);
+        if (posicao > 0) await salvarPosicaoReferencia(alunoId, faseAtual, posicao);
+        
+        // Obter melhor pontuação do aluno nesta fase
+        const melhorPontuacao = Math.max(...lista.map(p => p.pontos), 0);
+        // Calcular faltamClassificacao (se fase < 5 e existir vaga)
+        let faltamClassificacao = null;
+        let distanciaProximo = null;
+        const vagas = VAGAS_POR_FASE[faseAtual];
+        if (faseAtual < 5 && rankingPosicoes.length > 0) {
+            const ultimoClassificado = rankingPosicoes[vagas - 1];
+            if (ultimoClassificado && posicao > vagas) {
+                faltamClassificacao = ultimoClassificado.pontos - pontosPartida;
+                if (faltamClassificacao < 0) faltamClassificacao = 0;
+            } else if (posicao <= vagas && posicao > 1) {
+                const proximoAcima = rankingPosicoes[posicao - 2]; // índice anterior
+                if (proximoAcima) distanciaProximo = proximoAcima.pontos - pontosPartida;
+            }
         }
         
-        toast(`✅ Partida finalizada! Pontos: ${pontosPartida}`);
+        // Armazenar esta partida como "última" para futura comparação
+        ultimaPartida = novaPartida;
+        
+        // Exibir modal de resultados
+        exibirModalResultados(posicao, melhorPontuacao, faltamClassificacao, distanciaProximo);
+        
         confete();
-        renderAluno();
+        renderAluno(); // atualiza histórico e melhor pontuação na tela
     }
 
     // ---------- INICIALIZAÇÃO ----------
@@ -1647,24 +1798,15 @@
             document.getElementById('online-stats').classList.remove('hidden');
             await db.ref(`copaV2/participantes/${estadoAtual.fase}/${alunoId}`).set({ nome: alunoNome, turma: alunoTurma });
             db.ref(`online/${alunoId}`).set({ nome: alunoNome, turma: alunoTurma });
+            // Carregar última partida do aluno para comparação futura
+            const snapUltima = await db.ref(`copaV2/resultados/${estadoAtual.fase}/${alunoId}`).once('value');
+            const partidas = snapUltima.val() || [];
+            if (partidas.length > 0) ultimaPartida = partidas[partidas.length-1];
             renderAluno();
         };
         const btnIniciarPartida = document.getElementById('btn-iniciar-partida');
-        if (btnIniciarPartida) btnIniciarPartida.onclick = async () => {
-            if (jogoAtivo) return;
-            if (estadoAtual.status !== 'em_andamento') { toast("Fase inativa ou pausada!"); return; }
-            if (Date.now() >= estadoAtual.fim) { toast("Tempo esgotado!"); return; }
-            ultimaPosicao = await obterPosicaoAtual(alunoId, estadoAtual.fase);
-            perguntas = gerarPerguntas();
-            perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
-            const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
-            if (pontuacaoSpan) pontuacaoSpan.innerText = "0";
-            jogoAtivo = true;
-            document.getElementById('jogo-area').classList.remove('hidden');
-            document.getElementById('aguardando-aluno').classList.add('hidden');
-            iniciarPollingPosicao();
-            proxima();
-        };
+        if (btnIniciarPartida) btnIniciarPartida.onclick = iniciarNovaPartida;
+        
         const btnProjecao = document.getElementById('btn-projecao');
         if (btnProjecao) btnProjecao.onclick = () => {
             meuTipo = 'projecao';
