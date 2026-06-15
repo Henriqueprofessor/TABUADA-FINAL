@@ -236,44 +236,31 @@
         }
         .header-actions .fase-info { margin-left: auto; margin-right: 15px; }
 
-        /* NOVOS ESTILOS PARA INDICADORES E CONTADOR GRANDE */
-        .indicadores-rapidos {
-            display: flex;
-            gap: 20px;
-            justify-content: flex-end;
-            margin-bottom: 15px;
-            background: rgba(0,0,0,0.5);
-            padding: 8px 20px;
-            border-radius: 50px;
-            backdrop-filter: blur(4px);
-        }
-        .indicador-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 1.2rem;
+        /* NOVO ESTILO PARA PONTUAÇÃO ATUAL */
+        .pontuacao-atual {
+            font-size: 28px;
             font-weight: bold;
-        }
-        .indicador-item span:first-child { font-size: 1.8rem; }
-        .cor-verde { color: #2ecc71; }
-        .cor-vermelho { color: #e74c3c; }
-        .cor-amarelo { color: #f1c40f; }
-        .cor-cinza { color: #95a5a6; }
-        .contador-grande {
-            font-size: 72px;
-            font-weight: bold;
-            text-align: center;
             background: #000000aa;
-            border-radius: 60px;
-            padding: 10px;
-            margin: 10px auto;
-            width: 200px;
-            font-family: monospace;
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 40px;
+            margin-bottom: 15px;
+            text-align: center;
         }
-        @media (max-width: 768px) {
-            .contador-grande { font-size: 48px; width: 140px; }
-            .indicador-item { font-size: 1rem; }
-            .indicador-item span:first-child { font-size: 1.4rem; }
+        /* Animação para o ganho de pontos */
+        .feedback-pontos {
+            position: fixed;
+            font-size: 32px;
+            font-weight: bold;
+            color: #f1c40f;
+            text-shadow: 0 0 5px black;
+            pointer-events: none;
+            z-index: 2000;
+            animation: sobeSome 1s ease-out forwards;
+        }
+        @keyframes sobeSome {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -391,7 +378,7 @@
         </div>
     </div>
 
-    <!-- TELA DO ALUNO MODIFICADA: INDICADORES E CONTADOR GRANDE -->
+    <!-- TELA DO ALUNO MODIFICADA: SEM CONTADOR GRANDE, SEM TROFÉU, COM PONTUAÇÃO ATUAL E FEEDBACK DE PONTOS -->
     <div id="tela-aluno" class="card hidden">
         <div class="header-actions">
             <h2 id="aluno-nome-display">Aluno</h2>
@@ -399,21 +386,14 @@
         </div>
         <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong> <span id="aluno-fase-info" class="fase-info"></span></p>
         
-        <!-- Área do jogo com indicadores e contador grande -->
+        <!-- Área do jogo com pontuação atual -->
         <div id="jogo-area" class="hidden">
-            <div class="indicadores-rapidos">
-                <div class="indicador-item" id="indicador-recorde" title="Comparação com seu melhor desempenho">
-                    <span>🏆</span> <span id="recorde-cor">⚪</span>
-                </div>
-                <div class="indicador-item" id="indicador-posicao" title="Movimentação no ranking">
-                    <span id="posicao-seta">⚪</span> <span id="posicao-numero">--</span><span>º</span>
-                </div>
-            </div>
             <div class="status-box">
+                <div class="pontuacao-atual">
+                    🎯 Pontuação: <span id="pontuacao-acumulada">0</span>
+                </div>
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
                 <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
-                <!-- Contador regressivo grande -->
-                <div id="contador-grande" class="contador-grande">10</div>
                 <div class="opcoes-grid">
                     <button class="opcao" onclick="responder(0)"></button>
                     <button class="opcao" onclick="responder(1)"></button>
@@ -485,12 +465,6 @@
     let modoTorcida = 'individual';
     const TOTAL_FASES = 5;
 
-    // NOVAS VARIÁVEIS PARA INDICADORES
-    let melhorPontuacaoNaFase = 0;
-    let ultimaPosicao = null;
-    let pollingIndicadoresInterval = null;     // para o intervalo da posição
-    let pollingProjecaoInterval = null;       // para o intervalo da projeção
-
     const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
     const MODALIDADE_CONFIG = {
         "2-5": { min: 2, max: 5, nome: "Tabuada 2️⃣➡️5️⃣" },
@@ -554,94 +528,23 @@
         });
     }
 
-    // ---------- FUNÇÕES PARA INDICADORES VISUAIS ----------
-    async function carregarMelhorPontuacao() {
-        if (!alunoId || !estadoAtual) return 0;
-        const fase = estadoAtual.fase;
-        const snap = await db.ref(`copaV2/resultados/${fase}/${alunoId}`).once('value');
-        const partidas = snap.val() || [];
-        const melhor = partidas.reduce((max, p) => Math.max(max, p.pontos), 0);
-        melhorPontuacaoNaFase = melhor;
-        return melhor;
-    }
-
-    // Obtém a posição atual do aluno no ranking (considerando resultados finais + temporários)
-    async function obterPosicaoAtual(alunoId, fase) {
-        const snapFinal = await db.ref(`copaV2/resultados/${fase}`).once('value');
-        const snapTemp = await db.ref(`copaV2/resultados_temp/${fase}`).once('value');
-        let mapa = new Map();
-        snapFinal.forEach(child => {
-            const partidas = child.val();
-            if (partidas && partidas.length) {
-                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-                mapa.set(child.key, melhor.pontos);
-            }
-        });
-        snapTemp.forEach(child => {
-            const data = child.val();
-            const existente = mapa.get(child.key);
-            if (!existente || data.pontos > existente) {
-                mapa.set(child.key, data.pontos);
-            }
-        });
-        const ordenado = Array.from(mapa.keys()).sort((a,b) => mapa.get(b) - mapa.get(a));
-        const pos = ordenado.indexOf(alunoId) + 1;
-        return pos > 0 ? pos : null;
-    }
-
-    // Atualiza indicador de desempenho pessoal (projeção vs recorde)
-    function atualizarIndicadorRecorde() {
-        if (!jogoAtivo) return;
-        const perguntasFeitas = perguntaIdx;
-        let projecao = perguntasFeitas === 0 ? 0 : (pontosPartida / perguntasFeitas) * 20;
-        const recorde = melhorPontuacaoNaFase || 1;
-        const percentual = (projecao / recorde) * 100;
-        const corSpan = document.getElementById('recorde-cor');
-        if (!corSpan) return;
-        if (percentual >= 100) corSpan.innerHTML = '🟢';
-        else if (percentual >= 70) corSpan.innerHTML = '🟡';
-        else corSpan.innerHTML = '🔴';
-    }
-
-    // Atualiza indicador de posição (seta + número)
-    async function atualizarIndicadorPosicao() {
-        if (!jogoAtivo || !alunoId || !estadoAtual) return;
-        const fase = estadoAtual.fase;
-        const posAtual = await obterPosicaoAtual(alunoId, fase);
-        if (posAtual === null) return;
-        const setaSpan = document.getElementById('posicao-seta');
-        const numSpan = document.getElementById('posicao-numero');
-        if (!setaSpan || !numSpan) return;
-        if (ultimaPosicao !== null) {
-            if (posAtual < ultimaPosicao) setaSpan.innerHTML = '🟢↑';
-            else if (posAtual > ultimaPosicao) setaSpan.innerHTML = '🔴↓';
-            else setaSpan.innerHTML = '⚪•';
-        } else {
-            setaSpan.innerHTML = '⚪•';
-        }
-        numSpan.innerText = posAtual;
-        ultimaPosicao = posAtual;
-    }
-
-    function iniciarPollingIndicadores() {
-        pararPollingIndicadores();
-        // Projeção a cada 2 segundos
-        pollingProjecaoInterval = setInterval(() => atualizarIndicadorRecorde(), 2000);
-        // Posição a cada 5 segundos
-        pollingIndicadoresInterval = setInterval(() => atualizarIndicadorPosicao(), 5000);
-    }
-
-    function pararPollingIndicadores() {
-        if (pollingProjecaoInterval) clearInterval(pollingProjecaoInterval);
-        if (pollingIndicadoresInterval) clearInterval(pollingIndicadoresInterval);
-        pollingProjecaoInterval = null;
-        pollingIndicadoresInterval = null;
+    // Função para mostrar o feedback de pontos ganhos
+    function mostrarFeedbackPontos(pontosGanhos, eventX, eventY) {
+        const div = document.createElement('div');
+        div.className = 'feedback-pontos';
+        div.innerText = `+${pontosGanhos}`;
+        // Posiciona próximo ao clique ou à área da pergunta
+        let x = eventX || window.innerWidth / 2;
+        let y = eventY || window.innerHeight / 2;
+        div.style.left = x + 'px';
+        div.style.top = y + 'px';
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 1000);
     }
 
     // ---------- FUNÇÕES PARA COR DA POSIÇÃO (REFERÊNCIA) ----------
     async function salvarPosicaoReferencia(alunoId, fase, posicao) {
         await db.ref(`copaV2/ultima_posicao/${fase}/${alunoId}`).set(posicao);
-        console.log(`[Referência] Salvo: ${alunoId} na fase ${fase} = ${posicao}º`);
     }
 
     async function carregarTodasReferencias(fase) {
@@ -1052,7 +955,7 @@
             <th>Pos</th><th>Nome</th><th>Turma</th><th>Melhor Pontuação</th>
             <th>Fase Máxima</th><th>Partidas</th><th>Velocidade Média (s/acerto)</th>
             <th>Finalista?</th>
-        </tr></thead><tbody>`;
+        </table></thead><tbody>`;
         ranking.forEach((aluno, idx) => {
             let velocidade = (aluno.melhorAcertos > 0) ? (aluno.melhorTempo / aluno.melhorAcertos).toFixed(1) + " s" : "-";
             let finalista = aluno.classificouFinal ? "✅ Sim" : "❌ Não";
@@ -1469,19 +1372,14 @@
         }
     }
 
-    // ---------- LÓGICA DO JOGO COM CONTADOR GRANDE ----------
+    // ---------- LÓGICA DO JOGO (MODIFICADA: SEM CONTADOR NUMÉRICO, COM FEEDBACK) ----------
     function startTimer() {
         tempoRestantePergunta = 10;
         const barra = document.getElementById('progresso-tempo');
-        const contadorGrande = document.getElementById('contador-grande');
         if (timerPergunta) clearInterval(timerPergunta);
         timerPergunta = setInterval(() => {
             tempoRestantePergunta -= 0.1;
             if (barra) barra.style.width = Math.max(0, tempoRestantePergunta * 10) + '%';
-            if (contadorGrande) {
-                const segundos = Math.ceil(tempoRestantePergunta);
-                contadorGrande.innerText = segundos >= 0 ? segundos : 0;
-            }
             if (tempoRestantePergunta <= 0) responder(-1);
         }, 100);
     }
@@ -1494,27 +1392,34 @@
         document.getElementById('pergunta-num').innerText = perguntaIdx + 1;
         startTimer();
     }
-    window.responder = async function(idx) {
+    window.responder = async function(idx, event) {
         if (timerPergunta) clearInterval(timerPergunta);
         const tempoGasto = 10 - Math.max(0, tempoRestantePergunta);
         tempoTotalPartida += tempoGasto;
+        let pontosGanhos = 0;
         if (idx !== -1) {
             const resp = parseInt(document.querySelectorAll('.opcao')[idx].innerText);
             const p = perguntas[perguntaIdx];
             if (resp === p.a * p.b) {
                 acertosPartida++;
-                pontosPartida += Math.round(100 * (Math.max(0, tempoRestantePergunta) / 10));
+                pontosGanhos = Math.round(100 * (Math.max(0, tempoRestantePergunta) / 10));
+                pontosPartida += pontosGanhos;
+                // Mostrar feedback visual dos pontos ganhos
+                let x = event ? event.clientX : window.innerWidth / 2;
+                let y = event ? event.clientY : window.innerHeight / 2;
+                mostrarFeedbackPontos(pontosGanhos, x, y);
             }
         }
+        // Atualiza exibição da pontuação acumulada
+        const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
+        if (pontuacaoSpan) pontuacaoSpan.innerText = pontosPartida;
+        
         perguntaIdx++;
         await atualizarPontuacaoParcial();
-        // Atualiza indicador de projeção imediatamente após responder
-        atualizarIndicadorRecorde();
         setTimeout(proxima, 200);
     };
     async function finalizar() {
         jogoAtivo = false;
-        pararPollingIndicadores();
         document.getElementById('jogo-area').classList.add('hidden');
         document.getElementById('aguardando-aluno').classList.remove('hidden');
         const faseAtual = estadoAtual.fase;
@@ -1676,15 +1581,14 @@
             if (jogoAtivo) return;
             if (estadoAtual.status !== 'em_andamento') { toast("Fase inativa ou pausada!"); return; }
             if (Date.now() >= estadoAtual.fim) { toast("Tempo esgotado!"); return; }
-            // Carrega melhor pontuação e posição inicial
-            await carregarMelhorPontuacao();
-            ultimaPosicao = await obterPosicaoAtual(alunoId, estadoAtual.fase);
             perguntas = gerarPerguntas();
             perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
+            // Reseta a exibição da pontuação
+            const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
+            if (pontuacaoSpan) pontuacaoSpan.innerText = "0";
             jogoAtivo = true;
             document.getElementById('jogo-area').classList.remove('hidden');
             document.getElementById('aguardando-aluno').classList.add('hidden');
-            iniciarPollingIndicadores();
             proxima();
         };
         const btnProjecao = document.getElementById('btn-projecao');
