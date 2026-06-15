@@ -90,7 +90,6 @@
         .delta-igual { color: #f39c12; }
         .delta-estreante { color: #3498db; }
         .delta-semdados { color: #7f8c8d; }
-        /* Cores para a posição */
         .posicao-subiu { color: #2ecc71; font-weight: bold; }
         .posicao-desceu { color: #e74c3c; font-weight: bold; }
         .podium {
@@ -206,15 +205,9 @@
             gap: 15px;
             margin-bottom: 15px;
         }
-        .ameaca-icon {
-            color: #e67e22;
-            font-weight: bold;
-        }
+        .ameaca-icon { color: #e67e22; font-weight: bold; }
         @media (max-width: 768px) {
-            .ranking-table th, .ranking-table td {
-                font-size: 11px;
-                padding: 4px 3px;
-            }
+            .ranking-table th, .ranking-table td { font-size: 11px; padding: 4px 3px; }
         }
         .resumo-card {
             background: #1f3a4b;
@@ -232,9 +225,7 @@
             padding: 6px 12px;
             font-size: 12px;
         }
-        .btn-modo.ativo {
-            background: #e67e22;
-        }
+        .btn-modo.ativo { background: #e67e22; }
         .fase-info {
             font-size: 14px;
             background: #1f3a4b;
@@ -243,9 +234,46 @@
             border-radius: 20px;
             margin-left: 15px;
         }
-        .header-actions .fase-info {
-            margin-left: auto;
-            margin-right: 15px;
+        .header-actions .fase-info { margin-left: auto; margin-right: 15px; }
+
+        /* NOVOS ESTILOS PARA INDICADORES E CONTADOR GRANDE */
+        .indicadores-rapidos {
+            display: flex;
+            gap: 20px;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 20px;
+            border-radius: 50px;
+            backdrop-filter: blur(4px);
+        }
+        .indicador-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .indicador-item span:first-child { font-size: 1.8rem; }
+        .cor-verde { color: #2ecc71; }
+        .cor-vermelho { color: #e74c3c; }
+        .cor-amarelo { color: #f1c40f; }
+        .cor-cinza { color: #95a5a6; }
+        .contador-grande {
+            font-size: 72px;
+            font-weight: bold;
+            text-align: center;
+            background: #000000aa;
+            border-radius: 60px;
+            padding: 10px;
+            margin: 10px auto;
+            width: 200px;
+            font-family: monospace;
+        }
+        @media (max-width: 768px) {
+            .contador-grande { font-size: 48px; width: 140px; }
+            .indicador-item { font-size: 1rem; }
+            .indicador-item span:first-child { font-size: 1.4rem; }
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -276,7 +304,7 @@
         </div>
     </div>
 
-    <!-- PAINEL DO PROFESSOR -->
+    <!-- PAINEL DO PROFESSOR (inalterado) -->
     <div id="painel-professor" class="card hidden">
         <div class="header-actions">
             <h2>🔧 Painel do Professor <span id="prof-fase-info" class="fase-info"></span></h2>
@@ -363,17 +391,29 @@
         </div>
     </div>
 
-    <!-- TELA DO ALUNO -->
+    <!-- TELA DO ALUNO MODIFICADA: INDICADORES E CONTADOR GRANDE -->
     <div id="tela-aluno" class="card hidden">
         <div class="header-actions">
             <h2 id="aluno-nome-display">Aluno</h2>
             <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
         </div>
         <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong> <span id="aluno-fase-info" class="fase-info"></span></p>
+        
+        <!-- Área do jogo com indicadores e contador grande -->
         <div id="jogo-area" class="hidden">
+            <div class="indicadores-rapidos">
+                <div class="indicador-item" id="indicador-recorde" title="Comparação com seu melhor desempenho">
+                    <span>🏆</span> <span id="recorde-cor">⚪</span>
+                </div>
+                <div class="indicador-item" id="indicador-posicao" title="Movimentação no ranking">
+                    <span id="posicao-seta">⚪</span> <span id="posicao-numero">--</span><span>º</span>
+                </div>
+            </div>
             <div class="status-box">
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
                 <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
+                <!-- Contador regressivo grande -->
+                <div id="contador-grande" class="contador-grande">10</div>
                 <div class="opcoes-grid">
                     <button class="opcao" onclick="responder(0)"></button>
                     <button class="opcao" onclick="responder(1)"></button>
@@ -383,6 +423,7 @@
                 <div style="text-align: center;">Pergunta: <span id="pergunta-num">1</span>/20</div>
             </div>
         </div>
+        
         <div id="aguardando-aluno" style="text-align:center; padding:20px;">
             <div id="msg-status-aluno">Aguardando...</div>
             <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
@@ -394,7 +435,7 @@
         <div id="podium-aluno-container" class="status-box hidden"></div>
     </div>
 
-    <!-- TELA DE TORCIDA -->
+    <!-- TELA DE TORCIDA (inalterada) -->
     <div id="tela-torcida" class="card hidden">
         <div class="header-actions">
             <h2>📺 RANKING EM TEMPO REAL <span class="live-badge">AO VIVO</span></h2>
@@ -443,6 +484,12 @@
     let faseSelecionadaProf = 1;
     let modoTorcida = 'individual';
     const TOTAL_FASES = 5;
+
+    // NOVAS VARIÁVEIS PARA INDICADORES
+    let melhorPontuacaoNaFase = 0;
+    let ultimaPosicao = null;
+    let pollingIndicadoresInterval = null;     // para o intervalo da posição
+    let pollingProjecaoInterval = null;       // para o intervalo da projeção
 
     const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
     const MODALIDADE_CONFIG = {
@@ -507,7 +554,91 @@
         });
     }
 
-    // ---------- FUNÇÕES PARA COR DA POSIÇÃO (REFERÊNCIA POR ÚLTIMA PARTIDA) ----------
+    // ---------- FUNÇÕES PARA INDICADORES VISUAIS ----------
+    async function carregarMelhorPontuacao() {
+        if (!alunoId || !estadoAtual) return 0;
+        const fase = estadoAtual.fase;
+        const snap = await db.ref(`copaV2/resultados/${fase}/${alunoId}`).once('value');
+        const partidas = snap.val() || [];
+        const melhor = partidas.reduce((max, p) => Math.max(max, p.pontos), 0);
+        melhorPontuacaoNaFase = melhor;
+        return melhor;
+    }
+
+    // Obtém a posição atual do aluno no ranking (considerando resultados finais + temporários)
+    async function obterPosicaoAtual(alunoId, fase) {
+        const snapFinal = await db.ref(`copaV2/resultados/${fase}`).once('value');
+        const snapTemp = await db.ref(`copaV2/resultados_temp/${fase}`).once('value');
+        let mapa = new Map();
+        snapFinal.forEach(child => {
+            const partidas = child.val();
+            if (partidas && partidas.length) {
+                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                mapa.set(child.key, melhor.pontos);
+            }
+        });
+        snapTemp.forEach(child => {
+            const data = child.val();
+            const existente = mapa.get(child.key);
+            if (!existente || data.pontos > existente) {
+                mapa.set(child.key, data.pontos);
+            }
+        });
+        const ordenado = Array.from(mapa.keys()).sort((a,b) => mapa.get(b) - mapa.get(a));
+        const pos = ordenado.indexOf(alunoId) + 1;
+        return pos > 0 ? pos : null;
+    }
+
+    // Atualiza indicador de desempenho pessoal (projeção vs recorde)
+    function atualizarIndicadorRecorde() {
+        if (!jogoAtivo) return;
+        const perguntasFeitas = perguntaIdx;
+        let projecao = perguntasFeitas === 0 ? 0 : (pontosPartida / perguntasFeitas) * 20;
+        const recorde = melhorPontuacaoNaFase || 1;
+        const percentual = (projecao / recorde) * 100;
+        const corSpan = document.getElementById('recorde-cor');
+        if (!corSpan) return;
+        if (percentual >= 100) corSpan.innerHTML = '🟢';
+        else if (percentual >= 70) corSpan.innerHTML = '🟡';
+        else corSpan.innerHTML = '🔴';
+    }
+
+    // Atualiza indicador de posição (seta + número)
+    async function atualizarIndicadorPosicao() {
+        if (!jogoAtivo || !alunoId || !estadoAtual) return;
+        const fase = estadoAtual.fase;
+        const posAtual = await obterPosicaoAtual(alunoId, fase);
+        if (posAtual === null) return;
+        const setaSpan = document.getElementById('posicao-seta');
+        const numSpan = document.getElementById('posicao-numero');
+        if (!setaSpan || !numSpan) return;
+        if (ultimaPosicao !== null) {
+            if (posAtual < ultimaPosicao) setaSpan.innerHTML = '🟢↑';
+            else if (posAtual > ultimaPosicao) setaSpan.innerHTML = '🔴↓';
+            else setaSpan.innerHTML = '⚪•';
+        } else {
+            setaSpan.innerHTML = '⚪•';
+        }
+        numSpan.innerText = posAtual;
+        ultimaPosicao = posAtual;
+    }
+
+    function iniciarPollingIndicadores() {
+        pararPollingIndicadores();
+        // Projeção a cada 2 segundos
+        pollingProjecaoInterval = setInterval(() => atualizarIndicadorRecorde(), 2000);
+        // Posição a cada 5 segundos
+        pollingIndicadoresInterval = setInterval(() => atualizarIndicadorPosicao(), 5000);
+    }
+
+    function pararPollingIndicadores() {
+        if (pollingProjecaoInterval) clearInterval(pollingProjecaoInterval);
+        if (pollingIndicadoresInterval) clearInterval(pollingIndicadoresInterval);
+        pollingProjecaoInterval = null;
+        pollingIndicadoresInterval = null;
+    }
+
+    // ---------- FUNÇÕES PARA COR DA POSIÇÃO (REFERÊNCIA) ----------
     async function salvarPosicaoReferencia(alunoId, fase, posicao) {
         await db.ref(`copaV2/ultima_posicao/${fase}/${alunoId}`).set(posicao);
         console.log(`[Referência] Salvo: ${alunoId} na fase ${fase} = ${posicao}º`);
@@ -518,7 +649,7 @@
         return snap.val() || {};
     }
 
-    // ---------- RANKING POR TURMA ----------
+    // ---------- RANKING POR TURMA (inalterado) ----------
     async function renderRankingTurmas(containerId, exibirNaTorcida = false) {
         if (!estadoAtual) return;
         let turmasMap = new Map();
@@ -667,9 +798,7 @@
             return;
         }
 
-        // Carregar referências existentes
         let referencias = await carregarTodasReferencias(faseNum);
-        // Criar referência automaticamente para jogadores que já têm partidas finalizadas mas não têm referência
         let referenciasAtualizadas = false;
         for (let i = 0; i < listaComId.length; i++) {
             const jogador = listaComId[i];
@@ -679,7 +808,6 @@
                 await salvarPosicaoReferencia(jogador.id, faseNum, posAtual);
                 referencias[jogador.id] = posAtual;
                 referenciasAtualizadas = true;
-                console.log(`[Referência automática] Criada para ${jogador.nome} (ID ${jogador.id}) posição ${posAtual}`);
             }
         }
         if (referenciasAtualizadas) {
@@ -848,7 +976,7 @@
         intervaloTorcidaEquipes = null;
     }
 
-    // ---------- RELATÓRIOS ----------
+    // ---------- RELATÓRIOS (inalterado) ----------
     async function gerarRelatorio() {
         if (!estadoAtual) return;
         const container = document.getElementById('relatorio-container');
@@ -1128,7 +1256,7 @@
         await db.ref(`copaV2/participantes/${faseAtual}`).remove();
         await db.ref(`copaV2/resultados_temp/${faseAtual}`).remove();
         await db.ref(`copaV2/classificados/${faseAtual}`).remove();
-        await db.ref(`copaV2/ultima_posicao/${faseAtual}`).remove(); // limpa referências
+        await db.ref(`copaV2/ultima_posicao/${faseAtual}`).remove();
         await db.ref('copaV2').update({ status: 'aguardando', fim: 0, tempoRestantePausa: null });
         toast(`✅ Fase ${faseAtual} resetada! Os alunos devem se recadastrar e jogar novamente.`);
         atualizarUI();
@@ -1341,14 +1469,19 @@
         }
     }
 
-    // ---------- LÓGICA DO JOGO ----------
+    // ---------- LÓGICA DO JOGO COM CONTADOR GRANDE ----------
     function startTimer() {
         tempoRestantePergunta = 10;
         const barra = document.getElementById('progresso-tempo');
+        const contadorGrande = document.getElementById('contador-grande');
         if (timerPergunta) clearInterval(timerPergunta);
         timerPergunta = setInterval(() => {
             tempoRestantePergunta -= 0.1;
             if (barra) barra.style.width = Math.max(0, tempoRestantePergunta * 10) + '%';
+            if (contadorGrande) {
+                const segundos = Math.ceil(tempoRestantePergunta);
+                contadorGrande.innerText = segundos >= 0 ? segundos : 0;
+            }
             if (tempoRestantePergunta <= 0) responder(-1);
         }, 100);
     }
@@ -1375,23 +1508,23 @@
         }
         perguntaIdx++;
         await atualizarPontuacaoParcial();
+        // Atualiza indicador de projeção imediatamente após responder
+        atualizarIndicadorRecorde();
         setTimeout(proxima, 200);
     };
     async function finalizar() {
         jogoAtivo = false;
+        pararPollingIndicadores();
         document.getElementById('jogo-area').classList.add('hidden');
         document.getElementById('aguardando-aluno').classList.remove('hidden');
         const faseAtual = estadoAtual.fase;
-        // Salvar resultado final
         const refResultado = db.ref(`copaV2/resultados/${faseAtual}/${alunoId}`);
         const snap = await refResultado.once('value');
         const lista = snap.val() || [];
         lista.push({ pontos: pontosPartida, acertos: acertosPartida, tempo: tempoTotalPartida });
         await refResultado.set(lista);
-        // Remover dados temporários
         await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).remove();
         
-        // Calcular a posição atual do jogador no ranking da fase (após salvar)
         const snapRanking = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
         const participantes = estadoAtual.participantes?.[faseAtual] || {};
         let rankingPosicoes = [];
@@ -1539,15 +1672,19 @@
             renderAluno();
         };
         const btnIniciarPartida = document.getElementById('btn-iniciar-partida');
-        if (btnIniciarPartida) btnIniciarPartida.onclick = () => {
+        if (btnIniciarPartida) btnIniciarPartida.onclick = async () => {
             if (jogoAtivo) return;
             if (estadoAtual.status !== 'em_andamento') { toast("Fase inativa ou pausada!"); return; }
             if (Date.now() >= estadoAtual.fim) { toast("Tempo esgotado!"); return; }
+            // Carrega melhor pontuação e posição inicial
+            await carregarMelhorPontuacao();
+            ultimaPosicao = await obterPosicaoAtual(alunoId, estadoAtual.fase);
             perguntas = gerarPerguntas();
             perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
             jogoAtivo = true;
             document.getElementById('jogo-area').classList.remove('hidden');
             document.getElementById('aguardando-aluno').classList.add('hidden');
+            iniciarPollingIndicadores();
             proxima();
         };
         const btnProjecao = document.getElementById('btn-projecao');
