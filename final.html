@@ -729,7 +729,7 @@
         }
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th><th>Turma</th><th>Média da Turma</th><th>Participantes</th><th>Maior Pontuação (Aluno)</th>
-        </tr></thead><tbody>`;
+        <tr></thead><tbody>`;
         ranking.forEach((r, idx) => {
             html += `<tr>
                 <td>${idx+1}º</td>
@@ -910,7 +910,7 @@
                 <td>${escapeHtml(j.turma)}</td>
             </tr>`;
         }
-        html += '</tbody></tr>';
+        html += '</tbody><table>';
         document.getElementById(containerId).innerHTML = html;
         if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
             document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
@@ -945,13 +945,17 @@
     
     async function atualizarTorcidaIndividual() {
         if (meuTipo !== 'projecao' || modoTorcida !== 'individual') return;
-        if (!estadoAtual || estadoAtual.status !== 'em_andamento') return;
+        if (!estadoAtual) return;
+        // Permite exibir mesmo se status for 'finalizado' para mostrar ranking final da fase 5
+        if (estadoAtual.status !== 'em_andamento' && estadoAtual.status !== 'finalizado') return;
         await renderRankingDinamico(estadoAtual.fase, 'ranking-torcida-container', true);
     }
 
     async function atualizarTorcidaEquipes() {
         if (meuTipo !== 'projecao' || modoTorcida !== 'equipes') return;
-        if (!estadoAtual || estadoAtual.status !== 'em_andamento') return;
+        if (!estadoAtual) return;
+        // Permite exibir mesmo se status for 'finalizado' (para mostrar ranking final)
+        if (estadoAtual.status !== 'em_andamento' && estadoAtual.status !== 'finalizado') return;
         await renderRankingTurmas('ranking-torcida-container', true);
     }
 
@@ -1058,7 +1062,7 @@
             <th>Pos</th><th>Nome</th><th>Turma</th><th>Melhor Pontuação</th>
             <th>Fase Máxima</th><th>Partidas</th><th>Velocidade Média (s/acerto)</th>
             <th>Finalista?</th>
-        <tr></thead><tbody>`;
+        </tr></thead><tbody>`;
         ranking.forEach((aluno, idx) => {
             let velocidade = (aluno.melhorAcertos > 0) ? (aluno.melhorTempo / aluno.melhorAcertos).toFixed(1) + " s" : "-";
             let finalista = aluno.classificouFinal ? "✅ Sim" : "❌ Não";
@@ -1073,7 +1077,7 @@
                 <td>${finalista}</td>
             </tr>`;
         });
-        html += '</tbody></table>';
+        html += '</tbody><table>';
         container.innerHTML = html;
     }
     
@@ -1185,7 +1189,7 @@
             return b.melhorPontuacao - a.melhorPontuacao || b.melhorAcertos - a.melhorAcertos || a.melhorTempo - b.melhorTempo;
         });
         if (rankingArray.length === 0) { document.getElementById('ranking-geral-container').innerHTML = '<p>Nenhum dado ainda.</p>'; return; }
-        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Status</th><th>Turma</th><tr></thead><tbody>';
+        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Status</th><th>Turma</th></tr></thead><tbody>';
         rankingArray.forEach((r, i) => {
             let status = `🎯 Fase ${r.ultimaFase}`;
             if (r.faseEliminacao) status += ` (Eliminado na Fase ${r.faseEliminacao})`;
@@ -1309,6 +1313,10 @@
             renderPodioFinal('podium-container');
             renderPodioFinal('podium-torcida-container');
             renderPodioFinal('podium-aluno-container');
+            // Forçar atualização do ranking de equipes na torcida se necessário
+            if (meuTipo === 'projecao' && modoTorcida === 'equipes') {
+                setTimeout(() => atualizarTorcidaEquipes(), 500);
+            }
             forcarAlunosParaMenu();
             return;
         }
@@ -1568,12 +1576,22 @@
             if (document.getElementById('tab-ranking-turmas') && !document.getElementById('tab-ranking-turmas').classList.contains('hidden')) {
                 renderRankingTurmas('ranking-turmas-container', false);
             }
-            popularSelectFases();  // Garante que o select seja preenchido corretamente
+            popularSelectFases();
         } else if (meuTipo === 'aluno') renderAluno();
         else if (meuTipo === 'projecao') {
-            if (estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) renderPodioFinal('podium-torcida-container');
-            else { const pt = document.getElementById('podium-torcida-container'); if(pt) pt.classList.add('hidden'); }
-            if (!intervaloTorcidaIndividual && !intervaloTorcidaEquipes) iniciarAtualizacaoTorcida();
+            if (estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) {
+                renderPodioFinal('podium-torcida-container');
+                // Atualiza o ranking de acordo com o modo atual
+                if (modoTorcida === 'equipes') {
+                    atualizarTorcidaEquipes();
+                } else {
+                    atualizarTorcidaIndividual();
+                }
+            } else {
+                const pt = document.getElementById('podium-torcida-container');
+                if (pt) pt.classList.add('hidden');
+                if (!intervaloTorcidaIndividual && !intervaloTorcidaEquipes) iniciarAtualizacaoTorcida();
+            }
         }
     }
 
@@ -1796,7 +1814,7 @@
                         modalSelect.title = "";
                     }
                 }
-                popularSelectFases(); // Garante que o select seja preenchido ao carregar
+                popularSelectFases();
             }
         });
 
@@ -1815,7 +1833,7 @@
                 if (tab === 'ranking-geral') renderRankingGeral();
                 if (tab === 'ranking-fase') {
                     atualizarRankingProfessor();
-                    popularSelectFases(); // Atualiza o select ao mudar para a aba
+                    popularSelectFases();
                 }
                 if (tab === 'ranking-turmas') renderRankingTurmas('ranking-turmas-container', false);
                 if (tab === 'relatorios') gerarRelatorio();
@@ -1833,13 +1851,21 @@
                 modoTorcida = 'individual';
                 btnIndiv.classList.add('ativo');
                 btnEquipes.classList.remove('ativo');
-                atualizarTorcidaIndividual();
+                if (estadoAtual && estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) {
+                    atualizarTorcidaIndividual();
+                } else {
+                    atualizarTorcidaIndividual();
+                }
             };
             btnEquipes.onclick = () => {
                 modoTorcida = 'equipes';
                 btnEquipes.classList.add('ativo');
                 btnIndiv.classList.remove('ativo');
-                atualizarTorcidaEquipes();
+                if (estadoAtual && estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) {
+                    atualizarTorcidaEquipes();
+                } else {
+                    atualizarTorcidaEquipes();
+                }
             };
         }
 
