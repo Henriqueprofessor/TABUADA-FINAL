@@ -385,6 +385,7 @@
             font-size: 16px;
             cursor: pointer;
             padding: 0 4px;
+            margin: 0;
         }
         .btn-grafico:hover { color: #fff; }
         .grafico-modal {
@@ -748,161 +749,168 @@
         return p;
     }
 
-    // ---------- FUNÇÕES DO GRÁFICO ----------
+    // ---------- FUNÇÃO DO GRÁFICO (CORRIGIDA) ----------
     function abrirGrafico(id, nome) {
-        // Buscar todas as partidas do jogador em todas as fases
-        const todasFases = estadoAtual.resultados || {};
-        let partidas = [];
-        for (let fase = 1; fase <= TOTAL_FASES; fase++) {
-            const res = todasFases[fase] || {};
-            if (res[id]) {
-                const lista = res[id];
-                for (let partida of lista) {
-                    // Adiciona a fase para referência
-                    partidas.push({
-                        ...partida,
-                        fase: fase,
-                        // Se não tiver timestamp, usar um índice sequencial
-                        idx: partidas.length
-                    });
+        try {
+            if (!estadoAtual) {
+                toast("Dados ainda não carregados. Tente novamente.");
+                return;
+            }
+
+            const todasFases = estadoAtual.resultados || {};
+            let partidas = [];
+
+            // Coletar partidas de todas as fases
+            for (let fase = 1; fase <= TOTAL_FASES; fase++) {
+                const res = todasFases[fase] || {};
+                if (res[id] && Array.isArray(res[id])) {
+                    for (let partida of res[id]) {
+                        if (partida.acertos > 0) {
+                            partidas.push({
+                                pontos: partida.pontos || 0,
+                                acertos: partida.acertos || 0,
+                                tempo: partida.tempo || 0,
+                                fase: fase,
+                                idx: partidas.length
+                            });
+                        }
+                    }
                 }
             }
-        }
-        // Também verificar partidas temporárias (em andamento) - podem não ter acertos ainda
-        const temp = estadoAtual.resultados_temp || {};
-        if (temp[id]) {
-            const data = temp[id];
-            if (data.acertos > 0) {
+
+            // Verificar partida temporária (em andamento)
+            const temp = estadoAtual.resultados_temp || {};
+            if (temp[id] && temp[id].acertos > 0) {
                 partidas.push({
-                    pontos: data.pontos,
-                    acertos: data.acertos,
-                    tempo: data.tempo,
-                    fase: estadoAtual.fase,
+                    pontos: temp[id].pontos || 0,
+                    acertos: temp[id].acertos || 0,
+                    tempo: temp[id].tempo || 0,
+                    fase: estadoAtual.fase || 1,
                     idx: partidas.length,
                     isTemp: true
                 });
             }
-        }
 
-        // Ordenar por índice (ordem de criação)
-        partidas.sort((a,b) => a.idx - b.idx);
+            // Ordenar por índice (ordem de criação)
+            partidas.sort((a,b) => a.idx - b.idx);
 
-        // Filtrar apenas partidas com acertos > 0 para velocidade
-        const validas = partidas.filter(p => p.acertos > 0);
-        if (validas.length < 2) {
-            document.getElementById('grafico-info').innerText = 'Dados insuficientes (mínimo 2 partidas com acertos).';
-            document.getElementById('grafico-titulo').innerText = `Evolução da Velocidade - ${nome}`;
+            // Verificar se há dados suficientes
+            if (partidas.length < 2) {
+                document.getElementById('grafico-info').innerHTML = 'Dados insuficientes (mínimo 2 partidas com acertos).';
+                document.getElementById('grafico-titulo').innerText = `Evolução da Velocidade - ${nome}`;
+                const canvas = document.getElementById('grafico-canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#aaa';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Dados insuficientes para gráfico', canvas.width/2, canvas.height/2);
+                document.getElementById('grafico-modal').classList.remove('hidden');
+                return;
+            }
+
+            // Preparar dados para o gráfico
+            const labels = partidas.map((p, i) => `P${i+1}${p.isTemp ? '*' : ''}`);
+            const velocidades = partidas.map(p => p.tempo / p.acertos);
+
+            // Desenhar gráfico
             const canvas = document.getElementById('grafico-canvas');
             const ctx = canvas.getContext('2d');
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-            ctx.fillStyle = '#aaa';
-            ctx.font = '16px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Dados insuficientes para gráfico', canvas.width/2, canvas.height/2);
-            document.getElementById('grafico-modal').classList.remove('hidden');
-            return;
-        }
+            const width = canvas.width, height = canvas.height;
+            ctx.clearRect(0, 0, width, height);
 
-        // Preparar dados para o gráfico
-        const labels = validas.map((p, i) => `P${i+1}${p.isTemp ? '*' : ''}`);
-        const velocidades = validas.map(p => p.tempo / p.acertos);
+            // Margens
+            const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
 
-        // Desenhar gráfico
-        const canvas = document.getElementById('grafico-canvas');
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width, height = canvas.height;
-        ctx.clearRect(0,0,width,height);
+            const maxVel = Math.max(...velocidades) * 1.2 || 1;
+            const minVel = Math.min(...velocidades) * 0.8 || 0;
+            const range = maxVel - minVel || 1;
 
-        // Margens
-        const margin = { top: 20, right: 20, bottom: 40, left: 50 };
-        const chartWidth = width - margin.left - margin.right;
-        const chartHeight = height - margin.top - margin.bottom;
+            const x = (i) => margin.left + (i / (velocidades.length - 1)) * chartWidth;
+            const y = (v) => margin.top + chartHeight - ((v - minVel) / range) * chartHeight;
 
-        const maxVel = Math.max(...velocidades) * 1.2;
-        const minVel = Math.min(...velocidades) * 0.8;
-        const range = maxVel - minVel || 1;
-
-        // Função para converter dados em coordenadas
-        const x = (i) => margin.left + (i / (velocidades.length - 1)) * chartWidth;
-        const y = (v) => margin.top + chartHeight - ((v - minVel) / range) * chartHeight;
-
-        // Desenhar eixos
-        ctx.strokeStyle = '#555';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(margin.left, margin.top);
-        ctx.lineTo(margin.left, margin.top + chartHeight);
-        ctx.lineTo(margin.left + chartWidth, margin.top + chartHeight);
-        ctx.stroke();
-
-        // Desenhar grade horizontal
-        ctx.strokeStyle = '#333';
-        ctx.setLineDash([4,4]);
-        for (let i = 0; i <= 4; i++) {
-            const yPos = margin.top + (i/4) * chartHeight;
-            ctx.beginPath();
-            ctx.moveTo(margin.left, yPos);
-            ctx.lineTo(margin.left + chartWidth, yPos);
-            ctx.stroke();
-        }
-        ctx.setLineDash([]);
-
-        // Desenhar linha
-        ctx.strokeStyle = '#ffd966';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let i = 0; i < velocidades.length; i++) {
-            const xPos = x(i);
-            const yPos = y(velocidades[i]);
-            if (i === 0) ctx.moveTo(xPos, yPos);
-            else ctx.lineTo(xPos, yPos);
-        }
-        ctx.stroke();
-
-        // Desenhar pontos
-        for (let i = 0; i < velocidades.length; i++) {
-            const xPos = x(i);
-            const yPos = y(velocidades[i]);
-            ctx.beginPath();
-            ctx.arc(xPos, yPos, 5, 0, 2*Math.PI);
-            ctx.fillStyle = '#ffd966';
-            ctx.fill();
-            ctx.strokeStyle = '#000';
+            // Eixos
+            ctx.strokeStyle = '#555';
             ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, margin.top + chartHeight);
+            ctx.lineTo(margin.left + chartWidth, margin.top + chartHeight);
             ctx.stroke();
 
-            // Rótulo do valor
-            ctx.fillStyle = '#fff';
+            // Grade horizontal
+            ctx.strokeStyle = '#333';
+            ctx.setLineDash([4,4]);
+            for (let i = 0; i <= 4; i++) {
+                const yPos = margin.top + (i/4) * chartHeight;
+                ctx.beginPath();
+                ctx.moveTo(margin.left, yPos);
+                ctx.lineTo(margin.left + chartWidth, yPos);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // Linha
+            ctx.strokeStyle = '#ffd966';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < velocidades.length; i++) {
+                const xPos = x(i);
+                const yPos = y(velocidades[i]);
+                if (i === 0) ctx.moveTo(xPos, yPos);
+                else ctx.lineTo(xPos, yPos);
+            }
+            ctx.stroke();
+
+            // Pontos
+            for (let i = 0; i < velocidades.length; i++) {
+                const xPos = x(i);
+                const yPos = y(velocidades[i]);
+                ctx.beginPath();
+                ctx.arc(xPos, yPos, 5, 0, 2*Math.PI);
+                ctx.fillStyle = '#ffd966';
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(velocidades[i].toFixed(2)+'s', xPos, yPos - 10);
+            }
+
+            // Rótulos X
+            ctx.fillStyle = '#aaa';
             ctx.font = '10px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(velocidades[i].toFixed(2)+'s', xPos, yPos - 10);
+            for (let i = 0; i < velocidades.length; i++) {
+                const xPos = x(i);
+                ctx.fillText(labels[i], xPos, margin.top + chartHeight + 15);
+            }
+
+            // Título Y
+            ctx.save();
+            ctx.translate(15, margin.top + chartHeight/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillStyle = '#aaa';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Velocidade (s)', 0, 0);
+            ctx.restore();
+
+            // Informações
+            document.getElementById('grafico-info').innerHTML = 
+                `📊 ${partidas.length} partidas | Melhor: ${Math.min(...velocidades).toFixed(2)}s | Pior: ${Math.max(...velocidades).toFixed(2)}s | Média: ${(velocidades.reduce((a,b)=>a+b,0)/velocidades.length).toFixed(2)}s`;
+            document.getElementById('grafico-titulo').innerText = `Evolução da Velocidade - ${nome}`;
+
+            document.getElementById('grafico-modal').classList.remove('hidden');
+        } catch (error) {
+            console.error('Erro ao gerar gráfico:', error);
+            toast('Erro ao carregar gráfico. Tente novamente.');
         }
-
-        // Rótulos do eixo X
-        ctx.fillStyle = '#aaa';
-        ctx.font = '10px sans-serif';
-        ctx.textAlign = 'center';
-        for (let i = 0; i < velocidades.length; i++) {
-            const xPos = x(i);
-            ctx.fillText(labels[i], xPos, margin.top + chartHeight + 15);
-        }
-
-        // Título do eixo Y
-        ctx.save();
-        ctx.translate(15, margin.top + chartHeight/2);
-        ctx.rotate(-Math.PI/2);
-        ctx.fillStyle = '#aaa';
-        ctx.font = '12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Velocidade (s)', 0, 0);
-        ctx.restore();
-
-        // Informações
-        document.getElementById('grafico-info').innerHTML = 
-            `📊 ${validas.length} partidas | Melhor: ${Math.min(...velocidades).toFixed(2)}s | Pior: ${Math.max(...velocidades).toFixed(2)}s | Média: ${(velocidades.reduce((a,b)=>a+b,0)/velocidades.length).toFixed(2)}s`;
-        document.getElementById('grafico-titulo').innerText = `Evolução da Velocidade - ${nome}`;
-
-        document.getElementById('grafico-modal').classList.remove('hidden');
     }
 
     function fecharGrafico(event) {
@@ -910,7 +918,7 @@
         document.getElementById('grafico-modal').classList.add('hidden');
     }
 
-    // ---------- FUNÇÕES PRINCIPAIS ----------
+    // ---------- DEMAIS FUNÇÕES ----------
     async function atualizarPontuacaoParcial() {
         if (!alunoId || !estadoAtual) return;
         const faseAtual = estadoAtual.fase;
@@ -1083,7 +1091,7 @@
         document.getElementById(containerId).innerHTML = html;
     }
 
-    // ---------- RANKING DINÂMICO (individual) com gráfico e colunas reorganizadas ----------
+    // ---------- RANKING DINÂMICO (individual) ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -1216,8 +1224,7 @@
             });
         }
 
-        // ---- CONSTRUÇÃO DA TABELA (nova ordem) ----
-        // Pos | Nome (com ícone gráfico) | Ameaça | Pontuação | Delta Líder | Veloc. Média (2 casas) | Veloc. Recorde (2 casas) | Δ Veloc. | Classificação | Partidas | Turma
+        // ---- CONSTRUÇÃO DA TABELA ----
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th>
             <th>Nome</th>
@@ -1245,7 +1252,7 @@
             const deltaLider = maxPontos - j.pontos;
             const deltaText = deltaLider === 0 ? "🏆 Líder" : `+${deltaLider}`;
             
-            // Velocidade média atual (com duas casas)
+            // Velocidade média atual (2 casas)
             let velocidadeAtualStr = "-";
             let velocidadeAtualNum = null;
             if (j.velocidadeAtual !== null && j.velocidadeAtual !== undefined) {
@@ -1256,31 +1263,23 @@
                 velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
             }
             
-            // Velocidade recorde (com duas casas)
+            // Velocidade recorde (2 casas)
             let recordeStr = "-";
             let recordeNum = j.recordeVelocidade;
             if (recordeNum !== null && recordeNum > 0) {
                 recordeStr = recordeNum.toFixed(2) + " s";
             }
             
-            // Δ Velocidade (atual - recorde)
+            // Δ Velocidade
             let deltaVelocidadeHtml = "";
             if (velocidadeAtualNum !== null && recordeNum !== null && recordeNum > 0) {
                 const diff = velocidadeAtualNum - recordeNum;
                 const diffAbs = Math.abs(diff);
                 const diffStr = diffAbs.toFixed(2);
-                let icon = "";
-                let classe = "";
-                if (diff < -0.01) {
-                    icon = "🟢";
-                    classe = "veloc-melhor";
-                } else if (diff > 0.01) {
-                    icon = "🔴";
-                    classe = "veloc-pior";
-                } else {
-                    icon = "⚪";
-                    classe = "veloc-igual";
-                }
+                let icon = "", classe = "";
+                if (diff < -0.01) { icon = "🟢"; classe = "veloc-melhor"; }
+                else if (diff > 0.01) { icon = "🔴"; classe = "veloc-pior"; }
+                else { icon = "⚪"; classe = "veloc-igual"; }
                 deltaVelocidadeHtml = `<span class="${classe}">${icon} ${diffStr}s</span>`;
             } else {
                 deltaVelocidadeHtml = "—";
@@ -1301,38 +1300,30 @@
             if (mostrarClassificacao) {
                 const classificado = idx < vagas;
                 if (faseNum === 5) {
-                    if (classificado) {
-                        colunaStatus = `<td class="classificado-sim">🏆 Finalista</td>`;
-                    } else {
-                        colunaStatus = `<td class="classificado-nao">Eliminado</td>`;
-                    }
+                    colunaStatus = classificado ? `<td class="classificado-sim">🏆 Finalista</td>` : `<td class="classificado-nao">Eliminado</td>`;
                 } else {
-                    if (classificado) {
-                        colunaStatus = `<td class="classificado-sim">Top${vagas}</td>`;
-                    } else {
-                        colunaStatus = `<td class="classificado-nao">Eliminado</td>`;
-                    }
+                    colunaStatus = classificado ? `<td class="classificado-sim">Top${vagas}</td>` : `<td class="classificado-nao">Eliminado</td>`;
                 }
             } else {
                 colunaStatus = `<td>${j.isTemp ? "🟢 Em jogo" : "✅ Finalizado"}</td>`;
             }
             
-            // Nome com botão de gráfico (se houver pelo menos uma partida com acertos)
+            // Nome com botão de gráfico (verifica se há dados)
             let nomeHtml = escapeHtml(j.nome);
-            // Verificar se há dados para gráfico: precisamos de pelo menos uma partida com acertos
-            // Podemos verificar se existe registro em resultados (todas as fases)
             let temDadosGrafico = false;
-            for (let f = 1; f <= TOTAL_FASES; f++) {
-                if (estadoAtual.resultados?.[f]?.[j.id]?.length > 0) {
-                    const partidas = estadoAtual.resultados[f][j.id];
-                    if (partidas.some(p => p.acertos > 0)) {
+            if (estadoAtual && estadoAtual.resultados) {
+                for (let f = 1; f <= TOTAL_FASES; f++) {
+                    const partidas = estadoAtual.resultados[f]?.[j.id];
+                    if (partidas && partidas.some(p => p.acertos > 0)) {
                         temDadosGrafico = true;
                         break;
                     }
                 }
             }
             if (temDadosGrafico) {
-                nomeHtml += ` <button class="btn-grafico" onclick="abrirGrafico('${j.id}', '${escapeHtml(j.nome)}')" title="Ver evolução da velocidade">📊</button>`;
+                const safeId = j.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                const safeNome = escapeHtml(j.nome).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                nomeHtml += ` <button class="btn-grafico" onclick="abrirGrafico('${safeId}', '${safeNome}')" title="Ver evolução da velocidade">📊</button>`;
             }
             
             html += `<tr>
