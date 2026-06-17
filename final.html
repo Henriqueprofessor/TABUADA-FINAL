@@ -614,9 +614,7 @@
     let faseSelecionadaProf = 1;
     let modoTorcida = 'individual';
     let torcidaId = null;
-    // Para a torcida: fase que está sendo exibida no ranking individual
     let faseTorcidaSelecionada = 1;
-    // Flag para evitar loop ao atualizar o seletor via código
     let atualizandoSeletorTorcida = false;
 
     const TOTAL_FASES = 5;
@@ -852,7 +850,7 @@
         document.getElementById(containerId).innerHTML = html;
     }
 
-    // ---------- RANKING DINÂMICO (individual) com contagem de partidas ----------
+    // ---------- RANKING DINÂMICO (individual) com contagem de partidas e nova coluna Ameaça ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -944,10 +942,37 @@
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirStatusClassificacao;
 
+        // ---- CÁLCULO DA POSIÇÃO PROJETADA PARA A COLUNA "AMEAÇA" ----
+        let projecaoMap = new Map();
+        let projecaoValida = false;
+        for (let item of listaComId) {
+            const perguntasResp = item.perguntas || 0;
+            if (perguntasResp > 0) {
+                const ritmo = item.pontos / perguntasResp;
+                const proj = ritmo * 20;
+                item.projecao = proj;
+                projecaoMap.set(item.id, proj);
+                if (proj > 0) projecaoValida = true;
+            } else {
+                item.projecao = 0;
+            }
+        }
+
+        let posProjetadaMap = new Map();
+        if (projecaoValida) {
+            let itensComProj = listaComId.filter(item => item.projecao > 0);
+            itensComProj.sort((a,b) => b.projecao - a.projecao);
+            itensComProj.forEach((item, idx) => {
+                posProjetadaMap.set(item.id, idx + 1);
+            });
+        }
+
+        // ---- CONSTRUÇÃO DA TABELA ----
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th><th>Nome</th><th>Pontuação</th><th>Partidas</th><th>Proj. Final</th>
             <th>Δ Recorde</th><th>Delta Líder</th>
-            <th>Veloc.<br>Média</th><th>Ameaça</th>
+            <th>Veloc.<br>Média</th>
+            <th>Ameaça</th> <!-- COLUNA AMEAÇA COM NÚMERO DA POSIÇÃO -->
             ${mostrarClassificacao ? '<th>Classificação</th>' : '<th>Status Jogo</th>'}
             <th>Turma</th>
          </tr></thead><tbody>`;
@@ -967,11 +992,7 @@
             let velocidade = (j.acertos > 0) ? (j.tempo / j.acertos).toFixed(1) + " s" : "-";
             
             const perguntasResp = j.perguntas || 0;
-            let projecao = 0;
-            if (perguntasResp > 0) {
-                const ritmo = j.pontos / perguntasResp;
-                projecao = ritmo * 20;
-            }
+            let projecao = j.projecao || 0;
             const projecaoFormat = projecao > 0 ? Math.round(projecao) : "—";
             
             const melhorHistorico = melhoresHistoricos.get(j.id) || 0;
@@ -998,12 +1019,16 @@
                 deltaClass = "delta-semdados";
             }
             
-            let ameaca = "";
-            if (projecao > maxPontos && j.pontos !== maxPontos) {
-                ameaca = "🔥";
-            } else if (projecao > 0 && projecao > maxPontos && j.pontos === maxPontos) {
-                ameaca = "🏁";
+            // ----- AMEAÇA: exibe a posição projetada se for melhor que a atual -----
+            let ameacaHtml = "";
+            const posProjetada = posProjetadaMap.get(j.id);
+            if (posProjetada !== undefined && posProjetada < posAtual) {
+                ameacaHtml = posProjetada.toString(); // número da posição ameaçada
+            } else {
+                ameacaHtml = "—";
             }
+            // Se o jogador ainda não tem projeção (perguntasResp == 0), fica "—"
+            if (perguntasResp === 0) ameacaHtml = "—";
             
             let colunaStatus = "";
             if (mostrarClassificacao) {
@@ -1026,7 +1051,7 @@
                 <td class="${deltaClass}">${deltaRec}</td>
                 <td>${deltaText}</td>
                 <td>${velocidade}</td>
-                <td>${ameaca ? `<span class="ameaca-icon">${ameaca}</span>` : "—"}</td>
+                <td>${ameacaHtml}</td>
                 ${colunaStatus}
                 <td>${escapeHtml(j.turma)}</td>
              </tr>`;
@@ -1064,18 +1089,15 @@
         intervaloRankingProfessor = setInterval(() => { atualizarRankingProfessor(); }, 4000);
     }
     
-    // Atualização da torcida: usa a fase selecionada no seletor
     async function atualizarTorcidaIndividual() {
         if (meuTipo !== 'projecao' || modoTorcida !== 'individual') return;
         if (!estadoAtual) return;
-        // Se a fase selecionada for inválida, usa a fase atual
         let fase = parseInt(document.getElementById('select-fase-torcida').value);
         if (isNaN(fase) || fase < 1 || fase > TOTAL_FASES) {
             fase = estadoAtual.fase;
         }
         faseTorcidaSelecionada = fase;
         await renderRankingDinamico(fase, 'ranking-torcida-container', true);
-        // Atualiza o texto informativo
         const infoSpan = document.getElementById('fase-torcida-info');
         if (infoSpan) {
             if (fase === estadoAtual.fase) {
@@ -1118,11 +1140,8 @@
     
     function iniciarAtualizacaoTorcida() {
         reiniciarIntervalosTorcida();
-        // Inicializa o seletor com a fase atual
         popularSelectFasesTorcida();
-        // Atualiza o ranking individual com a fase atual
         if (modoTorcida === 'individual') {
-            // Define o seletor para a fase atual e carrega
             const select = document.getElementById('select-fase-torcida');
             if (select && estadoAtual) {
                 select.value = estadoAtual.fase;
@@ -1552,7 +1571,6 @@
         }
         await db.ref('copaV2').update({ fase: faseAtual + 1, status: 'aguardando', fim: 0, tempoRestantePausa: null });
         toast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados para a fase ${faseAtual+1}.`);
-        // Atualiza o seletor da torcida para a nova fase
         if (meuTipo === 'projecao') {
             const select = document.getElementById('select-fase-torcida');
             if (select) {
@@ -1679,12 +1697,10 @@
             options += `<option value="${i}">Fase ${i}</option>`;
         }
         select.innerHTML = options;
-        // Define o valor padrão como a fase atual
         if (estadoAtual) {
             select.value = estadoAtual.fase;
             faseTorcidaSelecionada = estadoAtual.fase;
         }
-        // Adiciona evento de change
         select.removeEventListener('change', onSelectFaseTorcidaChange);
         select.addEventListener('change', onSelectFaseTorcidaChange);
     }
@@ -1780,7 +1796,6 @@
         select.value = faseSelecionadaProf;
     }
 
-    // Função para atualizar a lista de usuários online (alunos + torcida)
     function atualizarListaOnline() {
         db.ref('online').on('value', snapAlunos => {
             db.ref('online_torcida').on('value', snapTorcida => {
@@ -1885,7 +1900,6 @@
                 renderPodioFinal('podium-torcida-container');
                 if (modoTorcida === 'equipes') atualizarTorcidaEquipes();
                 else {
-                    // Atualiza o seletor para a fase 5 e carrega
                     const select = document.getElementById('select-fase-torcida');
                     if (select) {
                         select.value = 5;
@@ -1896,18 +1910,10 @@
             } else {
                 const pt = document.getElementById('podium-torcida-container');
                 if (pt) pt.classList.add('hidden');
-                // Se a fase atual mudou, atualiza o seletor apenas se não houver interação manual pendente
-                // Aqui, se o usuário não tiver selecionado manualmente, o seletor é atualizado.
-                // Vamos atualizar o seletor sempre que a fase atual mudar, a menos que o seletor tenha sido alterado manualmente recentemente.
-                // Para simplificar, se a fase atual for diferente da selecionada, e o seletor não estiver com foco, atualizamos.
-                // Usaremos um timeout para evitar conflitos.
                 const select = document.getElementById('select-fase-torcida');
                 if (select && estadoAtual) {
                     const faseAtual = estadoAtual.fase;
-                    // Se a fase atual é diferente da selecionada, e o seletor não está focado, atualizamos.
-                    // Podemos usar um flag 'atualizandoSeletorTorcida' para evitar loop.
                     if (!atualizandoSeletorTorcida && parseInt(select.value) !== faseAtual) {
-                        // Verifica se o seletor está focado (o usuário está interagindo)
                         if (document.activeElement !== select) {
                             atualizandoSeletorTorcida = true;
                             select.value = faseAtual;
@@ -2102,7 +2108,6 @@
         await carregarIntervalos();
         await carregarTurmas();
         
-        // Inicializa listener combinado de online (alunos + torcida)
         atualizarListaOnline();
         
         db.ref('copaV2').on('value', snap => {
@@ -2140,7 +2145,6 @@
             }
         });
 
-        // Eventos das abas
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -2157,7 +2161,6 @@
             });
         });
 
-        // Botões de intervalo
         document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
             let val = parseInt(document.getElementById('intervalo-individual').value);
             if (val >= 1) atualizarIntervaloIndividual(val);
@@ -2183,7 +2186,6 @@
                 modoTorcida = 'individual';
                 btnIndiv.classList.add('ativo');
                 btnEquipes.classList.remove('ativo');
-                // Recarrega o ranking individual com a fase selecionada atualmente
                 atualizarTorcidaIndividual();
             };
             btnEquipes.onclick = () => {
@@ -2272,7 +2274,6 @@
         document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
         
         document.getElementById('btn-projecao')?.addEventListener('click', () => {
-            // Gera ID único para o espectador
             torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
             const torcidaRef = db.ref(`online_torcida/${torcidaId}`);
             torcidaRef.set({ timestamp: Date.now() });
@@ -2282,7 +2283,6 @@
             meuTipo = 'projecao';
             document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
             document.getElementById('tela-torcida').classList.remove('hidden');
-            // Inicializa o seletor de fases
             popularSelectFasesTorcida();
             atualizarUI();
             iniciarAtualizacaoTorcida();
@@ -2319,7 +2319,6 @@
             }
         });
         
-        // Observer para mudanças nos intervalos
         db.ref('copaV2/configuracoes/intervalos').on('value', snap => {
             const config = snap.val();
             if (config) {
