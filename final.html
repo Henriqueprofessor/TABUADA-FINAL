@@ -850,7 +850,7 @@
         document.getElementById(containerId).innerHTML = html;
     }
 
-    // ---------- RANKING DINÂMICO (individual) com contagem de partidas e nova coluna Ameaça ----------
+    // ---------- RANKING DINÂMICO (individual) - SEM Proj. Final e SEM Delta Recorde ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -902,15 +902,6 @@
             }
         });
 
-        const melhoresHistoricos = new Map();
-        snapFinal.forEach(child => {
-            const partidas = child.val();
-            if (partidas && partidas.length) {
-                const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
-                melhoresHistoricos.set(child.key, melhor.pontos);
-            }
-        });
-
         let listaComId = [];
         for (let [id, dados] of mapa.entries()) {
             listaComId.push({ id, ...dados });
@@ -942,7 +933,7 @@
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirStatusClassificacao;
 
-        // ---- CÁLCULO DA POSIÇÃO PROJETADA PARA A COLUNA "AMEAÇA" ----
+        // ---- CÁLCULO DA PROJEÇÃO (mantido para a coluna AMEAÇA) ----
         let projecaoMap = new Map();
         let projecaoValida = false;
         for (let item of listaComId) {
@@ -967,12 +958,12 @@
             });
         }
 
-        // ---- CONSTRUÇÃO DA TABELA ----
+        // ---- CONSTRUÇÃO DA TABELA (SEM Proj. Final e SEM Delta Recorde) ----
         let html = `<table class="ranking-table"><thead><tr>
-            <th>Pos</th><th>Nome</th><th>Pontuação</th><th>Partidas</th><th>Proj. Final</th>
-            <th>Δ Recorde</th><th>Delta Líder</th>
+            <th>Pos</th><th>Nome</th><th>Pontuação</th><th>Partidas</th>
+            <th>Delta Líder</th>
             <th>Veloc.<br>Média</th>
-            <th>Ameaça</th> <!-- COLUNA AMEAÇA COM NÚMERO DA POSIÇÃO -->
+            <th>Ameaça</th>
             ${mostrarClassificacao ? '<th>Classificação</th>' : '<th>Status Jogo</th>'}
             <th>Turma</th>
          </tr></thead><tbody>`;
@@ -991,43 +982,15 @@
             const deltaText = deltaLider === 0 ? "🏆 Líder" : `+${deltaLider}`;
             let velocidade = (j.acertos > 0) ? (j.tempo / j.acertos).toFixed(1) + " s" : "-";
             
-            const perguntasResp = j.perguntas || 0;
-            let projecao = j.projecao || 0;
-            const projecaoFormat = projecao > 0 ? Math.round(projecao) : "—";
-            
-            const melhorHistorico = melhoresHistoricos.get(j.id) || 0;
-            let deltaRec = "";
-            let deltaClass = "delta-semdados";
-            if (projecao > 0 && melhorHistorico > 0) {
-                const diff = projecao - melhorHistorico;
-                const absDiff = Math.abs(Math.round(diff));
-                if (diff > 0) {
-                    deltaRec = `↑ +${absDiff}`;
-                    deltaClass = "delta-positivo";
-                } else if (diff < 0) {
-                    deltaRec = `↓ -${absDiff}`;
-                    deltaClass = "delta-negativo";
-                } else {
-                    deltaRec = "=";
-                    deltaClass = "delta-igual";
-                }
-            } else if (projecao > 0) {
-                deltaRec = "🆕 1ª vez";
-                deltaClass = "delta-estreante";
-            } else {
-                deltaRec = "—";
-                deltaClass = "delta-semdados";
-            }
-            
             // ----- AMEAÇA: exibe a posição projetada se for melhor que a atual -----
             let ameacaHtml = "";
             const posProjetada = posProjetadaMap.get(j.id);
             if (posProjetada !== undefined && posProjetada < posAtual) {
-                ameacaHtml = posProjetada.toString(); // número da posição ameaçada
+                ameacaHtml = posProjetada.toString();
             } else {
                 ameacaHtml = "—";
             }
-            // Se o jogador ainda não tem projeção (perguntasResp == 0), fica "—"
+            const perguntasResp = j.perguntas || 0;
             if (perguntasResp === 0) ameacaHtml = "—";
             
             let colunaStatus = "";
@@ -1047,8 +1010,6 @@
                 <td>${escapeHtml(j.nome)}</td>
                 <td>${j.pontos}</td>
                 <td>${j.partidas}</td>
-                <td>${projecaoFormat}</td>
-                <td class="${deltaClass}">${deltaRec}</td>
                 <td>${deltaText}</td>
                 <td>${velocidade}</td>
                 <td>${ameacaHtml}</td>
