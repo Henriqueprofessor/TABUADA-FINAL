@@ -752,7 +752,7 @@
         return snap.val() || {};
     }
 
-    // ---------- RANKING POR TURMA ----------
+    // ---------- RANKING POR TURMA (com total de partidas) ----------
     async function renderRankingTurmas(containerId, exibirNaTorcida = false) {
         if (!estadoAtual) return;
         let turmasMap = new Map();
@@ -780,13 +780,15 @@
                         totalAlunos: 0,
                         somaPontos: 0,
                         melhorAlunoNome: "",
-                        melhorAlunoPontos: 0
+                        melhorAlunoPontos: 0,
+                        totalPartidas: 0
                     });
                 }
                 let turmaData = turmasMap.get(turma);
                 if (!turmaData.alunos.has(id) || melhor.pontos > turmaData.alunos.get(id).pontos) {
                     turmaData.alunos.set(id, { pontos: melhor.pontos, nome: nome });
                 }
+                turmaData.totalPartidas += partidas.length; // soma todas as partidas de todos os alunos
             }
         }
         for (let [turma, data] of turmasMap.entries()) {
@@ -813,7 +815,8 @@
                 media: media,
                 totalAlunos: data.totalAlunos,
                 melhorNome: data.melhorAlunoNome,
-                melhorPontos: data.melhorAlunoPontos
+                melhorPontos: data.melhorAlunoPontos,
+                totalPartidas: data.totalPartidas
             });
         }
         ranking.sort((a,b) => b.media - a.media);
@@ -822,7 +825,7 @@
             return;
         }
         let html = `<table class="ranking-table"><thead><tr>
-            <th>Pos</th><th>Turma</th><th>Média da Turma</th><th>Participantes</th><th>Maior Pontuação (Aluno)</th>
+            <th>Pos</th><th>Turma</th><th>Média da Turma</th><th>Participantes</th><th>Total de Partidas</th><th>Maior Pontuação (Aluno)</th>
          </tr></thead><tbody>`;
         ranking.forEach((r, idx) => {
             html += `<tr>
@@ -830,6 +833,7 @@
                 <td>${escapeHtml(r.turma)}</td>
                 <td>${r.media.toFixed(1)} pts</td>
                 <td>${r.totalAlunos}</td>
+                <td>${r.totalPartidas}</td>
                 <td>${escapeHtml(r.melhorNome)} (${r.melhorPontos} pts)</td>
              </tr>`;
         });
@@ -837,7 +841,7 @@
         document.getElementById(containerId).innerHTML = html;
     }
 
-    // ---------- RANKING DINÂMICO (individual) ----------
+    // ---------- RANKING DINÂMICO (individual) com contagem de partidas ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -858,14 +862,16 @@
                     acertos: melhor.acertos,
                     tempo: melhor.tempo,
                     perguntas: 20,
-                    isTemp: false
+                    isTemp: false,
+                    partidas: partidas.length // número de partidas finalizadas
                 });
             }
         });
         snapTemp.forEach(child => {
             const data = child.val();
             const existente = mapa.get(child.key);
-            if (!existente || data.pontos > existente.pontos) {
+            if (!existente) {
+                // Novo jogador com partida em andamento
                 mapa.set(child.key, {
                     nome: data.nome,
                     turma: data.turma,
@@ -873,8 +879,20 @@
                     acertos: data.acertos,
                     tempo: data.tempo,
                     perguntas: data.perguntas || 0,
-                    isTemp: true
+                    isTemp: true,
+                    partidas: 1 // partida atual
                 });
+            } else {
+                // Já tem partidas finalizadas, incrementa
+                existente.partidas = (existente.partidas || 0) + 1;
+                // Atualiza se a pontuação atual for maior (caso a partida em andamento seja melhor)
+                if (data.pontos > existente.pontos) {
+                    existente.pontos = data.pontos;
+                    existente.acertos = data.acertos;
+                    existente.tempo = data.tempo;
+                    existente.perguntas = data.perguntas || 0;
+                    existente.isTemp = true;
+                }
             }
         });
 
@@ -919,8 +937,8 @@
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirStatusClassificacao;
 
         let html = `<table class="ranking-table"><thead><tr>
-            <th>Pos</th><th>Nome</th><th>Pontuação</th>
-            <th>Proj. Final</th><th>Δ Recorde</th><th>Delta Líder</th>
+            <th>Pos</th><th>Nome</th><th>Pontuação</th><th>Partidas</th><th>Proj. Final</th>
+            <th>Δ Recorde</th><th>Delta Líder</th>
             <th>Veloc.<br>Média</th><th>Ameaça</th>
             ${mostrarClassificacao ? '<th>Classificação</th>' : '<th>Status Jogo</th>'}
             <th>Turma</th>
@@ -995,6 +1013,7 @@
                 <td class="${classePos}">${idx+1}º</td>
                 <td>${escapeHtml(j.nome)}</td>
                 <td>${j.pontos}</td>
+                <td>${j.partidas}</td>
                 <td>${projecaoFormat}</td>
                 <td class="${deltaClass}">${deltaRec}</td>
                 <td>${deltaText}</td>
@@ -1257,7 +1276,8 @@
                         melhorTempo: melhor.tempo,
                         melhorAcertos: melhor.acertos,
                         partidas: 1,
-                        classificouFinal: classificados.includes(id)
+                        classificouFinal: classificados.includes(id),
+                        totalPartidas: partidas.length
                     });
                 } else {
                     let existente = todosAlunos.get(id);
@@ -1268,6 +1288,7 @@
                         existente.melhorAcertos = melhor.acertos;
                     }
                     existente.partidas++;
+                    existente.totalPartidas += partidas.length;
                     if (classificados.includes(id)) existente.classificouFinal = true;
                 }
             }
@@ -1282,22 +1303,23 @@
         let turmasMap = new Map();
         for (let aluno of ranking) {
             if (!turmasMap.has(aluno.turma)) {
-                turmasMap.set(aluno.turma, { total: 0, somaPontos: 0, finalistas: 0 });
+                turmasMap.set(aluno.turma, { total: 0, somaPontos: 0, finalistas: 0, totalPartidas: 0 });
             }
             let turmaData = turmasMap.get(aluno.turma);
             turmaData.total++;
             turmaData.somaPontos += aluno.melhorPontuacao;
             if (aluno.classificouFinal) turmaData.finalistas++;
+            turmaData.totalPartidas += aluno.totalPartidas;
         }
         for (let [turma, dados] of turmasMap.entries()) {
             let media = (dados.somaPontos / dados.total).toFixed(1);
-            html += `🎓 ${escapeHtml(turma)}: ${dados.total} alunos | Média: ${media} pts | Finalistas: ${dados.finalistas}<br>`;
+            html += `🎓 ${escapeHtml(turma)}: ${dados.total} alunos | Média: ${media} pts | Finalistas: ${dados.finalistas} | Total de partidas: ${dados.totalPartidas}<br>`;
         }
-        html += '</div><h4>🏅 Desempenho Individual</h4><table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Partidas</th><th>Velocidade Média</th><th>Finalista?</th></tr></thead><tbody>';
+        html += '</div><h4>🏅 Desempenho Individual</h4><table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Partidas (total)</th><th>Velocidade Média</th><th>Finalista?</th></tr></thead><tbody>';
         ranking.forEach((aluno, idx) => {
             let velocidade = (aluno.melhorAcertos > 0) ? (aluno.melhorTempo / aluno.melhorAcertos).toFixed(1) + " s" : "-";
             let finalista = aluno.classificouFinal ? "✅ Sim" : "❌ Não";
-            html += `<tr><td>${idx+1}º</td><td>${escapeHtml(aluno.nome)}</td><td>${escapeHtml(aluno.turma)}</td><td>${aluno.melhorPontuacao}</td><td>Fase ${aluno.faseMaxima}</td><td>${aluno.partidas}</td><td>${velocidade}</td><td>${finalista}</td></tr>`;
+            html += `<tr><td>${idx+1}º</td><td>${escapeHtml(aluno.nome)}</td><td>${escapeHtml(aluno.turma)}</td><td>${aluno.melhorPontuacao}</td><td>Fase ${aluno.faseMaxima}</td><td>${aluno.totalPartidas}</td><td>${velocidade}</td><td>${finalista}</td></tr>`;
         });
         html += '</tbody></table>';
         container.innerHTML = html;
@@ -1328,7 +1350,7 @@
                 if (!turma && fase > 1 && participantesPorFase[fase-1]?.[id]) turma = participantesPorFase[fase-1][id].turma;
                 if (!turma) turma = "?";
                 if (!jogadores.has(id)) {
-                    jogadores.set(id, { id, nome, turma, melhorPontuacao: melhor.pontos, melhorAcertos: melhor.acertos, melhorTempo: melhor.tempo, ultimaFase: fase, faseEliminacao: null });
+                    jogadores.set(id, { id, nome, turma, melhorPontuacao: melhor.pontos, melhorAcertos: melhor.acertos, melhorTempo: melhor.tempo, ultimaFase: fase, faseEliminacao: null, totalPartidas: partidas.length });
                 } else {
                     const existente = jogadores.get(id);
                     if (fase > existente.ultimaFase) {
@@ -1337,6 +1359,7 @@
                         existente.melhorAcertos = melhor.acertos;
                         existente.melhorTempo = melhor.tempo;
                     }
+                    existente.totalPartidas += partidas.length;
                 }
             }
         }
@@ -1351,13 +1374,13 @@
             return b.melhorPontuacao - a.melhorPontuacao || b.melhorAcertos - a.melhorAcertos || a.melhorTempo - b.melhorTempo;
         });
         if (rankingArray.length === 0) { document.getElementById('ranking-geral-container').innerHTML = '<p>Nenhum dado ainda.</p>'; return; }
-        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Status</th><th>Turma</th></tr></thead><tbody>';
+        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Status</th><th>Turma</th><th>Total Partidas</th></tr></thead><tbody>';
         rankingArray.forEach((r, i) => {
             let status = `🎯 Fase ${r.ultimaFase}`;
             if (r.faseEliminacao) status += ` (Eliminado na Fase ${r.faseEliminacao})`;
             else if (r.ultimaFase === 5) status = "🏆 Finalista";
             else status += ` (Classificado para Fase ${r.ultimaFase+1})`;
-            html += `<tr><td>${i+1}º</td><td>${escapeHtml(r.nome)}</td><td>${r.melhorPontuacao}</td><td>${r.ultimaFase}</td><td>${status}</td><td>${escapeHtml(r.turma)}</td></tr>`;
+            html += `<tr><td>${i+1}º</td><td>${escapeHtml(r.nome)}</td><td>${r.melhorPontuacao}</td><td>${r.ultimaFase}</td><td>${status}</td><td>${escapeHtml(r.turma)}</td><td>${r.totalPartidas}</td></tr>`;
         });
         document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
     }
@@ -1377,7 +1400,7 @@
                 let turma = participantesFase5[id]?.turma;
                 if (!turma && estadoAtual.participantes?.[4]?.[id]) turma = estadoAtual.participantes[4][id].turma;
                 if (!turma) turma = "?";
-                lista.push({ id, nome, turma, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo });
+                lista.push({ id, nome, turma, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo, partidas: partidas.length });
             }
         }
         lista.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
@@ -1390,7 +1413,7 @@
         top5.forEach((jogador, idx) => {
             podiumHtml += `<div class="podium-card podium-${idx+1}">
                             <div class="medalha">${medals[idx]}</div>
-                            <strong>${escapeHtml(jogador.nome)}</strong><br>${escapeHtml(jogador.turma)}<br>${jogador.pontos} pts
+                            <strong>${escapeHtml(jogador.nome)}</strong><br>${escapeHtml(jogador.turma)}<br>${jogador.pontos} pts<br><small>${jogador.partidas} partidas</small>
                            </div>`;
         });
         podiumHtml += '</div>';
