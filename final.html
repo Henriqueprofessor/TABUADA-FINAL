@@ -668,7 +668,6 @@
     let ultimaPartida = null;
     let tempoEsgotadoProcessado = false;
     
-    // Variáveis para controle de ultrapassagem
     let posicaoInicialPartida = null;
     let posicaoFinalPartida = null;
 
@@ -722,7 +721,6 @@
         return p;
     }
 
-    // Mostrar mensagem de recorde durante a partida
     function mostrarRecordeBatido(tipo, valor) {
         const div = document.createElement('div');
         div.className = 'recorde-msg';
@@ -735,7 +733,6 @@
         setTimeout(() => div.remove(), 3500);
     }
 
-    // Função para atualizar distâncias durante a partida
     async function atualizarDistancias() {
         if (!jogoAtivo || !alunoId || !estadoAtual) return;
         const fase = estadoAtual.fase;
@@ -792,7 +789,6 @@
             perguntas: perguntaIdx,
             timestamp: Date.now()
         });
-        // Atualizar distâncias após cada pergunta
         atualizarDistancias();
     }
 
@@ -836,8 +832,6 @@
         }
         numSpan.innerText = posAtual;
         ultimaPosicao = posAtual;
-        
-        // Atualizar distâncias também
         atualizarDistancias();
     }
 
@@ -963,7 +957,6 @@
         const snapTemp = await db.ref(`copaV2/resultados_temp/${faseNum}`).once('value');
         const participantes = estadoAtual.participantes?.[faseNum] || {};
 
-        // ---- RECORDE DE VELOCIDADE (todas as fases) ----
         const todasFases = estadoAtual.resultados || {};
         const recordeVelocMap = new Map();
         for (let fase = 1; fase <= TOTAL_FASES; fase++) {
@@ -982,7 +975,6 @@
             }
         }
 
-        // ---- MAPA DOS JOGADORES NA FASE ATUAL ----
         let mapa = new Map();
         snapFinal.forEach(child => {
             const partidas = child.val();
@@ -1066,7 +1058,6 @@
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirStatusClassificacao;
 
-        // ---- PROJEÇÃO PARA AMEAÇA ----
         let projecaoValida = false;
         for (let item of listaComId) {
             const perguntasResp = item.perguntas || 0;
@@ -1089,7 +1080,6 @@
             });
         }
 
-        // ---- CONSTRUÇÃO DA TABELA ----
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th>
             <th>Nome</th>
@@ -1920,34 +1910,46 @@
         select.value = faseSelecionadaProf;
     }
 
+    // --- LISTENER DE ONLINE (unificado) ---
     function atualizarListaOnline() {
-        db.ref('online').on('value', snapAlunos => {
-            db.ref('online_torcida').on('value', snapTorcida => {
-                const totalAlunos = snapAlunos.numChildren();
-                const totalTorcida = snapTorcida.numChildren();
-                const totalOnline = totalAlunos + totalTorcida;
-                
-                if (document.getElementById('jogadores-online')) 
-                    document.getElementById('jogadores-online').innerText = totalOnline;
-                if (document.getElementById('prof-online-count')) 
-                    document.getElementById('prof-online-count').innerText = totalOnline;
-                
-                if (meuTipo === 'professor') {
-                    let html = '<div class="online-list"><strong>👥 Jogadores:</strong><ul style="list-style:none; margin: 5px 0 10px 0;">';
-                    if (totalAlunos === 0) html += '<li>Nenhum jogador online</li>';
-                    snapAlunos.forEach(c => {
-                        html += `<li>🟢 ${escapeHtml(c.val().nome)} (${escapeHtml(c.val().turma)})</li>`;
-                    });
-                    html += '</ul><strong>📺 Espectadores (Torcida):</strong><ul style="list-style:none; margin: 5px 0 0 0;">';
-                    if (totalTorcida === 0) html += '<li>Nenhum espectador online</li>';
-                    snapTorcida.forEach(() => {
-                        html += `<li>👀 Espectador conectado</li>`;
-                    });
-                    html += '</ul></div>';
-                    const listaDiv = document.getElementById('lista-participantes');
-                    if (listaDiv) listaDiv.innerHTML = html;
+        db.ref('online').on('value', snap => {
+            let totalAlunos = 0;
+            let totalTorcida = 0;
+            snap.forEach(child => {
+                const val = child.val();
+                if (val && val.tipo === 'torcida') {
+                    totalTorcida++;
+                } else {
+                    totalAlunos++;
                 }
             });
+            const totalOnline = totalAlunos + totalTorcida;
+            
+            if (document.getElementById('jogadores-online')) 
+                document.getElementById('jogadores-online').innerText = totalOnline;
+            if (document.getElementById('prof-online-count')) 
+                document.getElementById('prof-online-count').innerText = totalOnline;
+            
+            if (meuTipo === 'professor') {
+                let html = '<div class="online-list"><strong>👥 Jogadores:</strong><ul style="list-style:none; margin: 5px 0 10px 0;">';
+                if (totalAlunos === 0) html += '<li>Nenhum jogador online</li>';
+                snap.forEach(child => {
+                    const val = child.val();
+                    if (!val || val.tipo === 'torcida') return;
+                    html += `<li>🟢 ${escapeHtml(val.nome)} (${escapeHtml(val.turma)})</li>`;
+                });
+                html += '</ul><strong>📺 Espectadores (Torcida):</strong><ul style="list-style:none; margin: 5px 0 0 0;">';
+                if (totalTorcida === 0) html += '<li>Nenhum espectador online</li>';
+                snap.forEach(child => {
+                    const val = child.val();
+                    if (val && val.tipo === 'torcida') {
+                        html += `<li>👀 Espectador conectado</li>`;
+                    }
+                });
+                html += '</ul></div>';
+                const listaDiv = document.getElementById('lista-participantes');
+                if (listaDiv) listaDiv.innerHTML = html;
+            }
         });
     }
 
@@ -2093,18 +2095,14 @@
                 pontosPartida += pontosGanhos;
                 mostrarFeedbackPontos(pontosGanhos);
                 
-                // Verificar recorde de pontos pessoal na fase
                 const minhasPartidas = estadoAtual.resultados?.[estadoAtual.fase]?.[alunoId] || [];
                 const melhorAnterior = minhasPartidas.length ? Math.max(...minhasPartidas.map(p => p.pontos)) : 0;
                 if (pontosPartida > melhorAnterior && pontosPartida > 0) {
                     mostrarRecordeBatido('pontos', pontosPartida - melhorAnterior);
                 }
                 
-                // Verificar recorde de velocidade (tempo médio por acerto) - apenas se já tiver pelo menos 5 acertos
                 if (acertosPartida >= 5) {
                     const velAtual = tempoTotalPartida / acertosPartida;
-                    // Comparar com o recorde de velocidade do aluno em todas as fases
-                    // Para simplificar, vamos buscar o recorde do aluno no banco
                     const todasFases = estadoAtual.resultados || {};
                     let melhorVel = null;
                     for (let f = 1; f <= TOTAL_FASES; f++) {
@@ -2116,9 +2114,7 @@
                             }
                         }
                     }
-                    // Também verificar a partida atual
                     if (melhorVel === null || velAtual < melhorVel) {
-                        // Se for a primeira partida ou melhor que o recorde anterior
                         if (melhorVel !== null) {
                             mostrarRecordeBatido('velocidade', velAtual);
                         }
@@ -2140,7 +2136,6 @@
         const evolucaoAcertos = ultimaPartida ? acertosPartida - ultimaPartida.acertos : null;
         const novoRecorde = (melhorPontuacao > 0 && pontosPartida > melhorPontuacao);
         
-        // Emoji para posição
         let posEmoji = "";
         if (posicao === 1) posEmoji = "🥇";
         else if (posicao === 2) posEmoji = "🥈";
@@ -2154,7 +2149,6 @@
                 <div style="font-size: 28px; font-weight: bold;">${posicao}º lugar</div>
         `;
         
-        // Mudança de posição
         if (deltaPosicao !== 0) {
             const subiu = deltaPosicao > 0;
             htmlModal += `<div style="font-size: 20px; margin: 8px 0; ${subiu ? 'color: #2ecc71;' : 'color: #e74c3c;'}">
@@ -2164,28 +2158,24 @@
             htmlModal += `<div style="font-size: 20px; margin: 8px 0; color: #f39c12;">⚪ Você manteve a posição!</div>`;
         }
         
-        // Jogadores ultrapassados
         if (jogadoresUltrapassados && jogadoresUltrapassados.length > 0) {
             htmlModal += `<div style="margin: 12px 0; color: #2ecc71;">
                 <strong>✅ Você ultrapassou:</strong> ${jogadoresUltrapassados.join(', ')}
             </div>`;
         }
         
-        // Jogadores que ultrapassaram você
         if (jogadoresQuePassaram && jogadoresQuePassaram.length > 0) {
             htmlModal += `<div style="margin: 12px 0; color: #e74c3c;">
                 <strong>⚠️ ${jogadoresQuePassaram.join(', ')} ultrapassou(aram) você</strong>
             </div>`;
         }
         
-        // Pontuação, acertos e tempo médio
         htmlModal += `<hr style="border-color: #2c3e50; margin: 15px 0;">
             <div style="font-size: 24px; font-weight: bold;">⭐ ${pontosPartida} pts</div>
             <div>✅ Acertos: ${acertosPartida}/20</div>
             <div>⏱️ Tempo médio: ${tempoMedio} s/pergunta</div>
         `;
         
-        // Recorde pessoal
         if (novoRecorde) {
             htmlModal += `<div style="color:#f1c40f; margin:10px 0; font-size: 20px; font-weight: bold;">🚀 NOVO RECORDE DE PONTOS! (+${pontosPartida - melhorPontuacao} pts)</div>`;
         }
@@ -2193,7 +2183,6 @@
             htmlModal += `<div style="color:#f1c40f; margin:10px 0; font-size: 18px;">⚡ NOVO RECORDE DE VELOCIDADE! (${recordeVelocidade.toFixed(2)}s)</div>`;
         }
         
-        // Botão jogar novamente
         htmlModal += `<div style="margin-top: 20px;">
                     <button class="fechar" id="btn-fechar-modal">Fechar</button>
                     ${estadoAtual?.status === 'em_andamento' && Date.now() < estadoAtual.fim ? '<button class="jogar-novamente" id="btn-jogar-novamente">🔄 Tentar melhorar</button>' : ''}
@@ -2225,7 +2214,6 @@
                 return;
             }
         }
-        // Salvar posição inicial para comparar após a partida
         posicaoInicialPartida = await obterPosicaoAtual(alunoId, estadoAtual.fase);
         ultimaPosicao = posicaoInicialPartida;
         perguntas = gerarPerguntas();
@@ -2254,7 +2242,6 @@
         await refResultado.set(lista);
         await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).remove();
         
-        // Obter ranking completo após a partida
         const snapRanking = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
         const participantes = estadoAtual.participantes?.[faseAtual] || {};
         let rankingPosicoes = [];
@@ -2271,18 +2258,15 @@
         posicaoFinalPartida = posicao;
         if (posicao > 0) await salvarPosicaoReferencia(alunoId, faseAtual, posicao);
         
-        // Calcular mudança de posição
         let deltaPosicao = 0;
         let jogadoresUltrapassados = [];
         let jogadoresQuePassaram = [];
         if (posicaoInicialPartida !== null) {
-            deltaPosicao = posicaoInicialPartida - posicao; // positivo = subiu
+            deltaPosicao = posicaoInicialPartida - posicao;
             
-            // Listar jogadores que estavam acima e agora estão abaixo (ultrapassados)
             const rankingAntes = await obterRankingAntes(faseAtual, posicaoInicialPartida);
             const rankingDepois = rankingPosicoes.map(p => p.id);
             
-            // Ultrapassados: estavam acima (pos < posicaoInicial) e agora estão abaixo (pos > posicao)
             for (let i = 0; i < rankingAntes.length; i++) {
                 const idAntes = rankingAntes[i];
                 const posDepois = rankingDepois.indexOf(idAntes);
@@ -2292,7 +2276,6 @@
                 }
             }
             
-            // Que passaram: estavam abaixo (pos > posicaoInicial) e agora estão acima (pos < posicao)
             for (let i = posicaoInicialPartida; i < rankingAntes.length; i++) {
                 const idAntes = rankingAntes[i];
                 const posDepois = rankingDepois.indexOf(idAntes);
@@ -2317,7 +2300,6 @@
             }
         }
         
-        // Verificar recorde de velocidade
         const velAtual = acertosPartida > 0 ? tempoTotalPartida / acertosPartida : 0;
         const todasFases = estadoAtual.resultados || {};
         let melhorVelocidade = null;
@@ -2335,7 +2317,6 @@
             recordeVelocidade = velAtual;
         }
         
-        // Verificar recorde de pontos
         const recordePontos = melhorPontuacao > 0 && pontosPartida > melhorPontuacao ? pontosPartida - melhorPontuacao : null;
         
         ultimaPartida = novaPartida;
@@ -2344,7 +2325,6 @@
         renderAluno();
     }
 
-    // Função auxiliar para obter o ranking antes da partida
     async function obterRankingAntes(fase, posicaoInicial) {
         const snap = await db.ref(`copaV2/resultados/${fase}`).once('value');
         let lista = [];
@@ -2458,7 +2438,6 @@
             if (confirm(`⚠️ Mudar para ${MODALIDADE_CONFIG[novaModalidade].nome} irá REINICIAR toda a competição. Continuar?`)) {
                 await db.ref('copaV2').set({ fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: novaModalidade, resultados: {}, participantes: {}, classificados: {} });
                 await db.ref('online').remove();
-                await db.ref('online_torcida').remove();
                 toast(`Modalidade alterada. Competição reiniciada.`);
                 setTimeout(() => location.reload(), 1500);
             }
@@ -2531,8 +2510,9 @@
         
         document.getElementById('btn-projecao')?.addEventListener('click', () => {
             torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-            const torcidaRef = db.ref(`online_torcida/${torcidaId}`);
-            torcidaRef.set({ timestamp: Date.now() });
+            // Usar o nó 'online' com tipo 'torcida'
+            const torcidaRef = db.ref(`online/${torcidaId}`);
+            torcidaRef.set({ tipo: 'torcida', timestamp: Date.now() });
             torcidaRef.onDisconnect().remove();
             sessionStorage.setItem('torcidaId', torcidaId);
             
@@ -2546,7 +2526,7 @@
         
         document.getElementById('btn-sair-torcida')?.addEventListener('click', () => {
             if (torcidaId) {
-                db.ref(`online_torcida/${torcidaId}`).remove();
+                db.ref(`online/${torcidaId}`).remove();
                 sessionStorage.removeItem('torcidaId');
             }
             pararAtualizacaoTorcida();
@@ -2555,7 +2535,7 @@
         
         document.getElementById('btn-sync-prof')?.addEventListener('click', () => updateLastSyncTime());
         document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
-        document.getElementById('btn-reset-total')?.addEventListener('click', () => { if(confirm("Reset total?")) { db.ref('copaV2').set({ fase:1, status:'aguardando', tempoFase:12, fim:0, modalidade: estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} }); db.ref('online').remove(); db.ref('online_torcida').remove(); location.reload(); } });
+        document.getElementById('btn-reset-total')?.addEventListener('click', () => { if(confirm("Reset total?")) { db.ref('copaV2').set({ fase:1, status:'aguardando', tempoFase:12, fim:0, modalidade: estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} }); db.ref('online').remove(); location.reload(); } });
         document.getElementById('btn-salvar-tempo')?.addEventListener('click', () => { let t = parseInt(document.getElementById('input-tempo-fase').value); if(t>0) db.ref('copaV2/tempoFase').set(t); });
         document.getElementById('btn-iniciar-fase')?.addEventListener('click', () => { let duracao = estadoAtual.tempoFase||12; let fim = Date.now() + duracao*60000; db.ref('copaV2').update({ status:'em_andamento', fim, tempoRestantePausa: null }); tempoEsgotadoProcessado = false; });
         document.getElementById('btn-sair-aluno')?.addEventListener('click', () => location.reload());
