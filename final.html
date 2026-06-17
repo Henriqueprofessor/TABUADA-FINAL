@@ -572,6 +572,12 @@
             <button id="btn-modo-individual" class="btn-modo ativo">👤 Ranking Individual</button>
             <button id="btn-modo-equipes" class="btn-modo">👥 Ranking por Equipes</button>
         </div>
+        <!-- Seletor de fases para a torcida -->
+        <div class="fase-selector">
+            <label>Selecione a Fase: </label>
+            <select id="select-fase-torcida" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
+            <span style="margin-left: 15px; font-size: 14px; color: #ffd966;" id="fase-torcida-info"></span>
+        </div>
         <div style="margin: 15px 0;">
             <p>Modalidade: <strong id="torcida-modalidade">--</strong> | <span id="torcida-fase-info" class="fase-info"></span> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;">--:--</strong></p>
             <p><small>Individual: atualização a cada <span id="torcida-individual-intervalo">4</span>s | Equipes: atualização a cada <span id="torcida-equipes-intervalo">60</span>s | Última atualização: <span id="torcida-last-update">--</span></small></p>
@@ -607,7 +613,12 @@
     let atualizacaoRankingAuto = true;
     let faseSelecionadaProf = 1;
     let modoTorcida = 'individual';
-    let torcidaId = null; // Para armazenar ID da torcida
+    let torcidaId = null;
+    // Para a torcida: fase que está sendo exibida no ranking individual
+    let faseTorcidaSelecionada = 1;
+    // Flag para evitar loop ao atualizar o seletor via código
+    let atualizandoSeletorTorcida = false;
+
     const TOTAL_FASES = 5;
     
     let intervaloIndividualSegundos = 4;
@@ -788,7 +799,7 @@
                 if (!turmaData.alunos.has(id) || melhor.pontos > turmaData.alunos.get(id).pontos) {
                     turmaData.alunos.set(id, { pontos: melhor.pontos, nome: nome });
                 }
-                turmaData.totalPartidas += partidas.length; // soma todas as partidas de todos os alunos
+                turmaData.totalPartidas += partidas.length;
             }
         }
         for (let [turma, data] of turmasMap.entries()) {
@@ -863,7 +874,7 @@
                     tempo: melhor.tempo,
                     perguntas: 20,
                     isTemp: false,
-                    partidas: partidas.length // número de partidas finalizadas
+                    partidas: partidas.length
                 });
             }
         });
@@ -871,7 +882,6 @@
             const data = child.val();
             const existente = mapa.get(child.key);
             if (!existente) {
-                // Novo jogador com partida em andamento
                 mapa.set(child.key, {
                     nome: data.nome,
                     turma: data.turma,
@@ -880,12 +890,10 @@
                     tempo: data.tempo,
                     perguntas: data.perguntas || 0,
                     isTemp: true,
-                    partidas: 1 // partida atual
+                    partidas: 1
                 });
             } else {
-                // Já tem partidas finalizadas, incrementa
                 existente.partidas = (existente.partidas || 0) + 1;
-                // Atualiza se a pontuação atual for maior (caso a partida em andamento seja melhor)
                 if (data.pontos > existente.pontos) {
                     existente.pontos = data.pontos;
                     existente.acertos = data.acertos;
@@ -1056,17 +1064,31 @@
         intervaloRankingProfessor = setInterval(() => { atualizarRankingProfessor(); }, 4000);
     }
     
+    // Atualização da torcida: usa a fase selecionada no seletor
     async function atualizarTorcidaIndividual() {
         if (meuTipo !== 'projecao' || modoTorcida !== 'individual') return;
         if (!estadoAtual) return;
-        if (estadoAtual.status !== 'em_andamento' && estadoAtual.status !== 'finalizado') return;
-        await renderRankingDinamico(estadoAtual.fase, 'ranking-torcida-container', true);
+        // Se a fase selecionada for inválida, usa a fase atual
+        let fase = parseInt(document.getElementById('select-fase-torcida').value);
+        if (isNaN(fase) || fase < 1 || fase > TOTAL_FASES) {
+            fase = estadoAtual.fase;
+        }
+        faseTorcidaSelecionada = fase;
+        await renderRankingDinamico(fase, 'ranking-torcida-container', true);
+        // Atualiza o texto informativo
+        const infoSpan = document.getElementById('fase-torcida-info');
+        if (infoSpan) {
+            if (fase === estadoAtual.fase) {
+                infoSpan.innerText = '(Fase atual)';
+            } else {
+                infoSpan.innerText = '(Fase anterior)';
+            }
+        }
     }
 
     async function atualizarTorcidaEquipes() {
         if (meuTipo !== 'projecao' || modoTorcida !== 'equipes') return;
         if (!estadoAtual) return;
-        if (estadoAtual.status !== 'em_andamento' && estadoAtual.status !== 'finalizado') return;
         await renderRankingTurmas('ranking-torcida-container', true);
     }
 
@@ -1096,8 +1118,20 @@
     
     function iniciarAtualizacaoTorcida() {
         reiniciarIntervalosTorcida();
-        if (modoTorcida === 'individual') atualizarTorcidaIndividual();
-        else atualizarTorcidaEquipes();
+        // Inicializa o seletor com a fase atual
+        popularSelectFasesTorcida();
+        // Atualiza o ranking individual com a fase atual
+        if (modoTorcida === 'individual') {
+            // Define o seletor para a fase atual e carrega
+            const select = document.getElementById('select-fase-torcida');
+            if (select && estadoAtual) {
+                select.value = estadoAtual.fase;
+                faseTorcidaSelecionada = estadoAtual.fase;
+            }
+            atualizarTorcidaIndividual();
+        } else {
+            atualizarTorcidaEquipes();
+        }
     }
     function pararAtualizacaoTorcida() {
         if (intervaloTorcidaIndividual) clearInterval(intervaloTorcidaIndividual);
@@ -1329,7 +1363,7 @@
         toast("CSV exportado (implementação completa disponível)");
     }
 
-    // ---------- RANKING GERAL (com melhor média) ----------
+    // ---------- RANKING GERAL (com melhor velocidade) ----------
     function renderRankingGeral() {
         if (!estadoAtual) return;
         const todasFases = estadoAtual.resultados || {};
@@ -1350,11 +1384,6 @@
                 if (!turma && fase > 1 && participantesPorFase[fase-1]?.[id]) turma = participantesPorFase[fase-1][id].turma;
                 if (!turma) turma = "?";
                 
-                // Cálculo da média de pontos desta fase
-                let soma = 0;
-                for (let p of partidas) soma += p.pontos;
-                let mediaFase = soma / partidas.length;
-                
                 if (!jogadores.has(id)) {
                     jogadores.set(id, {
                         id, nome, turma,
@@ -1364,14 +1393,10 @@
                         ultimaFase: fase,
                         faseEliminacao: null,
                         totalPartidas: partidas.length,
-                        melhorMedia: mediaFase // inicializa com a média da primeira fase
+                        melhorVelocidade: null
                     });
                 } else {
                     const existente = jogadores.get(id);
-                    // Atualiza a melhor média se a média desta fase for maior
-                    if (mediaFase > existente.melhorMedia) {
-                        existente.melhorMedia = mediaFase;
-                    }
                     if (fase > existente.ultimaFase) {
                         existente.ultimaFase = fase;
                         existente.melhorPontuacao = melhor.pontos;
@@ -1379,6 +1404,16 @@
                         existente.melhorTempo = melhor.tempo;
                     }
                     existente.totalPartidas += partidas.length;
+                }
+
+                const jogador = jogadores.get(id);
+                for (let partida of partidas) {
+                    if (partida.acertos > 0) {
+                        const velocidade = partida.tempo / partida.acertos;
+                        if (jogador.melhorVelocidade === null || velocidade < jogador.melhorVelocidade) {
+                            jogador.melhorVelocidade = velocidade;
+                        }
+                    }
                 }
             }
         }
@@ -1393,13 +1428,14 @@
             return b.melhorPontuacao - a.melhorPontuacao || b.melhorAcertos - a.melhorAcertos || a.melhorTempo - b.melhorTempo;
         });
         if (rankingArray.length === 0) { document.getElementById('ranking-geral-container').innerHTML = '<p>Nenhum dado ainda.</p>'; return; }
-        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Melhor Média</th><th>Fase Máxima</th><th>Status</th><th>Turma</th><th>Total Partidas</th></tr></thead><tbody>';
+        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Melhor Velocidade</th><th>Fase Máxima</th><th>Status</th><th>Turma</th><th>Total Partidas</th></tr></thead><tbody>';
         rankingArray.forEach((r, i) => {
             let status = `🎯 Fase ${r.ultimaFase}`;
             if (r.faseEliminacao) status += ` (Eliminado na Fase ${r.faseEliminacao})`;
             else if (r.ultimaFase === 5) status = "🏆 Finalista";
             else status += ` (Classificado para Fase ${r.ultimaFase+1})`;
-            html += `<tr><td>${i+1}º</td><td>${escapeHtml(r.nome)}</td><td>${r.melhorPontuacao}</td><td>${r.melhorMedia.toFixed(1)}</td><td>${r.ultimaFase}</td><td>${status}</td><td>${escapeHtml(r.turma)}</td><td>${r.totalPartidas}</td></tr>`;
+            const vel = r.melhorVelocidade !== null ? r.melhorVelocidade.toFixed(2) + " s" : "-";
+            html += `<tr><td>${i+1}º</td><td>${escapeHtml(r.nome)}</td><td>${r.melhorPontuacao}</td><td>${vel}</td><td>${r.ultimaFase}</td><td>${status}</td><td>${escapeHtml(r.turma)}</td><td>${r.totalPartidas}</td></tr>`;
         });
         document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
     }
@@ -1516,6 +1552,15 @@
         }
         await db.ref('copaV2').update({ fase: faseAtual + 1, status: 'aguardando', fim: 0, tempoRestantePausa: null });
         toast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados para a fase ${faseAtual+1}.`);
+        // Atualiza o seletor da torcida para a nova fase
+        if (meuTipo === 'projecao') {
+            const select = document.getElementById('select-fase-torcida');
+            if (select) {
+                select.value = faseAtual + 1;
+                faseTorcidaSelecionada = faseAtual + 1;
+                if (modoTorcida === 'individual') atualizarTorcidaIndividual();
+            }
+        }
         forcarAlunosParaMenu();
     }
     
@@ -1625,6 +1670,36 @@
         });
     }
 
+    // ---------- FUNÇÕES PARA O SELECT DA TORCIDA ----------
+    function popularSelectFasesTorcida() {
+        const select = document.getElementById('select-fase-torcida');
+        if (!select) return;
+        let options = '';
+        for (let i = 1; i <= TOTAL_FASES; i++) {
+            options += `<option value="${i}">Fase ${i}</option>`;
+        }
+        select.innerHTML = options;
+        // Define o valor padrão como a fase atual
+        if (estadoAtual) {
+            select.value = estadoAtual.fase;
+            faseTorcidaSelecionada = estadoAtual.fase;
+        }
+        // Adiciona evento de change
+        select.removeEventListener('change', onSelectFaseTorcidaChange);
+        select.addEventListener('change', onSelectFaseTorcidaChange);
+    }
+
+    function onSelectFaseTorcidaChange() {
+        if (meuTipo !== 'projecao' || modoTorcida !== 'individual') return;
+        const select = document.getElementById('select-fase-torcida');
+        const fase = parseInt(select.value);
+        if (!isNaN(fase) && fase >= 1 && fase <= TOTAL_FASES) {
+            faseTorcidaSelecionada = fase;
+            atualizarTorcidaIndividual();
+        }
+    }
+
+    // ---------- ATUALIZAÇÃO DA UI ----------
     function renderAluno() {
         if (!estadoAtual) return;
         const agora = Date.now();
@@ -1809,10 +1884,39 @@
             if (estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) {
                 renderPodioFinal('podium-torcida-container');
                 if (modoTorcida === 'equipes') atualizarTorcidaEquipes();
-                else atualizarTorcidaIndividual();
+                else {
+                    // Atualiza o seletor para a fase 5 e carrega
+                    const select = document.getElementById('select-fase-torcida');
+                    if (select) {
+                        select.value = 5;
+                        faseTorcidaSelecionada = 5;
+                    }
+                    atualizarTorcidaIndividual();
+                }
             } else {
                 const pt = document.getElementById('podium-torcida-container');
                 if (pt) pt.classList.add('hidden');
+                // Se a fase atual mudou, atualiza o seletor apenas se não houver interação manual pendente
+                // Aqui, se o usuário não tiver selecionado manualmente, o seletor é atualizado.
+                // Vamos atualizar o seletor sempre que a fase atual mudar, a menos que o seletor tenha sido alterado manualmente recentemente.
+                // Para simplificar, se a fase atual for diferente da selecionada, e o seletor não estiver com foco, atualizamos.
+                // Usaremos um timeout para evitar conflitos.
+                const select = document.getElementById('select-fase-torcida');
+                if (select && estadoAtual) {
+                    const faseAtual = estadoAtual.fase;
+                    // Se a fase atual é diferente da selecionada, e o seletor não está focado, atualizamos.
+                    // Podemos usar um flag 'atualizandoSeletorTorcida' para evitar loop.
+                    if (!atualizandoSeletorTorcida && parseInt(select.value) !== faseAtual) {
+                        // Verifica se o seletor está focado (o usuário está interagindo)
+                        if (document.activeElement !== select) {
+                            atualizandoSeletorTorcida = true;
+                            select.value = faseAtual;
+                            faseTorcidaSelecionada = faseAtual;
+                            atualizandoSeletorTorcida = false;
+                            if (modoTorcida === 'individual') atualizarTorcidaIndividual();
+                        }
+                    }
+                }
                 if (!intervaloTorcidaIndividual && !intervaloTorcidaEquipes) iniciarAtualizacaoTorcida();
             }
         }
@@ -2079,15 +2183,14 @@
                 modoTorcida = 'individual';
                 btnIndiv.classList.add('ativo');
                 btnEquipes.classList.remove('ativo');
-                if (estadoAtual && estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) atualizarTorcidaIndividual();
-                else atualizarTorcidaIndividual();
+                // Recarrega o ranking individual com a fase selecionada atualmente
+                atualizarTorcidaIndividual();
             };
             btnEquipes.onclick = () => {
                 modoTorcida = 'equipes';
                 btnEquipes.classList.add('ativo');
                 btnIndiv.classList.remove('ativo');
-                if (estadoAtual && estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) atualizarTorcidaEquipes();
-                else atualizarTorcidaEquipes();
+                atualizarTorcidaEquipes();
             };
         }
 
@@ -2179,6 +2282,8 @@
             meuTipo = 'projecao';
             document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
             document.getElementById('tela-torcida').classList.remove('hidden');
+            // Inicializa o seletor de fases
+            popularSelectFasesTorcida();
             atualizarUI();
             iniciarAtualizacaoTorcida();
         });
