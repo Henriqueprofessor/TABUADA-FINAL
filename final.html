@@ -252,7 +252,7 @@
             display: inline-block;
         }
         .indicador-posicao {
-            font-size: 20px;
+            font-size: 28px;
             font-weight: bold;
             background: #000000aa;
             padding: 6px 18px;
@@ -296,6 +296,8 @@
             box-shadow: 0 20px 35px rgba(0,0,0,0.5);
             border: 2px solid #ffd966;
             text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         .modal-classificado { border-color: #2ecc71; background: #0a2a1a; }
         .modal-eliminado { border-color: #e74c3c; background: #2a0a0a; }
@@ -378,6 +380,40 @@
         .veloc-melhor { color: #2ecc71; }
         .veloc-pior { color: #e74c3c; }
         .veloc-igual { color: #f39c12; }
+        .distancia-info {
+            font-size: 14px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        .distancia-positivo { color: #2ecc71; }
+        .distancia-negativo { color: #e74c3c; }
+        .recorde-msg {
+            position: fixed;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: #f1c40f;
+            padding: 12px 30px;
+            border-radius: 60px;
+            font-size: 22px;
+            font-weight: bold;
+            z-index: 1500;
+            pointer-events: none;
+            animation: fadeOut 3s forwards;
+            border: 2px solid #f1c40f;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            70% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-30px); }
+        }
+        .ultrapassagem-item {
+            padding: 4px 0;
+            font-size: 15px;
+        }
+        .ultrapassagem-positivo { color: #2ecc71; }
+        .ultrapassagem-negativo { color: #e74c3c; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -548,6 +584,7 @@
                     <button class="opcao" onclick="responder(3)"></button>
                 </div>
                 <div style="text-align: center;">Pergunta: <span id="pergunta-num">1</span>/20</div>
+                <div id="distancias-container" class="distancia-info"></div>
             </div>
         </div>
         
@@ -630,6 +667,10 @@
     let pollingPosicaoInterval = null;
     let ultimaPartida = null;
     let tempoEsgotadoProcessado = false;
+    
+    // Variáveis para controle de ultrapassagem
+    let posicaoInicialPartida = null;
+    let posicaoFinalPartida = null;
 
     const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
     const MODALIDADE_CONFIG = {
@@ -681,6 +722,63 @@
         return p;
     }
 
+    // Mostrar mensagem de recorde durante a partida
+    function mostrarRecordeBatido(tipo, valor) {
+        const div = document.createElement('div');
+        div.className = 'recorde-msg';
+        if (tipo === 'pontos') {
+            div.innerText = `🚀 NOVO RECORDE DE PONTOS! +${valor} pts`;
+        } else if (tipo === 'velocidade') {
+            div.innerText = `⚡ NOVO RECORDE DE VELOCIDADE! ${valor.toFixed(2)}s`;
+        }
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 3500);
+    }
+
+    // Função para atualizar distâncias durante a partida
+    async function atualizarDistancias() {
+        if (!jogoAtivo || !alunoId || !estadoAtual) return;
+        const fase = estadoAtual.fase;
+        try {
+            const snapFinal = await db.ref(`copaV2/resultados/${fase}`).once('value');
+            const snapTemp = await db.ref(`copaV2/resultados_temp/${fase}`).once('value');
+            let mapa = new Map();
+            snapFinal.forEach(child => {
+                const partidas = child.val();
+                if (partidas && partidas.length) {
+                    const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                    mapa.set(child.key, { pontos: melhor.pontos, nome: melhor.nome || "Anônimo" });
+                }
+            });
+            snapTemp.forEach(child => {
+                const data = child.val();
+                const existente = mapa.get(child.key);
+                if (!existente || data.pontos > existente.pontos) {
+                    mapa.set(child.key, { pontos: data.pontos, nome: data.nome || "Anônimo" });
+                }
+            });
+            const ordenado = Array.from(mapa.entries()).sort((a,b) => b[1].pontos - a[1].pontos);
+            const pos = ordenado.findIndex(item => item[0] === alunoId) + 1;
+            if (pos === 0) return;
+            
+            let html = '';
+            if (pos > 1) {
+                const anterior = ordenado[pos-2];
+                const diff = anterior[1].pontos - (mapa.get(alunoId)?.pontos || 0);
+                html += `<span class="distancia-negativo">⬆️ Faltam ${diff} pts para ultrapassar ${anterior[1].nome}</span>`;
+            }
+            if (pos < ordenado.length) {
+                const proximo = ordenado[pos];
+                const diff = (mapa.get(alunoId)?.pontos || 0) - proximo[1].pontos;
+                if (pos > 1) html += ' | ';
+                html += `<span class="distancia-positivo">⬇️ Você está ${diff} pts à frente de ${proximo[1].nome}</span>`;
+            }
+            document.getElementById('distancias-container').innerHTML = html;
+        } catch(e) {
+            console.warn('Erro ao atualizar distâncias:', e);
+        }
+    }
+
     async function atualizarPontuacaoParcial() {
         if (!alunoId || !estadoAtual) return;
         const faseAtual = estadoAtual.fase;
@@ -694,6 +792,8 @@
             perguntas: perguntaIdx,
             timestamp: Date.now()
         });
+        // Atualizar distâncias após cada pergunta
+        atualizarDistancias();
     }
 
     async function obterPosicaoAtual(alunoId, fase) {
@@ -736,6 +836,9 @@
         }
         numSpan.innerText = posAtual;
         ultimaPosicao = posAtual;
+        
+        // Atualizar distâncias também
+        atualizarDistancias();
     }
 
     function reiniciarPollingPosicao() {
@@ -987,7 +1090,6 @@
         }
 
         // ---- CONSTRUÇÃO DA TABELA ----
-        // Ordem: Pos, Nome, Ameaça, Pontuação, Delta Líder, Veloc. Média, Veloc. Recorde, Δ Veloc., Classificação, Partidas, Turma
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th>
             <th>Nome</th>
@@ -1015,7 +1117,6 @@
             const deltaLider = maxPontos - j.pontos;
             const deltaText = deltaLider === 0 ? "🏆 Líder" : `+${deltaLider}`;
             
-            // Velocidade média atual (2 casas decimais)
             let velocidadeAtualStr = "-";
             let velocidadeAtualNum = null;
             if (j.velocidadeAtual !== null && j.velocidadeAtual !== undefined) {
@@ -1026,14 +1127,12 @@
                 velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
             }
             
-            // Velocidade recorde (2 casas decimais)
             let recordeStr = "-";
             let recordeNum = j.recordeVelocidade;
             if (recordeNum !== null && recordeNum > 0) {
                 recordeStr = recordeNum.toFixed(2) + " s";
             }
             
-            // Δ Velocidade
             let deltaVelocidadeHtml = "";
             if (velocidadeAtualNum !== null && recordeNum !== null && recordeNum > 0) {
                 const diff = velocidadeAtualNum - recordeNum;
@@ -1048,7 +1147,6 @@
                 deltaVelocidadeHtml = "—";
             }
             
-            // Ameaça
             let ameacaHtml = "";
             const posProjetada = posProjetadaMap.get(j.id);
             if (posProjetada !== undefined && posProjetada < posAtual) {
@@ -1058,7 +1156,6 @@
             }
             if ((j.perguntas || 0) === 0) ameacaHtml = "—";
             
-            // Classificação
             let colunaStatus = "";
             if (mostrarClassificacao) {
                 const classificado = idx < vagas;
@@ -1638,9 +1735,7 @@
                 <div class="modal-resultados ${classificado ? 'modal-classificado' : 'modal-eliminado'}" id="modal-fim-tempo">
                     <h2>${classificado ? '✅ PARABÉNS! VOCÊ CLASSIFICOU!' : '❌ VOCÊ FOI ELIMINADO'}</h2>
                     <div style="font-size: 48px; margin: 15px 0;">${classificado ? '🏆' : '😢'}</div>
-                    <div>Sua pontuação final: <strong>${pontosPartida > 0 ? pontosPartida : (await obterMelhorPontuacaoAluno(alunoId, faseAtual))}</strong> pontos</div>
-                    <div>Sua posição no ranking: <strong>${posicao}º lugar</strong></div>
-                    <div>${classificado ? `Você está entre os ${vagas} primeiros e avança para a próxima fase!` : `Infelizmente você não conseguiu ficar entre os ${vagas} primeiros.`}</div>
+                    <div>Sua posição final: <strong>${posicao}º lugar</strong></div>
                     <div class="dica">${classificado ? 'Prepare-se para a próxima fase!' : 'Continue treinando e tente novamente na próxima competição.'}</div>
                     <button class="fechar" id="btn-fechar-modal-fim">Voltar ao Menu</button>
                 </div>
@@ -1997,6 +2092,38 @@
                 const pontosGanhos = Math.round(100 * (Math.max(0, tempoRestantePergunta) / 10));
                 pontosPartida += pontosGanhos;
                 mostrarFeedbackPontos(pontosGanhos);
+                
+                // Verificar recorde de pontos pessoal na fase
+                const minhasPartidas = estadoAtual.resultados?.[estadoAtual.fase]?.[alunoId] || [];
+                const melhorAnterior = minhasPartidas.length ? Math.max(...minhasPartidas.map(p => p.pontos)) : 0;
+                if (pontosPartida > melhorAnterior && pontosPartida > 0) {
+                    mostrarRecordeBatido('pontos', pontosPartida - melhorAnterior);
+                }
+                
+                // Verificar recorde de velocidade (tempo médio por acerto) - apenas se já tiver pelo menos 5 acertos
+                if (acertosPartida >= 5) {
+                    const velAtual = tempoTotalPartida / acertosPartida;
+                    // Comparar com o recorde de velocidade do aluno em todas as fases
+                    // Para simplificar, vamos buscar o recorde do aluno no banco
+                    const todasFases = estadoAtual.resultados || {};
+                    let melhorVel = null;
+                    for (let f = 1; f <= TOTAL_FASES; f++) {
+                        const partidas = todasFases[f]?.[alunoId] || [];
+                        for (let p of partidas) {
+                            if (p.acertos > 0) {
+                                const v = p.tempo / p.acertos;
+                                if (melhorVel === null || v < melhorVel) melhorVel = v;
+                            }
+                        }
+                    }
+                    // Também verificar a partida atual
+                    if (melhorVel === null || velAtual < melhorVel) {
+                        // Se for a primeira partida ou melhor que o recorde anterior
+                        if (melhorVel !== null) {
+                            mostrarRecordeBatido('velocidade', velAtual);
+                        }
+                    }
+                }
             }
         }
         const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
@@ -2007,45 +2134,69 @@
         setTimeout(proxima, 200);
     };
 
-    function exibirModalResultados(posicao, melhorPontuacao, faltamClassificacao, distanciaProximo) {
+    function exibirModalResultados(posicao, melhorPontuacao, faltamClassificacao, distanciaProximo, jogadoresUltrapassados, jogadoresQuePassaram, deltaPosicao, recordePontos, recordeVelocidade) {
         const tempoMedio = (tempoTotalPartida / 20).toFixed(1);
         const evolucaoPontos = ultimaPartida ? pontosPartida - ultimaPartida.pontos : null;
         const evolucaoAcertos = ultimaPartida ? acertosPartida - ultimaPartida.acertos : null;
         const novoRecorde = (melhorPontuacao > 0 && pontosPartida > melhorPontuacao);
         
-        let dica = "";
-        if (acertosPartida < 10) dica = "📚 Revise a tabuada e treine mais!";
-        else if (acertosPartida >= 15 && tempoMedio > 6) dica = "⚡ Responda mais rápido para ganhar mais pontos!";
-        else if (acertosPartida >= 15 && tempoMedio <= 6) dica = "🚀 Excelente! Continue assim!";
-        else if (acertosPartida >= 12) dica = "💪 Bom desempenho! Tente melhorar o tempo.";
-        else dica = "🎯 Foque em acertar mais perguntas.";
+        // Emoji para posição
+        let posEmoji = "";
+        if (posicao === 1) posEmoji = "🥇";
+        else if (posicao === 2) posEmoji = "🥈";
+        else if (posicao === 3) posEmoji = "🥉";
+        else posEmoji = "🏆";
         
         let htmlModal = `
             <div class="modal-resultados" id="modal-pos-jogo">
                 <h2>🏁 RESULTADO DA PARTIDA</h2>
-                <div style="font-size: 48px; margin: 15px 0;">⭐ ${pontosPartida} pts</div>
-                <div>✅ Acertos: ${acertosPartida}/20</div>
-                <div>⏱️ Tempo médio: ${tempoMedio} s/pergunta</div>
+                <div style="font-size: 48px; margin: 10px 0;">${posEmoji}</div>
+                <div style="font-size: 28px; font-weight: bold;">${posicao}º lugar</div>
         `;
+        
+        // Mudança de posição
+        if (deltaPosicao !== 0) {
+            const subiu = deltaPosicao > 0;
+            htmlModal += `<div style="font-size: 20px; margin: 8px 0; ${subiu ? 'color: #2ecc71;' : 'color: #e74c3c;'}">
+                ${subiu ? '⬆️ Você subiu' : '⬇️ Você caiu'} ${Math.abs(deltaPosicao)} ${Math.abs(deltaPosicao) === 1 ? 'posição' : 'posições'}!
+            </div>`;
+        } else {
+            htmlModal += `<div style="font-size: 20px; margin: 8px 0; color: #f39c12;">⚪ Você manteve a posição!</div>`;
+        }
+        
+        // Jogadores ultrapassados
+        if (jogadoresUltrapassados && jogadoresUltrapassados.length > 0) {
+            htmlModal += `<div style="margin: 12px 0; color: #2ecc71;">
+                <strong>✅ Você ultrapassou:</strong> ${jogadoresUltrapassados.join(', ')}
+            </div>`;
+        }
+        
+        // Jogadores que ultrapassaram você
+        if (jogadoresQuePassaram && jogadoresQuePassaram.length > 0) {
+            htmlModal += `<div style="margin: 12px 0; color: #e74c3c;">
+                <strong>⚠️ ${jogadoresQuePassaram.join(', ')} ultrapassou(aram) você</strong>
+            </div>`;
+        }
+        
+        // Pontuação, acertos e tempo médio
+        htmlModal += `<hr style="border-color: #2c3e50; margin: 15px 0;">
+            <div style="font-size: 24px; font-weight: bold;">⭐ ${pontosPartida} pts</div>
+            <div>✅ Acertos: ${acertosPartida}/20</div>
+            <div>⏱️ Tempo médio: ${tempoMedio} s/pergunta</div>
+        `;
+        
+        // Recorde pessoal
         if (novoRecorde) {
-            htmlModal += `<div style="color:#f1c40f; margin:10px 0;">🎉 NOVO RECORDE PESSOAL! +${pontosPartida - melhorPontuacao} pts 🎉</div>`;
+            htmlModal += `<div style="color:#f1c40f; margin:10px 0; font-size: 20px; font-weight: bold;">🚀 NOVO RECORDE DE PONTOS! (+${pontosPartida - melhorPontuacao} pts)</div>`;
         }
-        if (evolucaoPontos !== null) {
-            const sinal = evolucaoPontos >= 0 ? "+" : "";
-            htmlModal += `<div>📈 Evolução: <strong>${sinal}${evolucaoPontos} pts</strong> (${evolucaoAcertos >=0 ? "+"+evolucaoAcertos : evolucaoAcertos} acertos)</div>`;
+        if (recordeVelocidade) {
+            htmlModal += `<div style="color:#f1c40f; margin:10px 0; font-size: 18px;">⚡ NOVO RECORDE DE VELOCIDADE! (${recordeVelocidade.toFixed(2)}s)</div>`;
         }
-        htmlModal += `<div>🏆 Posição: ${posicao}º lugar</div>`;
-        if (faltamClassificacao !== null && faltamClassificacao > 0) {
-            htmlModal += `<div>🎯 Faltam ${faltamClassificacao} pts para classificar!</div>`;
-            const percentual = Math.min(100, Math.floor((pontosPartida / (pontosPartida + faltamClassificacao)) * 100));
-            htmlModal += `<div class="progresso-bar"><div class="progresso-fill" style="width: ${percentual}%;"></div></div>`;
-        } else if (distanciaProximo !== null && distanciaProximo > 0) {
-            htmlModal += `<div>📊 ${distanciaProximo} pts separam você do próximo!</div>`;
-        }
-        htmlModal += `<div class="dica">💡 DICA: ${dica}</div>
-                <div style="margin-top: 20px;">
+        
+        // Botão jogar novamente
+        htmlModal += `<div style="margin-top: 20px;">
                     <button class="fechar" id="btn-fechar-modal">Fechar</button>
-                    ${estadoAtual?.status === 'em_andamento' && Date.now() < estadoAtual.fim ? '<button class="jogar-novamente" id="btn-jogar-novamente">🔄 Jogar novamente</button>' : ''}
+                    ${estadoAtual?.status === 'em_andamento' && Date.now() < estadoAtual.fim ? '<button class="jogar-novamente" id="btn-jogar-novamente">🔄 Tentar melhorar</button>' : ''}
                 </div>
             </div>`;
         const modalExistente = document.getElementById('modal-pos-jogo');
@@ -2074,10 +2225,13 @@
                 return;
             }
         }
-        ultimaPosicao = await obterPosicaoAtual(alunoId, estadoAtual.fase);
+        // Salvar posição inicial para comparar após a partida
+        posicaoInicialPartida = await obterPosicaoAtual(alunoId, estadoAtual.fase);
+        ultimaPosicao = posicaoInicialPartida;
         perguntas = gerarPerguntas();
         perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
         document.getElementById('pontuacao-acumulada').innerText = "0";
+        document.getElementById('distancias-container').innerHTML = "";
         jogoAtivo = true;
         document.getElementById('jogo-area').classList.remove('hidden');
         document.getElementById('aguardando-aluno').classList.add('hidden');
@@ -2100,6 +2254,7 @@
         await refResultado.set(lista);
         await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).remove();
         
+        // Obter ranking completo após a partida
         const snapRanking = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
         const participantes = estadoAtual.participantes?.[faseAtual] || {};
         let rankingPosicoes = [];
@@ -2107,12 +2262,47 @@
             const partidas = child.val();
             if (partidas && partidas.length) {
                 const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-                rankingPosicoes.push({ id: child.key, pontos: melhor.pontos });
+                rankingPosicoes.push({ id: child.key, pontos: melhor.pontos, nome: participantes[child.key]?.nome || melhor.nome || "Anônimo" });
             }
         });
         rankingPosicoes.sort((a,b) => b.pontos - a.pontos);
+        
         const posicao = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
+        posicaoFinalPartida = posicao;
         if (posicao > 0) await salvarPosicaoReferencia(alunoId, faseAtual, posicao);
+        
+        // Calcular mudança de posição
+        let deltaPosicao = 0;
+        let jogadoresUltrapassados = [];
+        let jogadoresQuePassaram = [];
+        if (posicaoInicialPartida !== null) {
+            deltaPosicao = posicaoInicialPartida - posicao; // positivo = subiu
+            
+            // Listar jogadores que estavam acima e agora estão abaixo (ultrapassados)
+            const rankingAntes = await obterRankingAntes(faseAtual, posicaoInicialPartida);
+            const rankingDepois = rankingPosicoes.map(p => p.id);
+            
+            // Ultrapassados: estavam acima (pos < posicaoInicial) e agora estão abaixo (pos > posicao)
+            for (let i = 0; i < rankingAntes.length; i++) {
+                const idAntes = rankingAntes[i];
+                const posDepois = rankingDepois.indexOf(idAntes);
+                if (posDepois > posicao - 1 && i < posicaoInicialPartida - 1) {
+                    const nome = participantes[idAntes]?.nome || "Anônimo";
+                    jogadoresUltrapassados.push(nome);
+                }
+            }
+            
+            // Que passaram: estavam abaixo (pos > posicaoInicial) e agora estão acima (pos < posicao)
+            for (let i = posicaoInicialPartida; i < rankingAntes.length; i++) {
+                const idAntes = rankingAntes[i];
+                const posDepois = rankingDepois.indexOf(idAntes);
+                if (posDepois < posicao - 1 && posDepois !== -1) {
+                    const nome = participantes[idAntes]?.nome || "Anônimo";
+                    jogadoresQuePassaram.push(nome);
+                }
+            }
+        }
+        
         const melhorPontuacao = Math.max(...lista.map(p => p.pontos), 0);
         let faltamClassificacao = null, distanciaProximo = null;
         const vagas = VAGAS_POR_FASE[faseAtual];
@@ -2126,10 +2316,47 @@
                 if (proximoAcima) distanciaProximo = proximoAcima.pontos - pontosPartida;
             }
         }
+        
+        // Verificar recorde de velocidade
+        const velAtual = acertosPartida > 0 ? tempoTotalPartida / acertosPartida : 0;
+        const todasFases = estadoAtual.resultados || {};
+        let melhorVelocidade = null;
+        for (let f = 1; f <= TOTAL_FASES; f++) {
+            const partidas = todasFases[f]?.[alunoId] || [];
+            for (let p of partidas) {
+                if (p.acertos > 0) {
+                    const v = p.tempo / p.acertos;
+                    if (melhorVelocidade === null || v < melhorVelocidade) melhorVelocidade = v;
+                }
+            }
+        }
+        let recordeVelocidade = false;
+        if (acertosPartida > 0 && (melhorVelocidade === null || velAtual < melhorVelocidade)) {
+            recordeVelocidade = velAtual;
+        }
+        
+        // Verificar recorde de pontos
+        const recordePontos = melhorPontuacao > 0 && pontosPartida > melhorPontuacao ? pontosPartida - melhorPontuacao : null;
+        
         ultimaPartida = novaPartida;
-        exibirModalResultados(posicao, melhorPontuacao, faltamClassificacao, distanciaProximo);
+        exibirModalResultados(posicao, melhorPontuacao, faltamClassificacao, distanciaProximo, jogadoresUltrapassados, jogadoresQuePassaram, deltaPosicao, recordePontos, recordeVelocidade);
         confete();
         renderAluno();
+    }
+
+    // Função auxiliar para obter o ranking antes da partida
+    async function obterRankingAntes(fase, posicaoInicial) {
+        const snap = await db.ref(`copaV2/resultados/${fase}`).once('value');
+        let lista = [];
+        snap.forEach(child => {
+            const partidas = child.val();
+            if (partidas && partidas.length) {
+                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                lista.push({ id: child.key, pontos: melhor.pontos });
+            }
+        });
+        lista.sort((a,b) => b.pontos - a.pontos);
+        return lista.map(item => item.id);
     }
 
     // ---------- INICIALIZAÇÃO ----------
