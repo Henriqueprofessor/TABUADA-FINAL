@@ -414,6 +414,9 @@
         }
         .ultrapassagem-positivo { color: #2ecc71; }
         .ultrapassagem-negativo { color: #e74c3c; }
+        .status-em-jogo { color: #2ecc71; font-weight: bold; }
+        .status-aguardando { color: #f39c12; font-weight: bold; }
+        .status-finalizado { color: #3498db; font-weight: bold; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -950,13 +953,51 @@
         document.getElementById(containerId).innerHTML = html;
     }
 
-    // ---------- RANKING DINÂMICO (individual) ----------
+    // ---------- RANKING DINÂMICO (individual) com Status e Progresso ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
         const snapTemp = await db.ref(`copaV2/resultados_temp/${faseNum}`).once('value');
         const participantes = estadoAtual.participantes?.[faseNum] || {};
 
+        // ---- MAPA DE STATUS E PROGRESSO ----
+        const statusMap = new Map();
+        // Primeiro, marcar todos com base em resultados_temp
+        snapTemp.forEach(child => {
+            const data = child.val();
+            if (data) {
+                statusMap.set(child.key, {
+                    status: 'em_jogo',
+                    progresso: data.perguntas || 0,
+                    nome: data.nome || "Anônimo",
+                    turma: data.turma || "?"
+                });
+            }
+        });
+        // Depois, marcar quem tem partidas finalizadas (resultados) mas não está em jogo
+        snapFinal.forEach(child => {
+            const partidas = child.val();
+            if (partidas && partidas.length) {
+                const existente = statusMap.get(child.key);
+                if (!existente) {
+                    // Tem partidas finalizadas mas não está em jogo
+                    statusMap.set(child.key, {
+                        status: 'finalizado',
+                        progresso: 20, // já completou
+                        nome: "Anônimo", // será sobrescrito depois
+                        turma: "?"
+                    });
+                } else if (existente.status === 'em_jogo') {
+                    // Se está em jogo, mantém "em_jogo"
+                    // Mas se o progresso já for 20 (terminou a partida), consideramos como finalizado
+                    if (existente.progresso >= 20) {
+                        existente.status = 'finalizado';
+                    }
+                }
+            }
+        });
+
+        // ---- RECORDE DE VELOCIDADE (todas as fases) ----
         const todasFases = estadoAtual.resultados || {};
         const recordeVelocMap = new Map();
         for (let fase = 1; fase <= TOTAL_FASES; fase++) {
@@ -975,6 +1016,7 @@
             }
         }
 
+        // ---- MAPA DOS JOGADORES NA FASE ATUAL ----
         let mapa = new Map();
         snapFinal.forEach(child => {
             const partidas = child.val();
@@ -984,6 +1026,10 @@
                 const nome = info?.nome || melhor.nome || "Anônimo";
                 const turma = info?.turma || melhor.turma || "?";
                 const velocidadeAtual = (melhor.acertos > 0) ? (melhor.tempo / melhor.acertos) : null;
+                const statusInfo = statusMap.get(child.key) || { status: 'aguardando', progresso: 0 };
+                // Se está em jogo, usar o progresso do statusMap; senão, 20 (finalizado)
+                let progresso = statusInfo.progresso;
+                if (statusInfo.status === 'aguardando') progresso = 0;
                 mapa.set(child.key, {
                     nome, turma,
                     pontos: melhor.pontos,
@@ -992,13 +1038,16 @@
                     perguntas: 20,
                     isTemp: false,
                     partidas: partidas.length,
-                    velocidadeAtual: velocidadeAtual
+                    velocidadeAtual: velocidadeAtual,
+                    status: statusInfo.status,
+                    progresso: progresso
                 });
             }
         });
         snapTemp.forEach(child => {
             const data = child.val();
             const existente = mapa.get(child.key);
+            const statusInfo = statusMap.get(child.key) || { status: 'em_jogo', progresso: data.perguntas || 0 };
             if (!existente) {
                 const velocidadeAtual = (data.acertos > 0) ? (data.tempo / data.acertos) : null;
                 mapa.set(child.key, {
@@ -1010,7 +1059,9 @@
                     perguntas: data.perguntas || 0,
                     isTemp: true,
                     partidas: 1,
-                    velocidadeAtual: velocidadeAtual
+                    velocidadeAtual: velocidadeAtual,
+                    status: statusInfo.status,
+                    progresso: statusInfo.progresso
                 });
             } else {
                 existente.partidas = (existente.partidas || 0) + 1;
@@ -1022,6 +1073,11 @@
                     existente.isTemp = true;
                     const velAtual = (data.acertos > 0) ? (data.tempo / data.acertos) : null;
                     if (velAtual !== null) existente.velocidadeAtual = velAtual;
+                }
+                // Atualizar status e progresso se necessário
+                if (statusInfo) {
+                    existente.status = statusInfo.status;
+                    existente.progresso = statusInfo.progresso;
                 }
             }
         });
@@ -1080,6 +1136,7 @@
             });
         }
 
+        // ---- CONSTRUÇÃO DA TABELA (com Status e Progresso) ----
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th>
             <th>Nome</th>
@@ -1089,7 +1146,9 @@
             <th>Veloc.<br>Média</th>
             <th>Veloc.<br>Recorde</th>
             <th>Δ Veloc.</th>
-            ${mostrarClassificacao ? '<th>Classificação</th>' : '<th>Status Jogo</th>'}
+            <th>Status</th>
+            <th>Progresso</th>
+            ${mostrarClassificacao ? '<th>Classificação</th>' : ''}
             <th>Partidas</th>
             <th>Turma</th>
          </tr></thead><tbody>`;
@@ -1146,6 +1205,26 @@
             }
             if ((j.perguntas || 0) === 0) ameacaHtml = "—";
             
+            // ---- Status e Progresso ----
+            let statusHtml = "";
+            let progressoHtml = "";
+            if (j.status === 'em_jogo') {
+                statusHtml = `<span class="status-em-jogo">🟢 Em Jogo</span>`;
+                progressoHtml = `${j.progresso}/20`;
+            } else if (j.status === 'finalizado') {
+                statusHtml = `<span class="status-finalizado">✅ Finalizou Tentativa</span>`;
+                progressoHtml = `Finalizado`;
+            } else {
+                statusHtml = `<span class="status-aguardando">⏳ Aguardando</span>`;
+                progressoHtml = `—`;
+            }
+            // Se não tiver status definido (aguardando)
+            if (!j.status) {
+                statusHtml = `<span class="status-aguardando">⏳ Aguardando</span>`;
+                progressoHtml = `—`;
+            }
+            
+            // Classificação
             let colunaStatus = "";
             if (mostrarClassificacao) {
                 const classificado = idx < vagas;
@@ -1154,8 +1233,6 @@
                 } else {
                     colunaStatus = classificado ? `<td class="classificado-sim">Top${vagas}</td>` : `<td class="classificado-nao">Eliminado</td>`;
                 }
-            } else {
-                colunaStatus = `<td>${j.isTemp ? "🟢 Em jogo" : "✅ Finalizado"}</td>`;
             }
             
             html += `<tr>
@@ -1167,7 +1244,9 @@
                 <td>${velocidadeAtualStr}</td>
                 <td>${recordeStr}</td>
                 <td>${deltaVelocidadeHtml}</td>
-                ${colunaStatus}
+                <td>${statusHtml}</td>
+                <td>${progressoHtml}</td>
+                ${mostrarClassificacao ? colunaStatus : ''}
                 <td>${j.partidas}</td>
                 <td>${escapeHtml(j.turma)}</td>
              </tr>`;
@@ -2510,7 +2589,6 @@
         
         document.getElementById('btn-projecao')?.addEventListener('click', () => {
             torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-            // Usar o nó 'online' com tipo 'torcida'
             const torcidaRef = db.ref(`online/${torcidaId}`);
             torcidaRef.set({ tipo: 'torcida', timestamp: Date.now() });
             torcidaRef.onDisconnect().remove();
