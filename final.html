@@ -85,11 +85,6 @@
         }
         .classificado-sim { color: #2ecc71; font-weight: bold; }
         .classificado-nao { color: #e74c3c; font-weight: bold; }
-        .delta-positivo { color: #2ecc71; font-weight: bold; }
-        .delta-negativo { color: #e74c3c; font-weight: bold; }
-        .delta-igual { color: #f39c12; }
-        .delta-estreante { color: #3498db; }
-        .delta-semdados { color: #7f8c8d; }
         .posicao-subiu { color: #2ecc71; font-weight: bold; }
         .posicao-desceu { color: #e74c3c; font-weight: bold; }
         .podium {
@@ -205,7 +200,6 @@
             gap: 15px;
             margin-bottom: 15px;
         }
-        .ameaca-icon { color: #e67e22; font-weight: bold; }
         @media (max-width: 768px) {
             .ranking-table th, .ranking-table td { font-size: 11px; padding: 4px 3px; }
         }
@@ -407,10 +401,6 @@
             0% { opacity: 1; transform: translateX(-50%) translateY(0); }
             70% { opacity: 1; transform: translateX(-50%) translateY(0); }
             100% { opacity: 0; transform: translateX(-50%) translateY(-30px); }
-        }
-        .ultrapassagem-item {
-            padding: 4px 0;
-            font-size: 15px;
         }
         .ultrapassagem-positivo { color: #2ecc71; }
         .ultrapassagem-negativo { color: #e74c3c; }
@@ -953,7 +943,7 @@
         document.getElementById(containerId).innerHTML = html;
     }
 
-    // ---------- RANKING DINÂMICO (individual) com Status e Progresso ----------
+    // ---------- RANKING DINÂMICO (individual) ----------
     async function renderRankingDinamico(faseNum, containerId, exibirStatusClassificacao = false) {
         if (!estadoAtual) return;
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
@@ -962,7 +952,6 @@
 
         // ---- MAPA DE STATUS E PROGRESSO ----
         const statusMap = new Map();
-        // Primeiro, marcar todos com base em resultados_temp
         snapTemp.forEach(child => {
             const data = child.val();
             if (data) {
@@ -974,30 +963,24 @@
                 });
             }
         });
-        // Depois, marcar quem tem partidas finalizadas (resultados) mas não está em jogo
         snapFinal.forEach(child => {
             const partidas = child.val();
             if (partidas && partidas.length) {
                 const existente = statusMap.get(child.key);
                 if (!existente) {
-                    // Tem partidas finalizadas mas não está em jogo
                     statusMap.set(child.key, {
                         status: 'finalizado',
-                        progresso: 20, // já completou
-                        nome: "Anônimo", // será sobrescrito depois
+                        progresso: 20,
+                        nome: "Anônimo",
                         turma: "?"
                     });
-                } else if (existente.status === 'em_jogo') {
-                    // Se está em jogo, mantém "em_jogo"
-                    // Mas se o progresso já for 20 (terminou a partida), consideramos como finalizado
-                    if (existente.progresso >= 20) {
-                        existente.status = 'finalizado';
-                    }
+                } else if (existente.status === 'em_jogo' && existente.progresso >= 20) {
+                    existente.status = 'finalizado';
                 }
             }
         });
 
-        // ---- RECORDE DE VELOCIDADE (todas as fases) ----
+        // ---- RECORDE DE VELOCIDADE ----
         const todasFases = estadoAtual.resultados || {};
         const recordeVelocMap = new Map();
         for (let fase = 1; fase <= TOTAL_FASES; fase++) {
@@ -1016,7 +999,7 @@
             }
         }
 
-        // ---- MAPA DOS JOGADORES NA FASE ATUAL ----
+        // ---- MAPA DOS JOGADORES ----
         let mapa = new Map();
         snapFinal.forEach(child => {
             const partidas = child.val();
@@ -1027,7 +1010,6 @@
                 const turma = info?.turma || melhor.turma || "?";
                 const velocidadeAtual = (melhor.acertos > 0) ? (melhor.tempo / melhor.acertos) : null;
                 const statusInfo = statusMap.get(child.key) || { status: 'aguardando', progresso: 0 };
-                // Se está em jogo, usar o progresso do statusMap; senão, 20 (finalizado)
                 let progresso = statusInfo.progresso;
                 if (statusInfo.status === 'aguardando') progresso = 0;
                 mapa.set(child.key, {
@@ -1074,7 +1056,6 @@
                     const velAtual = (data.acertos > 0) ? (data.tempo / data.acertos) : null;
                     if (velAtual !== null) existente.velocidadeAtual = velAtual;
                 }
-                // Atualizar status e progresso se necessário
                 if (statusInfo) {
                     existente.status = statusInfo.status;
                     existente.progresso = statusInfo.progresso;
@@ -1114,6 +1095,7 @@
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirStatusClassificacao;
 
+        // ---- PROJEÇÃO (para AMEAÇA) ----
         let projecaoValida = false;
         for (let item of listaComId) {
             const perguntasResp = item.perguntas || 0;
@@ -1136,7 +1118,7 @@
             });
         }
 
-        // ---- CONSTRUÇÃO DA TABELA (com Status e Progresso) ----
+        // ---- CONSTRUÇÃO DA TABELA ----
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th>
             <th>Nome</th>
@@ -1205,7 +1187,7 @@
             }
             if ((j.perguntas || 0) === 0) ameacaHtml = "—";
             
-            // ---- Status e Progresso ----
+            // Status e Progresso
             let statusHtml = "";
             let progressoHtml = "";
             if (j.status === 'em_jogo') {
@@ -1218,13 +1200,11 @@
                 statusHtml = `<span class="status-aguardando">⏳ Aguardando</span>`;
                 progressoHtml = `—`;
             }
-            // Se não tiver status definido (aguardando)
             if (!j.status) {
                 statusHtml = `<span class="status-aguardando">⏳ Aguardando</span>`;
                 progressoHtml = `—`;
             }
             
-            // Classificação
             let colunaStatus = "";
             if (mostrarClassificacao) {
                 const classificado = idx < vagas;
@@ -1500,22 +1480,77 @@
         if (!estadoAtual) return;
         const container = document.getElementById('relatorio-container');
         container.innerHTML = '<p>⏳ Gerando relatório... Aguarde.</p>';
+
+        let dadosPorFase = {};
         let todosAlunos = new Map();
+        let turmasConsolidado = new Map();
+
         for (let fase = 1; fase <= TOTAL_FASES; fase++) {
             const resultados = estadoAtual.resultados?.[fase] || {};
             const participantes = estadoAtual.participantes?.[fase] || {};
             const classificados = estadoAtual.classificados?.[fase] || [];
+
+            let faseData = {
+                alunos: [],
+                turmas: new Map()
+            };
+
             for (let id in resultados) {
                 const partidas = resultados[id];
                 if (!partidas || partidas.length === 0) continue;
                 const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
                 let nome = participantes[id]?.nome;
-                if (!nome && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) nome = estadoAtual.participantes[fase-1][id].nome;
+                if (!nome && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) {
+                    nome = estadoAtual.participantes[fase-1][id].nome;
+                }
                 if (!nome) nome = "Anônimo";
                 let turma = participantes[id]?.turma;
-                if (!turma && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) turma = estadoAtual.participantes[fase-1][id].turma;
+                if (!turma && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) {
+                    turma = estadoAtual.participantes[fase-1][id].turma;
+                }
                 if (!turma) turma = "?";
-                
+
+                const classificado = classificados.includes(id);
+                const velocidade = (melhor.acertos > 0) ? (melhor.tempo / melhor.acertos) : null;
+
+                faseData.alunos.push({
+                    id, nome, turma,
+                    pontos: melhor.pontos,
+                    acertos: melhor.acertos,
+                    tempo: melhor.tempo,
+                    velocidade: velocidade,
+                    partidas: partidas.length,
+                    classificado: classificado
+                });
+
+                if (!faseData.turmas.has(turma)) {
+                    faseData.turmas.set(turma, {
+                        totalAlunos: 0,
+                        somaPontos: 0,
+                        totalPartidas: 0,
+                        classificados: 0
+                    });
+                }
+                let turmaData = faseData.turmas.get(turma);
+                turmaData.totalAlunos++;
+                turmaData.somaPontos += melhor.pontos;
+                turmaData.totalPartidas += partidas.length;
+                if (classificado) turmaData.classificados++;
+
+                if (!turmasConsolidado.has(turma)) {
+                    turmasConsolidado.set(turma, {
+                        total: 0,
+                        somaPontos: 0,
+                        finalistas: 0,
+                        totalPartidas: 0
+                    });
+                }
+                let consTurma = turmasConsolidado.get(turma);
+                consTurma.total++;
+                consTurma.somaPontos += melhor.pontos;
+                consTurma.totalPartidas += partidas.length;
+                if (classificado && fase === 5) consTurma.finalistas++;
+
                 if (!todosAlunos.has(id)) {
                     todosAlunos.set(id, {
                         id, nome, turma,
@@ -1523,9 +1558,8 @@
                         faseMaxima: fase,
                         melhorTempo: melhor.tempo,
                         melhorAcertos: melhor.acertos,
-                        partidas: 1,
-                        classificouFinal: classificados.includes(id),
-                        totalPartidas: partidas.length
+                        totalPartidas: partidas.length,
+                        classificouFinal: classificado && fase === 5
                     });
                 } else {
                     let existente = todosAlunos.get(id);
@@ -1535,46 +1569,151 @@
                         existente.melhorTempo = melhor.tempo;
                         existente.melhorAcertos = melhor.acertos;
                     }
-                    existente.partidas++;
                     existente.totalPartidas += partidas.length;
-                    if (classificados.includes(id)) existente.classificouFinal = true;
+                    if (classificado && fase === 5) existente.classificouFinal = true;
                 }
             }
+
+            dadosPorFase[fase] = faseData;
         }
-        let ranking = Array.from(todosAlunos.values());
-        ranking.sort((a,b) => b.melhorPontuacao - a.melhorPontuacao);
-        if (ranking.length === 0) {
-            container.innerHTML = '<p>📭 Nenhum dado registrado ainda.</p>';
-            return;
+
+        let html = '';
+
+        html += `<h3>📊 Resumo Consolidado por Turma</h3>`;
+        html += `<table class="ranking-table"><thead><tr><th>Turma</th><th>Alunos</th><th>Média Geral</th><th>Total Partidas</th><th>Finalistas (Fase 5)</th></tr></thead><tbody>`;
+        for (let [turma, dados] of turmasConsolidado) {
+            let media = dados.total > 0 ? (dados.somaPontos / dados.total).toFixed(1) : 0;
+            html += `<tr><td>${escapeHtml(turma)}</td><td>${dados.total}</td><td>${media} pts</td><td>${dados.totalPartidas}</td><td>${dados.finalistas}</td></tr>`;
         }
-        let html = '<div class="resumo-card"><strong>📊 Resumo por Turma</strong><br>';
-        let turmasMap = new Map();
-        for (let aluno of ranking) {
-            if (!turmasMap.has(aluno.turma)) {
-                turmasMap.set(aluno.turma, { total: 0, somaPontos: 0, finalistas: 0, totalPartidas: 0 });
+        html += '</tbody></table>';
+
+        for (let fase = 1; fase <= TOTAL_FASES; fase++) {
+            const faseData = dadosPorFase[fase];
+            if (!faseData || faseData.alunos.length === 0) {
+                html += `<h3>📊 Fase ${fase}</h3><p>📭 Nenhum dado registrado para esta fase.</p>`;
+                continue;
             }
-            let turmaData = turmasMap.get(aluno.turma);
-            turmaData.total++;
-            turmaData.somaPontos += aluno.melhorPontuacao;
-            if (aluno.classificouFinal) turmaData.finalistas++;
-            turmaData.totalPartidas += aluno.totalPartidas;
+
+            html += `<h3>📊 Fase ${fase}</h3>`;
+            html += `<h4>📈 Estatísticas por Turma - Fase ${fase}</h4>`;
+            html += `<table class="ranking-table"><thead><tr><th>Turma</th><th>Alunos</th><th>Média</th><th>Partidas</th><th>Classificados (Top${VAGAS_POR_FASE[fase]})</th></tr></thead><tbody>`;
+            for (let [turma, dados] of faseData.turmas) {
+                let media = dados.totalAlunos > 0 ? (dados.somaPontos / dados.totalAlunos).toFixed(1) : 0;
+                html += `<tr><td>${escapeHtml(turma)}</td><td>${dados.totalAlunos}</td><td>${media} pts</td><td>${dados.totalPartidas}</td><td>${dados.classificados}</td></tr>`;
+            }
+            html += '</tbody></table>';
+
+            html += `<h4>🏅 Desempenho Individual - Fase ${fase}</h4>`;
+            html += `<table class="ranking-table"><thead><tr><th>#</th><th>Nome</th><th>Turma</th><th>Pontuação</th><th>Acertos</th><th>Tempo (s)</th><th>Velocidade Média</th><th>Partidas</th><th>Classificado?</th></tr></thead><tbody>`;
+            faseData.alunos.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
+            faseData.alunos.forEach((aluno, idx) => {
+                const vel = aluno.velocidade !== null ? aluno.velocidade.toFixed(2) + " s" : "-";
+                const classif = aluno.classificado ? `<span class="classificado-sim">✅ Sim</span>` : `<span class="classificado-nao">❌ Não</span>`;
+                html += `<tr><td>${idx+1}º</td><td>${escapeHtml(aluno.nome)}</td><td>${escapeHtml(aluno.turma)}</td><td>${aluno.pontos}</td><td>${aluno.acertos}</td><td>${aluno.tempo.toFixed(1)}</td><td>${vel}</td><td>${aluno.partidas}</td><td>${classif}</td></tr>`;
+            });
+            html += '</tbody></table>';
+            html += '<hr>';
         }
-        for (let [turma, dados] of turmasMap.entries()) {
-            let media = (dados.somaPontos / dados.total).toFixed(1);
-            html += `🎓 ${escapeHtml(turma)}: ${dados.total} alunos | Média: ${media} pts | Finalistas: ${dados.finalistas} | Total de partidas: ${dados.totalPartidas}<br>`;
-        }
-        html += '</div><h4>🏅 Desempenho Individual</h4><table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Partidas (total)</th><th>Velocidade Média</th><th>Finalista?</th></tr></thead><tbody>';
-        ranking.forEach((aluno, idx) => {
-            let velocidade = (aluno.melhorAcertos > 0) ? (aluno.melhorTempo / aluno.melhorAcertos).toFixed(2) + " s" : "-";
+
+        html += `<h3>🏅 Desempenho Individual Geral</h3>`;
+        let rankingGeral = Array.from(todosAlunos.values());
+        rankingGeral.sort((a,b) => b.melhorPontuacao - a.melhorPontuacao);
+        html += `<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Turma</th><th>Melhor Pontuação</th><th>Fase Máxima</th><th>Partidas (total)</th><th>Finalista?</th></tr></thead><tbody>`;
+        rankingGeral.forEach((aluno, idx) => {
             let finalista = aluno.classificouFinal ? "✅ Sim" : "❌ Não";
-            html += `<tr><td>${idx+1}º</td><td>${escapeHtml(aluno.nome)}</td><td>${escapeHtml(aluno.turma)}</td><td>${aluno.melhorPontuacao}</td><td>Fase ${aluno.faseMaxima}</td><td>${aluno.totalPartidas}</td><td>${velocidade}</td><td>${finalista}</td></tr>`;
+            html += `<tr><td>${idx+1}º</td><td>${escapeHtml(aluno.nome)}</td><td>${escapeHtml(aluno.turma)}</td><td>${aluno.melhorPontuacao}</td><td>Fase ${aluno.faseMaxima}</td><td>${aluno.totalPartidas}</td><td>${finalista}</td></tr>`;
         });
         html += '</tbody></table>';
+
         container.innerHTML = html;
     }
-    
+
     function exportarCSV() {
-        toast("CSV exportado (implementação completa disponível)");
+        if (!estadoAtual) {
+            toast("Nenhum dado para exportar.");
+            return;
+        }
+
+        let linhasAlunos = [];
+        let linhasTurmas = [];
+
+        linhasAlunos.push(['Fase', 'Aluno', 'Turma', 'Pontuação', 'Acertos', 'Tempo (s)', 'Velocidade (s)', 'Partidas', 'Classificado']);
+        linhasTurmas.push(['Fase', 'Turma', 'Média', 'Alunos', 'Partidas', 'Classificados']);
+
+        for (let fase = 1; fase <= TOTAL_FASES; fase++) {
+            const resultados = estadoAtual.resultados?.[fase] || {};
+            const participantes = estadoAtual.participantes?.[fase] || {};
+            const classificados = estadoAtual.classificados?.[fase] || [];
+
+            let turmasMap = new Map();
+            for (let id in resultados) {
+                const partidas = resultados[id];
+                if (!partidas || partidas.length === 0) continue;
+                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                let nome = participantes[id]?.nome;
+                if (!nome && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) {
+                    nome = estadoAtual.participantes[fase-1][id].nome;
+                }
+                if (!nome) nome = "Anônimo";
+                let turma = participantes[id]?.turma;
+                if (!turma && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) {
+                    turma = estadoAtual.participantes[fase-1][id].turma;
+                }
+                if (!turma) turma = "?";
+                const classificado = classificados.includes(id);
+                const velocidade = (melhor.acertos > 0) ? (melhor.tempo / melhor.acertos) : null;
+
+                linhasAlunos.push([
+                    fase,
+                    nome,
+                    turma,
+                    melhor.pontos,
+                    melhor.acertos,
+                    melhor.tempo.toFixed(1),
+                    velocidade !== null ? velocidade.toFixed(2) : '',
+                    partidas.length,
+                    classificado ? 'Sim' : 'Não'
+                ]);
+
+                if (!turmasMap.has(turma)) {
+                    turmasMap.set(turma, { totalAlunos: 0, somaPontos: 0, totalPartidas: 0, classificados: 0 });
+                }
+                let dadosTurma = turmasMap.get(turma);
+                dadosTurma.totalAlunos++;
+                dadosTurma.somaPontos += melhor.pontos;
+                dadosTurma.totalPartidas += partidas.length;
+                if (classificado) dadosTurma.classificados++;
+            }
+
+            for (let [turma, dados] of turmasMap) {
+                let media = dados.totalAlunos > 0 ? (dados.somaPontos / dados.totalAlunos).toFixed(1) : 0;
+                linhasTurmas.push([fase, turma, media, dados.totalAlunos, dados.totalPartidas, dados.classificados]);
+            }
+        }
+
+        function arrayToCSV(arr) {
+            return arr.map(row => row.map(cell => {
+                if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"') || cell.includes('\n'))) {
+                    return `"${cell.replace(/"/g, '""')}"`;
+                }
+                return cell;
+            }).join(',')).join('\n');
+        }
+
+        const csvAlunos = arrayToCSV(linhasAlunos);
+        const csvTurmas = arrayToCSV(linhasTurmas);
+        const csvCompleto = `# ALUNOS POR FASE\n${csvAlunos}\n\n# TURMAS POR FASE\n${csvTurmas}`;
+
+        const blob = new Blob([csvCompleto], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.setAttribute('download', 'relatorio_copa_tabuada.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast("✅ CSV exportado com sucesso!");
     }
 
     // ---------- RANKING GERAL ----------
@@ -2211,8 +2350,6 @@
 
     function exibirModalResultados(posicao, melhorPontuacao, faltamClassificacao, distanciaProximo, jogadoresUltrapassados, jogadoresQuePassaram, deltaPosicao, recordePontos, recordeVelocidade) {
         const tempoMedio = (tempoTotalPartida / 20).toFixed(1);
-        const evolucaoPontos = ultimaPartida ? pontosPartida - ultimaPartida.pontos : null;
-        const evolucaoAcertos = ultimaPartida ? acertosPartida - ultimaPartida.acertos : null;
         const novoRecorde = (melhorPontuacao > 0 && pontosPartida > melhorPontuacao);
         
         let posEmoji = "";
@@ -2366,19 +2503,6 @@
         }
         
         const melhorPontuacao = Math.max(...lista.map(p => p.pontos), 0);
-        let faltamClassificacao = null, distanciaProximo = null;
-        const vagas = VAGAS_POR_FASE[faseAtual];
-        if (faseAtual < 5 && rankingPosicoes.length > 0) {
-            const ultimoClassificado = rankingPosicoes[vagas - 1];
-            if (ultimoClassificado && posicao > vagas) {
-                faltamClassificacao = ultimoClassificado.pontos - pontosPartida;
-                if (faltamClassificacao < 0) faltamClassificacao = 0;
-            } else if (posicao <= vagas && posicao > 1) {
-                const proximoAcima = rankingPosicoes[posicao - 2];
-                if (proximoAcima) distanciaProximo = proximoAcima.pontos - pontosPartida;
-            }
-        }
-        
         const velAtual = acertosPartida > 0 ? tempoTotalPartida / acertosPartida : 0;
         const todasFases = estadoAtual.resultados || {};
         let melhorVelocidade = null;
@@ -2399,7 +2523,7 @@
         const recordePontos = melhorPontuacao > 0 && pontosPartida > melhorPontuacao ? pontosPartida - melhorPontuacao : null;
         
         ultimaPartida = novaPartida;
-        exibirModalResultados(posicao, melhorPontuacao, faltamClassificacao, distanciaProximo, jogadoresUltrapassados, jogadoresQuePassaram, deltaPosicao, recordePontos, recordeVelocidade);
+        exibirModalResultados(posicao, melhorPontuacao, null, null, jogadoresUltrapassados, jogadoresQuePassaram, deltaPosicao, recordePontos, recordeVelocidade);
         confete();
         renderAluno();
     }
@@ -2470,7 +2594,7 @@
                 if (tab === 'ranking-geral') renderRankingGeral();
                 if (tab === 'ranking-fase') { atualizarRankingProfessor(); popularSelectFases(); }
                 if (tab === 'ranking-turmas') renderRankingTurmas('ranking-turmas-container', false);
-                if (tab === 'relatorios') gerarRelatorio();
+                if (tab === 'relatorios') { gerarRelatorio(); }
                 if (tab === 'gerenciar-alunos') renderListaAlunosGerenciar();
                 if (tab === 'gerenciar-turmas') renderListaTurmas();
             });
