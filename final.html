@@ -617,7 +617,6 @@
         if (!poolPerguntas[modalidade]) {
             poolPerguntas[modalidade] = gerarPoolPerguntas(modalidade);
         }
-        // Embaralha e pega 20
         const pool = poolPerguntas[modalidade];
         const shuffled = [...pool];
         for (let i = shuffled.length - 1; i > 0; i--) {
@@ -770,7 +769,6 @@
     async function renderRanking(faseNum, containerId, tipo = 'individual', exibirClassificacao = false) {
         if (!estadoAtual) return;
         const cacheKey = `${faseNum}_${tipo}_${exibirClassificacao}`;
-        // Se o cache existe e é recente (menos de 2 segundos), reutiliza
         if (cacheRanking[cacheKey] && (Date.now() - cacheRanking[cacheKey].timestamp < 2000)) {
             document.getElementById(containerId).innerHTML = cacheRanking[cacheKey].html;
             return;
@@ -845,7 +843,6 @@
                 const statusInfo = statusMap.get(child.key) || { status: 'aguardando', progresso: 0 };
                 let progresso = statusInfo.progresso;
                 if (statusInfo.status === 'aguardando') progresso = 0;
-                // pegar a última posição da última partida
                 const ultimaPartida = partidas[partidas.length - 1];
                 const ultimaPosicao = ultimaPartida?.posicao || null;
                 mapa.set(child.key, {
@@ -915,11 +912,9 @@
             return;
         }
 
-        // Atualizar a posição da última partida para cada jogador (se ainda não tiver)
         for (let i = 0; i < listaComId.length; i++) {
             const jogador = listaComId[i];
             if (jogador.ultimaPosicao === null) {
-                // verifica se há partidas salvas e tenta extrair a posição
                 const snapPartidas = await db.ref(`copaV2/resultados/${faseNum}/${jogador.id}`).once('value');
                 const partidas = snapPartidas.val() || [];
                 if (partidas.length > 0) {
@@ -931,6 +926,32 @@
             }
         }
 
+        // ---- PROJEÇÃO (AMEIAÇA) - OTIMIZAÇÃO 7 ----
+        let posProjetadaMap = new Map();
+        // Só calcula se a fase NÃO estiver finalizada
+        if (estadoAtual.status !== 'finalizado') {
+            let projecaoValida = false;
+            for (let item of listaComId) {
+                const perguntasResp = item.perguntas || 0;
+                if (perguntasResp > 0) {
+                    const ritmo = item.pontos / perguntasResp;
+                    const proj = ritmo * 20;
+                    item.projecao = proj;
+                    if (proj > 0) projecaoValida = true;
+                } else {
+                    item.projecao = 0;
+                }
+            }
+            if (projecaoValida) {
+                let itensComProj = listaComId.filter(item => item.projecao > 0);
+                itensComProj.sort((a,b) => b.projecao - a.projecao);
+                itensComProj.forEach((item, idx) => {
+                    posProjetadaMap.set(item.id, idx + 1);
+                });
+            }
+        }
+        // Fim da otimização 7
+
         const maxPontos = listaComId[0].pontos;
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirClassificacao;
@@ -938,6 +959,7 @@
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th>
             <th>Nome</th>
+            <th>Ameaça</th>
             <th>Pontuação</th>
             <th>Delta Líder</th>
             <th>Veloc.<br>Média</th>
@@ -992,6 +1014,15 @@
                 deltaVelocidadeHtml = "—";
             }
 
+            let ameacaHtml = "";
+            const posProjetada = posProjetadaMap.get(j.id);
+            if (posProjetada !== undefined && posProjetada < posAtual) {
+                ameacaHtml = posProjetada.toString();
+            } else {
+                ameacaHtml = "—";
+            }
+            if ((j.perguntas || 0) === 0) ameacaHtml = "—";
+
             let statusHtml = "", progressoHtml = "";
             if (j.status === 'em_jogo') {
                 statusHtml = `<span class="status-em-jogo">🟢 Em Jogo</span>`;
@@ -1021,6 +1052,7 @@
             html += `<tr>
                 <td class="${classePos}">${idx+1}º</td>
                 <td>${escapeHtml(j.nome)}</td>
+                <td>${ameacaHtml}</td>
                 <td>${j.pontos}</td>
                 <td>${deltaText}</td>
                 <td>${velocidadeAtualStr}</td>
@@ -1041,7 +1073,7 @@
         cacheRanking[cacheKey] = { html, timestamp: Date.now() };
     }
 
-    // RANKING POR TURMAS (mantido separado, mas chamado pela função unificada)
+    // RANKING POR TURMAS (mantido separado)
     async function renderRankingTurmas(containerId) {
         if (!estadoAtual) return;
         let turmasMap = new Map();
@@ -1207,7 +1239,6 @@
     }
 
     // ---------- GERENCIAMENTO DE TURMAS ----------
-    // (funções carregarTurmas, adicionarTurma, removerTurma, renderListaTurmas mantidas, mas usando once)
     async function adicionarTurma(novaTurma) {
         const turmas = await carregarTurmas();
         if (!turmas.includes(novaTurma)) {
@@ -1788,7 +1819,6 @@
             }
         }
         animFrameId = requestAnimationFrame(atualizarBarra);
-        // Fallback seguro: se por algum motivo o requestAnimationFrame parar, um setInterval de segurança
         if (timerPergunta) clearInterval(timerPergunta);
         timerPergunta = setInterval(() => {
             if (tempoRestantePergunta <= 0) {
@@ -1912,19 +1942,15 @@
         const faseAtual = estadoAtual.fase;
         const refResultado = db.ref(`copaV2/resultados/${faseAtual}/${alunoId}`);
 
-        // Usar transação para adicionar a partida com segurança
         await refResultado.transaction((currentData) => {
             const lista = currentData || [];
             const novaPartida = { pontos: pontosPartida, acertos: acertosPartida, tempo: tempoTotalPartida };
-            // A posição será calculada após o ranking, então adicionamos depois
             lista.push(novaPartida);
             return lista;
         });
 
-        // Remover o temporário
         await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).remove();
 
-        // Calcular posição atual e salvar na última partida
         const snapRanking = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
         let rankingPosicoes = [];
         snapRanking.forEach(child => {
@@ -1937,7 +1963,6 @@
         rankingPosicoes.sort((a,b) => b.pontos - a.pontos);
         const posicao = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
 
-        // Atualizar a última partida com a posição
         if (posicao > 0) {
             await refResultado.transaction((currentData) => {
                 const lista = currentData || [];
@@ -1960,7 +1985,6 @@
 
         iniciarListeners();
 
-        // Eventos da interface
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -2007,7 +2031,6 @@
             };
         }
 
-        // Debounce nos botões do professor
         const debounceDelay = 300;
         const btnIniciarFase = document.getElementById('btn-iniciar-fase');
         const btnAvancarFase = document.getElementById('btn-avancar-fase');
