@@ -200,6 +200,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 
+<!-- CONFIGURAÇÃO DO FIREBASE (EXTERNA) -->
+<script src="js/config/firebase-config.js"></script>
+
 <!-- NOVOS ARQUIVOS DA ETAPA 1 -->
 <script src="js/utils/constants.js"></script>
 <script src="js/utils/helpers.js"></script>
@@ -207,16 +210,8 @@
 <!-- SCRIPT PRINCIPAL (CÓDIGO DO JOGO) -->
 <script>
     // ---------- CONFIGURAÇÃO DO FIREBASE ----------
-    const firebaseConfig = {
-        apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBz0-o2HVhEE",
-        authDomain: "final-copa-tabuada.firebaseapp.com",
-        databaseURL: "https://final-copa-tabuada-default-rtdb.firebaseio.com",
-        projectId: "final-copa-tabuada",
-        storageBucket: "final-copa-tabuada.firebasestorage.app",
-        messagingSenderId: "488825824115",
-        appId: "1:488825824115:web:50e94f68253473aee91b06"
-    };
-    firebase.initializeApp(firebaseConfig);
+    // As credenciais agora vêm do arquivo js/config/firebase-config.js
+    firebase.initializeApp(window.firebaseConfig);
     const db = firebase.database();
 
     // ---------- VARIÁVEIS GLOBAIS ----------
@@ -1579,6 +1574,13 @@
 
         exibirModalResultadosSimples(posicao, pontosPartida);
         renderAluno();
+    }
+
+    // ---------- FUNÇÃO AUXILIAR DE CLASSIFICAÇÃO ----------
+    function isClassificado(fase, alunoId) {
+        if (fase <= 1) return true;
+        const classificados = estadoAtual?.classificados?.[fase-1] || [];
+        return classificados.includes(alunoId);
     }
 
     // ---------- INICIALIZAÇÃO ----------
