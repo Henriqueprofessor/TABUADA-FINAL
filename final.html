@@ -928,7 +928,6 @@
 
         // ---- PROJEÇÃO (AMEIAÇA) - OTIMIZAÇÃO 7 ----
         let posProjetadaMap = new Map();
-        // Só calcula se a fase NÃO estiver finalizada
         if (estadoAtual.status !== 'finalizado') {
             let projecaoValida = false;
             for (let item of listaComId) {
@@ -950,12 +949,12 @@
                 });
             }
         }
-        // Fim da otimização 7
 
         const maxPontos = listaComId[0].pontos;
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirClassificacao;
 
+        // Cabeçalho da tabela (sem a coluna Status)
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th>
             <th>Nome</th>
@@ -965,7 +964,6 @@
             <th>Veloc.<br>Média</th>
             <th>Veloc.<br>Recorde</th>
             <th>Δ Veloc.</th>
-            <th>Status</th>
             <th>Progresso</th>
             ${mostrarClassificacao ? '<th>Classificação</th>' : ''}
             <th>Partidas</th>
@@ -1023,21 +1021,16 @@
             }
             if ((j.perguntas || 0) === 0) ameacaHtml = "—";
 
-            let statusHtml = "", progressoHtml = "";
+            // Progresso (sem a coluna Status)
+            let progressoHtml = "";
             if (j.status === 'em_jogo') {
-                statusHtml = `<span class="status-em-jogo">🟢 Em Jogo</span>`;
                 progressoHtml = `${j.progresso}/20`;
             } else if (j.status === 'finalizado') {
-                statusHtml = `<span class="status-finalizado">✅ Finalizou Tentativa</span>`;
-                progressoHtml = `Finalizado`;
+                progressoHtml = `✅ Finalizado`;
             } else {
-                statusHtml = `<span class="status-aguardando">⏳ Aguardando</span>`;
                 progressoHtml = `—`;
             }
-            if (!j.status) {
-                statusHtml = `<span class="status-aguardando">⏳ Aguardando</span>`;
-                progressoHtml = `—`;
-            }
+            if (!j.status) progressoHtml = `—`;
 
             let colunaStatus = "";
             if (mostrarClassificacao) {
@@ -1058,7 +1051,6 @@
                 <td>${velocidadeAtualStr}</td>
                 <td>${recordeStr}</td>
                 <td>${deltaVelocidadeHtml}</td>
-                <td>${statusHtml}</td>
                 <td>${progressoHtml}</td>
                 ${mostrarClassificacao ? colunaStatus : ''}
                 <td>${j.partidas}</td>
