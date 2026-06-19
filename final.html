@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- jsPDF CDN (PDF) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Extensão autoTable para jsPDF (CORREÇÃO) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <!-- PapaParse CDN (CSV) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
@@ -126,8 +128,6 @@
             </div>
             <div id="ranking-turmas-container" class="status-box">Carregando...</div>
         </div>
-        
-        <!-- NOVA ABA: ESTATÍSTICAS -->
         <div id="tab-estatisticas" class="tab-content hidden">
             <h3>📈 Estatísticas da Competição</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
@@ -148,7 +148,6 @@
                 <button id="btn-atualizar-estatisticas" class="btn-secondary">🔄 Atualizar Gráficos</button>
             </div>
         </div>
-        
         <div id="tab-gerenciar-alunos" class="tab-content hidden">
             <h3>📝 Gerenciar Alunos da Fase Atual</h3>
             <div id="lista-alunos-gerenciavel" class="status-box scroll-list">Carregando...</div>
