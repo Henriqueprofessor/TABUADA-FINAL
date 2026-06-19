@@ -4,23 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo</title>
-    <!-- CSS externo -->
     <link rel="stylesheet" href="css/styles.css">
-    <!-- Chart.js CDN (gráficos) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- jsPDF CDN (PDF) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Extensão autoTable para jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-    <!-- PapaParse CDN (CSV) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
 
-<!-- TOAST (mensagens flutuantes) -->
+<!-- TOAST -->
 <div id="toast" class="toast hidden"></div>
 
-<!-- MODAL DE LOGIN -->
+<!-- MODAL LOGIN -->
 <div id="login-modal" class="card hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; max-width: 400px; width: 90%;">
     <div style="text-align: center; padding: 10px;">
         <h2>👨‍🏫 Login do Professor</h2>
@@ -35,7 +30,7 @@
     </div>
 </div>
 
-<!-- CONTEÚDO PRINCIPAL (mesmo HTML de antes) -->
+<!-- CONTEÚDO PRINCIPAL -->
 <div class="container">
     <div class="card">
         <div class="header-title">
@@ -248,37 +243,28 @@
     </div>
 </div>
 
-<!-- FIREBASE SDK (todos os módulos compat) -->
+<!-- FIREBASE SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-<!-- FIREBASE AUTH (CORREÇÃO) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 
-<!-- CONFIGURAÇÃO DO FIREBASE (EXTERNA) -->
 <script src="js/config/firebase-config.js"></script>
-
-<!-- SERVIÇO DO FIREBASE -->
 <script src="js/services/firebase-service.js"></script>
-
-<!-- SERVIÇO DE AUTENTICAÇÃO -->
 <script src="js/services/auth-service.js"></script>
-
-<!-- NOVOS ARQUIVOS DA ETAPA 1 -->
 <script src="js/utils/constants.js"></script>
 <script src="js/utils/helpers.js"></script>
-
-<!-- GERADOR DE SONS -->
 <script src="js/utils/sounds.js"></script>
 
-<!-- ============================================================ -->
-<!-- SCRIPT PRINCIPAL (COM AUTENTICAÇÃO FIREBASE)                 -->
-<!-- ============================================================ -->
 <script>
-    // ---------- INICIALIZAÇÃO ----------
+    // =================================================================
+    // INICIALIZAÇÃO
+    // =================================================================
     firebase.initializeApp(window.firebaseConfig);
     const db = firebase.database();
 
-    // ---------- VARIÁVEIS GLOBAIS ----------
+    // =================================================================
+    // VARIÁVEIS GLOBAIS
+    // =================================================================
     let meuTipo = null, alunoId = null, alunoNome = null, alunoTurma = null;
     let estadoAtual = null, jogoAtivo = false;
     let perguntas = [], perguntaIdx = 0, pontosPartida = 0, acertosPartida = 0, tempoTotalPartida = 0;
@@ -298,20 +284,20 @@
     let tempoEsgotadoProcessado = false;
     let posicaoAtualAluno = null;
 
-    // Listeners
     let listenerCopa = null;
     let listenerOnline = null;
     let listenerResultados = {};
     let listenerParticipantes = {};
     let listenerClassificados = {};
 
-    // Estado de autenticação
     let professorAutenticado = false;
     let listenerAuth = null;
 
-    // ---------- CACHE DE PERGUNTAS ----------
     const poolPerguntas = {};
 
+    // =================================================================
+    // FUNÇÕES AUXILIARES
+    // =================================================================
     function gerarPoolPerguntas(modalidade) {
         const config = window.MODALIDADE_CONFIG[modalidade];
         if (!config) return [];
@@ -342,9 +328,9 @@
         return shuffled.slice(0, window.TOTAL_PERGUNTAS);
     }
 
-    // =============================================================
-    // ========== FUNÇÕES DE AUTENTICAÇÃO =========================
-    // =============================================================
+    // =================================================================
+    // AUTENTICAÇÃO
+    // =================================================================
     function mostrarModalLogin() {
         document.getElementById('login-modal').classList.remove('hidden');
         document.getElementById('login-erro').style.display = 'none';
@@ -352,17 +338,14 @@
         document.getElementById('login-senha').value = '';
         document.getElementById('login-email').focus();
     }
-
     function esconderModalLogin() {
         document.getElementById('login-modal').classList.add('hidden');
     }
-
     function exibirErroLogin(mensagem) {
         const erroDiv = document.getElementById('login-erro');
         erroDiv.innerText = mensagem;
         erroDiv.style.display = 'block';
     }
-
     async function realizarLogin() {
         const email = document.getElementById('login-email').value.trim();
         const senha = document.getElementById('login-senha').value.trim();
@@ -373,35 +356,27 @@
         try {
             await window.authService.login(email, senha);
             esconderModalLogin();
-            // O callback onAuthStateChanged vai cuidar do resto
         } catch (error) {
             let mensagem = 'Erro ao fazer login.';
-            if (error.code === 'auth/user-not-found') {
-                mensagem = 'Usuário não encontrado.';
-            } else if (error.code === 'auth/wrong-password') {
-                mensagem = 'Senha incorreta.';
-            } else if (error.code === 'auth/invalid-email') {
-                mensagem = 'E-mail inválido.';
-            } else if (error.code === 'auth/too-many-requests') {
-                mensagem = 'Muitas tentativas. Tente novamente mais tarde.';
-            }
+            if (error.code === 'auth/user-not-found') mensagem = 'Usuário não encontrado.';
+            else if (error.code === 'auth/wrong-password') mensagem = 'Senha incorreta.';
+            else if (error.code === 'auth/invalid-email') mensagem = 'E-mail inválido.';
+            else if (error.code === 'auth/too-many-requests') mensagem = 'Muitas tentativas. Tente novamente mais tarde.';
             exibirErroLogin(mensagem);
             console.error('Erro de login:', error);
         }
     }
-
     function realizarLogout() {
         window.authService.logout().then(() => {
-            // O callback onAuthStateChanged vai cuidar do logout
             window.toast('🔒 Logout realizado com sucesso.');
         }).catch(err => {
             console.error('Erro ao fazer logout:', err);
         });
     }
 
-    // =============================================================
-    // ========== LISTENERS GRANULARES =============================
-    // =============================================================
+    // =================================================================
+    // LISTENERS GRANULARES
+    // =================================================================
     function iniciarListeners() {
         if (listenerCopa) listenerCopa();
         listenerCopa = window.firebaseService.listenCopaMetadata((metadata) => {
@@ -450,9 +425,7 @@
                 if (!estadoAtual) estadoAtual = {};
                 if (!estadoAtual.resultados) estadoAtual.resultados = {};
                 estadoAtual.resultados[f] = data || {};
-                if (meuTipo === 'professor' || meuTipo === 'projecao') {
-                    atualizarUI();
-                }
+                if (meuTipo === 'professor' || meuTipo === 'projecao') atualizarUI();
             });
         }
 
@@ -519,9 +492,9 @@
         });
     }
 
-    // =============================================================
-    // ========== CARREGAR DADOS ==================================
-    // =============================================================
+    // =================================================================
+    // CARREGAR DADOS
+    // =================================================================
     async function carregarTurmas() {
         let turmas = await window.firebaseService.getTurmasOnce();
         if (!turmas || !Array.isArray(turmas) || turmas.length === 0) {
@@ -530,7 +503,6 @@
         }
         return turmas;
     }
-
     async function carregarIntervalos() {
         const config = await window.firebaseService.getIntervalosOnce();
         if (config) {
@@ -546,9 +518,9 @@
         if (meuTipo === 'projecao') reiniciarIntervalosTorcida();
     }
 
-    // =============================================================
-    // ========== RANKING ==========================================
-    // =============================================================
+    // =================================================================
+    // RANKING (COMPLETO)
+    // =================================================================
     let cacheRanking = {};
 
     async function renderRanking(faseNum, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -560,13 +532,10 @@
         }
 
         const container = document.getElementById(containerId);
-        const spinner = document.getElementById('ranking-spinner');
-        if (spinner) spinner.classList.remove('hidden');
         container.innerHTML = '<div class="spinner">⏳ Carregando ranking...</div>';
 
         if (tipo === 'turmas') {
             await renderRankingTurmas(containerId);
-            if (spinner) spinner.classList.add('hidden');
             return;
         }
 
@@ -707,7 +676,6 @@
             if (listaComId.length === 0) {
                 container.innerHTML = '<p>⏳ Nenhum resultado registrado ainda. Aguarde os primeiros jogadores...</p>';
                 cacheRanking[cacheKey] = { html: container.innerHTML, timestamp: Date.now() };
-                if (spinner) spinner.classList.add('hidden');
                 return;
             }
 
@@ -863,7 +831,6 @@
             console.error('Erro ao renderizar ranking:', e);
             container.innerHTML = '<p>❌ Erro ao carregar ranking. Tente novamente.</p>';
         }
-        if (spinner) spinner.classList.add('hidden');
     }
 
     async function renderRankingTurmas(containerId) {
@@ -952,9 +919,9 @@
         document.getElementById(containerId).innerHTML = html;
     }
 
-    // =============================================================
-    // ========== ATUALIZAÇÃO DE RANKINGS =========================
-    // =============================================================
+    // =================================================================
+    // ATUALIZAÇÃO DE RANKINGS
+    // =================================================================
     async function atualizarRankingProfessor() {
         if (meuTipo === 'professor' && professorAutenticado && atualizacaoRankingAuto && document.getElementById('tab-ranking-fase') && !document.getElementById('tab-ranking-fase').classList.contains('hidden')) {
             const faseSelecionada = document.getElementById('select-fase-ranking').value;
@@ -1032,9 +999,9 @@
         intervaloTorcidaEquipes = null;
     }
 
-    // =============================================================
-    // ========== GERENCIAMENTO DE TURMAS =========================
-    // =============================================================
+    // =================================================================
+    // GERENCIAMENTO DE TURMAS
+    // =================================================================
     async function adicionarTurma(novaTurma) {
         const turmas = await carregarTurmas();
         if (!turmas.includes(novaTurma)) {
@@ -1097,9 +1064,9 @@
         });
     }
 
-    // =============================================================
-    // ========== CONTROLE DE INTERVALOS ===========================
-    // =============================================================
+    // =================================================================
+    // CONTROLE DE INTERVALOS
+    // =================================================================
     async function atualizarIntervaloIndividual(segundos) {
         intervaloIndividualSegundos = segundos;
         await window.firebaseService.getIntervalosRef().update({ individual: segundos });
@@ -1113,9 +1080,9 @@
         window.toast(`Intervalo por equipes alterado para ${segundos} segundos`);
     }
 
-    // =============================================================
-    // ========== RANKING GERAL ====================================
-    // =============================================================
+    // =================================================================
+    // RANKING GERAL
+    // =================================================================
     function renderRankingGeral() {
         if (!estadoAtual) return;
         const todasFases = estadoAtual.resultados || {};
@@ -1190,9 +1157,9 @@
         document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
     }
 
-    // =============================================================
-    // ========== GRÁFICOS E ESTATÍSTICAS ==========================
-    // =============================================================
+    // =================================================================
+    // GRÁFICOS E ESTATÍSTICAS
+    // =================================================================
     let chartTurmas = null, chartDistribuicao = null, chartEvolucao = null;
 
     function gerarDadosTurmas() {
@@ -1386,9 +1353,9 @@
         }
     }
 
-    // =============================================================
-    // ========== RELATÓRIOS (CSV e PDF) ==========================
-    // =============================================================
+    // =================================================================
+    // RELATÓRIOS (CSV e PDF)
+    // =================================================================
     function gerarDadosCSV() {
         if (!estadoAtual) return null;
         const todasFases = estadoAtual.resultados || {};
@@ -1467,9 +1434,9 @@
         window.toast("📄 PDF baixado!");
     }
 
-    // =============================================================
-    // ========== PÓDIO FINAL ======================================
-    // =============================================================
+    // =================================================================
+    // PÓDIO FINAL
+    // =================================================================
     function renderPodioFinal(containerId) {
         if (!estadoAtual || estadoAtual.fase !== 5) return;
         const resultadosFase5 = estadoAtual.resultados?.[5] || {};
@@ -1506,9 +1473,9 @@
         container.classList.remove('hidden');
     }
 
-    // =============================================================
-    // ========== CONTROLE DE FASE =================================
-    // =============================================================
+    // =================================================================
+    // CONTROLE DE FASE
+    // =================================================================
     async function pausarFase() {
         if (!estadoAtual || estadoAtual.status !== 'em_andamento') return;
         const agora = Date.now();
@@ -1602,9 +1569,9 @@
         }
     }
 
-    // =============================================================
-    // ========== FUNÇÕES DO ALUNO =================================
-    // =============================================================
+    // =================================================================
+    // FUNÇÕES DO ALUNO
+    // =================================================================
     async function exibirResultadoFinalParaAluno() {
         if (!alunoId || !estadoAtual) return;
         const faseAtual = estadoAtual.fase;
@@ -1692,9 +1659,9 @@
         });
     }
 
-    // =============================================================
-    // ========== SELECTS ==========================================
-    // =============================================================
+    // =================================================================
+    // SELECTS
+    // =================================================================
     function popularSelectFasesTorcida() {
         const select = document.getElementById('select-fase-torcida');
         if (!select) return;
@@ -1726,9 +1693,9 @@
         select.value = faseSelecionadaProf;
     }
 
-    // =============================================================
-    // ========== UI PRINCIPAL =====================================
-    // =============================================================
+    // =================================================================
+    // UI PRINCIPAL
+    // =================================================================
     function atualizarPosicaoAluno(novaPosicao) {
         const posSpan = document.getElementById('posicao-numero');
         if (!posSpan) return;
@@ -1925,9 +1892,9 @@
         }
     }
 
-    // =============================================================
-    // ========== LÓGICA DO JOGO ===================================
-    // =============================================================
+    // =================================================================
+    // LÓGICA DO JOGO
+    // =================================================================
     let animFrameId = null;
 
     function startTimer() {
@@ -2149,14 +2116,14 @@
         renderAluno();
     }
 
-    // =============================================================
-    // ========== INICIALIZAÇÃO ====================================
-    // =============================================================
+    // =================================================================
+    // INICIALIZAÇÃO
+    // =================================================================
     async function init() {
         await carregarIntervalos();
         await carregarTurmas();
 
-        // ---------- LISTENER DE AUTENTICAÇÃO ----------
+        // --- Autenticação ---
         listenerAuth = window.authService.onAuthStateChanged((user) => {
             if (user) {
                 professorAutenticado = true;
@@ -2180,25 +2147,33 @@
             }
         });
 
-        // ---------- EVENTOS DA INTERFACE ----------
+        // --- EVENTOS DAS ABAS (CORRIGIDO) ---
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', function(e) {
+                // Remove active de todas
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                const tab = btn.getAttribute('data-tab');
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-                document.getElementById(`tab-${tab}`).classList.remove('hidden');
-                if (tab === 'ranking-geral') renderRankingGeral();
-                if (tab === 'ranking-fase') { atualizarRankingProfessor(); popularSelectFases(); }
-                if (tab === 'ranking-turmas') renderRanking(null, 'ranking-turmas-container', 'turmas', false);
-                if (tab === 'gerenciar-alunos') renderListaAlunosGerenciar();
-                if (tab === 'gerenciar-turmas') renderListaTurmas();
-                if (tab === 'estatisticas') {
-                    setTimeout(() => renderizarGraficos(), 300);
+                // Adiciona active à clicada
+                this.classList.add('active');
+                // Esconde todos os conteúdos
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                // Mostra o conteúdo correspondente
+                const tabId = this.getAttribute('data-tab');
+                const target = document.getElementById(`tab-${tabId}`);
+                if (target) {
+                    target.classList.remove('hidden');
+                    if (tabId === 'estatisticas') {
+                        setTimeout(() => renderizarGraficos(), 300);
+                    }
+                    if (tabId === 'ranking-geral') renderRankingGeral();
+                    if (tabId === 'ranking-fase') { atualizarRankingProfessor(); popularSelectFases(); }
+                    if (tabId === 'ranking-turmas') renderRanking(null, 'ranking-turmas-container', 'turmas', false);
+                    if (tabId === 'gerenciar-alunos') renderListaAlunosGerenciar();
+                    if (tabId === 'gerenciar-turmas') renderListaTurmas();
                 }
             });
         });
 
+        // --- OUTROS EVENTOS ---
         document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
             let val = parseInt(document.getElementById('intervalo-individual').value);
             if (val >= 1) atualizarIntervaloIndividual(val);
@@ -2284,7 +2259,7 @@
             if (t > 0) window.firebaseService.getCopaRef().child('tempoFase').set(t);
         });
 
-        // ---------- BOTÃO PROFESSOR ----------
+        // --- BOTÃO PROFESSOR ---
         document.getElementById('btn-professor')?.addEventListener('click', () => {
             if (professorAutenticado) {
                 document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
@@ -2297,7 +2272,6 @@
             }
         });
 
-        // ---------- BOTÃO LOGIN ----------
         document.getElementById('btn-login')?.addEventListener('click', realizarLogin);
         document.getElementById('login-senha')?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') realizarLogin();
@@ -2306,11 +2280,9 @@
             if (e.key === 'Enter') document.getElementById('login-senha').focus();
         });
         document.getElementById('btn-login-cancelar')?.addEventListener('click', esconderModalLogin);
-
-        // ---------- BOTÃO LOGOUT ----------
         document.getElementById('btn-logout')?.addEventListener('click', realizarLogout);
 
-        // ---------- ALUNO ----------
+        // --- ALUNO ---
         document.getElementById('btn-aluno')?.addEventListener('click', async () => {
             if (!estadoAtual || estadoAtual.status !== 'em_andamento' || Date.now() >= estadoAtual.fim) {
                 window.toast("⏳ A fase não foi iniciada ou já terminou.");
@@ -2358,7 +2330,7 @@
 
         document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
 
-        // ---------- TORCIDA ----------
+        // --- TORCIDA ---
         document.getElementById('btn-projecao')?.addEventListener('click', () => {
             torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
             window.firebaseService.setPresence(torcidaId, { tipo: 'torcida', timestamp: Date.now() });
@@ -2402,7 +2374,6 @@
             if (atualizacaoRankingAuto) atualizarRankingProfessor();
         });
 
-        // ---------- LISTENERS ADICIONAIS ----------
         window.firebaseService.listenConnected((connected) => {
             if (connected && alunoId && meuTipo === 'aluno') {
                 window.firebaseService.setPresence(alunoId, { nome: alunoNome, turma: alunoTurma });
