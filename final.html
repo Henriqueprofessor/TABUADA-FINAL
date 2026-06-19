@@ -145,7 +145,6 @@
                         <span id="posicao-numero">--</span><span>º</span>
                     </div>
                 </div>
-                <!-- Barra de tempo (substituída pelo círculo, mas mantemos ambas para compatibilidade) -->
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
                 <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
                 <div class="opcoes-grid">
@@ -211,8 +210,11 @@
 <script src="js/utils/constants.js"></script>
 <script src="js/utils/helpers.js"></script>
 
+<!-- GERADOR DE SONS (NOVO) -->
+<script src="js/utils/sounds.js"></script>
+
 <!-- ============================================================ -->
-<!-- SCRIPT PRINCIPAL (CÓDIGO DO JOGO COMPLETO COM MELHORIAS)     -->
+<!-- SCRIPT PRINCIPAL (CÓDIGO DO JOGO COMPLETO COM SONS)          -->
 <!-- ============================================================ -->
 <script>
     // ---------- INICIALIZAÇÃO ----------
@@ -237,7 +239,7 @@
     let intervaloIndividualSegundos = 4;
     let intervaloEquipesSegundos = 60;
     let tempoEsgotadoProcessado = false;
-    let posicaoAtualAluno = null; // para animação de mudança de posição
+    let posicaoAtualAluno = null;
 
     // ---------- CACHE DE PERGUNTAS ----------
     const poolPerguntas = {};
@@ -394,7 +396,6 @@
             return;
         }
 
-        // Mostrar spinner
         const container = document.getElementById(containerId);
         const spinner = document.getElementById('ranking-spinner');
         if (spinner) spinner.classList.remove('hidden');
@@ -406,7 +407,6 @@
             return;
         }
 
-        // RANKING INDIVIDUAL
         try {
             const snapFinal = await window.firebaseService.getResultadosRef(faseNum).once('value');
             const snapTemp = await window.firebaseService.getResultadosTempRef(faseNum).once('value');
@@ -562,7 +562,6 @@
                 }
             }
 
-            // Projeção (ameaça)
             let posProjetadaMap = new Map();
             if (estadoAtual.status !== 'finalizado') {
                 let projecaoValida = false;
@@ -1131,6 +1130,8 @@
 
         if (faseAtual === window.TOTAL_FASES) {
             window.toast("🏆 COMPETIÇÃO FINALIZADA!");
+            // Som de comemoração final
+            if (window.soundManager) window.soundManager.playCelebration();
             await window.firebaseService.updateCopa({ status: 'finalizado', fim: 0, tempoRestantePausa: null });
             renderPodioFinal('podium-container');
             renderPodioFinal('podium-torcida-container');
@@ -1183,6 +1184,12 @@
                     <button class="fechar" id="btn-fechar-modal-fim">Voltar ao Menu</button>
                 </div>
             `;
+            // Sons
+            if (classificado) {
+                if (window.soundManager) window.soundManager.playCelebration();
+            } else {
+                if (window.soundManager) window.soundManager.playWrong();
+            }
             const modalExistente = document.getElementById('modal-fim-tempo');
             if (modalExistente) modalExistente.remove();
             document.body.insertAdjacentHTML('beforeend', modalHtml);
@@ -1294,7 +1301,7 @@
             const indicador = document.getElementById('indicador-posicao');
             if (indicador) {
                 indicador.classList.remove('atualizado');
-                void indicador.offsetWidth; // força reflow
+                void indicador.offsetWidth;
                 indicador.classList.add('atualizado');
             }
         }
@@ -1331,7 +1338,6 @@
                 sessionStorage.setItem('modalExibido_' + estadoAtual.fase, 'true');
                 exibirResultadoFinalParaAluno();
             }
-            // tenta obter posição final
             obterRankingCompleto(estadoAtual.fase).then(ranking => {
                 const pos = ranking.findIndex(r => r.id === alunoId) + 1;
                 if (pos > 0) atualizarPosicaoAluno(pos);
@@ -1339,7 +1345,6 @@
         } else {
             msgDiv.innerText = "✅ Fase liberada! Clique em JOGAR.";
             btnJogar.classList.remove('hidden');
-            // atualiza posição ao vivo
             obterRankingCompleto(estadoAtual.fase).then(ranking => {
                 const pos = ranking.findIndex(r => r.id === alunoId) + 1;
                 if (pos > 0) atualizarPosicaoAluno(pos);
@@ -1501,6 +1506,8 @@
             if (tempoRestantePergunta > 0) {
                 animFrameId = requestAnimationFrame(atualizarBarra);
             } else {
+                // Tempo esgotado na pergunta
+                if (window.soundManager) window.soundManager.playTimeUp();
                 responder(-1);
             }
         }
@@ -1540,7 +1547,6 @@
         const botoes = document.querySelectorAll('.opcao');
         let acertou = false;
 
-        // Feedback visual
         if (idx !== -1) {
             const resp = parseInt(botoes[idx].innerText);
             if (resp === respCerta) {
@@ -1548,16 +1554,24 @@
                 acertosPartida++;
                 const pontosGanhos = Math.round(100 * (Math.max(0, tempoRestantePergunta) / 10));
                 pontosPartida += pontosGanhos;
+                // Som de acerto
+                if (window.soundManager) window.soundManager.playCorrect();
+            } else {
+                // Som de erro
+                if (window.soundManager) window.soundManager.playWrong();
             }
+        } else {
+            // Não respondeu a tempo - já tocamos o som de tempo esgotado em startTimer
         }
+
         botoes.forEach((btn, i) => {
             const valor = parseInt(btn.innerText);
             if (valor === respCerta) {
-                btn.style.background = '#27ae60'; // verde
+                btn.style.background = '#27ae60';
                 btn.style.borderColor = '#2ecc71';
                 btn.style.transform = 'scale(1.05)';
             } else if (i === idx && idx !== -1 && !acertou) {
-                btn.style.background = '#e74c3c'; // vermelho
+                btn.style.background = '#e74c3c';
                 btn.style.borderColor = '#e74c3c';
                 btn.style.transform = 'scale(0.95)';
             }
@@ -1570,7 +1584,6 @@
         perguntaIdx++;
         await atualizarPontuacaoParcial();
 
-        // Aguarda 600ms para o feedback antes de continuar
         setTimeout(() => {
             botoes.forEach(btn => {
                 btn.style.background = '';
@@ -1602,6 +1615,9 @@
         else if (posicao === 2) posEmoji = "🥈";
         else if (posicao === 3) posEmoji = "🥉";
         else posEmoji = "🏆";
+
+        // Som de fanfarra ao final da partida
+        if (window.soundManager) window.soundManager.playFanfare();
 
         let htmlModal = `
             <div class="modal-resultados" id="modal-pos-jogo">
@@ -1640,6 +1656,9 @@
             window.toast("❌ Não classificado para esta fase!");
             return;
         }
+        // Som de início de partida
+        if (window.soundManager) window.soundManager.playGameStart();
+
         perguntas = obterPerguntas(estadoAtual.modalidade);
         perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
         document.getElementById('pontuacao-acumulada').innerText = "0";
@@ -1902,14 +1921,12 @@
             if (atualizacaoRankingAuto) atualizarRankingProfessor();
         });
 
-        // Listener de conectividade
         window.firebaseService.listenConnected((connected) => {
             if (connected && alunoId && meuTipo === 'aluno') {
                 window.firebaseService.setPresence(alunoId, { nome: alunoNome, turma: alunoTurma });
             }
         });
 
-        // Listener de intervalos (atualiza em tempo real)
         window.firebaseService.listenIntervalos((config) => {
             if (config) {
                 intervaloIndividualSegundos = config.individual || 4;
