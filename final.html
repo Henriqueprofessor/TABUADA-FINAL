@@ -10,13 +10,32 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- jsPDF CDN (PDF) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Extensão autoTable para jsPDF (CORREÇÃO) -->
+    <!-- Extensão autoTable para jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <!-- PapaParse CDN (CSV) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
 
+<!-- TOAST (mensagens flutuantes) -->
+<div id="toast" class="toast hidden"></div>
+
+<!-- MODAL DE LOGIN (aparece ao clicar em "Professor") -->
+<div id="login-modal" class="card hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; max-width: 400px; width: 90%;">
+    <div style="text-align: center; padding: 10px;">
+        <h2>👨‍🏫 Login do Professor</h2>
+        <p style="margin-bottom: 20px;">Digite suas credenciais</p>
+        <input type="email" id="login-email" placeholder="E-mail" style="width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 20px; background: #1f3a4b; color: white; border: 1px solid #2c3e50;">
+        <input type="password" id="login-senha" placeholder="Senha" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 20px; background: #1f3a4b; color: white; border: 1px solid #2c3e50;">
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="btn-login" class="btn-success">Entrar</button>
+            <button id="btn-login-cancelar" class="btn-danger">Cancelar</button>
+        </div>
+        <div id="login-erro" style="color: #e74c3c; margin-top: 12px; font-weight: bold; display: none;"></div>
+    </div>
+</div>
+
+<!-- CONTEÚDO PRINCIPAL -->
 <div class="container">
     <div class="card">
         <div class="header-title">
@@ -45,7 +64,8 @@
             <h2>🔧 Painel do Professor <span id="prof-fase-info" class="fase-info"></span></h2>
             <div>
                 <button id="btn-sync-prof" class="btn-warning">🔄 Sincronizar</button>
-                <button id="btn-voltar-menu-prof" class="btn-danger">🏠 Voltar ao Menu</button>
+                <button id="btn-logout" class="btn-danger">🚪 Sair</button>
+                <button id="btn-voltar-menu-prof" class="btn-secondary">🏠 Menu</button>
             </div>
         </div>
         <div class="tab-buttons">
@@ -227,7 +247,6 @@
         <div id="podium-torcida-container" class="status-box hidden"></div>
     </div>
 </div>
-<div id="toast" class="toast hidden"></div>
 
 <!-- FIREBASE SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -236,8 +255,11 @@
 <!-- CONFIGURAÇÃO DO FIREBASE (EXTERNA) -->
 <script src="js/config/firebase-config.js"></script>
 
-<!-- SERVIÇO DO FIREBASE (COM LISTENERS GRANULARES) -->
+<!-- SERVIÇO DO FIREBASE -->
 <script src="js/services/firebase-service.js"></script>
+
+<!-- SERVIÇO DE AUTENTICAÇÃO -->
+<script src="js/services/auth-service.js"></script>
 
 <!-- NOVOS ARQUIVOS DA ETAPA 1 -->
 <script src="js/utils/constants.js"></script>
@@ -247,7 +269,7 @@
 <script src="js/utils/sounds.js"></script>
 
 <!-- ============================================================ -->
-<!-- SCRIPT PRINCIPAL (OTIMIZADO COM LISTENERS GRANULARES)        -->
+<!-- SCRIPT PRINCIPAL (COM AUTENTICAÇÃO FIREBASE)                 -->
 <!-- ============================================================ -->
 <script>
     // ---------- INICIALIZAÇÃO ----------
@@ -274,12 +296,16 @@
     let tempoEsgotadoProcessado = false;
     let posicaoAtualAluno = null;
 
-    // Listeners para cada nó
+    // Listeners
     let listenerCopa = null;
     let listenerOnline = null;
     let listenerResultados = {};
     let listenerParticipantes = {};
     let listenerClassificados = {};
+
+    // Estado de autenticação
+    let professorAutenticado = false;
+    let listenerAuth = null;
 
     // ---------- CACHE DE PERGUNTAS ----------
     const poolPerguntas = {};
@@ -315,14 +341,69 @@
     }
 
     // =============================================================
+    // ========== FUNÇÕES DE AUTENTICAÇÃO =========================
+    // =============================================================
+    function mostrarModalLogin() {
+        document.getElementById('login-modal').classList.remove('hidden');
+        document.getElementById('login-erro').style.display = 'none';
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-senha').value = '';
+        document.getElementById('login-email').focus();
+    }
+
+    function esconderModalLogin() {
+        document.getElementById('login-modal').classList.add('hidden');
+    }
+
+    function exibirErroLogin(mensagem) {
+        const erroDiv = document.getElementById('login-erro');
+        erroDiv.innerText = mensagem;
+        erroDiv.style.display = 'block';
+    }
+
+    async function realizarLogin() {
+        const email = document.getElementById('login-email').value.trim();
+        const senha = document.getElementById('login-senha').value.trim();
+        if (!email || !senha) {
+            exibirErroLogin('Preencha e-mail e senha.');
+            return;
+        }
+        try {
+            await window.authService.login(email, senha);
+            esconderModalLogin();
+            // O callback onAuthStateChanged vai cuidar do resto
+        } catch (error) {
+            let mensagem = 'Erro ao fazer login.';
+            if (error.code === 'auth/user-not-found') {
+                mensagem = 'Usuário não encontrado.';
+            } else if (error.code === 'auth/wrong-password') {
+                mensagem = 'Senha incorreta.';
+            } else if (error.code === 'auth/invalid-email') {
+                mensagem = 'E-mail inválido.';
+            } else if (error.code === 'auth/too-many-requests') {
+                mensagem = 'Muitas tentativas. Tente novamente mais tarde.';
+            }
+            exibirErroLogin(mensagem);
+            console.error('Erro de login:', error);
+        }
+    }
+
+    function realizarLogout() {
+        window.authService.logout().then(() => {
+            // O callback onAuthStateChanged vai cuidar do logout
+            window.toast('🔒 Logout realizado com sucesso.');
+        }).catch(err => {
+            console.error('Erro ao fazer logout:', err);
+        });
+    }
+
+    // =============================================================
     // ========== LISTENERS GRANULARES =============================
     // =============================================================
     function iniciarListeners() {
-        // 1. Metadados (fase, status, tempo, modalidade)
         if (listenerCopa) listenerCopa();
         listenerCopa = window.firebaseService.listenCopaMetadata((metadata) => {
             estadoAtual = estadoAtual || {};
-            // Mescla metadados
             Object.keys(metadata).forEach(key => {
                 if (key !== 'resultados' && key !== 'participantes' && key !== 'classificados') {
                     estadoAtual[key] = metadata[key];
@@ -341,7 +422,7 @@
                 sessionStorage.setItem('ultimaFase', estadoAtual.fase);
             }
             atualizarUI();
-            if (meuTipo === 'professor') {
+            if (meuTipo === 'professor' && professorAutenticado) {
                 const modalSelect = document.getElementById('select-modalidade');
                 if (modalSelect) {
                     modalSelect.value = estadoAtual.modalidade;
@@ -359,7 +440,6 @@
             }
         });
 
-        // 2. Resultados por fase
         Object.values(listenerResultados).forEach(unsub => unsub());
         listenerResultados = {};
         for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
@@ -374,7 +454,6 @@
             });
         }
 
-        // 3. Participantes por fase
         Object.values(listenerParticipantes).forEach(unsub => unsub());
         listenerParticipantes = {};
         for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
@@ -387,7 +466,6 @@
             });
         }
 
-        // 4. Classificados por fase
         Object.values(listenerClassificados).forEach(unsub => unsub());
         listenerClassificados = {};
         for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
@@ -400,7 +478,6 @@
             });
         }
 
-        // 5. Online (mantido)
         if (listenerOnline) listenerOnline();
         listenerOnline = window.firebaseService.listenOnline((snap) => {
             let totalAlunos = 0, totalTorcida = 0;
@@ -415,7 +492,7 @@
             if (document.getElementById('jogadores-online')) document.getElementById('jogadores-online').innerText = totalOnline;
             if (document.getElementById('prof-online-count')) document.getElementById('prof-online-count').innerText = totalOnline;
 
-            if (meuTipo === 'professor') {
+            if (meuTipo === 'professor' && professorAutenticado) {
                 let html = '<div class="online-list"><strong>👥 Jogadores:</strong><ul style="list-style:none; margin:5px 0 10px 0;">';
                 if (totalAlunos === 0) html += '<li>Nenhum jogador online</li>';
                 if (snap) {
@@ -441,7 +518,7 @@
     }
 
     // =============================================================
-    // ========== CARREGAR DADOS (usando o serviço) ================
+    // ========== CARREGAR DADOS ==================================
     // =============================================================
     async function carregarTurmas() {
         let turmas = await window.firebaseService.getTurmasOnce();
@@ -468,7 +545,7 @@
     }
 
     // =============================================================
-    // ========== RANKING (adaptado para usar o serviço) ===========
+    // ========== RANKING ==========================================
     // =============================================================
     let cacheRanking = {};
 
@@ -787,7 +864,6 @@
         if (spinner) spinner.classList.add('hidden');
     }
 
-    // ---------- RANKING POR TURMAS ----------
     async function renderRankingTurmas(containerId) {
         if (!estadoAtual) return;
         let turmasMap = new Map();
@@ -878,7 +954,7 @@
     // ========== ATUALIZAÇÃO DE RANKINGS =========================
     // =============================================================
     async function atualizarRankingProfessor() {
-        if (meuTipo === 'professor' && atualizacaoRankingAuto && document.getElementById('tab-ranking-fase') && !document.getElementById('tab-ranking-fase').classList.contains('hidden')) {
+        if (meuTipo === 'professor' && professorAutenticado && atualizacaoRankingAuto && document.getElementById('tab-ranking-fase') && !document.getElementById('tab-ranking-fase').classList.contains('hidden')) {
             const faseSelecionada = document.getElementById('select-fase-ranking').value;
             if (faseSelecionada) {
                 faseSelecionadaProf = parseInt(faseSelecionada);
@@ -1232,8 +1308,7 @@
     }
 
     function renderizarGraficos() {
-        if (meuTipo !== 'professor') return;
-        // Gráfico de Turmas
+        if (meuTipo !== 'professor' || !professorAutenticado) return;
         const dadosTurmas = gerarDadosTurmas();
         if (dadosTurmas && dadosTurmas.labels.length > 0) {
             const ctx = document.getElementById('chart-turmas').getContext('2d');
@@ -1262,7 +1337,6 @@
             });
         }
 
-        // Gráfico de Distribuição
         const dadosDist = gerarDadosDistribuicao();
         if (dadosDist && dadosDist.data.some(v => v > 0)) {
             const ctx2 = document.getElementById('chart-distribuicao').getContext('2d');
@@ -1287,7 +1361,6 @@
             });
         }
 
-        // Gráfico de Evolução
         const dadosEvol = gerarDadosEvolucao();
         if (dadosEvol && dadosEvol.datasets.length > 0) {
             const ctx3 = document.getElementById('chart-evolucao').getContext('2d');
@@ -1805,7 +1878,7 @@
                 btnPararContinuar.innerText = "⏹️ Parar Fase";
             }
         }
-        if (meuTipo === 'professor') {
+        if (meuTipo === 'professor' && professorAutenticado) {
             renderRankingGeral();
             if (estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) renderPodioFinal('podium-container');
             else { const pd = document.getElementById('podium-container'); if(pd) pd.classList.add('hidden'); }
@@ -2081,8 +2154,39 @@
         await carregarIntervalos();
         await carregarTurmas();
 
-        iniciarListeners();
+        // ---------- LISTENER DE AUTENTICAÇÃO ----------
+        listenerAuth = window.authService.onAuthStateChanged((user) => {
+            if (user) {
+                // Usuário logado
+                professorAutenticado = true;
+                meuTipo = 'professor';
+                document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+                document.getElementById('painel-professor').classList.remove('hidden');
+                document.getElementById('online-stats').classList.remove('hidden');
+                // Inicia os listeners do Firebase (se ainda não foram iniciados)
+                if (!listenerCopa) iniciarListeners();
+                // Inicia a atualização do ranking
+                iniciarAtualizacaoProfessor();
+                atualizarUI();
+                window.toast('🔓 Logado como professor.');
+            } else {
+                // Usuário deslogado
+                if (professorAutenticado) {
+                    // Se estava logado e saiu, volta ao menu
+                    professorAutenticado = false;
+                    meuTipo = null;
+                    document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+                    document.getElementById('online-stats').classList.add('hidden');
+                    // Remove o painel do professor se estiver visível
+                    document.getElementById('painel-professor').classList.add('hidden');
+                    window.toast('🔒 Logout realizado.');
+                }
+                // Se o usuário não está logado, mas tentou acessar o professor, mostra modal
+                // Isso é tratado no clique do botão "Professor"
+            }
+        });
 
+        // ---------- EVENTOS DA INTERFACE ----------
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -2186,17 +2290,34 @@
             if (t > 0) window.firebaseService.getCopaRef().child('tempoFase').set(t);
         });
 
+        // ---------- BOTÃO PROFESSOR (ABRE MODAL) ----------
         document.getElementById('btn-professor')?.addEventListener('click', () => {
-            if (prompt("Senha:") === "......") {
-                meuTipo = 'professor';
+            if (professorAutenticado) {
+                // Se já está logado, abre o painel direto
                 document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
                 document.getElementById('painel-professor').classList.remove('hidden');
                 document.getElementById('online-stats').classList.remove('hidden');
                 atualizarUI();
                 iniciarAtualizacaoProfessor();
+            } else {
+                mostrarModalLogin();
             }
         });
 
+        // ---------- BOTÃO LOGIN ----------
+        document.getElementById('btn-login')?.addEventListener('click', realizarLogin);
+        document.getElementById('login-senha')?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') realizarLogin();
+        });
+        document.getElementById('login-email')?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('login-senha').focus();
+        });
+        document.getElementById('btn-login-cancelar')?.addEventListener('click', esconderModalLogin);
+
+        // ---------- BOTÃO LOGOUT ----------
+        document.getElementById('btn-logout')?.addEventListener('click', realizarLogout);
+
+        // ---------- ALUNO ----------
         document.getElementById('btn-aluno')?.addEventListener('click', async () => {
             if (!estadoAtual || estadoAtual.status !== 'em_andamento' || Date.now() >= estadoAtual.fim) {
                 window.toast("⏳ A fase não foi iniciada ou já terminou.");
@@ -2244,6 +2365,7 @@
 
         document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
 
+        // ---------- TORCIDA ----------
         document.getElementById('btn-projecao')?.addEventListener('click', () => {
             torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
             window.firebaseService.setPresence(torcidaId, { tipo: 'torcida', timestamp: Date.now() });
@@ -2287,6 +2409,7 @@
             if (atualizacaoRankingAuto) atualizarRankingProfessor();
         });
 
+        // ---------- LISTENERS ADICIONAIS ----------
         window.firebaseService.listenConnected((connected) => {
             if (connected && alunoId && meuTipo === 'aluno') {
                 window.firebaseService.setPresence(alunoId, { nome: alunoNome, turma: alunoTurma });
@@ -2306,6 +2429,9 @@
                 }
             }
         });
+
+        // ---------- INICIAR LISTENERS DO FIREBASE (se não iniciados ainda) ----------
+        if (!listenerCopa) iniciarListeners();
     }
 
     document.addEventListener('DOMContentLoaded', init);
