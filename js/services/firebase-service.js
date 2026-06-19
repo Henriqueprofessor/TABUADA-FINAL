@@ -1,103 +1,179 @@
-function iniciarListeners() {
-    // Listener para metadados (fase, status, tempo, modalidade)
-    if (listenerCopa) listenerCopa();
-    listenerCopa = window.firebaseService.listenCopaMetadata((metadata) => {
-        // Mescla com o estado atual (mantendo resultados, participantes, classificados se existirem)
-        estadoAtual = estadoAtual || {};
-        // Atualiza apenas os metadados
-        Object.keys(metadata).forEach(key => {
-            if (key !== 'resultados' && key !== 'participantes' && key !== 'classificados') {
-                estadoAtual[key] = metadata[key];
-            }
-        });
-        // Se não houver resultados/participantes no estado, usa os que vieram (se houver)
-        if (!estadoAtual.resultados) estadoAtual.resultados = metadata.resultados || {};
-        if (!estadoAtual.participantes) estadoAtual.participantes = metadata.participantes || {};
-        if (!estadoAtual.classificados) estadoAtual.classificados = metadata.classificados || {};
+// js/services/firebase-service.js
+// Serviço centralizado com listeners granulares
 
-        // Atualiza UI e outras partes que dependem dos metadados
-        if (meuTipo === 'aluno' && alunoId) {
-            const faseAnterior = sessionStorage.getItem('ultimaFase');
-            if (faseAnterior && parseInt(faseAnterior) !== estadoAtual.fase) {
-                sessionStorage.removeItem('modalExibido_' + faseAnterior);
-                location.reload();
-            }
-            sessionStorage.setItem('ultimaFase', estadoAtual.fase);
-        }
-        atualizarUI();
-        if (meuTipo === 'professor') {
-            const modalSelect = document.getElementById('select-modalidade');
-            if (modalSelect) {
-                modalSelect.value = estadoAtual.modalidade;
-                const hasResults = Object.keys(estadoAtual.resultados).some(f => Object.keys(estadoAtual.resultados[f] || {}).length > 0);
-                if (estadoAtual.fase > 1 || hasResults) {
-                    modalSelect.disabled = true;
-                    modalSelect.title = "Modalidade fixa durante a competição.";
-                } else {
-                    modalSelect.disabled = false;
-                    modalSelect.title = "";
-                }
-            }
-            popularSelectFases();
-            renderListaTurmas();
-        }
-    });
+// ========== REFERÊNCIAS ==========
+function getCopaRef() { return db.ref('copaV2'); }
+function getResultadosRef(fase) { return db.ref(`copaV2/resultados/${fase}`); }
+function getResultadosTempRef(fase) { return db.ref(`copaV2/resultados_temp/${fase}`); }
+function getParticipantesRef(fase) { return db.ref(`copaV2/participantes/${fase}`); }
+function getClassificadosRef(fase) { return db.ref(`copaV2/classificados/${fase}`); }
+function getOnlineRef() { return db.ref('online'); }
+function getConfigRef() { return db.ref('copaV2/configuracoes'); }
+function getIntervalosRef() { return db.ref('copaV2/configuracoes/intervalos'); }
+function getTurmasRef() { return db.ref('copaV2/turmas'); }
+function getPresenceRef(id) { return db.ref(`online/${id}`); }
+function getConnectedRef() { return db.ref('.info/connected'); }
 
-    // Listener para resultados da fase atual (e também para outras fases se necessário)
-    // Vamos escutar todas as fases para manter o estado completo
-    // Mas para performance, podemos escutar apenas a fase atual + fases anteriores necessárias.
-    // Para simplificar, vamos escutar todas as fases (limitado a TOTAL_FASES)
-    if (listenerResultados) {
-        Object.values(listenerResultados).forEach(unsub => unsub());
-    }
-    listenerResultados = {};
-    for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
-        const faseNum = fase;
-        listenerResultados[faseNum] = window.firebaseService.listenResultados(faseNum, (data) => {
-            if (!estadoAtual) estadoAtual = {};
-            if (!estadoAtual.resultados) estadoAtual.resultados = {};
-            estadoAtual.resultados[faseNum] = data || {};
-            // Se for a fase atual ou relevante, atualiza UI
-            if (meuTipo === 'professor' || meuTipo === 'projecao') {
-                // Se a aba de ranking ou estatísticas estiver aberta, atualiza
-                atualizarUI();
-            }
-        });
-    }
-
-    // Listener para participantes de todas as fases
-    if (listenerParticipantes) {
-        Object.values(listenerParticipantes).forEach(unsub => unsub());
-    }
-    listenerParticipantes = {};
-    for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
-        const faseNum = fase;
-        listenerParticipantes[faseNum] = window.firebaseService.listenParticipantes(faseNum, (data) => {
-            if (!estadoAtual) estadoAtual = {};
-            if (!estadoAtual.participantes) estadoAtual.participantes = {};
-            estadoAtual.participantes[faseNum] = data || {};
-            atualizarUI();
-        });
-    }
-
-    // Listener para classificados de todas as fases
-    if (listenerClassificados) {
-        Object.values(listenerClassificados).forEach(unsub => unsub());
-    }
-    listenerClassificados = {};
-    for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
-        const faseNum = fase;
-        listenerClassificados[faseNum] = window.firebaseService.listenClassificados(faseNum, (data) => {
-            if (!estadoAtual) estadoAtual = {};
-            if (!estadoAtual.classificados) estadoAtual.classificados = {};
-            estadoAtual.classificados[faseNum] = data || [];
-            atualizarUI();
-        });
-    }
-
-    // Listener para online (mantido)
-    if (listenerOnline) listenerOnline();
-    listenerOnline = window.firebaseService.listenOnline((snap) => {
-        // ... mesmo código de antes ...
-    });
+// ========== OPERAÇÕES DE ESCRITA ==========
+function updateCopa(data) {
+    return getCopaRef().update(data);
 }
+function setCopa(data) {
+    return getCopaRef().set(data);
+}
+function setTurmas(turmas) {
+    return getTurmasRef().set(turmas);
+}
+function removerResultados(fase, alunoId) {
+    const ref = getResultadosRef(fase);
+    return alunoId ? ref.child(alunoId).remove() : ref.remove();
+}
+function removerParticipantes(fase, alunoId) {
+    const ref = getParticipantesRef(fase);
+    return alunoId ? ref.child(alunoId).remove() : ref.remove();
+}
+function removerResultadosTemp(fase, alunoId) {
+    const ref = getResultadosTempRef(fase);
+    return alunoId ? ref.child(alunoId).remove() : ref.remove();
+}
+function removerClassificados(fase) {
+    return getClassificadosRef(fase).remove();
+}
+function setPresence(id, data) {
+    const ref = getPresenceRef(id);
+    ref.set(data);
+    ref.onDisconnect().remove();
+}
+function removePresence(id) {
+    getPresenceRef(id).remove();
+}
+
+// ========== OPERAÇÕES DE LEITURA (ONCE) ==========
+function getTurmasOnce() {
+    return getTurmasRef().once('value').then(snap => snap.val());
+}
+function getIntervalosOnce() {
+    return getIntervalosRef().once('value').then(snap => snap.val());
+}
+function getResultadosOnce(fase) {
+    return getResultadosRef(fase).once('value').then(snap => snap.val());
+}
+function getResultadosTempOnce(fase) {
+    return getResultadosTempRef(fase).once('value').then(snap => snap.val());
+}
+function getParticipantesOnce(fase) {
+    return getParticipantesRef(fase).once('value').then(snap => snap.val());
+}
+function getClassificadosOnce(fase) {
+    return getClassificadosRef(fase).once('value').then(snap => snap.val());
+}
+function getOnlineOnce() {
+    return getOnlineRef().once('value').then(snap => snap.val());
+}
+
+// ========== LISTENERS GRANULARES ==========
+function listenCopaMetadata(callback) {
+    const ref = getCopaRef();
+    const onData = (snap) => {
+        const data = snap.val() || {};
+        const metadata = {
+            fase: data.fase || 1,
+            status: data.status || 'aguardando',
+            tempoFase: data.tempoFase || 12,
+            fim: data.fim || 0,
+            modalidade: data.modalidade || '2-5',
+            tempoRestantePausa: data.tempoRestantePausa || 0,
+            resultados: data.resultados || {},
+            participantes: data.participantes || {},
+            classificados: data.classificados || {}
+        };
+        callback(metadata);
+    };
+    ref.on('value', onData);
+    return () => ref.off('value', onData);
+}
+function listenResultados(fase, callback) {
+    const ref = getResultadosRef(fase);
+    const handler = (snap) => { callback(snap.val()); };
+    ref.on('value', handler);
+    return () => ref.off('value', handler);
+}
+function listenParticipantes(fase, callback) {
+    const ref = getParticipantesRef(fase);
+    const handler = (snap) => { callback(snap.val()); };
+    ref.on('value', handler);
+    return () => ref.off('value', handler);
+}
+function listenClassificados(fase, callback) {
+    const ref = getClassificadosRef(fase);
+    const handler = (snap) => { callback(snap.val() || []); };
+    ref.on('value', handler);
+    return () => ref.off('value', handler);
+}
+function listenOnline(callback) {
+    const ref = getOnlineRef();
+    const handler = (snap) => { callback(snap.val()); };
+    ref.on('value', handler);
+    return () => ref.off('value', handler);
+}
+function listenIntervalos(callback) {
+    const ref = getIntervalosRef();
+    const handler = (snap) => { callback(snap.val()); };
+    ref.on('value', handler);
+    return () => ref.off('value', handler);
+}
+function listenConnected(callback) {
+    const ref = getConnectedRef();
+    const handler = (snap) => { callback(snap.val()); };
+    ref.on('value', handler);
+    return () => ref.off('value', handler);
+}
+
+// ========== TRANSACTION ==========
+function transactionResultados(fase, alunoId, updateFn) {
+    return getResultadosRef(fase).child(alunoId).transaction(updateFn);
+}
+
+// ========== EXPORTAÇÃO GLOBAL ==========
+window.firebaseService = {
+    // Referências
+    getCopaRef,
+    getResultadosRef,
+    getResultadosTempRef,
+    getParticipantesRef,
+    getClassificadosRef,
+    getOnlineRef,
+    getConfigRef,
+    getIntervalosRef,
+    getTurmasRef,
+    getPresenceRef,
+    getConnectedRef,
+    // Escrita
+    updateCopa,
+    setCopa,
+    setTurmas,
+    removerResultados,
+    removerParticipantes,
+    removerResultadosTemp,
+    removerClassificados,
+    setPresence,
+    removePresence,
+    // Leitura
+    getTurmasOnce,
+    getIntervalosOnce,
+    getResultadosOnce,
+    getResultadosTempOnce,
+    getParticipantesOnce,
+    getClassificadosOnce,
+    getOnlineOnce,
+    // Listeners granulares
+    listenCopaMetadata,
+    listenResultados,
+    listenParticipantes,
+    listenClassificados,
+    listenOnline,
+    listenIntervalos,
+    listenConnected,
+    // Transaction
+    transactionResultados
+};
