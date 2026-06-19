@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo</title>
+    <!-- ========== PWA: MANIFEST E CONFIGURAÇÕES ========== -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0f1e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- ===================================================== -->
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -213,7 +219,6 @@
             <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
             <div id="historico-aluno"></div>
         </div>
-        <!-- NOVA SEÇÃO: MEDALHAS -->
         <div class="status-box" style="margin-top: 15px;">
             <h3>🏅 Suas Medalhas</h3>
             <div id="aluno-medalhas-container" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; min-height: 60px;">
@@ -261,7 +266,6 @@
 <script src="js/utils/constants.js"></script>
 <script src="js/utils/helpers.js"></script>
 <script src="js/utils/sounds.js"></script>
-<!-- SISTEMA DE MEDALHAS -->
 <script src="js/utils/achievements.js"></script>
 
 <script>
@@ -528,7 +532,7 @@
     }
 
     // =================================================================
-    // RANKING (COMPLETO)
+    // RANKING
     // =================================================================
     let cacheRanking = {};
 
@@ -1752,7 +1756,6 @@
             msgDiv.innerText = "❌ Você NÃO foi classificado para esta fase.";
             btnJogar.classList.add('hidden');
             atualizarPosicaoAluno(null);
-            // Renderiza medalhas mesmo assim
             if (alunoId) {
                 window.achievementManager.renderizarMedalhas(alunoId, 'aluno-medalhas-container');
             }
@@ -1792,9 +1795,6 @@
         histHtml += '</ul>';
         document.getElementById('historico-aluno').innerHTML = histHtml;
 
-        // =============================================================
-        // RENDERIZAR MEDALHAS DO ALUNO
-        // =============================================================
         if (alunoId) {
             window.achievementManager.renderizarMedalhas(alunoId, 'aluno-medalhas-container');
         }
@@ -2150,16 +2150,15 @@
         }
 
         // =============================================================
-        // VERIFICAR CONQUISTAS APÓS A PARTIDA
+        // VERIFICAR CONQUISTAS
         // =============================================================
         if (alunoId) {
             const minhasPartidas = estadoAtual.resultados?.[estadoAtual.fase]?.[alunoId] || [];
-            // Atualizar com a partida atual (já salva)
             const partidasAtualizadas = [...minhasPartidas, { acertos: acertosPartida, tempo: tempoTotalPartida }];
             const dadosAluno = {
                 totalPartidas: partidasAtualizadas.length,
                 melhorAcertos: Math.max(...partidasAtualizadas.map(p => p.acertos)),
-                classificado: false, // será verificado depois
+                classificado: false,
                 faseMaxima: estadoAtual.fase,
                 campeao: false,
                 melhorTempoTotal: Math.min(...partidasAtualizadas.map(p => p.tempo))
@@ -2449,6 +2448,21 @@
     }
 
     document.addEventListener('DOMContentLoaded', init);
+
+    // =============================================================
+    // REGISTRO DO SERVICE WORKER (PWA)
+    // =============================================================
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(function(registration) {
+                    console.log('Service Worker registrado com sucesso:', registration.scope);
+                })
+                .catch(function(error) {
+                    console.log('Falha ao registrar Service Worker:', error);
+                });
+        });
+    }
 </script>
 </body>
 </html>
