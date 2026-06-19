@@ -19,8 +19,8 @@
             <div>
                 <p>Fase atual: <strong id="fase-atual-titulo">--</strong> <span id="fase-progresso" class="fase-info"></span></p>
                 <div id="timer-fase" class="timer-display">00:00</div>
-                <div style="font-size: 12px; margin-top: 5px;">Última Sinc: <span id="last-sync-time">--</span></div>
-                <button id="btn-sincronizar-global" class="btn-small" style="margin-top: 5px;">🔄 Sincronizar</button>
+                <div style="font-size: 14px; margin-top: 6px;">Última Sinc: <span id="last-sync-time">--</span></div>
+                <button id="btn-sincronizar-global" class="btn-small" style="margin-top: 6px;">🔄 Sincronizar</button>
             </div>
             <div id="online-stats" class="online-badge hidden">Online: <span id="jogadores-online">0</span></div>
         </div>
@@ -91,7 +91,7 @@
                         <button id="btn-atualizar-intervalo-equipes" class="btn-warning">Aplicar</button>
                     </div>
                 </div>
-                <p style="font-size: 12px;">* Os intervalos são salvos no Firebase e aplicados a todos os usuários em tempo real.</p>
+                <p style="font-size: 14px;">* Os intervalos são salvos no Firebase e aplicados a todos os usuários em tempo real.</p>
             </div>
             <div id="podium-container" class="status-box hidden"></div>
         </div>
@@ -141,10 +141,11 @@
                     <div class="pontuacao-atual">
                         🎯 Pontuação: <span id="pontuacao-acumulada">0</span>
                     </div>
-                    <div class="indicador-posicao">
+                    <div class="indicador-posicao" id="indicador-posicao">
                         <span id="posicao-numero">--</span><span>º</span>
                     </div>
                 </div>
+                <!-- Barra de tempo (substituída pelo círculo, mas mantemos ambas para compatibilidade) -->
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
                 <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
                 <div class="opcoes-grid">
@@ -153,13 +154,13 @@
                     <button class="opcao" onclick="responder(2)"></button>
                     <button class="opcao" onclick="responder(3)"></button>
                 </div>
-                <div style="text-align: center;">Pergunta: <span id="pergunta-num">1</span>/20</div>
+                <div style="text-align: center; font-size: 18px;">Pergunta: <span id="pergunta-num">1</span>/20</div>
             </div>
         </div>
         
         <div id="aguardando-aluno" style="text-align:center; padding:20px;">
-            <div id="msg-status-aluno">Aguardando...</div>
-            <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
+            <div id="msg-status-aluno" style="font-size: 20px;">Aguardando...</div>
+            <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 28px; padding: 24px 48px; margin-top: 20px;">🎮 JOGAR</button>
         </div>
         <div class="status-box">
             <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
@@ -184,7 +185,7 @@
         <div class="fase-selector">
             <label>Selecione a Fase: </label>
             <select id="select-fase-torcida" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
-            <span style="margin-left: 15px; font-size: 14px; color: #ffd966;" id="fase-torcida-info"></span>
+            <span style="margin-left: 15px; font-size: 16px; color: var(--text-highlight, #ffd966);" id="fase-torcida-info"></span>
         </div>
         <div style="margin: 15px 0;">
             <p>Modalidade: <strong id="torcida-modalidade">--</strong> | <span id="torcida-fase-info" class="fase-info"></span> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;">--:--</strong></p>
@@ -211,12 +212,12 @@
 <script src="js/utils/helpers.js"></script>
 
 <!-- ============================================================ -->
-<!-- SCRIPT PRINCIPAL (CÓDIGO DO JOGO COMPLETO)                    -->
+<!-- SCRIPT PRINCIPAL (CÓDIGO DO JOGO COMPLETO COM MELHORIAS)     -->
 <!-- ============================================================ -->
 <script>
     // ---------- INICIALIZAÇÃO ----------
     firebase.initializeApp(window.firebaseConfig);
-    const db = firebase.database(); // necessário para o serviço (as funções do serviço usam 'db')
+    const db = firebase.database();
 
     // ---------- VARIÁVEIS GLOBAIS ----------
     let meuTipo = null, alunoId = null, alunoNome = null, alunoTurma = null;
@@ -236,6 +237,7 @@
     let intervaloIndividualSegundos = 4;
     let intervaloEquipesSegundos = 60;
     let tempoEsgotadoProcessado = false;
+    let posicaoAtualAluno = null; // para animação de mudança de posição
 
     // ---------- CACHE DE PERGUNTAS ----------
     const poolPerguntas = {};
@@ -392,301 +394,314 @@
             return;
         }
 
+        // Mostrar spinner
+        const container = document.getElementById(containerId);
+        const spinner = document.getElementById('ranking-spinner');
+        if (spinner) spinner.classList.remove('hidden');
+        container.innerHTML = '<div class="spinner">⏳ Carregando ranking...</div>';
+
         if (tipo === 'turmas') {
             await renderRankingTurmas(containerId);
+            if (spinner) spinner.classList.add('hidden');
             return;
         }
 
         // RANKING INDIVIDUAL
-        const snapFinal = await window.firebaseService.getResultadosRef(faseNum).once('value');
-        const snapTemp = await window.firebaseService.getResultadosTempRef(faseNum).once('value');
-        const participantes = estadoAtual.participantes?.[faseNum] || {};
+        try {
+            const snapFinal = await window.firebaseService.getResultadosRef(faseNum).once('value');
+            const snapTemp = await window.firebaseService.getResultadosTempRef(faseNum).once('value');
+            const participantes = estadoAtual.participantes?.[faseNum] || {};
 
-        const statusMap = new Map();
-        if (snapTemp.val()) {
-            Object.keys(snapTemp.val()).forEach(key => {
-                const data = snapTemp.val()[key];
-                if (data) {
-                    statusMap.set(key, {
-                        status: 'em_jogo',
-                        progresso: data.perguntas || 0,
-                        nome: data.nome || "Anônimo",
-                        turma: data.turma || "?"
-                    });
-                }
-            });
-        }
-        if (snapFinal.val()) {
-            Object.keys(snapFinal.val()).forEach(key => {
-                const partidas = snapFinal.val()[key];
-                if (partidas && partidas.length) {
-                    const existente = statusMap.get(key);
-                    if (!existente) {
+            const statusMap = new Map();
+            if (snapTemp.val()) {
+                Object.keys(snapTemp.val()).forEach(key => {
+                    const data = snapTemp.val()[key];
+                    if (data) {
                         statusMap.set(key, {
-                            status: 'finalizado',
-                            progresso: 20,
-                            nome: "Anônimo",
-                            turma: "?"
+                            status: 'em_jogo',
+                            progresso: data.perguntas || 0,
+                            nome: data.nome || "Anônimo",
+                            turma: data.turma || "?"
                         });
-                    } else if (existente.status === 'em_jogo' && existente.progresso >= 20) {
-                        existente.status = 'finalizado';
                     }
-                }
-            });
-        }
+                });
+            }
+            if (snapFinal.val()) {
+                Object.keys(snapFinal.val()).forEach(key => {
+                    const partidas = snapFinal.val()[key];
+                    if (partidas && partidas.length) {
+                        const existente = statusMap.get(key);
+                        if (!existente) {
+                            statusMap.set(key, {
+                                status: 'finalizado',
+                                progresso: 20,
+                                nome: "Anônimo",
+                                turma: "?"
+                            });
+                        } else if (existente.status === 'em_jogo' && existente.progresso >= 20) {
+                            existente.status = 'finalizado';
+                        }
+                    }
+                });
+            }
 
-        const todasFases = estadoAtual.resultados || {};
-        const recordeVelocMap = new Map();
-        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
-            const resultados = todasFases[fase] || {};
-            for (let id in resultados) {
-                const partidas = resultados[id];
-                if (!partidas || partidas.length === 0) continue;
-                for (let partida of partidas) {
-                    if (partida.acertos > 0) {
-                        const vel = partida.tempo / partida.acertos;
-                        if (!recordeVelocMap.has(id) || vel < recordeVelocMap.get(id)) {
-                            recordeVelocMap.set(id, vel);
+            const todasFases = estadoAtual.resultados || {};
+            const recordeVelocMap = new Map();
+            for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+                const resultados = todasFases[fase] || {};
+                for (let id in resultados) {
+                    const partidas = resultados[id];
+                    if (!partidas || partidas.length === 0) continue;
+                    for (let partida of partidas) {
+                        if (partida.acertos > 0) {
+                            const vel = partida.tempo / partida.acertos;
+                            if (!recordeVelocMap.has(id) || vel < recordeVelocMap.get(id)) {
+                                recordeVelocMap.set(id, vel);
+                            }
                         }
                     }
                 }
             }
-        }
 
-        let mapa = new Map();
-        if (snapFinal.val()) {
-            Object.keys(snapFinal.val()).forEach(key => {
-                const partidas = snapFinal.val()[key];
-                if (partidas && partidas.length) {
-                    const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
-                    let info = participantes[key];
-                    const nome = info?.nome || melhor.nome || "Anônimo";
-                    const turma = info?.turma || melhor.turma || "?";
-                    const velocidadeAtual = (melhor.acertos > 0) ? (melhor.tempo / melhor.acertos) : null;
-                    const statusInfo = statusMap.get(key) || { status: 'aguardando', progresso: 0 };
-                    let progresso = statusInfo.progresso;
-                    if (statusInfo.status === 'aguardando') progresso = 0;
-                    const ultimaPartida = partidas[partidas.length - 1];
-                    const ultimaPosicao = ultimaPartida?.posicao || null;
-                    mapa.set(key, {
-                        nome, turma,
-                        pontos: melhor.pontos,
-                        acertos: melhor.acertos,
-                        tempo: melhor.tempo,
-                        perguntas: 20,
-                        isTemp: false,
-                        partidas: partidas.length,
-                        velocidadeAtual: velocidadeAtual,
-                        status: statusInfo.status,
-                        progresso: progresso,
-                        ultimaPosicao: ultimaPosicao
-                    });
-                }
-            });
-        }
-        if (snapTemp.val()) {
-            Object.keys(snapTemp.val()).forEach(key => {
-                const data = snapTemp.val()[key];
-                const existente = mapa.get(key);
-                const statusInfo = statusMap.get(key) || { status: 'em_jogo', progresso: data.perguntas || 0 };
-                if (!existente) {
-                    const velocidadeAtual = (data.acertos > 0) ? (data.tempo / data.acertos) : null;
-                    mapa.set(key, {
-                        nome: data.nome,
-                        turma: data.turma,
-                        pontos: data.pontos,
-                        acertos: data.acertos,
-                        tempo: data.tempo,
-                        perguntas: data.perguntas || 0,
-                        isTemp: true,
-                        partidas: 1,
-                        velocidadeAtual: velocidadeAtual,
-                        status: statusInfo.status,
-                        progresso: statusInfo.progresso,
-                        ultimaPosicao: null
-                    });
-                } else {
-                    existente.partidas = (existente.partidas || 0) + 1;
-                    if (data.pontos > existente.pontos) {
-                        existente.pontos = data.pontos;
-                        existente.acertos = data.acertos;
-                        existente.tempo = data.tempo;
-                        existente.perguntas = data.perguntas || 0;
-                        existente.isTemp = true;
-                        const velAtual = (data.acertos > 0) ? (data.tempo / data.acertos) : null;
-                        if (velAtual !== null) existente.velocidadeAtual = velAtual;
+            let mapa = new Map();
+            if (snapFinal.val()) {
+                Object.keys(snapFinal.val()).forEach(key => {
+                    const partidas = snapFinal.val()[key];
+                    if (partidas && partidas.length) {
+                        const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
+                        let info = participantes[key];
+                        const nome = info?.nome || melhor.nome || "Anônimo";
+                        const turma = info?.turma || melhor.turma || "?";
+                        const velocidadeAtual = (melhor.acertos > 0) ? (melhor.tempo / melhor.acertos) : null;
+                        const statusInfo = statusMap.get(key) || { status: 'aguardando', progresso: 0 };
+                        let progresso = statusInfo.progresso;
+                        if (statusInfo.status === 'aguardando') progresso = 0;
+                        const ultimaPartida = partidas[partidas.length - 1];
+                        const ultimaPosicao = ultimaPartida?.posicao || null;
+                        mapa.set(key, {
+                            nome, turma,
+                            pontos: melhor.pontos,
+                            acertos: melhor.acertos,
+                            tempo: melhor.tempo,
+                            perguntas: 20,
+                            isTemp: false,
+                            partidas: partidas.length,
+                            velocidadeAtual: velocidadeAtual,
+                            status: statusInfo.status,
+                            progresso: progresso,
+                            ultimaPosicao: ultimaPosicao
+                        });
                     }
-                    if (statusInfo) {
-                        existente.status = statusInfo.status;
-                        existente.progresso = statusInfo.progresso;
-                    }
-                }
-            });
-        }
-
-        let listaComId = [];
-        for (let [id, dados] of mapa.entries()) {
-            dados.recordeVelocidade = recordeVelocMap.get(id) || null;
-            listaComId.push({ id, ...dados });
-        }
-        listaComId.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
-
-        if (listaComId.length === 0) {
-            const html = '<p>⏳ Nenhum resultado registrado ainda. Aguarde os primeiros jogadores...</p>';
-            document.getElementById(containerId).innerHTML = html;
-            cacheRanking[cacheKey] = { html, timestamp: Date.now() };
-            return;
-        }
-
-        for (let i = 0; i < listaComId.length; i++) {
-            const jogador = listaComId[i];
-            if (jogador.ultimaPosicao === null) {
-                const snapPartidas = await window.firebaseService.getResultadosRef(faseNum).child(jogador.id).once('value');
-                const partidas = snapPartidas.val() || [];
-                if (partidas.length > 0) {
-                    const ultima = partidas[partidas.length - 1];
-                    if (ultima.posicao !== undefined) {
-                        jogador.ultimaPosicao = ultima.posicao;
-                    }
-                }
-            }
-        }
-
-        // Projeção (ameaça)
-        let posProjetadaMap = new Map();
-        if (estadoAtual.status !== 'finalizado') {
-            let projecaoValida = false;
-            for (let item of listaComId) {
-                const perguntasResp = item.perguntas || 0;
-                if (perguntasResp > 0) {
-                    const ritmo = item.pontos / perguntasResp;
-                    const proj = ritmo * 20;
-                    item.projecao = proj;
-                    if (proj > 0) projecaoValida = true;
-                } else {
-                    item.projecao = 0;
-                }
-            }
-            if (projecaoValida) {
-                let itensComProj = listaComId.filter(item => item.projecao > 0);
-                itensComProj.sort((a,b) => b.projecao - a.projecao);
-                itensComProj.forEach((item, idx) => {
-                    posProjetadaMap.set(item.id, idx + 1);
                 });
             }
-        }
-
-        const maxPontos = listaComId[0].pontos;
-        const vagas = window.VAGAS_POR_FASE[faseNum] || 30;
-        const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirClassificacao;
-
-        let html = `<table class="ranking-table"><thead><tr>
-            <th>Pos</th>
-            <th>Nome</th>
-            <th>Ameaça</th>
-            <th>Pontuação</th>
-            <th>Delta Líder</th>
-            <th>Veloc.<br>Média</th>
-            <th>Veloc.<br>Recorde</th>
-            <th>Δ Veloc.</th>
-            <th>Progresso</th>
-            ${mostrarClassificacao ? '<th>Classificação</th>' : ''}
-            <th>Partidas</th>
-            <th>Turma</th>
-         </tr></thead><tbody>`;
-
-        for (let idx = 0; idx < listaComId.length; idx++) {
-            const j = listaComId[idx];
-            const posAtual = idx + 1;
-            const posAnterior = j.ultimaPosicao || null;
-            let classePos = '';
-            if (posAnterior !== null && posAnterior > 0) {
-                if (posAtual < posAnterior) classePos = 'posicao-subiu';
-                else if (posAtual > posAnterior) classePos = 'posicao-desceu';
+            if (snapTemp.val()) {
+                Object.keys(snapTemp.val()).forEach(key => {
+                    const data = snapTemp.val()[key];
+                    const existente = mapa.get(key);
+                    const statusInfo = statusMap.get(key) || { status: 'em_jogo', progresso: data.perguntas || 0 };
+                    if (!existente) {
+                        const velocidadeAtual = (data.acertos > 0) ? (data.tempo / data.acertos) : null;
+                        mapa.set(key, {
+                            nome: data.nome,
+                            turma: data.turma,
+                            pontos: data.pontos,
+                            acertos: data.acertos,
+                            tempo: data.tempo,
+                            perguntas: data.perguntas || 0,
+                            isTemp: true,
+                            partidas: 1,
+                            velocidadeAtual: velocidadeAtual,
+                            status: statusInfo.status,
+                            progresso: statusInfo.progresso,
+                            ultimaPosicao: null
+                        });
+                    } else {
+                        existente.partidas = (existente.partidas || 0) + 1;
+                        if (data.pontos > existente.pontos) {
+                            existente.pontos = data.pontos;
+                            existente.acertos = data.acertos;
+                            existente.tempo = data.tempo;
+                            existente.perguntas = data.perguntas || 0;
+                            existente.isTemp = true;
+                            const velAtual = (data.acertos > 0) ? (data.tempo / data.acertos) : null;
+                            if (velAtual !== null) existente.velocidadeAtual = velAtual;
+                        }
+                        if (statusInfo) {
+                            existente.status = statusInfo.status;
+                            existente.progresso = statusInfo.progresso;
+                        }
+                    }
+                });
             }
 
-            const deltaLider = maxPontos - j.pontos;
-            const deltaText = deltaLider === 0 ? "🏆 Líder" : `+${deltaLider}`;
+            let listaComId = [];
+            for (let [id, dados] of mapa.entries()) {
+                dados.recordeVelocidade = recordeVelocMap.get(id) || null;
+                listaComId.push({ id, ...dados });
+            }
+            listaComId.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
 
-            let velocidadeAtualStr = "-", velocidadeAtualNum = null;
-            if (j.velocidadeAtual !== null && j.velocidadeAtual !== undefined) {
-                velocidadeAtualNum = j.velocidadeAtual;
-                velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
-            } else if (j.acertos > 0 && j.tempo > 0) {
-                velocidadeAtualNum = j.tempo / j.acertos;
-                velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
+            if (listaComId.length === 0) {
+                container.innerHTML = '<p>⏳ Nenhum resultado registrado ainda. Aguarde os primeiros jogadores...</p>';
+                cacheRanking[cacheKey] = { html: container.innerHTML, timestamp: Date.now() };
+                if (spinner) spinner.classList.add('hidden');
+                return;
             }
 
-            let recordeStr = "-";
-            let recordeNum = j.recordeVelocidade;
-            if (recordeNum !== null && recordeNum > 0) {
-                recordeStr = recordeNum.toFixed(2) + " s";
-            }
-
-            let deltaVelocidadeHtml = "";
-            if (velocidadeAtualNum !== null && recordeNum !== null && recordeNum > 0) {
-                const diff = velocidadeAtualNum - recordeNum;
-                const diffAbs = Math.abs(diff);
-                const diffStr = diffAbs.toFixed(2);
-                let icon = "", classe = "";
-                if (diff < -0.01) { icon = "🟢"; classe = "veloc-melhor"; }
-                else if (diff > 0.01) { icon = "🔴"; classe = "veloc-pior"; }
-                else { icon = "⚪"; classe = "veloc-igual"; }
-                deltaVelocidadeHtml = `<span class="${classe}">${icon} ${diffStr}s</span>`;
-            } else {
-                deltaVelocidadeHtml = "—";
-            }
-
-            let ameacaHtml = "";
-            const posProjetada = posProjetadaMap.get(j.id);
-            if (posProjetada !== undefined && posProjetada < posAtual) {
-                ameacaHtml = posProjetada.toString();
-            } else {
-                ameacaHtml = "—";
-            }
-            if ((j.perguntas || 0) === 0) ameacaHtml = "—";
-
-            let progressoHtml = "";
-            if (j.status === 'em_jogo') {
-                progressoHtml = `${j.progresso}/20`;
-            } else if (j.status === 'finalizado') {
-                progressoHtml = `✅ Finalizado`;
-            } else {
-                progressoHtml = `—`;
-            }
-            if (!j.status) progressoHtml = `—`;
-
-            let colunaStatus = "";
-            if (mostrarClassificacao) {
-                const classificado = idx < vagas;
-                if (faseNum === 5) {
-                    colunaStatus = classificado ? `<td class="classificado-sim">🏆 Finalista</td>` : `<td class="classificado-nao">Eliminado</td>`;
-                } else {
-                    colunaStatus = classificado ? `<td class="classificado-sim">Top${vagas}</td>` : `<td class="classificado-nao">Eliminado</td>`;
+            for (let i = 0; i < listaComId.length; i++) {
+                const jogador = listaComId[i];
+                if (jogador.ultimaPosicao === null) {
+                    const snapPartidas = await window.firebaseService.getResultadosRef(faseNum).child(jogador.id).once('value');
+                    const partidas = snapPartidas.val() || [];
+                    if (partidas.length > 0) {
+                        const ultima = partidas[partidas.length - 1];
+                        if (ultima.posicao !== undefined) {
+                            jogador.ultimaPosicao = ultima.posicao;
+                        }
+                    }
                 }
             }
 
-            html += `<tr>
-                <td class="${classePos}">${idx+1}º</td>
-                <td>${window.escapeHtml(j.nome)}</td>
-                <td>${ameacaHtml}</td>
-                <td>${j.pontos}</td>
-                <td>${deltaText}</td>
-                <td>${velocidadeAtualStr}</td>
-                <td>${recordeStr}</td>
-                <td>${deltaVelocidadeHtml}</td>
-                <td>${progressoHtml}</td>
-                ${mostrarClassificacao ? colunaStatus : ''}
-                <td>${j.partidas}</td>
-                <td>${window.escapeHtml(j.turma)}</td>
-             </tr>`;
+            // Projeção (ameaça)
+            let posProjetadaMap = new Map();
+            if (estadoAtual.status !== 'finalizado') {
+                let projecaoValida = false;
+                for (let item of listaComId) {
+                    const perguntasResp = item.perguntas || 0;
+                    if (perguntasResp > 0) {
+                        const ritmo = item.pontos / perguntasResp;
+                        const proj = ritmo * 20;
+                        item.projecao = proj;
+                        if (proj > 0) projecaoValida = true;
+                    } else {
+                        item.projecao = 0;
+                    }
+                }
+                if (projecaoValida) {
+                    let itensComProj = listaComId.filter(item => item.projecao > 0);
+                    itensComProj.sort((a,b) => b.projecao - a.projecao);
+                    itensComProj.forEach((item, idx) => {
+                        posProjetadaMap.set(item.id, idx + 1);
+                    });
+                }
+            }
+
+            const maxPontos = listaComId[0].pontos;
+            const vagas = window.VAGAS_POR_FASE[faseNum] || 30;
+            const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirClassificacao;
+
+            let html = `<table class="ranking-table"><thead><tr>
+                <th>Pos</th>
+                <th>Nome</th>
+                <th>Ameaça</th>
+                <th>Pontuação</th>
+                <th>Delta Líder</th>
+                <th>Veloc.<br>Média</th>
+                <th>Veloc.<br>Recorde</th>
+                <th>Δ Veloc.</th>
+                <th>Progresso</th>
+                ${mostrarClassificacao ? '<th>Classificação</th>' : ''}
+                <th>Partidas</th>
+                <th>Turma</th>
+             </tr></thead><tbody>`;
+
+            for (let idx = 0; idx < listaComId.length; idx++) {
+                const j = listaComId[idx];
+                const posAtual = idx + 1;
+                const posAnterior = j.ultimaPosicao || null;
+                let classePos = '';
+                if (posAnterior !== null && posAnterior > 0) {
+                    if (posAtual < posAnterior) classePos = 'posicao-subiu';
+                    else if (posAtual > posAnterior) classePos = 'posicao-desceu';
+                }
+
+                const deltaLider = maxPontos - j.pontos;
+                const deltaText = deltaLider === 0 ? "🏆 Líder" : `+${deltaLider}`;
+
+                let velocidadeAtualStr = "-", velocidadeAtualNum = null;
+                if (j.velocidadeAtual !== null && j.velocidadeAtual !== undefined) {
+                    velocidadeAtualNum = j.velocidadeAtual;
+                    velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
+                } else if (j.acertos > 0 && j.tempo > 0) {
+                    velocidadeAtualNum = j.tempo / j.acertos;
+                    velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
+                }
+
+                let recordeStr = "-";
+                let recordeNum = j.recordeVelocidade;
+                if (recordeNum !== null && recordeNum > 0) {
+                    recordeStr = recordeNum.toFixed(2) + " s";
+                }
+
+                let deltaVelocidadeHtml = "";
+                if (velocidadeAtualNum !== null && recordeNum !== null && recordeNum > 0) {
+                    const diff = velocidadeAtualNum - recordeNum;
+                    const diffAbs = Math.abs(diff);
+                    const diffStr = diffAbs.toFixed(2);
+                    let icon = "", classe = "";
+                    if (diff < -0.01) { icon = "🟢"; classe = "veloc-melhor"; }
+                    else if (diff > 0.01) { icon = "🔴"; classe = "veloc-pior"; }
+                    else { icon = "⚪"; classe = "veloc-igual"; }
+                    deltaVelocidadeHtml = `<span class="${classe}">${icon} ${diffStr}s</span>`;
+                } else {
+                    deltaVelocidadeHtml = "—";
+                }
+
+                let ameacaHtml = "";
+                const posProjetada = posProjetadaMap.get(j.id);
+                if (posProjetada !== undefined && posProjetada < posAtual) {
+                    ameacaHtml = posProjetada.toString();
+                } else {
+                    ameacaHtml = "—";
+                }
+                if ((j.perguntas || 0) === 0) ameacaHtml = "—";
+
+                let progressoHtml = "";
+                if (j.status === 'em_jogo') {
+                    progressoHtml = `${j.progresso}/20`;
+                } else if (j.status === 'finalizado') {
+                    progressoHtml = `✅ Finalizado`;
+                } else {
+                    progressoHtml = `—`;
+                }
+                if (!j.status) progressoHtml = `—`;
+
+                let colunaStatus = "";
+                if (mostrarClassificacao) {
+                    const classificado = idx < vagas;
+                    if (faseNum === 5) {
+                        colunaStatus = classificado ? `<td class="classificado-sim">🏆 Finalista</td>` : `<td class="classificado-nao">Eliminado</td>`;
+                    } else {
+                        colunaStatus = classificado ? `<td class="classificado-sim">Top${vagas}</td>` : `<td class="classificado-nao">Eliminado</td>`;
+                    }
+                }
+
+                html += `<tr>
+                    <td class="${classePos}">${idx+1}º</td>
+                    <td>${window.escapeHtml(j.nome)}</td>
+                    <td>${ameacaHtml}</td>
+                    <td>${j.pontos}</td>
+                    <td>${deltaText}</td>
+                    <td>${velocidadeAtualStr}</td>
+                    <td>${recordeStr}</td>
+                    <td>${deltaVelocidadeHtml}</td>
+                    <td>${progressoHtml}</td>
+                    ${mostrarClassificacao ? colunaStatus : ''}
+                    <td>${j.partidas}</td>
+                    <td>${window.escapeHtml(j.turma)}</td>
+                 </tr>`;
+            }
+            html += '</tbody></table>';
+            container.innerHTML = html;
+            if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
+                document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
+            }
+            cacheRanking[cacheKey] = { html, timestamp: Date.now() };
+        } catch (e) {
+            console.error('Erro ao renderizar ranking:', e);
+            container.innerHTML = '<p>❌ Erro ao carregar ranking. Tente novamente.</p>';
         }
-        html += '</tbody></table>';
-        document.getElementById(containerId).innerHTML = html;
-        if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
-            document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
-        }
-        cacheRanking[cacheKey] = { html, timestamp: Date.now() };
+        if (spinner) spinner.classList.add('hidden');
     }
 
     // ---------- RANKING POR TURMAS ----------
@@ -1270,6 +1285,21 @@
     // =============================================================
     // ========== UI PRINCIPAL =====================================
     // =============================================================
+    function atualizarPosicaoAluno(novaPosicao) {
+        const posSpan = document.getElementById('posicao-numero');
+        if (!posSpan) return;
+        if (novaPosicao !== posicaoAtualAluno) {
+            posicaoAtualAluno = novaPosicao;
+            posSpan.innerText = novaPosicao || '--';
+            const indicador = document.getElementById('indicador-posicao');
+            if (indicador) {
+                indicador.classList.remove('atualizado');
+                void indicador.offsetWidth; // força reflow
+                indicador.classList.add('atualizado');
+            }
+        }
+    }
+
     function renderAluno() {
         if (!estadoAtual) return;
         const agora = Date.now();
@@ -1285,6 +1315,7 @@
         if (estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
             msgDiv.innerText = "❌ Você NÃO foi classificado para esta fase.";
             btnJogar.classList.add('hidden');
+            atualizarPosicaoAluno(null);
             return;
         }
 
@@ -1292,6 +1323,7 @@
             msgDiv.innerText = estadoAtual.status === 'pausado' ? "⏸️ Fase pausada." : 
                               (estadoAtual.status === 'finalizado' ? "🏆 Competição finalizada!" : "⏳ Aguardando liberação...");
             btnJogar.classList.add('hidden');
+            atualizarPosicaoAluno(null);
         } else if (encerrado) {
             msgDiv.innerText = "⏰ TEMPO ESGOTADO!";
             btnJogar.classList.add('hidden');
@@ -1299,15 +1331,26 @@
                 sessionStorage.setItem('modalExibido_' + estadoAtual.fase, 'true');
                 exibirResultadoFinalParaAluno();
             }
+            // tenta obter posição final
+            obterRankingCompleto(estadoAtual.fase).then(ranking => {
+                const pos = ranking.findIndex(r => r.id === alunoId) + 1;
+                if (pos > 0) atualizarPosicaoAluno(pos);
+            });
         } else {
             msgDiv.innerText = "✅ Fase liberada! Clique em JOGAR.";
             btnJogar.classList.remove('hidden');
+            // atualiza posição ao vivo
+            obterRankingCompleto(estadoAtual.fase).then(ranking => {
+                const pos = ranking.findIndex(r => r.id === alunoId) + 1;
+                if (pos > 0) atualizarPosicaoAluno(pos);
+                else atualizarPosicaoAluno(null);
+            });
         }
         const minhasPartidas = estadoAtual.resultados?.[estadoAtual.fase]?.[alunoId] || [];
         const melhor = minhasPartidas.length ? Math.max(...minhasPartidas.map(p => p.pontos)) : 0;
         document.getElementById('aluno-melhor-score').innerText = melhor;
-        let histHtml = '<ul>';
-        minhasPartidas.slice().reverse().forEach(p => histHtml += `<li>🏆 Pontos: ${p.pontos} | Acertos: ${p.acertos}</li>`);
+        let histHtml = '<ul style="list-style:none; padding:0;">';
+        minhasPartidas.slice().reverse().forEach(p => histHtml += `<li style="padding:4px 0;">🏆 Pontos: ${p.pontos} | Acertos: ${p.acertos}</li>`);
         histHtml += '</ul>';
         document.getElementById('historico-aluno').innerHTML = histHtml;
         if (estadoAtual.status === 'finalizado') renderPodioFinal('podium-aluno-container');
@@ -1476,7 +1519,7 @@
         const p = perguntas[perguntaIdx];
         document.getElementById('pergunta').innerText = `${p.a} x ${p.b} = ?`;
         const btns = document.querySelectorAll('.opcao');
-        p.opts.forEach((o, i) => { btns[i].innerText = o; btns[i].disabled = false; });
+        p.opts.forEach((o, i) => { btns[i].innerText = o; btns[i].disabled = false; btns[i].style.background = ''; btns[i].style.transform = ''; });
         document.getElementById('pergunta-num').innerText = perguntaIdx + 1;
         startTimer();
     }
@@ -1492,21 +1535,50 @@
         }
         const tempoGasto = 10 - Math.max(0, tempoRestantePergunta);
         tempoTotalPartida += tempoGasto;
+        const p = perguntas[perguntaIdx];
+        const respCerta = p.a * p.b;
+        const botoes = document.querySelectorAll('.opcao');
+        let acertou = false;
+
+        // Feedback visual
         if (idx !== -1) {
-            const resp = parseInt(document.querySelectorAll('.opcao')[idx].innerText);
-            const p = perguntas[perguntaIdx];
-            if (resp === p.a * p.b) {
+            const resp = parseInt(botoes[idx].innerText);
+            if (resp === respCerta) {
+                acertou = true;
                 acertosPartida++;
                 const pontosGanhos = Math.round(100 * (Math.max(0, tempoRestantePergunta) / 10));
                 pontosPartida += pontosGanhos;
             }
         }
+        botoes.forEach((btn, i) => {
+            const valor = parseInt(btn.innerText);
+            if (valor === respCerta) {
+                btn.style.background = '#27ae60'; // verde
+                btn.style.borderColor = '#2ecc71';
+                btn.style.transform = 'scale(1.05)';
+            } else if (i === idx && idx !== -1 && !acertou) {
+                btn.style.background = '#e74c3c'; // vermelho
+                btn.style.borderColor = '#e74c3c';
+                btn.style.transform = 'scale(0.95)';
+            }
+            btn.disabled = true;
+        });
+
         const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
         if (pontuacaoSpan) pontuacaoSpan.innerText = pontosPartida;
 
         perguntaIdx++;
         await atualizarPontuacaoParcial();
-        setTimeout(proxima, 200);
+
+        // Aguarda 600ms para o feedback antes de continuar
+        setTimeout(() => {
+            botoes.forEach(btn => {
+                btn.style.background = '';
+                btn.style.borderColor = '';
+                btn.style.transform = '';
+            });
+            proxima();
+        }, 600);
     };
 
     async function atualizarPontuacaoParcial() {
@@ -1617,6 +1689,7 @@
                 }
                 return lista;
             });
+            atualizarPosicaoAluno(posicao);
         }
 
         exibirModalResultadosSimples(posicao, pontosPartida);
