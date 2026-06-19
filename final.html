@@ -56,7 +56,6 @@
             <div class="tab-btn" data-tab="gerenciar-turmas">🏷️ Gerenciar Turmas</div>
         </div>
         <div id="tab-controle" class="tab-content">
-            <!-- ... conteúdo existente ... -->
             <div class="flex-grid">
                 <div>
                     <h3>Controle da Fase</h3>
@@ -238,7 +237,7 @@
 <!-- CONFIGURAÇÃO DO FIREBASE (EXTERNA) -->
 <script src="js/config/firebase-config.js"></script>
 
-<!-- SERVIÇO DO FIREBASE -->
+<!-- SERVIÇO DO FIREBASE (COM LISTENERS GRANULARES) -->
 <script src="js/services/firebase-service.js"></script>
 
 <!-- NOVOS ARQUIVOS DA ETAPA 1 -->
@@ -249,7 +248,7 @@
 <script src="js/utils/sounds.js"></script>
 
 <!-- ============================================================ -->
-<!-- SCRIPT PRINCIPAL (CÓDIGO DO JOGO COMPLETO + GRÁFICOS + RELATÓRIOS) -->
+<!-- SCRIPT PRINCIPAL (OTIMIZADO COM LISTENERS GRANULARES)        -->
 <!-- ============================================================ -->
 <script>
     // ---------- INICIALIZAÇÃO ----------
@@ -275,6 +274,13 @@
     let intervaloEquipesSegundos = 60;
     let tempoEsgotadoProcessado = false;
     let posicaoAtualAluno = null;
+
+    // Listeners para cada nó
+    let listenerCopa = null;
+    let listenerOnline = null;
+    let listenerResultados = {};
+    let listenerParticipantes = {};
+    let listenerClassificados = {};
 
     // ---------- CACHE DE PERGUNTAS ----------
     const poolPerguntas = {};
@@ -310,20 +316,22 @@
     }
 
     // =============================================================
-    // ========== LISTENERS (usando o serviço) =====================
+    // ========== LISTENERS GRANULARES =============================
     // =============================================================
-    let listenerCopa = null;
-    let listenerOnline = null;
-
     function iniciarListeners() {
+        // 1. Metadados (fase, status, tempo, modalidade)
         if (listenerCopa) listenerCopa();
-        listenerCopa = window.firebaseService.listenCopa((data) => {
-            estadoAtual = data || { fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: "2-5", classificados: {}, resultados: {}, participantes: {} };
-            if (!estadoAtual.resultados) estadoAtual.resultados = {};
-            if (!estadoAtual.participantes) estadoAtual.participantes = {};
-            if (!estadoAtual.classificados) estadoAtual.classificados = {};
-            if (!estadoAtual.modalidade) estadoAtual.modalidade = "2-5";
-            if (estadoAtual.status === 'pausado' && !estadoAtual.tempoRestantePausa) estadoAtual.tempoRestantePausa = 0;
+        listenerCopa = window.firebaseService.listenCopaMetadata((metadata) => {
+            estadoAtual = estadoAtual || {};
+            // Mescla metadados
+            Object.keys(metadata).forEach(key => {
+                if (key !== 'resultados' && key !== 'participantes' && key !== 'classificados') {
+                    estadoAtual[key] = metadata[key];
+                }
+            });
+            if (!estadoAtual.resultados) estadoAtual.resultados = metadata.resultados || {};
+            if (!estadoAtual.participantes) estadoAtual.participantes = metadata.participantes || {};
+            if (!estadoAtual.classificados) estadoAtual.classificados = metadata.classificados || {};
 
             if (meuTipo === 'aluno' && alunoId) {
                 const faseAnterior = sessionStorage.getItem('ultimaFase');
@@ -352,6 +360,48 @@
             }
         });
 
+        // 2. Resultados por fase
+        Object.values(listenerResultados).forEach(unsub => unsub());
+        listenerResultados = {};
+        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+            const f = fase;
+            listenerResultados[f] = window.firebaseService.listenResultados(f, (data) => {
+                if (!estadoAtual) estadoAtual = {};
+                if (!estadoAtual.resultados) estadoAtual.resultados = {};
+                estadoAtual.resultados[f] = data || {};
+                if (meuTipo === 'professor' || meuTipo === 'projecao') {
+                    atualizarUI();
+                }
+            });
+        }
+
+        // 3. Participantes por fase
+        Object.values(listenerParticipantes).forEach(unsub => unsub());
+        listenerParticipantes = {};
+        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+            const f = fase;
+            listenerParticipantes[f] = window.firebaseService.listenParticipantes(f, (data) => {
+                if (!estadoAtual) estadoAtual = {};
+                if (!estadoAtual.participantes) estadoAtual.participantes = {};
+                estadoAtual.participantes[f] = data || {};
+                atualizarUI();
+            });
+        }
+
+        // 4. Classificados por fase
+        Object.values(listenerClassificados).forEach(unsub => unsub());
+        listenerClassificados = {};
+        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+            const f = fase;
+            listenerClassificados[f] = window.firebaseService.listenClassificados(f, (data) => {
+                if (!estadoAtual) estadoAtual = {};
+                if (!estadoAtual.classificados) estadoAtual.classificados = {};
+                estadoAtual.classificados[f] = data || [];
+                atualizarUI();
+            });
+        }
+
+        // 5. Online (mantido)
         if (listenerOnline) listenerOnline();
         listenerOnline = window.firebaseService.listenOnline((snap) => {
             let totalAlunos = 0, totalTorcida = 0;
@@ -419,7 +469,7 @@
     }
 
     // =============================================================
-    // ========== RANKING ==========================================
+    // ========== RANKING (adaptado para usar o serviço) ===========
     // =============================================================
     let cacheRanking = {};
 
@@ -1113,7 +1163,6 @@
                 classificadosFase.forEach(id => {
                     if (totalAlunos.has(id)) eliminados.delete(id);
                 });
-                // quem não está nos classificados e já participou da fase é eliminado
                 const participantesFaseIds = Object.keys(participantesFase);
                 participantesFaseIds.forEach(id => {
                     if (!classificadosFase.includes(id)) {
@@ -1138,7 +1187,6 @@
         if (!estadoAtual) return null;
         const todasFases = estadoAtual.resultados || {};
         const participantes = estadoAtual.participantes || {};
-        // Pegar os 5 melhores da fase atual (ou última fase disponível)
         let ultimaFase = estadoAtual.fase;
         let melhores = [];
         for (let fase = ultimaFase; fase >= 1; fase--) {
@@ -1169,7 +1217,6 @@
                     pontosPorFase.push(null);
                 }
             }
-            // Preencher nulos com 0 ou interpolar? Vamos usar 0 para simplificar.
             const data = pontosPorFase.map(p => p || 0);
             return {
                 label: `Top ${idx+1}: ${aluno.nome}`,
@@ -1769,7 +1816,6 @@
             }
             popularSelectFases();
             renderListaTurmas();
-            // Se a aba de estatísticas estiver ativa, renderizar gráficos
             const tabEstat = document.getElementById('tab-estatisticas');
             if (tabEstat && !tabEstat.classList.contains('hidden')) {
                 renderizarGraficos();
@@ -2051,7 +2097,6 @@
                 if (tab === 'gerenciar-alunos') renderListaAlunosGerenciar();
                 if (tab === 'gerenciar-turmas') renderListaTurmas();
                 if (tab === 'estatisticas') {
-                    // Forçar renderização dos gráficos
                     setTimeout(() => renderizarGraficos(), 300);
                 }
             });
@@ -2071,11 +2116,8 @@
             renderRanking(null, 'ranking-turmas-container', 'turmas', false);
         });
 
-        // Botões de exportação
         document.getElementById('btn-export-csv')?.addEventListener('click', exportarCSV);
         document.getElementById('btn-export-pdf')?.addEventListener('click', exportarPDF);
-
-        // Botão atualizar estatísticas
         document.getElementById('btn-atualizar-estatisticas')?.addEventListener('click', renderizarGraficos);
 
         const btnIndiv = document.getElementById('btn-modo-individual');
