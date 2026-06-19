@@ -20,7 +20,7 @@
 <!-- TOAST (mensagens flutuantes) -->
 <div id="toast" class="toast hidden"></div>
 
-<!-- MODAL DE LOGIN (aparece ao clicar em "Professor") -->
+<!-- MODAL DE LOGIN -->
 <div id="login-modal" class="card hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; max-width: 400px; width: 90%;">
     <div style="text-align: center; padding: 10px;">
         <h2>👨‍🏫 Login do Professor</h2>
@@ -35,7 +35,7 @@
     </div>
 </div>
 
-<!-- CONTEÚDO PRINCIPAL -->
+<!-- CONTEÚDO PRINCIPAL (mesmo HTML de antes) -->
 <div class="container">
     <div class="card">
         <div class="header-title">
@@ -248,9 +248,11 @@
     </div>
 </div>
 
-<!-- FIREBASE SDK -->
+<!-- FIREBASE SDK (todos os módulos compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<!-- FIREBASE AUTH (CORREÇÃO) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 
 <!-- CONFIGURAÇÃO DO FIREBASE (EXTERNA) -->
 <script src="js/config/firebase-config.js"></script>
@@ -2157,32 +2159,24 @@
         // ---------- LISTENER DE AUTENTICAÇÃO ----------
         listenerAuth = window.authService.onAuthStateChanged((user) => {
             if (user) {
-                // Usuário logado
                 professorAutenticado = true;
                 meuTipo = 'professor';
                 document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
                 document.getElementById('painel-professor').classList.remove('hidden');
                 document.getElementById('online-stats').classList.remove('hidden');
-                // Inicia os listeners do Firebase (se ainda não foram iniciados)
                 if (!listenerCopa) iniciarListeners();
-                // Inicia a atualização do ranking
                 iniciarAtualizacaoProfessor();
                 atualizarUI();
                 window.toast('🔓 Logado como professor.');
             } else {
-                // Usuário deslogado
                 if (professorAutenticado) {
-                    // Se estava logado e saiu, volta ao menu
                     professorAutenticado = false;
                     meuTipo = null;
                     document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
                     document.getElementById('online-stats').classList.add('hidden');
-                    // Remove o painel do professor se estiver visível
                     document.getElementById('painel-professor').classList.add('hidden');
                     window.toast('🔒 Logout realizado.');
                 }
-                // Se o usuário não está logado, mas tentou acessar o professor, mostra modal
-                // Isso é tratado no clique do botão "Professor"
             }
         });
 
@@ -2290,10 +2284,9 @@
             if (t > 0) window.firebaseService.getCopaRef().child('tempoFase').set(t);
         });
 
-        // ---------- BOTÃO PROFESSOR (ABRE MODAL) ----------
+        // ---------- BOTÃO PROFESSOR ----------
         document.getElementById('btn-professor')?.addEventListener('click', () => {
             if (professorAutenticado) {
-                // Se já está logado, abre o painel direto
                 document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
                 document.getElementById('painel-professor').classList.remove('hidden');
                 document.getElementById('online-stats').classList.remove('hidden');
@@ -2430,7 +2423,6 @@
             }
         });
 
-        // ---------- INICIAR LISTENERS DO FIREBASE (se não iniciados ainda) ----------
         if (!listenerCopa) iniciarListeners();
     }
 
