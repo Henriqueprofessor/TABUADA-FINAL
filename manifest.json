@@ -9,12 +9,12 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://henriqueprofessor.github.io/Tabuada/assets/icon-192.png",
+      "src": "https://ui-avatars.com/api/?name=CT&background=0a0f1e&color=ffd966&size=192",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://henriqueprofessor.github.io/Tabuada/assets/icon-512.png",
+      "src": "https://ui-avatars.com/api/?name=CT&background=0a0f1e&color=ffd966&size=512",
       "sizes": "512x512",
       "type": "image/png"
     }
