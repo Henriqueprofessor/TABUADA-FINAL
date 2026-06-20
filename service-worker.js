@@ -1,5 +1,5 @@
 // service-worker.js
-const CACHE_NAME = 'copa-tabuada-v1';
+const CACHE_NAME = 'copa-tabuada-v2';
 const ASSETS = [
   '/TABUADA-FINAL/',
   '/TABUADA-FINAL/final.html',
@@ -20,7 +20,7 @@ const ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js'
 ];
 
-// Instalação: cacheia os assets
+// Instalação
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -32,7 +32,7 @@ self.addEventListener('install', event => {
   );
 });
 
-// Ativação: limpa caches antigos
+// Ativação
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
@@ -44,26 +44,35 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Intercepta requisições e serve do cache (estratégia: cache-first)
+// Interceptação de requisições (com filtros)
 self.addEventListener('fetch', event => {
+  const request = event.request;
+
+  // Ignora requisições que não são GET ou não são HTTP/HTTPS
+  if (request.method !== 'GET' || !request.url.startsWith('http')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Ignora requisições para extensões (chrome-extension://, moz-extension://)
+  if (request.url.startsWith('chrome-extension://') || request.url.startsWith('moz-extension://')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request)
+    caches.match(request)
       .then(response => {
-        // Se encontrou no cache, retorna
         if (response) return response;
-        // Senão, faz a requisição de rede
-        return fetch(event.request).then(fetchResponse => {
-          // Se a requisição for bem-sucedida, cacheia a resposta para futuras visitas
+        return fetch(request).then(fetchResponse => {
           if (fetchResponse && fetchResponse.status === 200) {
             const responseClone = fetchResponse.clone();
             caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, responseClone);
+              cache.put(request, responseClone);
             });
           }
           return fetchResponse;
         }).catch(() => {
-          // Se falhar (offline), tenta retornar uma página offline (opcional)
-          // Aqui você pode retornar uma página especial, mas vamos retornar o index
           return caches.match('/TABUADA-FINAL/final.html');
         });
       })
