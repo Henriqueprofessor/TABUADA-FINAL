@@ -12,9 +12,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <!-- ===================================================== -->
     <link rel="stylesheet" href="css/styles.css">
+    <!-- canvas-confetti CDN (para confetes) -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    <!-- Chart.js CDN (gráficos) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF CDN (PDF) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Extensão autoTable para jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- PapaParse CDN (CSV) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
@@ -22,13 +28,16 @@
 <!-- TOAST -->
 <div id="toast" class="toast hidden"></div>
 
+<!-- BOTÃO DE ALTERNÂNCIA DE TEMA (MODO CLARO/ESCURO) -->
+<button id="theme-toggle" class="theme-toggle" aria-label="Alternar tema">🌙</button>
+
 <!-- MODAL LOGIN -->
 <div id="login-modal" class="card hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; max-width: 400px; width: 90%;">
     <div style="text-align: center; padding: 10px;">
         <h2>👨‍🏫 Login do Professor</h2>
         <p style="margin-bottom: 20px;">Digite suas credenciais</p>
-        <input type="email" id="login-email" placeholder="E-mail" style="width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 20px; background: #1f3a4b; color: white; border: 1px solid #2c3e50;">
-        <input type="password" id="login-senha" placeholder="Senha" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 20px; background: #1f3a4b; color: white; border: 1px solid #2c3e50;">
+        <input type="email" id="login-email" placeholder="E-mail" style="width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 20px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
+        <input type="password" id="login-senha" placeholder="Senha" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 20px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--glass-border);">
         <div style="display: flex; gap: 10px; justify-content: center;">
             <button id="btn-login" class="btn-success">Entrar</button>
             <button id="btn-login-cancelar" class="btn-danger">Cancelar</button>
@@ -85,7 +94,7 @@
                     <h3>Controle da Fase</h3>
                     <div class="status-box">
                         <label>Modalidade da Tabuada:</label>
-                        <select id="select-modalidade" style="width:100%; padding:8px; margin:10px 0; border-radius:20px; background:#1f3a4b; color:white;">
+                        <select id="select-modalidade" style="width:100%; padding:8px; margin:10px 0; border-radius:20px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);">
                             <option value="2-5">📚 Tabuada do 2 ao 5</option>
                             <option value="6-9">📚 Tabuada do 6 ao 9</option>
                             <option value="0-10">📚 Tabuada do 0 ao 10 (Completa)</option>
@@ -93,7 +102,7 @@
                         <button id="btn-aplicar-modalidade" class="btn-warning" style="width:100%;">🎯 Aplicar e Reiniciar Copa</button>
                         <hr>
                         <label>Tempo (minutos):</label>
-                        <input type="number" id="input-tempo-fase" value="12" min="1" style="width: 80px; padding: 5px; border-radius: 5px;">
+                        <input type="number" id="input-tempo-fase" value="12" min="1" style="width: 80px; padding: 5px; border-radius: 5px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);">
                         <button id="btn-salvar-tempo" class="btn-warning">💾 Salvar</button>
                         <hr>
                         <button id="btn-iniciar-fase" class="btn-success">▶️ Iniciar Fase</button>
@@ -105,7 +114,7 @@
                 </div>
                 <div>
                     <h3>Usuários Online: <span id="prof-online-count">0</span></h3>
-                    <div id="lista-participantes" style="max-height: 300px; overflow-y: auto; background: #000; padding: 10px; border-radius: 10px;"></div>
+                    <div id="lista-participantes" style="max-height: 300px; overflow-y: auto; background: var(--bg-card); padding: 10px; border-radius: 10px;"></div>
                 </div>
             </div>
             <div class="controle-atualizacao">
@@ -113,12 +122,12 @@
                 <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
                     <div>
                         <label>📊 Ranking Individual (segundos):</label>
-                        <input type="number" id="intervalo-individual" min="1" max="300" value="4" step="1">
+                        <input type="number" id="intervalo-individual" min="1" max="300" value="4" step="1" style="background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border); width:80px; padding:5px; border-radius:5px;">
                         <button id="btn-atualizar-intervalo-individual" class="btn-warning">Aplicar</button>
                     </div>
                     <div>
                         <label>👥 Ranking por Equipes (segundos):</label>
-                        <input type="number" id="intervalo-equipes" min="1" max="600" value="60" step="1">
+                        <input type="number" id="intervalo-equipes" min="1" max="600" value="60" step="1" style="background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border); width:80px; padding:5px; border-radius:5px;">
                         <button id="btn-atualizar-intervalo-equipes" class="btn-warning">Aplicar</button>
                     </div>
                 </div>
@@ -138,7 +147,7 @@
             <h3>Ranking por Fase (Atualização automática)</h3>
             <div class="fase-selector">
                 <label>Selecione a Fase: </label>
-                <select id="select-fase-ranking" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
+                <select id="select-fase-ranking" style="padding: 8px; border-radius: 20px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);"></select>
                 <button id="btn-toggle-auto-ranking" class="btn-secondary">⏸️ Pausar Atualização</button>
             </div>
             <div id="ranking-parcial" class="status-box">Aguardando dados...</div>
@@ -244,8 +253,8 @@
         </div>
         <div class="fase-selector">
             <label>Selecione a Fase: </label>
-            <select id="select-fase-torcida" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
-            <span style="margin-left: 15px; font-size: 16px; color: var(--text-highlight, #ffd966);" id="fase-torcida-info"></span>
+            <select id="select-fase-torcida" style="padding: 8px; border-radius: 20px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);"></select>
+            <span style="margin-left: 15px; font-size: 16px; color: var(--text-highlight);" id="fase-torcida-info"></span>
         </div>
         <div style="margin: 15px 0;">
             <p>Modalidade: <strong id="torcida-modalidade">--</strong> | <span id="torcida-fase-info" class="fase-info"></span> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;">--:--</strong></p>
@@ -269,6 +278,7 @@
 <script src="js/utils/helpers.js"></script>
 <script src="js/utils/sounds.js"></script>
 <script src="js/utils/achievements.js"></script>
+<script src="js/utils/confetti.js"></script>
 
 <script>
     // =================================================================
@@ -534,7 +544,7 @@
     }
 
     // =================================================================
-    // RANKING (COMPLETO)
+    // RANKING (com skeletons e destaque do aluno)
     // =================================================================
     let cacheRanking = {};
 
@@ -547,7 +557,14 @@
         }
 
         const container = document.getElementById(containerId);
-        container.innerHTML = '<div class="spinner">⏳ Carregando ranking...</div>';
+        // Mostra skeleton
+        container.innerHTML = `
+            <div class="skeleton skeleton-line" style="width:100%;"></div>
+            <div class="skeleton skeleton-line" style="width:90%;"></div>
+            <div class="skeleton skeleton-line" style="width:80%;"></div>
+            <div class="skeleton skeleton-line" style="width:70%;"></div>
+            <div class="skeleton skeleton-line" style="width:60%;"></div>
+        `;
 
         if (tipo === 'turmas') {
             await renderRankingTurmas(containerId);
@@ -750,6 +767,9 @@
                 <th>Turma</th>
              </tr></thead><tbody>`;
 
+            // Verifica se o aluno está visualizando seu próprio ranking (para destaque)
+            const alunoLogadoId = (meuTipo === 'aluno') ? alunoId : null;
+
             for (let idx = 0; idx < listaComId.length; idx++) {
                 const j = listaComId[idx];
                 const posAtual = idx + 1;
@@ -821,7 +841,13 @@
                     }
                 }
 
-                html += `<tr>
+                // Destaque do aluno (se ele estiver visualizando)
+                let rowClass = '';
+                if (alunoLogadoId && j.id === alunoLogadoId) {
+                    rowClass = 'destaque-aluno';
+                }
+
+                html += `<tr class="${rowClass}">
                     <td class="${classePos}">${idx+1}º</td>
                     <td>${window.escapeHtml(j.nome)}</td>
                     <td>${ameacaHtml}</td>
@@ -838,10 +864,17 @@
             }
             html += '</tbody></table>';
             container.innerHTML = html;
+            // Adiciona a classe animate-stagger nas linhas (tr) após renderizar
+            const rows = container.querySelectorAll('tbody tr');
+            rows.forEach((row, index) => {
+                row.classList.add('animate-stagger');
+                row.style.animationDelay = `${0.05 * (index + 1)}s`;
+            });
+
             if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
                 document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
             }
-            cacheRanking[cacheKey] = { html, timestamp: Date.now() };
+            cacheRanking[cacheKey] = { html: container.innerHTML, timestamp: Date.now() };
         } catch (e) {
             console.error('Erro ao renderizar ranking:', e);
             container.innerHTML = '<p>❌ Erro ao carregar ranking. Tente novamente.</p>';
@@ -932,6 +965,12 @@
         });
         html += '</tbody></table>';
         document.getElementById(containerId).innerHTML = html;
+        // Adiciona efeito de cascata
+        const rows = document.querySelectorAll(`#${containerId} tbody tr`);
+        rows.forEach((row, index) => {
+            row.classList.add('animate-stagger');
+            row.style.animationDelay = `${0.05 * (index + 1)}s`;
+        });
     }
 
     // =================================================================
@@ -1045,7 +1084,7 @@
         }
         let html = '<ul style="list-style: none; padding: 0;">';
         turmas.forEach(turma => {
-            html += `<li style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #2c3e50;">
+            html += `<li style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--glass-border);">
                         <span>🏷️ ${window.escapeHtml(turma)}</span>
                         <div>
                             <button class="btn-editar-turma btn-warning" data-turma="${turma}" style="padding: 4px 12px; margin: 0 4px;">✏️ Editar</button>
@@ -1170,6 +1209,12 @@
             html += `<tr><td>${i+1}º</td><td>${window.escapeHtml(r.nome)}</td><td>${r.melhorPontuacao}</td><td>${vel}</td><td>${r.ultimaFase}</td><td>${status}</td><td>${window.escapeHtml(r.turma)}</td><td>${r.totalPartidas}</td></tr>`;
         });
         document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
+        // Adiciona efeito de cascata
+        const rows = document.querySelectorAll('#ranking-geral-container tbody tr');
+        rows.forEach((row, index) => {
+            row.classList.add('animate-stagger');
+            row.style.animationDelay = `${0.05 * (index + 1)}s`;
+        });
     }
 
     // =================================================================
@@ -1619,6 +1664,7 @@
             `;
             if (classificado) {
                 if (window.soundManager) window.soundManager.playCelebration();
+                if (window.confettiManager) window.confettiManager.fireCelebration();
             } else {
                 if (window.soundManager) window.soundManager.playWrong();
             }
@@ -1929,7 +1975,7 @@
     }
 
     // =================================================================
-    // LÓGICA DO JOGO
+    // LÓGICA DO JOGO (com confetes)
     // =================================================================
     let animFrameId = null;
 
@@ -1998,6 +2044,24 @@
                 const pontosGanhos = Math.round(100 * (Math.max(0, tempoRestantePergunta) / 10));
                 pontosPartida += pontosGanhos;
                 if (window.soundManager) window.soundManager.playCorrect();
+
+                // Confetes para acertos importantes
+                if (acertosPartida === 10 || acertosPartida === 20) {
+                    if (window.confettiManager) {
+                        window.confettiManager.fireHit();
+                    }
+                }
+                // Se for 20 e for recorde pessoal, confetes mais intensos
+                if (acertosPartida === 20) {
+                    const key = `recorde_${alunoId}_fase${estadoAtual.fase}`;
+                    const recordeAnterior = parseInt(localStorage.getItem(key)) || 0;
+                    if (acertosPartida > recordeAnterior) {
+                        localStorage.setItem(key, acertosPartida);
+                        if (window.confettiManager) {
+                            window.confettiManager.fireRecord();
+                        }
+                    }
+                }
             } else {
                 if (window.soundManager) window.soundManager.playWrong();
             }
@@ -2062,7 +2126,7 @@
                 <h2>🏁 RESULTADO DA PARTIDA</h2>
                 <div style="font-size: 48px; margin: 10px 0;">${posEmoji}</div>
                 <div style="font-size: 28px; font-weight: bold;">${posicao}º lugar</div>
-                <hr style="border-color: #2c3e50; margin: 15px 0;">
+                <hr style="border-color: var(--glass-border); margin: 15px 0;">
                 <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
                 <div>✅ Acertos: ${acertosPartida}/20</div>
                 <div>⏱️ Tempo médio: ${(tempoTotalPartida / 20).toFixed(1)} s/pergunta</div>
@@ -2113,7 +2177,6 @@
         const faseAtual = estadoAtual.fase;
         const refResultado = window.firebaseService.getResultadosRef(faseAtual).child(alunoId);
 
-        // Monta os dados da partida
         const dadosPartida = {
             pontos: pontosPartida,
             acertos: acertosPartida,
@@ -2121,7 +2184,6 @@
             timestamp: Date.now()
         };
 
-        // Verifica se está online
         if (window.SyncService && window.SyncService.isOnline()) {
             try {
                 await refResultado.transaction((currentData) => {
@@ -2132,19 +2194,15 @@
                 console.log('[Partida] Salva no Firebase com sucesso.');
             } catch (error) {
                 console.warn('[Partida] Falha ao salvar no Firebase, salvando offline:', error);
-                // Salvar offline como fallback
                 window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
             }
         } else {
-            // Offline: salvar localmente
             console.log('[Partida] Offline, salvando partida localmente.');
             window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
         }
 
-        // Remove dados temporários
         await window.firebaseService.removerResultadosTemp(faseAtual, alunoId);
 
-        // Calcula posição (apenas se estiver online para pegar ranking completo, ou usa estimativa local)
         let posicao = 0;
         if (window.SyncService && window.SyncService.isOnline()) {
             const snapRanking = await window.firebaseService.getResultadosRef(faseAtual).once('value');
@@ -2161,11 +2219,9 @@
             rankingPosicoes.sort((a,b) => b.pontos - a.pontos);
             posicao = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
         } else {
-            // Offline: posição 0 = "sincronizando"
             posicao = 0;
         }
 
-        // Verificar conquistas (apenas se tiver dados suficientes)
         if (alunoId) {
             const minhasPartidas = estadoAtual.resultados?.[faseAtual]?.[alunoId] || [];
             const partidasAtualizadas = [...minhasPartidas, { acertos: acertosPartida, tempo: tempoTotalPartida }];
@@ -2180,15 +2236,12 @@
             window.achievementManager.verificarConquistas(alunoId, dadosAluno);
         }
 
-        // Atualiza UI e exibe modal (se posicao > 0, senão mostra "sincronizando")
         if (posicao > 0) {
             atualizarPosicaoAluno(posicao);
             exibirModalResultadosSimples(posicao, pontosPartida);
         } else {
-            // Exibe modal com mensagem de sincronização pendente
             window.toast('📶 Partida salva. A posição será atualizada quando a conexão for restabelecida.');
             exibirModalResultadosSimples('?', pontosPartida);
-            // Força renderização da UI para mostrar as medalhas já conquistadas
             renderAluno();
         }
     }
@@ -2470,6 +2523,23 @@
                     if (inputEq) inputEq.value = intervaloEquipesSegundos;
                 }
             }
+        });
+
+        // --- BOTÃO DE TEMA ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const temaSalvo = localStorage.getItem('tema') || 'dark';
+        if (temaSalvo === 'light') {
+            document.body.classList.add('light-mode');
+            themeToggle.textContent = '☀️';
+        } else {
+            document.body.classList.remove('light-mode');
+            themeToggle.textContent = '🌙';
+        }
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('tema', isLight ? 'light' : 'dark');
+            themeToggle.textContent = isLight ? '☀️' : '🌙';
         });
 
         if (!listenerCopa) iniciarListeners();
