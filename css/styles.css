@@ -703,3 +703,116 @@ hr { margin: 20px 0; border-color: var(--glass-border); }
     #pergunta { font-size: 28px; }
     .tab-btn { padding: 6px 14px; font-size: 13px; }
 }
+/* ============================================================
+   NOTIFICAÇÕES DO JOGO
+   ============================================================ */
+#notification-container {
+    pointer-events: none;
+    user-select: none;
+}
+
+.notification-popup {
+    animation: notificationIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    pointer-events: none;
+}
+
+@keyframes notificationIn {
+    0% { opacity: 0; transform: scale(0.8) translateY(30px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+#notification-progress {
+    transition: width 0.1s linear;
+}
+
+/* Estilo para o painel de configurações do professor */
+.config-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    border: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    transition: opacity 0.3s;
+}
+.config-card.desativado {
+    opacity: 0.5;
+}
+.config-card .config-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 200px;
+}
+.config-card .config-info .icone {
+    font-size: 28px;
+}
+.config-card .config-info .nome {
+    font-weight: 600;
+    font-size: 15px;
+}
+.config-card .config-info .descricao {
+    font-size: 13px;
+    opacity: 0.7;
+}
+.config-card .config-controles {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.config-card .config-controles label {
+    font-size: 13px;
+    opacity: 0.7;
+}
+.config-card .config-controles input[type="range"] {
+    width: 100px;
+    accent-color: var(--text-highlight);
+    background: transparent;
+    cursor: pointer;
+}
+.config-card .config-controles .duracao-value {
+    font-weight: bold;
+    min-width: 30px;
+    text-align: center;
+}
+.config-card .toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #555;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.3s;
+    flex-shrink: 0;
+}
+.config-card .toggle-switch.ativo {
+    background: var(--btn-success);
+}
+.config-card .toggle-switch .slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+.config-card .toggle-switch.ativo .slider {
+    transform: translateX(20px);
+}
+
+@media (max-width: 768px) {
+    .config-card .config-controles input[type="range"] {
+        width: 70px;
+    }
+    .config-card .config-info .descricao {
+        display: none;
+    }
+}
