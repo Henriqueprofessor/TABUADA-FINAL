@@ -12,15 +12,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <!-- ===================================================== -->
     <link rel="stylesheet" href="css/styles.css">
-    <!-- canvas-confetti CDN (para confetes) -->
+    <!-- canvas-confetti CDN -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
-    <!-- Chart.js CDN (gráficos) -->
+    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- jsPDF CDN (PDF) -->
+    <!-- jsPDF CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Extensão autoTable para jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-    <!-- PapaParse CDN (CSV) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
@@ -28,7 +26,7 @@
 <!-- TOAST -->
 <div id="toast" class="toast hidden"></div>
 
-<!-- BOTÃO DE ALTERNÂNCIA DE TEMA (MODO CLARO/ESCURO) -->
+<!-- BOTÃO DE TEMA -->
 <button id="theme-toggle" class="theme-toggle" aria-label="Alternar tema">🌙</button>
 
 <!-- MODAL LOGIN -->
@@ -80,7 +78,9 @@
             </div>
         </div>
         <div class="tab-buttons">
-            <div class="tab-btn active" data-tab="controle">🎮 Controle</div>
+            <!-- NOVA ABA: DASHBOARD -->
+            <div class="tab-btn active" data-tab="dashboard">📊 Visão Geral</div>
+            <div class="tab-btn" data-tab="controle">🎮 Controle</div>
             <div class="tab-btn" data-tab="ranking-geral">🏆 Ranking Geral</div>
             <div class="tab-btn" data-tab="ranking-fase">📊 Ranking por Fase <span class="live-badge" id="live-badge-prof">LIVE</span></div>
             <div class="tab-btn" data-tab="ranking-turmas">🏆 Ranking por Turma</div>
@@ -88,7 +88,57 @@
             <div class="tab-btn" data-tab="gerenciar-alunos">✏️ Gerenciar Alunos</div>
             <div class="tab-btn" data-tab="gerenciar-turmas">🏷️ Gerenciar Turmas</div>
         </div>
-        <div id="tab-controle" class="tab-content">
+
+        <!-- ========================================= -->
+        <!-- CONTEÚDO DO DASHBOARD (NOVA ABA)         -->
+        <!-- ========================================= -->
+        <div id="tab-dashboard" class="tab-content">
+            <h3>📊 Resumo da Competição</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                <div class="status-box" style="text-align: center;">
+                    <div style="font-size: 14px; opacity: 0.7;">👥 Total de Alunos</div>
+                    <div id="dashboard-total-alunos" style="font-size: 32px; font-weight: bold; color: var(--text-highlight);">0</div>
+                </div>
+                <div class="status-box" style="text-align: center;">
+                    <div style="font-size: 14px; opacity: 0.7;">📈 Média de Pontos</div>
+                    <div id="dashboard-media-geral" style="font-size: 32px; font-weight: bold; color: var(--text-highlight);">0</div>
+                </div>
+                <div class="status-box" style="text-align: center;">
+                    <div style="font-size: 14px; opacity: 0.7;">🏅 Melhor Aluno</div>
+                    <div id="dashboard-melhor-aluno" style="font-size: 20px; font-weight: bold; color: var(--text-highlight);">-</div>
+                    <div style="font-size: 14px; opacity: 0.7;" id="dashboard-melhor-aluno-pontos"></div>
+                </div>
+                <div class="status-box" style="text-align: center;">
+                    <div style="font-size: 14px; opacity: 0.7;">🏆 Melhor Turma</div>
+                    <div id="dashboard-melhor-turma" style="font-size: 20px; font-weight: bold; color: var(--text-highlight);">-</div>
+                    <div style="font-size: 14px; opacity: 0.7;" id="dashboard-melhor-turma-media"></div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="status-box">
+                    <h4>⏳ Status da Fase Atual</h4>
+                    <div id="dashboard-status-fase">
+                        <p><strong>Fase:</strong> <span id="dashboard-fase-num">1</span>/5</p>
+                        <p><strong>Status:</strong> <span id="dashboard-status-text">Aguardando</span></p>
+                        <p><strong>Tempo restante:</strong> <span id="dashboard-tempo-restante">--:--</span></p>
+                        <p><strong>Classificados:</strong> <span id="dashboard-classificados">0</span></p>
+                        <p><strong>Vagas:</strong> <span id="dashboard-vagas">30</span></p>
+                    </div>
+                </div>
+                <div class="status-box">
+                    <h4>📌 Últimos Alunos Ativos</h4>
+                    <div id="dashboard-ultimos-alunos" style="max-height: 200px; overflow-y: auto;">
+                        <p style="opacity:0.6;">Nenhum aluno ativo ainda.</p>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                <button id="btn-dashboard-atualizar" class="btn-secondary">🔄 Atualizar</button>
+            </div>
+        </div>
+
+        <!-- ABA CONTROLE (existente) -->
+        <div id="tab-controle" class="tab-content hidden">
             <div class="flex-grid">
                 <div>
                     <h3>Controle da Fase</h3>
@@ -135,6 +185,8 @@
             </div>
             <div id="podium-container" class="status-box hidden"></div>
         </div>
+
+        <!-- ABA RANKING GERAL -->
         <div id="tab-ranking-geral" class="tab-content hidden">
             <h3>📊 Classificação Geral - Todos os Participantes</h3>
             <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
@@ -143,6 +195,8 @@
             </div>
             <div id="ranking-geral-container" class="status-box">Processando ranking geral...</div>
         </div>
+
+        <!-- ABA RANKING POR FASE -->
         <div id="tab-ranking-fase" class="tab-content hidden">
             <h3>Ranking por Fase (Atualização automática)</h3>
             <div class="fase-selector">
@@ -152,6 +206,8 @@
             </div>
             <div id="ranking-parcial" class="status-box">Aguardando dados...</div>
         </div>
+
+        <!-- ABA RANKING POR TURMAS -->
         <div id="tab-ranking-turmas" class="tab-content hidden">
             <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
             <div style="margin-bottom: 15px;">
@@ -159,6 +215,8 @@
             </div>
             <div id="ranking-turmas-container" class="status-box">Carregando...</div>
         </div>
+
+        <!-- ABA ESTATÍSTICAS -->
         <div id="tab-estatisticas" class="tab-content hidden">
             <h3>📈 Estatísticas da Competição</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
@@ -179,11 +237,15 @@
                 <button id="btn-atualizar-estatisticas" class="btn-secondary">🔄 Atualizar Gráficos</button>
             </div>
         </div>
+
+        <!-- ABA GERENCIAR ALUNOS -->
         <div id="tab-gerenciar-alunos" class="tab-content hidden">
             <h3>📝 Gerenciar Alunos da Fase Atual</h3>
             <div id="lista-alunos-gerenciavel" class="status-box scroll-list">Carregando...</div>
             <button id="btn-atualizar-lista-alunos" class="btn-secondary">🔄 Recarregar</button>
         </div>
+
+        <!-- ABA GERENCIAR TURMAS -->
         <div id="tab-gerenciar-turmas" class="tab-content hidden">
             <h3>🏷️ Gerenciar Turmas Disponíveis</h3>
             <button id="btn-adicionar-turma" class="btn-success">➕ Adicionar Nova Turma</button>
@@ -544,6 +606,153 @@
     }
 
     // =================================================================
+    // DASHBOARD (NOVO)
+    // =================================================================
+    function renderDashboard() {
+        if (meuTipo !== 'professor' || !professorAutenticado) return;
+        const container = document.getElementById('tab-dashboard');
+        if (!container || container.classList.contains('hidden')) return;
+
+        // 1. Total de alunos (considerando todas as fases)
+        const todasFases = estadoAtual.resultados || {};
+        const participantesPorFase = estadoAtual.participantes || {};
+        const alunosSet = new Set();
+        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+            const partFase = participantesPorFase[fase] || {};
+            Object.keys(partFase).forEach(id => alunosSet.add(id));
+        }
+        const totalAlunos = alunosSet.size;
+
+        // 2. Média geral de pontos (melhor pontuação de cada aluno)
+        let somaPontos = 0;
+        let melhorAluno = { nome: '-', pontos: 0 };
+        const pontuacoesPorAluno = new Map();
+        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+            const resFase = todasFases[fase] || {};
+            const partFase = participantesPorFase[fase] || {};
+            for (let id in resFase) {
+                const partidas = resFase[id];
+                if (!partidas || partidas.length === 0) continue;
+                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                const nome = partFase[id]?.nome || 'Anônimo';
+                if (!pontuacoesPorAluno.has(id) || melhor.pontos > pontuacoesPorAluno.get(id).pontos) {
+                    pontuacoesPorAluno.set(id, { nome, pontos: melhor.pontos });
+                }
+            }
+        }
+        let melhorNome = '-', melhorPontos = 0;
+        let soma = 0;
+        for (let [id, info] of pontuacoesPorAluno) {
+            soma += info.pontos;
+            if (info.pontos > melhorPontos) {
+                melhorPontos = info.pontos;
+                melhorNome = info.nome;
+            }
+        }
+        const mediaGeral = pontuacoesPorAluno.size > 0 ? (soma / pontuacoesPorAluno.size) : 0;
+
+        // 3. Melhor turma (média das melhores pontuações por turma)
+        const turmasMap = new Map();
+        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+            const resFase = todasFases[fase] || {};
+            const partFase = participantesPorFase[fase] || {};
+            for (let id in resFase) {
+                const partidas = resFase[id];
+                if (!partidas || partidas.length === 0) continue;
+                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                let turma = partFase[id]?.turma || '?';
+                if (!turmasMap.has(turma)) {
+                    turmasMap.set(turma, { soma: 0, count: 0 });
+                }
+                turmasMap.get(turma).soma += melhor.pontos;
+                turmasMap.get(turma).count++;
+            }
+        }
+        let melhorTurma = '-', melhorMedia = 0;
+        for (let [turma, data] of turmasMap) {
+            const media = data.count > 0 ? (data.soma / data.count) : 0;
+            if (media > melhorMedia) {
+                melhorMedia = media;
+                melhorTurma = turma;
+            }
+        }
+
+        // 4. Status da fase atual
+        const faseAtual = estadoAtual.fase || 1;
+        const status = estadoAtual.status || 'aguardando';
+        const fim = estadoAtual.fim || 0;
+        let tempoRestante = '--:--';
+        if (status === 'em_andamento') {
+            const restante = Math.max(0, fim - Date.now());
+            const min = Math.floor(restante / 60000);
+            const sec = Math.floor((restante % 60000) / 1000);
+            tempoRestante = `${min}:${sec.toString().padStart(2,'0')}`;
+        } else if (status === 'pausado') {
+            const pausado = estadoAtual.tempoRestantePausa || 0;
+            const min = Math.floor(pausado / 60000);
+            const sec = Math.floor((pausado % 60000) / 1000);
+            tempoRestante = `${min}:${sec.toString().padStart(2,'0')} (pausado)`;
+        } else {
+            tempoRestante = '--:--';
+        }
+        const vagas = window.VAGAS_POR_FASE[faseAtual] || 30;
+        const classificadosIds = estadoAtual.classificados?.[faseAtual] || [];
+        const numClassificados = classificadosIds.length;
+
+        // 5. Últimos alunos ativos (últimas partidas registradas)
+        const ultimos = [];
+        for (let fase = window.TOTAL_FASES; fase >= 1; fase--) {
+            const resFase = todasFases[fase] || {};
+            const partFase = participantesPorFase[fase] || {};
+            for (let id in resFase) {
+                const partidas = resFase[id];
+                if (!partidas || partidas.length === 0) continue;
+                const ultima = partidas[partidas.length - 1];
+                const nome = partFase[id]?.nome || 'Anônimo';
+                ultimos.push({ nome, pontos: ultima.pontos, timestamp: ultima.timestamp || Date.now() });
+            }
+        }
+        ultimos.sort((a,b) => b.timestamp - a.timestamp);
+        const topUltimos = ultimos.slice(0, 5);
+
+        // Atualizar DOM
+        document.getElementById('dashboard-total-alunos').innerText = totalAlunos;
+        document.getElementById('dashboard-media-geral').innerText = mediaGeral.toFixed(1);
+        document.getElementById('dashboard-melhor-aluno').innerText = melhorNome;
+        document.getElementById('dashboard-melhor-aluno-pontos').innerText = `${melhorPontos} pts`;
+        document.getElementById('dashboard-melhor-turma').innerText = melhorTurma;
+        document.getElementById('dashboard-melhor-turma-media').innerText = `Média: ${melhorMedia.toFixed(1)} pts`;
+        document.getElementById('dashboard-fase-num').innerText = faseAtual;
+        document.getElementById('dashboard-status-text').innerText = status === 'em_andamento' ? '▶️ Em andamento' :
+                                                                   status === 'pausado' ? '⏸️ Pausado' :
+                                                                   status === 'finalizado' ? '🏁 Finalizado' :
+                                                                   '⏳ Aguardando';
+        document.getElementById('dashboard-tempo-restante').innerText = tempoRestante;
+        document.getElementById('dashboard-classificados').innerText = numClassificados;
+        document.getElementById('dashboard-vagas').innerText = vagas;
+
+        const containerUltimos = document.getElementById('dashboard-ultimos-alunos');
+        if (topUltimos.length === 0) {
+            containerUltimos.innerHTML = '<p style="opacity:0.6;">Nenhum aluno ativo ainda.</p>';
+        } else {
+            let html = '<ul style="list-style:none; padding:0;">';
+            topUltimos.forEach((item, idx) => {
+                html += `<li style="padding: 4px 0; border-bottom: 1px solid var(--glass-border);">
+                            ${idx+1}. ${window.escapeHtml(item.nome)} — ${item.pontos} pts
+                        </li>`;
+            });
+            html += '</ul>';
+            containerUltimos.innerHTML = html;
+        }
+
+        // Atualiza também o badge de status na aba
+        const liveBadge = document.getElementById('live-badge-prof');
+        if (liveBadge) {
+            liveBadge.innerText = status === 'em_andamento' ? '🔴 LIVE' : '⏸️';
+        }
+    }
+
+    // =================================================================
     // RANKING (com skeletons e destaque do aluno)
     // =================================================================
     let cacheRanking = {};
@@ -557,7 +766,6 @@
         }
 
         const container = document.getElementById(containerId);
-        // Mostra skeleton
         container.innerHTML = `
             <div class="skeleton skeleton-line" style="width:100%;"></div>
             <div class="skeleton skeleton-line" style="width:90%;"></div>
@@ -767,7 +975,6 @@
                 <th>Turma</th>
              </tr></thead><tbody>`;
 
-            // Verifica se o aluno está visualizando seu próprio ranking (para destaque)
             const alunoLogadoId = (meuTipo === 'aluno') ? alunoId : null;
 
             for (let idx = 0; idx < listaComId.length; idx++) {
@@ -841,7 +1048,6 @@
                     }
                 }
 
-                // Destaque do aluno (se ele estiver visualizando)
                 let rowClass = '';
                 if (alunoLogadoId && j.id === alunoLogadoId) {
                     rowClass = 'destaque-aluno';
@@ -864,7 +1070,6 @@
             }
             html += '</tbody></table>';
             container.innerHTML = html;
-            // Adiciona a classe animate-stagger nas linhas (tr) após renderizar
             const rows = container.querySelectorAll('tbody tr');
             rows.forEach((row, index) => {
                 row.classList.add('animate-stagger');
@@ -965,7 +1170,6 @@
         });
         html += '</tbody></table>';
         document.getElementById(containerId).innerHTML = html;
-        // Adiciona efeito de cascata
         const rows = document.querySelectorAll(`#${containerId} tbody tr`);
         rows.forEach((row, index) => {
             row.classList.add('animate-stagger');
@@ -1209,7 +1413,6 @@
             html += `<tr><td>${i+1}º</td><td>${window.escapeHtml(r.nome)}</td><td>${r.melhorPontuacao}</td><td>${vel}</td><td>${r.ultimaFase}</td><td>${status}</td><td>${window.escapeHtml(r.turma)}</td><td>${r.totalPartidas}</td></tr>`;
         });
         document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
-        // Adiciona efeito de cascata
         const rows = document.querySelectorAll('#ranking-geral-container tbody tr');
         rows.forEach((row, index) => {
             row.classList.add('animate-stagger');
@@ -1943,6 +2146,11 @@
             if (tabEstat && !tabEstat.classList.contains('hidden')) {
                 renderizarGraficos();
             }
+            // Atualiza dashboard se estiver visível
+            const tabDash = document.getElementById('tab-dashboard');
+            if (tabDash && !tabDash.classList.contains('hidden')) {
+                renderDashboard();
+            }
         } else if (meuTipo === 'aluno') renderAluno();
         else if (meuTipo === 'projecao') {
             if (estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) {
@@ -2045,13 +2253,11 @@
                 pontosPartida += pontosGanhos;
                 if (window.soundManager) window.soundManager.playCorrect();
 
-                // Confetes para acertos importantes
                 if (acertosPartida === 10 || acertosPartida === 20) {
                     if (window.confettiManager) {
                         window.confettiManager.fireHit();
                     }
                 }
-                // Se for 20 e for recorde pessoal, confetes mais intensos
                 if (acertosPartida === 20) {
                     const key = `recorde_${alunoId}_fase${estadoAtual.fase}`;
                     const recordeAnterior = parseInt(localStorage.getItem(key)) || 0;
@@ -2292,6 +2498,7 @@
                 const target = document.getElementById(`tab-${tabId}`);
                 if (target) {
                     target.classList.remove('hidden');
+                    // Dispara ações específicas ao abrir cada aba
                     if (tabId === 'estatisticas') {
                         setTimeout(() => renderizarGraficos(), 300);
                     }
@@ -2300,6 +2507,7 @@
                     if (tabId === 'ranking-turmas') renderRanking(null, 'ranking-turmas-container', 'turmas', false);
                     if (tabId === 'gerenciar-alunos') renderListaAlunosGerenciar();
                     if (tabId === 'gerenciar-turmas') renderListaTurmas();
+                    if (tabId === 'dashboard') renderDashboard();
                 }
             });
         });
@@ -2322,6 +2530,9 @@
         document.getElementById('btn-export-csv')?.addEventListener('click', exportarCSV);
         document.getElementById('btn-export-pdf')?.addEventListener('click', exportarPDF);
         document.getElementById('btn-atualizar-estatisticas')?.addEventListener('click', renderizarGraficos);
+
+        // Botão de atualizar dashboard
+        document.getElementById('btn-dashboard-atualizar')?.addEventListener('click', renderDashboard);
 
         const btnIndiv = document.getElementById('btn-modo-individual');
         const btnEquipes = document.getElementById('btn-modo-equipes');
