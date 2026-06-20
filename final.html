@@ -7,6 +7,7 @@
     <!-- ========== PWA: MANIFEST E CONFIGURAÇÕES ========== -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a0f1e">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <!-- ===================================================== -->
@@ -532,7 +533,7 @@
     }
 
     // =================================================================
-    // RANKING
+    // RANKING (COMPLETO)
     // =================================================================
     let cacheRanking = {};
 
@@ -1547,9 +1548,6 @@
         if (Object.keys(participantesProxima).length > 0) await window.firebaseService.getParticipantesRef(faseAtual+1).set(participantesProxima);
         await window.firebaseService.removerResultadosTemp(faseAtual);
 
-        // =============================================================
-        // VERIFICAR CONQUISTAS DE CLASSIFICAÇÃO E CAMPEÃO
-        // =============================================================
         for (let id of classificadosIds) {
             const partidas = estadoAtual.resultados?.[faseAtual]?.[id] || [];
             const dadosAluno = {
@@ -2149,9 +2147,6 @@
             atualizarPosicaoAluno(posicao);
         }
 
-        // =============================================================
-        // VERIFICAR CONQUISTAS
-        // =============================================================
         if (alunoId) {
             const minhasPartidas = estadoAtual.resultados?.[estadoAtual.fase]?.[alunoId] || [];
             const partidasAtualizadas = [...minhasPartidas, { acertos: acertosPartida, tempo: tempoTotalPartida }];
@@ -2171,13 +2166,19 @@
     }
 
     // =================================================================
-    // INICIALIZAÇÃO
+    // INICIALIZAÇÃO (CORRIGIDA)
     // =================================================================
     async function init() {
-        await carregarIntervalos();
-        await carregarTurmas();
+        // Tenta carregar dados, mas não quebra a UI se falhar
+        try {
+            await carregarIntervalos();
+            await carregarTurmas();
+        } catch (e) {
+            console.error('Erro ao carregar dados iniciais:', e);
+            window.toast('Erro ao carregar dados. Recarregue a página.');
+        }
 
-        // --- Autenticação ---
+        // --- LISTENER DE AUTENTICAÇÃO (sempre executado) ---
         listenerAuth = window.authService.onAuthStateChanged((user) => {
             if (user) {
                 professorAutenticado = true;
@@ -2201,12 +2202,16 @@
             }
         });
 
-        // --- EVENTOS DAS ABAS ---
+        // --- EVENTOS DAS ABAS (CORRIGIDO: SEMPRE EXECUTADO) ---
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
+                // Remove active de todas
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                // Adiciona active à clicada
                 this.classList.add('active');
+                // Esconde todos os conteúdos
                 document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                // Mostra o conteúdo correspondente
                 const tabId = this.getAttribute('data-tab');
                 const target = document.getElementById(`tab-${tabId}`);
                 if (target) {
