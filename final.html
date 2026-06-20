@@ -100,7 +100,7 @@
         </div>
     </div>
 
-    <!-- PAINEL DO PROFESSOR (COMPLETO) -->
+    <!-- PAINEL DO PROFESSOR -->
     <div id="painel-professor" class="card hidden">
         <div class="header-actions">
             <h2>🔧 Painel do Professor <span id="prof-fase-info" class="fase-info"></span></h2>
@@ -115,6 +115,7 @@
             <button class="tab-btn" data-tab="controle" role="tab" aria-selected="false" aria-controls="tab-controle" id="tab-controle-btn">🎮 Controle</button>
             <button class="tab-btn" data-tab="ranking-geral" role="tab" aria-selected="false" aria-controls="tab-ranking-geral" id="tab-ranking-geral-btn">🏆 Ranking Geral</button>
             <button class="tab-btn" data-tab="ranking-fase" role="tab" aria-selected="false" aria-controls="tab-ranking-fase" id="tab-ranking-fase-btn">📊 Ranking por Fase <span class="live-badge" id="live-badge-prof" aria-hidden="true">LIVE</span></button>
+            <button class="tab-btn" data-tab="ranking-acumulado" role="tab" aria-selected="false" aria-controls="tab-ranking-acumulado" id="tab-ranking-acumulado-btn">🏆 Ranking Acumulado</button>
             <button class="tab-btn" data-tab="ranking-turmas" role="tab" aria-selected="false" aria-controls="tab-ranking-turmas" id="tab-ranking-turmas-btn">🏆 Ranking por Turma</button>
             <button class="tab-btn" data-tab="estatisticas" role="tab" aria-selected="false" aria-controls="tab-estatisticas" id="tab-estatisticas-btn">📈 Estatísticas</button>
             <button class="tab-btn" data-tab="notificacoes" role="tab" aria-selected="false" aria-controls="tab-notificacoes" id="tab-notificacoes-btn">🎨 Efeitos Visuais</button>
@@ -122,7 +123,7 @@
             <button class="tab-btn" data-tab="gerenciar-turmas" role="tab" aria-selected="false" aria-controls="tab-gerenciar-turmas" id="tab-gerenciar-turmas-btn">🏷️ Gerenciar Turmas</button>
         </div>
 
-        <!-- DASHBOARD -->
+        <!-- DASHBOARD (mantido igual) -->
         <div id="tab-dashboard" class="tab-content" role="tabpanel" aria-labelledby="tab-dashboard-btn">
             <h3>📊 Resumo da Competição</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
@@ -168,7 +169,7 @@
             </div>
         </div>
 
-        <!-- CONTROLE -->
+        <!-- CONTROLE (mantido igual) -->
         <div id="tab-controle" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-controle-btn">
             <div class="flex-grid">
                 <div>
@@ -217,7 +218,7 @@
             <div id="podium-container" class="status-box hidden"></div>
         </div>
 
-        <!-- RANKING GERAL -->
+        <!-- RANKING GERAL (mantido igual) -->
         <div id="tab-ranking-geral" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-ranking-geral-btn">
             <h3>📊 Classificação Geral - Todos os Participantes</h3>
             <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
@@ -227,7 +228,7 @@
             <div id="ranking-geral-container" class="status-box" aria-live="polite">Processando ranking geral...</div>
         </div>
 
-        <!-- RANKING POR FASE -->
+        <!-- RANKING POR FASE (mantido igual) -->
         <div id="tab-ranking-fase" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-ranking-fase-btn">
             <h3>Ranking por Fase (Atualização automática)</h3>
             <div class="fase-selector">
@@ -238,7 +239,14 @@
             <div id="ranking-parcial" class="status-box" aria-live="polite">Aguardando dados...</div>
         </div>
 
-        <!-- RANKING POR TURMAS -->
+        <!-- RANKING ACUMULADO (NOVO) -->
+        <div id="tab-ranking-acumulado" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-ranking-acumulado-btn">
+            <h3>🏆 Ranking Acumulado (Campeão Geral)</h3>
+            <p style="opacity:0.7; margin-bottom: 15px;">Pontos somados de <strong>todas as fases</strong>. O maior acumulado define o campeão da competição.</p>
+            <div id="ranking-acumulado-container" class="status-box" aria-live="polite">Carregando...</div>
+        </div>
+
+        <!-- RANKING POR TURMAS (mantido igual) -->
         <div id="tab-ranking-turmas" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-ranking-turmas-btn">
             <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
             <div style="margin-bottom: 15px;">
@@ -247,7 +255,7 @@
             <div id="ranking-turmas-container" class="status-box" aria-live="polite">Carregando...</div>
         </div>
 
-        <!-- ESTATÍSTICAS -->
+        <!-- ESTATÍSTICAS (mantido igual) -->
         <div id="tab-estatisticas" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-estatisticas-btn">
             <h3>📈 Estatísticas da Competição</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
@@ -269,7 +277,7 @@
             </div>
         </div>
 
-        <!-- NOTIFICAÇÕES -->
+        <!-- NOTIFICAÇÕES (mantido igual) -->
         <div id="tab-notificacoes" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-notificacoes-btn">
             <h3>🎨 Configuração de Efeitos Visuais</h3>
             <p style="opacity:0.7; margin-bottom: 16px;">Configure as notificações que aparecem durante o jogo. O tempo de exibição <strong>não afeta</strong> o tempo de resposta do aluno.</p>
@@ -283,14 +291,14 @@
             <div id="notificacoes-status" style="margin-top: 15px; font-size: 14px; opacity: 0.7;"></div>
         </div>
 
-        <!-- GERENCIAR ALUNOS -->
+        <!-- GERENCIAR ALUNOS (mantido igual) -->
         <div id="tab-gerenciar-alunos" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-gerenciar-alunos-btn">
             <h3>📝 Gerenciar Alunos da Fase Atual</h3>
             <div id="lista-alunos-gerenciavel" class="status-box scroll-list" aria-live="polite">Carregando...</div>
             <button id="btn-atualizar-lista-alunos" class="btn-secondary">🔄 Recarregar</button>
         </div>
 
-        <!-- GERENCIAR TURMAS -->
+        <!-- GERENCIAR TURMAS (mantido igual) -->
         <div id="tab-gerenciar-turmas" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-gerenciar-turmas-btn">
             <h3>🏷️ Gerenciar Turmas Disponíveis</h3>
             <button id="btn-adicionar-turma" class="btn-success">➕ Adicionar Nova Turma</button>
@@ -298,7 +306,7 @@
         </div>
     </div>
 
-    <!-- TELA DO ALUNO -->
+    <!-- TELA DO ALUNO (mantido igual) -->
     <div id="tela-aluno" class="card hidden">
         <div class="header-actions">
             <h2 id="aluno-nome-display">Aluno</h2>
@@ -348,7 +356,7 @@
         <div id="podium-aluno-container" class="status-box hidden"></div>
     </div>
 
-    <!-- TELA DE TORCIDA -->
+    <!-- TELA DE TORCIDA (com botão para alternar ranking) -->
     <div id="tela-torcida" class="card hidden">
         <div class="header-actions">
             <h2>📺 RANKING EM TEMPO REAL <span class="live-badge" aria-hidden="true">AO VIVO</span></h2>
@@ -365,6 +373,8 @@
             <label for="select-fase-torcida">Selecione a Fase: </label>
             <select id="select-fase-torcida" style="padding: 8px; border-radius: 20px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);"></select>
             <span style="margin-left: 15px; font-size: 16px; color: var(--text-highlight);" id="fase-torcida-info"></span>
+            <span style="margin-left: 15px; font-size: 14px; opacity:0.7;">|</span>
+            <button id="btn-alternar-ranking-torcida" class="btn-secondary" style="font-size:13px; padding:4px 12px;">🔄 Ver Acumulado</button>
         </div>
         <div style="margin: 15px 0;">
             <p>Modalidade: <strong id="torcida-modalidade">--</strong> | <span id="torcida-fase-info" class="fase-info"></span> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;" aria-live="polite">--:--</strong></p>
@@ -416,6 +426,7 @@
     let torcidaId = null;
     let faseTorcidaSelecionada = 1;
     let atualizandoSeletorTorcida = false;
+    let torcidaModoAcumulado = false; // alterna entre fase e acumulado
 
     let intervaloIndividualSegundos = 4;
     let intervaloEquipesSegundos = 60;
@@ -449,7 +460,7 @@
     }
 
     // =================================================================
-    // FUNÇÕES AUXILIARES (originais)
+    // FUNÇÕES AUXILIARES
     // =================================================================
     function gerarPoolPerguntas(modalidade) {
         const config = window.MODALIDADE_CONFIG[modalidade];
@@ -715,7 +726,6 @@
 
         container.innerHTML = html;
 
-        // Eventos dos toggles
         document.querySelectorAll('.toggle-switch').forEach(el => {
             el.addEventListener('click', function() {
                 const id = this.dataset.id;
@@ -730,7 +740,6 @@
             });
         });
 
-        // Eventos dos sliders
         document.querySelectorAll('.config-controles input[type="range"]').forEach(input => {
             input.addEventListener('input', function() {
                 const id = this.dataset.id;
@@ -753,7 +762,6 @@
             });
         });
 
-        // Botão reset
         document.getElementById('btn-reset-notificacoes')?.addEventListener('click', function() {
             if (confirm('Resetar todas as configurações de notificações para os valores padrão?')) {
                 const padrao = window.NOTIFICATION_CONFIG_PADRAO;
@@ -776,7 +784,6 @@
             }
         });
 
-        // Botão salvar
         document.getElementById('btn-salvar-notificacoes')?.addEventListener('click', function() {
             config.salvar();
             window.toast('💾 Configurações salvas com sucesso!');
@@ -1086,7 +1093,7 @@
     }
 
     // =================================================================
-    // RANKING (com Tempo Total)
+    // RANKING DA FASE (com Tempo Total)
     // =================================================================
     let cacheRanking = {};
 
@@ -1183,7 +1190,6 @@
                         if (statusInfo.status === 'aguardando') progresso = 0;
                         const ultimaPartida = partidas[partidas.length - 1];
                         const ultimaPosicao = ultimaPartida?.posicao || null;
-                        // Calcula tempo total nesta fase
                         let tempoTotalFase = 0;
                         partidas.forEach(p => { tempoTotalFase += p.tempo || 0; });
                         mapa.set(key, {
@@ -1240,7 +1246,6 @@
                             existente.status = statusInfo.status;
                             existente.progresso = statusInfo.progresso;
                         }
-                        // Atualiza tempoTotal
                         if (data.tempo) {
                             existente.tempoTotal = (existente.tempoTotal || 0) + data.tempo;
                         }
@@ -1300,7 +1305,7 @@
 
             const maxPontos = listaComId[0].pontos;
             const vagas = window.VAGAS_POR_FASE[faseNum] || 30;
-            const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirClassificacao;
+            const mostrarClassificacao = (containerId === 'ranking-torcida-container' && !torcidaModoAcumulado) ? true : exibirClassificacao;
 
             let html = `<table class="ranking-table"><thead><tr>
                 <th>Pos</th>
@@ -1431,6 +1436,93 @@
     }
 
     // =================================================================
+    // RANKING ACUMULADO (NOVO)
+    // =================================================================
+    async function renderRankingAcumulado(containerId) {
+        if (!estadoAtual) return;
+        const container = document.getElementById(containerId);
+        container.innerHTML = `
+            <div class="skeleton skeleton-line" style="width:100%;"></div>
+            <div class="skeleton skeleton-line" style="width:90%;"></div>
+            <div class="skeleton skeleton-line" style="width:80%;"></div>
+            <div class="skeleton skeleton-line" style="width:70%;"></div>
+            <div class="skeleton skeleton-line" style="width:60%;"></div>
+        `;
+
+        try {
+            const snapAcumulado = await window.firebaseService.getCopaRef().child('acumulado').once('value');
+            const acumulado = snapAcumulado.val() || {};
+            const participantesPorFase = estadoAtual.participantes || {};
+            const resultados = estadoAtual.resultados || {};
+
+            let lista = [];
+            for (let id in acumulado) {
+                // Buscar nome e turma do aluno (em qualquer fase)
+                let nome = 'Anônimo', turma = '?';
+                for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+                    const partFase = participantesPorFase[fase] || {};
+                    if (partFase[id]) {
+                        nome = partFase[id].nome || 'Anônimo';
+                        turma = partFase[id].turma || '?';
+                        break;
+                    }
+                }
+                // Se não encontrou, tenta buscar nos resultados
+                if (nome === 'Anônimo') {
+                    for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+                        const resFase = resultados[fase] || {};
+                        if (resFase[id] && resFase[id].length > 0) {
+                            nome = resFase[id][0].nome || 'Anônimo';
+                            turma = resFase[id][0].turma || '?';
+                            break;
+                        }
+                    }
+                }
+                lista.push({
+                    id,
+                    nome,
+                    turma,
+                    acumulado: acumulado[id] || 0
+                });
+            }
+
+            lista.sort((a, b) => b.acumulado - a.acumulado);
+
+            if (lista.length === 0) {
+                container.innerHTML = '<p>📭 Nenhum dado acumulado ainda. Aguarde os primeiros jogadores...</p>';
+                return;
+            }
+
+            let html = `<table class="ranking-table"><thead><tr>
+                <th>Pos</th>
+                <th>Nome</th>
+                <th>Pontos Acumulados</th>
+                <th>Turma</th>
+             </tr></thead><tbody>`;
+
+            lista.forEach((item, idx) => {
+                const posAtual = idx + 1;
+                html += `<tr>
+                    <td>${posAtual}º</td>
+                    <td>${window.escapeHtml(item.nome)}</td>
+                    <td>${item.acumulado}</td>
+                    <td>${window.escapeHtml(item.turma)}</td>
+                 </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+            const rows = container.querySelectorAll('tbody tr');
+            rows.forEach((row, index) => {
+                row.classList.add('animate-stagger');
+                row.style.animationDelay = `${0.05 * (index + 1)}s`;
+            });
+        } catch (e) {
+            console.error('Erro ao renderizar ranking acumulado:', e);
+            container.innerHTML = '<p>❌ Erro ao carregar ranking acumulado. Tente novamente.</p>';
+        }
+    }
+
+    // =================================================================
     // RANKING POR TURMAS
     // =================================================================
     async function renderRankingTurmas(containerId) {
@@ -1525,7 +1617,7 @@
     }
 
     // =================================================================
-    // RANKING GERAL (com Tempo Total)
+    // RANKING GERAL (mantido igual)
     // =================================================================
     function renderRankingGeral() {
         if (!estadoAtual) return;
@@ -1569,7 +1661,6 @@
                         existente.melhorTempo = melhor.tempo;
                     }
                     existente.totalPartidas += partidas.length;
-                    // Adiciona tempo total
                     partidas.forEach(p => { existente.tempoTotal += p.tempo || 0; });
                 }
                 const jogador = jogadores.get(id);
@@ -1656,10 +1747,14 @@
             fase = estadoAtual.fase;
         }
         faseTorcidaSelecionada = fase;
-        await renderRanking(fase, 'ranking-torcida-container', 'individual', true);
+        if (torcidaModoAcumulado) {
+            await renderRankingAcumulado('ranking-torcida-container');
+        } else {
+            await renderRanking(fase, 'ranking-torcida-container', 'individual', true);
+        }
         const infoSpan = document.getElementById('fase-torcida-info');
         if (infoSpan) {
-            infoSpan.innerText = (fase === estadoAtual.fase) ? '(Fase atual)' : '(Fase anterior)';
+            infoSpan.innerText = torcidaModoAcumulado ? '(Acumulado)' : (fase === estadoAtual.fase ? '(Fase atual)' : '(Fase anterior)');
         }
     }
 
@@ -1793,7 +1888,7 @@
     }
 
     // =================================================================
-    // RELATÓRIOS
+    // RELATÓRIOS (CSV e PDF)
     // =================================================================
     function gerarDadosCSV() {
         if (!estadoAtual) return null;
@@ -1874,42 +1969,86 @@
     }
 
     // =================================================================
-    // PÓDIO FINAL
+    // PÓDIO FINAL (baseado no acumulado)
     // =================================================================
     function renderPodioFinal(containerId) {
         if (!estadoAtual || estadoAtual.fase !== 5) return;
-        const resultadosFase5 = estadoAtual.resultados?.[5] || {};
-        const participantesFase5 = estadoAtual.participantes?.[5] || {};
-        let lista = [];
-        for (let id in resultadosFase5) {
-            const partidas = resultadosFase5[id];
-            if (partidas && partidas.length) {
-                const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
-                let nome = participantesFase5[id]?.nome;
-                if (!nome && estadoAtual.participantes?.[4]?.[id]) nome = estadoAtual.participantes[4][id].nome;
-                if (!nome) nome = "Anônimo";
-                let turma = participantesFase5[id]?.turma;
-                if (!turma && estadoAtual.participantes?.[4]?.[id]) turma = estadoAtual.participantes[4][id].turma;
-                if (!turma) turma = "?";
-                lista.push({ id, nome, turma, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo, partidas: partidas.length });
+
+        // Buscar acumulado do Firebase
+        window.firebaseService.getCopaRef().child('acumulado').once('value').then((snap) => {
+            const acumulado = snap.val() || {};
+            const participantesPorFase = estadoAtual.participantes || {};
+            const resultados = estadoAtual.resultados || {};
+
+            let lista = [];
+            for (let id in acumulado) {
+                let nome = 'Anônimo', turma = '?';
+                for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+                    const partFase = participantesPorFase[fase] || {};
+                    if (partFase[id]) {
+                        nome = partFase[id].nome || 'Anônimo';
+                        turma = partFase[id].turma || '?';
+                        break;
+                    }
+                }
+                if (nome === 'Anônimo') {
+                    for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+                        const resFase = resultados[fase] || {};
+                        if (resFase[id] && resFase[id].length > 0) {
+                            nome = resFase[id][0].nome || 'Anônimo';
+                            turma = resFase[id][0].turma || '?';
+                            break;
+                        }
+                    }
+                }
+                lista.push({ id, nome, turma, acumulado: acumulado[id] || 0 });
             }
-        }
-        lista.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
-        const top5 = lista.slice(0,5);
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        if (top5.length === 0) { container.classList.add('hidden'); return; }
-        let podiumHtml = '<h3>🏆 PÓDIO FINAL - COPA TABUADA CEIB 2026 🏆</h3><div class="podium">';
-        const medals = ['🥇', '🥈', '🥉', '4º', '5º'];
-        top5.forEach((jogador, idx) => {
-            podiumHtml += `<div class="podium-card podium-${idx+1}">
+
+            lista.sort((a, b) => b.acumulado - a.acumulado);
+            const top5 = lista.slice(0, 5);
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            if (top5.length === 0) { container.classList.add('hidden'); return; }
+
+            let podiumHtml = '<h3>🏆 PÓDIO FINAL (Pontos Acumulados) - COPA TABUADA CEIB 2026 🏆</h3><div class="podium">';
+            const medals = ['🥇', '🥈', '🥉', '4º', '5º'];
+            top5.forEach((jogador, idx) => {
+                podiumHtml += `<div class="podium-card podium-${idx+1}">
                             <div class="medalha">${medals[idx]}</div>
-                            <strong>${window.escapeHtml(jogador.nome)}</strong><br>${window.escapeHtml(jogador.turma)}<br>${jogador.pontos} pts<br><small>${jogador.partidas} partidas</small>
+                            <strong>${window.escapeHtml(jogador.nome)}</strong><br>${window.escapeHtml(jogador.turma)}<br>${jogador.acumulado} pts (acumulado)
                            </div>`;
+            });
+            podiumHtml += '</div>';
+            // Adiciona também o campeão da fase 5 (finalista)
+            const resultadosFase5 = estadoAtual.resultados?.[5] || {};
+            const participantesFase5 = estadoAtual.participantes?.[5] || {};
+            let listaFase5 = [];
+            for (let id in resultadosFase5) {
+                const partidas = resultadosFase5[id];
+                if (partidas && partidas.length) {
+                    const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
+                    let nome = participantesFase5[id]?.nome;
+                    if (!nome && estadoAtual.participantes?.[4]?.[id]) nome = estadoAtual.participantes[4][id].nome;
+                    if (!nome) nome = "Anônimo";
+                    let turma = participantesFase5[id]?.turma;
+                    if (!turma && estadoAtual.participantes?.[4]?.[id]) turma = estadoAtual.participantes[4][id].turma;
+                    if (!turma) turma = "?";
+                    listaFase5.push({ nome, turma, pontos: melhor.pontos });
+                }
+            }
+            listaFase5.sort((a,b) => b.pontos - a.pontos);
+            if (listaFase5.length > 0) {
+                const campeaoFase5 = listaFase5[0];
+                podiumHtml += `<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border);">
+                    <h4>🏆 Campeão da Fase Final</h4>
+                    <div style="font-size: 24px;">${window.escapeHtml(campeaoFase5.nome)} (${window.escapeHtml(campeaoFase5.turma)}) — ${campeaoFase5.pontos} pts</div>
+                </div>`;
+            }
+            container.innerHTML = podiumHtml;
+            container.classList.remove('hidden');
+        }).catch(err => {
+            console.error('Erro ao carregar acumulado para pódio:', err);
         });
-        podiumHtml += '</div>';
-        container.innerHTML = podiumHtml;
-        container.classList.remove('hidden');
     }
 
     // =================================================================
@@ -2331,6 +2470,10 @@
             if (tabNotif && !tabNotif.classList.contains('hidden')) {
                 renderPainelNotificacoes();
             }
+            const tabAcumulado = document.getElementById('tab-ranking-acumulado');
+            if (tabAcumulado && !tabAcumulado.classList.contains('hidden')) {
+                renderRankingAcumulado('ranking-acumulado-container');
+            }
         } else if (meuTipo === 'aluno') renderAluno();
         else if (meuTipo === 'projecao') {
             if (estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) {
@@ -2363,7 +2506,7 @@
     }
 
     // =================================================================
-    // NOTIFICAÇÕES: CONTROLE DE SEQUÊNCIA
+    // NOTIFICAÇÕES
     // =================================================================
     let sequenciaAcertos = 0;
     let sequenciaErros = 0;
@@ -2439,7 +2582,7 @@
     }
 
     // =================================================================
-    // LÓGICA DO JOGO (com notificações)
+    // LÓGICA DO JOGO
     // =================================================================
     let animFrameId = null;
 
@@ -2690,6 +2833,7 @@
             timestamp: Date.now()
         };
 
+        // Salvar no Firebase (online ou offline)
         if (window.SyncService && window.SyncService.isOnline()) {
             try {
                 await refResultado.transaction((currentData) => {
@@ -2698,6 +2842,12 @@
                     return lista;
                 });
                 console.log('[Partida] Salva no Firebase com sucesso.');
+                
+                // Atualizar acumulado
+                await window.firebaseService.getCopaRef().child('acumulado').child(alunoId).transaction((current) => {
+                    return (current || 0) + dadosPartida.pontos;
+                });
+                
             } catch (error) {
                 console.warn('[Partida] Falha ao salvar no Firebase, salvando offline:', error);
                 window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
@@ -3107,8 +3257,22 @@
                     if (tabId === 'gerenciar-turmas') renderListaTurmas();
                     if (tabId === 'dashboard') renderDashboard();
                     if (tabId === 'notificacoes') renderPainelNotificacoes();
+                    if (tabId === 'ranking-acumulado') renderRankingAcumulado('ranking-acumulado-container');
                 }
             });
+        });
+
+        // --- BOTÃO ALTERNAR RANKING NA TORCIDA ---
+        document.getElementById('btn-alternar-ranking-torcida')?.addEventListener('click', function() {
+            torcidaModoAcumulado = !torcidaModoAcumulado;
+            this.textContent = torcidaModoAcumulado ? '🔄 Ver Fase' : '🔄 Ver Acumulado';
+            const infoSpan = document.getElementById('fase-torcida-info');
+            if (infoSpan) {
+                infoSpan.innerText = torcidaModoAcumulado ? '(Acumulado)' : (faseTorcidaSelecionada === estadoAtual.fase ? '(Fase atual)' : '(Fase anterior)');
+            }
+            if (modoTorcida === 'individual') {
+                atualizarTorcidaIndividual();
+            }
         });
 
         // --- CONFIGURAÇÃO DO GAMEPAD ---
