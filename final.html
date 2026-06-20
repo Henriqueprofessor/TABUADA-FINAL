@@ -100,23 +100,202 @@
         </div>
     </div>
 
-    <!-- PAINEL DO PROFESSOR (mesmo de antes, omitido para encurtar, mas mantido no código completo) -->
+    <!-- PAINEL DO PROFESSOR -->
     <div id="painel-professor" class="card hidden">
-        <!-- ... conteúdo igual ao anterior ... -->
-        <!-- Para não repetir 500 linhas, mantenha o mesmo HTML que você já tem -->
-        <!-- Vou colocar um placeholder, mas na versão real está completo -->
         <div class="header-actions">
             <h2>🔧 Painel do Professor <span id="prof-fase-info" class="fase-info"></span></h2>
             <div>
-                <button id="btn-sync-prof" class="btn-warning">🔄 Sincronizar</button>
-                <button id="btn-logout" class="btn-danger">🚪 Sair</button>
-                <button id="btn-voltar-menu-prof" class="btn-secondary">🏠 Menu</button>
+                <button id="btn-sync-prof" class="btn-warning" aria-label="Sincronizar dados do professor">🔄 Sincronizar</button>
+                <button id="btn-logout" class="btn-danger" aria-label="Sair da conta do professor">🚪 Sair</button>
+                <button id="btn-voltar-menu-prof" class="btn-secondary" aria-label="Voltar ao menu principal">🏠 Menu</button>
             </div>
         </div>
         <div class="tab-buttons" role="tablist" aria-label="Navegação do professor">
-            <!-- ... abas ... -->
+            <button class="tab-btn active" data-tab="dashboard" role="tab" aria-selected="true" aria-controls="tab-dashboard" id="tab-dashboard-btn">📊 Visão Geral</button>
+            <button class="tab-btn" data-tab="controle" role="tab" aria-selected="false" aria-controls="tab-controle" id="tab-controle-btn">🎮 Controle</button>
+            <button class="tab-btn" data-tab="ranking-geral" role="tab" aria-selected="false" aria-controls="tab-ranking-geral" id="tab-ranking-geral-btn">🏆 Ranking Geral</button>
+            <button class="tab-btn" data-tab="ranking-fase" role="tab" aria-selected="false" aria-controls="tab-ranking-fase" id="tab-ranking-fase-btn">📊 Ranking por Fase <span class="live-badge" id="live-badge-prof" aria-hidden="true">LIVE</span></button>
+            <button class="tab-btn" data-tab="ranking-turmas" role="tab" aria-selected="false" aria-controls="tab-ranking-turmas" id="tab-ranking-turmas-btn">🏆 Ranking por Turma</button>
+            <button class="tab-btn" data-tab="estatisticas" role="tab" aria-selected="false" aria-controls="tab-estatisticas" id="tab-estatisticas-btn">📈 Estatísticas</button>
+            <button class="tab-btn" data-tab="notificacoes" role="tab" aria-selected="false" aria-controls="tab-notificacoes" id="tab-notificacoes-btn">🎨 Efeitos Visuais</button>
+            <button class="tab-btn" data-tab="gerenciar-alunos" role="tab" aria-selected="false" aria-controls="tab-gerenciar-alunos" id="tab-gerenciar-alunos-btn">✏️ Gerenciar Alunos</button>
+            <button class="tab-btn" data-tab="gerenciar-turmas" role="tab" aria-selected="false" aria-controls="tab-gerenciar-turmas" id="tab-gerenciar-turmas-btn">🏷️ Gerenciar Turmas</button>
         </div>
-        <!-- Conteúdo das abas (dashboard, controle, etc.) igual ao anterior -->
+
+        <!-- DASHBOARD -->
+        <div id="tab-dashboard" class="tab-content" role="tabpanel" aria-labelledby="tab-dashboard-btn">
+            <h3>📊 Resumo da Competição</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                <div class="status-box" style="text-align: center;">
+                    <div style="font-size: 14px; opacity: 0.7;">👥 Total de Alunos</div>
+                    <div id="dashboard-total-alunos" style="font-size: 32px; font-weight: bold; color: var(--text-highlight);" aria-live="polite">0</div>
+                </div>
+                <div class="status-box" style="text-align: center;">
+                    <div style="font-size: 14px; opacity: 0.7;">📈 Média de Pontos</div>
+                    <div id="dashboard-media-geral" style="font-size: 32px; font-weight: bold; color: var(--text-highlight);" aria-live="polite">0</div>
+                </div>
+                <div class="status-box" style="text-align: center;">
+                    <div style="font-size: 14px; opacity: 0.7;">🏅 Melhor Aluno</div>
+                    <div id="dashboard-melhor-aluno" style="font-size: 20px; font-weight: bold; color: var(--text-highlight);" aria-live="polite">-</div>
+                    <div style="font-size: 14px; opacity: 0.7;" id="dashboard-melhor-aluno-pontos"></div>
+                </div>
+                <div class="status-box" style="text-align: center;">
+                    <div style="font-size: 14px; opacity: 0.7;">🏆 Melhor Turma</div>
+                    <div id="dashboard-melhor-turma" style="font-size: 20px; font-weight: bold; color: var(--text-highlight);" aria-live="polite">-</div>
+                    <div style="font-size: 14px; opacity: 0.7;" id="dashboard-melhor-turma-media"></div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="status-box">
+                    <h4>⏳ Status da Fase Atual</h4>
+                    <div id="dashboard-status-fase">
+                        <p><strong>Fase:</strong> <span id="dashboard-fase-num">1</span>/5</p>
+                        <p><strong>Status:</strong> <span id="dashboard-status-text">Aguardando</span></p>
+                        <p><strong>Tempo restante:</strong> <span id="dashboard-tempo-restante">--:--</span></p>
+                        <p><strong>Classificados:</strong> <span id="dashboard-classificados">0</span></p>
+                        <p><strong>Vagas:</strong> <span id="dashboard-vagas">30</span></p>
+                    </div>
+                </div>
+                <div class="status-box">
+                    <h4>📌 Últimos Alunos Ativos</h4>
+                    <div id="dashboard-ultimos-alunos" style="max-height: 200px; overflow-y: auto;">
+                        <p style="opacity:0.6;">Nenhum aluno ativo ainda.</p>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                <button id="btn-dashboard-atualizar" class="btn-secondary">🔄 Atualizar</button>
+            </div>
+        </div>
+
+        <!-- CONTROLE -->
+        <div id="tab-controle" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-controle-btn">
+            <div class="flex-grid">
+                <div>
+                    <h3>Controle da Fase</h3>
+                    <div class="status-box">
+                        <label for="select-modalidade">Modalidade da Tabuada:</label>
+                        <select id="select-modalidade" style="width:100%; padding:8px; margin:10px 0; border-radius:20px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);">
+                            <option value="2-5">📚 Tabuada do 2 ao 5</option>
+                            <option value="6-9">📚 Tabuada do 6 ao 9</option>
+                            <option value="0-10">📚 Tabuada do 0 ao 10 (Completa)</option>
+                        </select>
+                        <button id="btn-aplicar-modalidade" class="btn-warning" style="width:100%;">🎯 Aplicar e Reiniciar Copa</button>
+                        <hr>
+                        <label for="input-tempo-fase">Tempo (minutos):</label>
+                        <input type="number" id="input-tempo-fase" value="12" min="1" style="width: 80px; padding: 5px; border-radius: 5px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);">
+                        <button id="btn-salvar-tempo" class="btn-warning">💾 Salvar</button>
+                        <hr>
+                        <button id="btn-iniciar-fase" class="btn-success">▶️ Iniciar Fase</button>
+                        <button id="btn-continuar-parar-fase" class="btn-danger">⏹️ Parar Fase</button>
+                        <button id="btn-avancar-fase" class="btn-primary" style="margin-top: 10px; width: 100%;">➡️ Finalizar Fase e Classificar</button>
+                        <button id="btn-reset-fase" class="btn-warning" style="margin-top: 10px; width: 100%;">🔄 Resetar Fase (apagar dados atuais)</button>
+                        <button id="btn-reset-total" class="btn-danger" style="margin-top: 10px; width: 100%;">⚠️ Resetar Competição</button>
+                    </div>
+                </div>
+                <div>
+                    <h3>Usuários Online: <span id="prof-online-count">0</span></h3>
+                    <div id="lista-participantes" style="max-height: 300px; overflow-y: auto; background: var(--bg-card); padding: 10px; border-radius: 10px;" aria-live="polite"></div>
+                </div>
+            </div>
+            <div class="controle-atualizacao">
+                <h3>⚙️ Controle de Atualização dos Rankings</h3>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
+                    <div>
+                        <label for="intervalo-individual">📊 Ranking Individual (segundos):</label>
+                        <input type="number" id="intervalo-individual" min="1" max="300" value="4" step="1" style="background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border); width:80px; padding:5px; border-radius:5px;">
+                        <button id="btn-atualizar-intervalo-individual" class="btn-warning">Aplicar</button>
+                    </div>
+                    <div>
+                        <label for="intervalo-equipes">👥 Ranking por Equipes (segundos):</label>
+                        <input type="number" id="intervalo-equipes" min="1" max="600" value="60" step="1" style="background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border); width:80px; padding:5px; border-radius:5px;">
+                        <button id="btn-atualizar-intervalo-equipes" class="btn-warning">Aplicar</button>
+                    </div>
+                </div>
+                <p style="font-size: 14px;">* Os intervalos são salvos no Firebase e aplicados a todos os usuários em tempo real.</p>
+            </div>
+            <div id="podium-container" class="status-box hidden"></div>
+        </div>
+
+        <!-- RANKING GERAL -->
+        <div id="tab-ranking-geral" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-ranking-geral-btn">
+            <h3>📊 Classificação Geral - Todos os Participantes</h3>
+            <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button id="btn-export-csv" class="btn-success">📥 Baixar CSV</button>
+                <button id="btn-export-pdf" class="btn-danger">📄 Baixar PDF</button>
+            </div>
+            <div id="ranking-geral-container" class="status-box" aria-live="polite">Processando ranking geral...</div>
+        </div>
+
+        <!-- RANKING POR FASE -->
+        <div id="tab-ranking-fase" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-ranking-fase-btn">
+            <h3>Ranking por Fase (Atualização automática)</h3>
+            <div class="fase-selector">
+                <label for="select-fase-ranking">Selecione a Fase: </label>
+                <select id="select-fase-ranking" style="padding: 8px; border-radius: 20px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);"></select>
+                <button id="btn-toggle-auto-ranking" class="btn-secondary">⏸️ Pausar Atualização</button>
+            </div>
+            <div id="ranking-parcial" class="status-box" aria-live="polite">Aguardando dados...</div>
+        </div>
+
+        <!-- RANKING POR TURMAS -->
+        <div id="tab-ranking-turmas" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-ranking-turmas-btn">
+            <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
+            <div style="margin-bottom: 15px;">
+                <button id="btn-atualizar-ranking-turmas" class="btn-secondary">🔄 Atualizar</button>
+            </div>
+            <div id="ranking-turmas-container" class="status-box" aria-live="polite">Carregando...</div>
+        </div>
+
+        <!-- ESTATÍSTICAS -->
+        <div id="tab-estatisticas" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-estatisticas-btn">
+            <h3>📈 Estatísticas da Competição</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                <div class="status-box" style="padding: 20px;">
+                    <h4>Média de Pontos por Turma</h4>
+                    <canvas id="chart-turmas" width="400" height="250" aria-label="Gráfico de média de pontos por turma" role="img"></canvas>
+                </div>
+                <div class="status-box" style="padding: 20px;">
+                    <h4>Distribuição de Alunos (Classificados x Eliminados)</h4>
+                    <canvas id="chart-distribuicao" width="400" height="250" aria-label="Gráfico de distribuição de alunos" role="img"></canvas>
+                </div>
+            </div>
+            <div class="status-box" style="padding: 20px;">
+                <h4>Evolução dos 5 Melhores Alunos</h4>
+                <canvas id="chart-evolucao" width="800" height="300" aria-label="Gráfico de evolução dos melhores alunos" role="img"></canvas>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                <button id="btn-atualizar-estatisticas" class="btn-secondary">🔄 Atualizar Gráficos</button>
+            </div>
+        </div>
+
+        <!-- NOTIFICAÇÕES -->
+        <div id="tab-notificacoes" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-notificacoes-btn">
+            <h3>🎨 Configuração de Efeitos Visuais</h3>
+            <p style="opacity:0.7; margin-bottom: 16px;">Configure as notificações que aparecem durante o jogo. O tempo de exibição <strong>não afeta</strong> o tempo de resposta do aluno.</p>
+            <div id="notificacoes-container">
+                <!-- Gerado dinamicamente pelo JavaScript -->
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                <button id="btn-reset-notificacoes" class="btn-warning">🔄 Resetar Padrões</button>
+                <button id="btn-salvar-notificacoes" class="btn-success">💾 Salvar Configurações</button>
+            </div>
+            <div id="notificacoes-status" style="margin-top: 15px; font-size: 14px; opacity: 0.7;"></div>
+        </div>
+
+        <!-- GERENCIAR ALUNOS -->
+        <div id="tab-gerenciar-alunos" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-gerenciar-alunos-btn">
+            <h3>📝 Gerenciar Alunos da Fase Atual</h3>
+            <div id="lista-alunos-gerenciavel" class="status-box scroll-list" aria-live="polite">Carregando...</div>
+            <button id="btn-atualizar-lista-alunos" class="btn-secondary">🔄 Recarregar</button>
+        </div>
+
+        <!-- GERENCIAR TURMAS -->
+        <div id="tab-gerenciar-turmas" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-gerenciar-turmas-btn">
+            <h3>🏷️ Gerenciar Turmas Disponíveis</h3>
+            <button id="btn-adicionar-turma" class="btn-success">➕ Adicionar Nova Turma</button>
+            <div id="lista-turmas-gerenciavel" class="status-box scroll-list" style="margin-top: 15px;" aria-live="polite">Carregando...</div>
+        </div>
     </div>
 
     <!-- TELA DO ALUNO -->
@@ -210,8 +389,9 @@
 <script src="js/utils/sounds.js"></script>
 <script src="js/utils/achievements.js"></script>
 <script src="js/utils/confetti.js"></script>
-<!-- SUPORTE A GAMEPAD -->
 <script src="js/utils/gamepad.js"></script>
+<script src="js/config/notification-config.js"></script>
+<script src="js/utils/notifications.js"></script>
 
 <script>
     // =================================================================
@@ -254,132 +434,17 @@
     const poolPerguntas = {};
 
     // =================================================================
-    // GAMEPAD: MAPEAMENTO DE AÇÕES
+    // NOTIFICAÇÕES: CONTROLE DE SEQUÊNCIA
     // =================================================================
-    let opcaoSelecionadaGamepad = -1; // -1 = nenhuma selecionada
-
-    function configurarGamepad() {
-        // Quando um botão for pressionado
-        window._gamepadCallbacks = {
-            onButtonPress: function(index, gp) {
-                const confirmar = window.GamepadManager.BOTOES.CONFIRMAR; // A / X
-                const cancelar = window.GamepadManager.BOTOES.CANCELAR; // B / Circle
-                const start = window.GamepadManager.BOTOES.START;
-                const back = window.GamepadManager.BOTOES.BACK;
-                const dpadCima = window.GamepadManager.BOTOES.DPAD_CIMA;
-                const dpadBaixo = window.GamepadManager.BOTOES.DPAD_BAIXO;
-                const dpadEsquerda = window.GamepadManager.BOTOES.DPAD_ESQUERDA;
-                const dpadDireita = window.GamepadManager.BOTOES.DPAD_DIREITA;
-
-                // Se estiver na tela do aluno e o jogo não estiver ativo, tenta iniciar
-                if (meuTipo === 'aluno' && !jogoAtivo) {
-                    const btnJogar = document.getElementById('btn-iniciar-partida');
-                    if (btnJogar && !btnJogar.classList.contains('hidden')) {
-                        if (index === confirmar || index === start) {
-                            btnJogar.click();
-                            return;
-                        }
-                    }
-                }
-
-                // Se estiver no jogo (opções visíveis)
-                if (jogoAtivo && document.getElementById('jogo-area') && !document.getElementById('jogo-area').classList.contains('hidden')) {
-                    const opcoes = document.querySelectorAll('.opcao:not([disabled])');
-                    if (opcoes.length === 0) return;
-
-                    // Navegação com D-Pad
-                    if (index === dpadDireita || index === dpadBaixo) {
-                        opcaoSelecionadaGamepad = (opcaoSelecionadaGamepad + 1) % opcoes.length;
-                        destacarOpcaoGamepad(opcaoSelecionadaGamepad);
-                    } else if (index === dpadEsquerda || index === dpadCima) {
-                        opcaoSelecionadaGamepad = (opcaoSelecionadaGamepad - 1 + opcoes.length) % opcoes.length;
-                        destacarOpcaoGamepad(opcaoSelecionadaGamepad);
-                    }
-
-                    // Confirmar (A / X)
-                    if (index === confirmar && opcaoSelecionadaGamepad >= 0 && opcaoSelecionadaGamepad < opcoes.length) {
-                        const btn = opcoes[opcaoSelecionadaGamepad];
-                        if (!btn.disabled) {
-                            btn.click();
-                        }
-                    }
-
-                    // Cancelar (B / Circle) - sai do jogo? (opcional)
-                    if (index === back) {
-                        // Voltar ao menu (se desejar)
-                        const sairBtn = document.getElementById('btn-sair-aluno');
-                        if (sairBtn) sairBtn.click();
-                    }
-                }
-
-                // Se estiver no perfil, fecha com B ou Back
-                if (index === cancelar || index === back) {
-                    const modalPerfil = document.getElementById('modal-perfil-aluno');
-                    if (modalPerfil && !modalPerfil.classList.contains('hidden')) {
-                        fecharPerfilAluno();
-                    }
-                    const modalLogin = document.getElementById('login-modal');
-                    if (modalLogin && !modalLogin.classList.contains('hidden')) {
-                        esconderModalLogin();
-                    }
-                }
-            },
-            onAxisMove: function(axis, value, gp) {
-                // Usa o eixo horizontal do analógico esquerdo (axis 0) para navegar
-                if (axis === 0 && jogoAtivo) {
-                    const opcoes = document.querySelectorAll('.opcao:not([disabled])');
-                    if (opcoes.length === 0) return;
-                    // Se o valor for > 0.5 (direita), avança; se < -0.5 (esquerda), volta
-                    if (value > 0.5) {
-                        opcaoSelecionadaGamepad = (opcaoSelecionadaGamepad + 1) % opcoes.length;
-                        destacarOpcaoGamepad(opcaoSelecionadaGamepad);
-                    } else if (value < -0.5) {
-                        opcaoSelecionadaGamepad = (opcaoSelecionadaGamepad - 1 + opcoes.length) % opcoes.length;
-                        destacarOpcaoGamepad(opcaoSelecionadaGamepad);
-                    }
-                }
-            }
-        };
-
-        // Mostrar indicador quando gamepad conectado
-        window.GamepadManager.on('onConnect', function() {
-            document.getElementById('gamepad-indicator').style.display = 'flex';
-        });
-        window.GamepadManager.on('onDisconnect', function() {
-            document.getElementById('gamepad-indicator').style.display = 'none';
-        });
-    }
-
-    function destacarOpcaoGamepad(index) {
-        const opcoes = document.querySelectorAll('.opcao:not([disabled])');
-        opcoes.forEach((btn, i) => {
-            if (i === index) {
-                btn.style.border = '3px solid #f39c12';
-                btn.style.boxShadow = '0 0 20px rgba(243, 156, 18, 0.5)';
-            } else {
-                btn.style.border = '';
-                btn.style.boxShadow = '';
-            }
-        });
-    }
-
-    // Limpa destaque quando responder
-    const originalResponder = window.responder;
-    window.responder = async function(idx) {
-        // Limpa destaque do gamepad
-        document.querySelectorAll('.opcao').forEach(btn => {
-            btn.style.border = '';
-            btn.style.boxShadow = '';
-        });
-        opcaoSelecionadaGamepad = -1;
-        // Chama a função original (que será sobrescrita depois)
-        if (typeof originalResponder === 'function') {
-            await originalResponder(idx);
-        }
-    };
+    let sequenciaAcertos = 0;
+    let sequenciaErros = 0;
+    let recordeFaseAtual = 0;
+    let recordeGeralAtual = 0;
+    let notificacaoPendente = false;
+    let ultimoTempoResposta = 0;
 
     // =================================================================
-    // FUNÇÕES AUXILIARES (mesmas de antes)
+    // FUNÇÕES AUXILIARES
     // =================================================================
     function gerarPoolPerguntas(modalidade) {
         const config = window.MODALIDADE_CONFIG[modalidade];
@@ -412,7 +477,7 @@
     }
 
     // =================================================================
-    // AUTENTICAÇÃO (com foco acessível)
+    // AUTENTICAÇÃO
     // =================================================================
     let ultimoElementoFocado = null;
 
@@ -466,7 +531,7 @@
     }
 
     // =================================================================
-    // PERFIL DO ALUNO (modal com foco)
+    // PERFIL DO ALUNO
     // =================================================================
     let chartPerfilEvolucao = null;
     let chartPerfilPizza = null;
@@ -589,7 +654,148 @@
     }
 
     // =================================================================
-    // LISTENERS GRANULARES (mesmos de antes)
+    // PAINEL DE NOTIFICAÇÕES (PROFESSOR)
+    // =================================================================
+    function renderPainelNotificacoes() {
+        const container = document.getElementById('notificacoes-container');
+        if (!container) return;
+
+        const config = window.NOTIFICATION_CONFIG;
+        if (!config) {
+            container.innerHTML = '<p>Erro ao carregar configurações.</p>';
+            return;
+        }
+
+        let html = '';
+        const notificacoes = config.notificacoes;
+        const ordem = ['seq5', 'seq10', 'seq15', 'seq20', 'recordeFase', 'recordeGeral', 'rapido', 'relampago', 'erro3', 'erro5'];
+
+        ordem.forEach(key => {
+            const n = notificacoes[key];
+            if (!n) return;
+            const isRapido = key === 'rapido';
+            const extraLabel = isRapido ? ` (limite: ${(n.limiteRapido || 1.5).toFixed(1)}s)` : '';
+
+            html += `
+                <div class="config-card ${n.ativo ? '' : 'desativado'}" data-id="${key}">
+                    <div class="config-info">
+                        <span class="icone">${n.icone}</span>
+                        <div>
+                            <div class="nome">${n.nome} ${extraLabel}</div>
+                            <div class="descricao">${n.mensagem.replace(/\{[^}]+\}/g, '...')}</div>
+                        </div>
+                    </div>
+                    <div class="config-controles">
+                        ${isRapido ? `
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <label style="font-size:12px;">Limite:</label>
+                                <input type="range" min="${config.LIMITE_RAPIDO_MIN}" max="${config.LIMITE_RAPIDO_MAX}" step="0.1" 
+                                       value="${n.limiteRapido || 1.5}" data-param="limiteRapido" data-id="${key}">
+                                <span class="duracao-value" style="min-width:30px;">${(n.limiteRapido || 1.5).toFixed(1)}s</span>
+                            </div>
+                        ` : ''}
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <label style="font-size:12px;">Duração:</label>
+                            <input type="range" min="${config.DURACAO_MIN}" max="${config.DURACAO_MAX}" step="0.1" 
+                                   value="${n.duracao || 3}" data-param="duracao" data-id="${key}">
+                            <span class="duracao-value" style="min-width:30px;">${(n.duracao || 3).toFixed(1)}s</span>
+                        </div>
+                        <div class="toggle-switch ${n.ativo ? 'ativo' : ''}" data-id="${key}">
+                            <div class="slider"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        // Eventos dos toggles
+        document.querySelectorAll('.toggle-switch').forEach(el => {
+            el.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const notif = config.notificacoes[id];
+                if (notif) {
+                    notif.ativo = !notif.ativo;
+                    this.classList.toggle('ativo');
+                    this.closest('.config-card').classList.toggle('desativado');
+                    config.salvar();
+                    atualizarStatusNotificacoes();
+                }
+            });
+        });
+
+        // Eventos dos sliders
+        document.querySelectorAll('.config-controles input[type="range"]').forEach(input => {
+            input.addEventListener('input', function() {
+                const id = this.dataset.id;
+                const param = this.dataset.param;
+                const notif = config.notificacoes[id];
+                if (notif && param) {
+                    const val = parseFloat(this.value);
+                    notif[param] = val;
+                    const display = this.closest('.config-controles').querySelector('.duracao-value');
+                    if (display) display.innerText = val.toFixed(1) + 's';
+                    config.salvar();
+                    if (id === 'rapido' && param === 'limiteRapido') {
+                        const card = this.closest('.config-card');
+                        const nomeDiv = card.querySelector('.nome');
+                        if (nomeDiv) {
+                            nomeDiv.innerHTML = `${notif.nome} (limite: ${val.toFixed(1)}s)`;
+                        }
+                    }
+                }
+            });
+        });
+
+        // Botão reset
+        document.getElementById('btn-reset-notificacoes')?.addEventListener('click', function() {
+            if (confirm('Resetar todas as configurações de notificações para os valores padrão?')) {
+                const padrao = window.NOTIFICATION_CONFIG_PADRAO;
+                if (padrao) {
+                    Object.keys(padrao.notificacoes).forEach(key => {
+                        if (config.notificacoes[key]) {
+                            Object.assign(config.notificacoes[key], padrao.notificacoes[key]);
+                        }
+                    });
+                    config.DURACAO_PADRAO = padrao.DURACAO_PADRAO;
+                    config.LIMITE_RAPIDO_PADRAO = padrao.LIMITE_RAPIDO_PADRAO;
+                    if (config.notificacoes.rapido) {
+                        config.notificacoes.rapido.limiteRapido = padrao.LIMITE_RAPIDO_PADRAO;
+                    }
+                    config.salvar();
+                    renderPainelNotificacoes();
+                    atualizarStatusNotificacoes();
+                    window.toast('✅ Configurações resetadas para os padrões.');
+                }
+            }
+        });
+
+        // Botão salvar
+        document.getElementById('btn-salvar-notificacoes')?.addEventListener('click', function() {
+            config.salvar();
+            window.toast('💾 Configurações salvas com sucesso!');
+            atualizarStatusNotificacoes();
+        });
+
+        atualizarStatusNotificacoes();
+    }
+
+    function atualizarStatusNotificacoes() {
+        const status = document.getElementById('notificacoes-status');
+        if (!status) return;
+        const config = window.NOTIFICATION_CONFIG;
+        if (!config) return;
+        const ativas = Object.values(config.notificacoes).filter(n => n.ativo).length;
+        const total = Object.keys(config.notificacoes).length;
+        status.innerText = `📊 ${ativas}/${total} notificações ativas. Duração padrão: ${config.DURACAO_PADRAO}s.`;
+    }
+
+    // Guardar configuração padrão para reset
+    window.NOTIFICATION_CONFIG_PADRAO = JSON.parse(JSON.stringify(window.NOTIFICATION_CONFIG));
+
+    // =================================================================
+    // LISTENERS GRANULARES
     // =================================================================
     function iniciarListeners() {
         if (listenerCopa) listenerCopa();
@@ -876,7 +1082,7 @@
     }
 
     // =================================================================
-    // RANKING (com skeletons e destaque do aluno)
+    // RANKING
     // =================================================================
     let cacheRanking = {};
 
@@ -2112,6 +2318,411 @@
         }
     }
 
+    // =================================================================
+    // NOTIFICAÇÕES: LÓGICA DE VERIFICAÇÃO
+    // =================================================================
+    function verificarNotificacoes(acertou, tempoResposta, pontosAtuais) {
+        const config = window.NOTIFICATION_CONFIG;
+        if (!config) return;
+
+        // Atualiza sequências
+        if (acertou) {
+            sequenciaAcertos++;
+            sequenciaErros = 0;
+        } else {
+            sequenciaErros++;
+            sequenciaAcertos = 0;
+        }
+
+        // Verifica notificações de sequência de acertos
+        if (acertou) {
+            if (sequenciaAcertos === 5 && config.notificacoes.seq5.ativo) {
+                mostrarNotificacao('seq5');
+            } else if (sequenciaAcertos === 10 && config.notificacoes.seq10.ativo) {
+                mostrarNotificacao('seq10');
+            } else if (sequenciaAcertos === 15 && config.notificacoes.seq15.ativo) {
+                mostrarNotificacao('seq15');
+            } else if (sequenciaAcertos === 20 && config.notificacoes.seq20.ativo) {
+                mostrarNotificacao('seq20');
+            }
+        }
+
+        // Verifica notificações de erro
+        if (!acertou) {
+            if (sequenciaErros === 3 && config.notificacoes.erro3.ativo) {
+                mostrarNotificacao('erro3');
+            } else if (sequenciaErros === 5 && config.notificacoes.erro5.ativo) {
+                mostrarNotificacao('erro5');
+            }
+        }
+
+        // Verifica resposta rápida
+        const limiteRapido = config.notificacoes.rapido.limiteRapido || 1.5;
+        if (acertou && tempoResposta < limiteRapido && config.notificacoes.rapido.ativo) {
+            mostrarNotificacao('rapido', { tempo: tempoResposta });
+        }
+
+        // Verifica resposta relâmpago (< 1s)
+        const limiteRelampago = config.notificacoes.relampago.limiteRelampago || 1.0;
+        if (acertou && tempoResposta < limiteRelampago && config.notificacoes.relampago.ativo) {
+            mostrarNotificacao('relampago', { tempo: tempoResposta });
+        }
+
+        // Verifica recorde da fase
+        if (acertou && pontosAtuais > recordeFaseAtual && config.notificacoes.recordeFase.ativo) {
+            recordeFaseAtual = pontosAtuais;
+            mostrarNotificacao('recordeFase', { pontos: pontosAtuais });
+        }
+
+        // Verifica recorde geral (todas as fases)
+        if (acertou && pontosAtuais > recordeGeralAtual && config.notificacoes.recordeGeral.ativo) {
+            recordeGeralAtual = pontosAtuais;
+            mostrarNotificacao('recordeGeral', { pontos: pontosAtuais });
+        }
+    }
+
+    function mostrarNotificacao(id, dados = {}) {
+        // Se já houver notificação pendente, aguarda
+        if (notificacaoPendente) return;
+        notificacaoPendente = true;
+
+        // Mostra a notificação
+        window.NotificationManager.mostrar(id, dados);
+
+        // Define o callback para quando a notificação terminar
+        window._onNotificationEnd = function() {
+            notificacaoPendente = false;
+            // Continua o jogo (próxima pergunta)
+            if (window._proximaPerguntaPendente) {
+                window._proximaPerguntaPendente();
+                window._proximaPerguntaPendente = null;
+            }
+        };
+    }
+
+    // =================================================================
+    // LÓGICA DO JOGO (com notificações)
+    // =================================================================
+    let animFrameId = null;
+
+    function startTimer() {
+        tempoRestantePergunta = 10;
+        const barra = document.getElementById('progresso-tempo');
+        if (timerPergunta) {
+            clearInterval(timerPergunta);
+            timerPergunta = null;
+        }
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        let inicio = performance.now();
+
+        function atualizarBarra(timestamp) {
+            const decorrido = (timestamp - inicio) / 1000;
+            tempoRestantePergunta = Math.max(0, 10 - decorrido);
+            if (barra) {
+                barra.style.width = (tempoRestantePergunta * 10) + '%';
+                barra.setAttribute('aria-valuenow', tempoRestantePergunta * 10);
+            }
+            if (tempoRestantePergunta > 0) {
+                animFrameId = requestAnimationFrame(atualizarBarra);
+            } else {
+                if (window.soundManager) window.soundManager.playTimeUp();
+                responder(-1);
+            }
+        }
+        animFrameId = requestAnimationFrame(atualizarBarra);
+        if (timerPergunta) clearInterval(timerPergunta);
+        timerPergunta = setInterval(() => {
+            if (tempoRestantePergunta <= 0) {
+                clearInterval(timerPergunta);
+                timerPergunta = null;
+            }
+        }, 100);
+    }
+
+    function proxima() {
+        if (perguntaIdx >= window.TOTAL_PERGUNTAS) { 
+            finalizar(); 
+            return; 
+        }
+        const p = perguntas[perguntaIdx];
+        document.getElementById('pergunta').innerText = `${p.a} x ${p.b} = ?`;
+        const btns = document.querySelectorAll('.opcao');
+        p.opts.forEach((o, i) => { 
+            btns[i].innerText = o; 
+            btns[i].disabled = false; 
+            btns[i].style.background = ''; 
+            btns[i].style.transform = ''; 
+        });
+        document.getElementById('pergunta-num').innerText = perguntaIdx + 1;
+        opcaoSelecionadaGamepad = -1;
+        startTimer();
+    }
+
+    window.responder = async function(idx) {
+        // Limpa destaque do gamepad
+        document.querySelectorAll('.opcao').forEach(btn => {
+            btn.style.border = '';
+            btn.style.boxShadow = '';
+        });
+        opcaoSelecionadaGamepad = -1;
+
+        if (timerPergunta) {
+            clearInterval(timerPergunta);
+            timerPergunta = null;
+        }
+        if (animFrameId) {
+            cancelAnimationFrame(animFrameId);
+            animFrameId = null;
+        }
+        const tempoGasto = 10 - Math.max(0, tempoRestantePergunta);
+        tempoTotalPartida += tempoGasto;
+        ultimoTempoResposta = tempoGasto;
+
+        const p = perguntas[perguntaIdx];
+        const respCerta = p.a * p.b;
+        const botoes = document.querySelectorAll('.opcao');
+        let acertou = false;
+
+        if (idx !== -1) {
+            const resp = parseInt(botoes[idx].innerText);
+            if (resp === respCerta) {
+                acertou = true;
+                acertosPartida++;
+                const pontosGanhos = Math.round(100 * (Math.max(0, tempoRestantePergunta) / 10));
+                pontosPartida += pontosGanhos;
+                if (window.soundManager) window.soundManager.playCorrect();
+
+                // Verifica notificações
+                verificarNotificacoes(true, tempoGasto, pontosPartida);
+
+                if (acertosPartida === 10 || acertosPartida === 20) {
+                    if (window.confettiManager) {
+                        window.confettiManager.fireHit();
+                    }
+                }
+                if (acertosPartida === 20) {
+                    const key = `recorde_${alunoId}_fase${estadoAtual.fase}`;
+                    const recordeAnterior = parseInt(localStorage.getItem(key)) || 0;
+                    if (acertosPartida > recordeAnterior) {
+                        localStorage.setItem(key, acertosPartida);
+                        if (window.confettiManager) {
+                            window.confettiManager.fireRecord();
+                        }
+                    }
+                }
+            } else {
+                acertou = false;
+                if (window.soundManager) window.soundManager.playWrong();
+                // Verifica notificações de erro
+                verificarNotificacoes(false, tempoGasto, pontosPartida);
+            }
+        }
+
+        // Feedback visual nos botões
+        botoes.forEach((btn, i) => {
+            const valor = parseInt(btn.innerText);
+            if (valor === respCerta) {
+                btn.style.background = '#27ae60';
+                btn.style.borderColor = '#2ecc71';
+                btn.style.transform = 'scale(1.05)';
+            } else if (i === idx && idx !== -1 && !acertou) {
+                btn.style.background = '#e74c3c';
+                btn.style.borderColor = '#e74c3c';
+                btn.style.transform = 'scale(0.95)';
+            }
+            btn.disabled = true;
+        });
+
+        const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
+        if (pontuacaoSpan) pontuacaoSpan.innerText = pontosPartida;
+
+        perguntaIdx++;
+        await atualizarPontuacaoParcial();
+
+        // Se houver notificação pendente, aguarda
+        if (notificacaoPendente) {
+            window._proximaPerguntaPendente = function() {
+                setTimeout(() => {
+                    botoes.forEach(btn => {
+                        btn.style.background = '';
+                        btn.style.borderColor = '';
+                        btn.style.transform = '';
+                    });
+                    proxima();
+                }, 300);
+            };
+        } else {
+            setTimeout(() => {
+                botoes.forEach(btn => {
+                    btn.style.background = '';
+                    btn.style.borderColor = '';
+                    btn.style.transform = '';
+                });
+                proxima();
+            }, 600);
+        }
+    };
+
+    async function atualizarPontuacaoParcial() {
+        if (!alunoId || !estadoAtual) return;
+        const faseAtual = estadoAtual.fase;
+        const ref = window.firebaseService.getResultadosTempRef(faseAtual).child(alunoId);
+        await ref.set({
+            nome: alunoNome,
+            turma: alunoTurma,
+            pontos: pontosPartida,
+            acertos: acertosPartida,
+            tempo: tempoTotalPartida,
+            perguntas: perguntaIdx,
+            timestamp: Date.now()
+        });
+    }
+
+    function exibirModalResultadosSimples(posicao, pontos) {
+        let posEmoji = "";
+        if (posicao === 1) posEmoji = "🥇";
+        else if (posicao === 2) posEmoji = "🥈";
+        else if (posicao === 3) posEmoji = "🥉";
+        else posEmoji = "🏆";
+
+        if (window.soundManager) window.soundManager.playFanfare();
+
+        let htmlModal = `
+            <div class="modal-resultados" id="modal-pos-jogo" role="dialog" aria-modal="true" aria-labelledby="modal-pos-jogo-title">
+                <h2 id="modal-pos-jogo-title">🏁 RESULTADO DA PARTIDA</h2>
+                <div style="font-size: 48px; margin: 10px 0;" aria-hidden="true">${posEmoji}</div>
+                <div style="font-size: 28px; font-weight: bold;">${posicao}º lugar</div>
+                <hr style="border-color: var(--glass-border); margin: 15px 0;">
+                <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
+                <div>✅ Acertos: ${acertosPartida}/20</div>
+                <div>⏱️ Tempo médio: ${(tempoTotalPartida / 20).toFixed(1)} s/pergunta</div>
+                <div style="margin-top: 20px;">
+                    <button class="fechar" id="btn-fechar-modal">Fechar</button>
+                    ${estadoAtual?.status === 'em_andamento' && Date.now() < estadoAtual.fim ? '<button class="jogar-novamente" id="btn-jogar-novamente">🔄 Tentar melhorar</button>' : ''}
+                </div>
+            </div>`;
+        const modalExistente = document.getElementById('modal-pos-jogo');
+        if (modalExistente) modalExistente.remove();
+        document.body.insertAdjacentHTML('beforeend', htmlModal);
+        document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
+            document.getElementById('modal-pos-jogo')?.remove();
+        });
+        const btnNovamente = document.getElementById('btn-jogar-novamente');
+        if (btnNovamente) {
+            btnNovamente.addEventListener('click', () => {
+                document.getElementById('modal-pos-jogo')?.remove();
+                iniciarNovaPartida();
+            });
+        }
+        setTimeout(() => document.getElementById('btn-fechar-modal')?.focus(), 100);
+    }
+
+    async function iniciarNovaPartida() {
+        if (jogoAtivo) return;
+        if (estadoAtual.status !== 'em_andamento') { window.toast("Fase inativa!"); return; }
+        if (Date.now() >= estadoAtual.fim) { window.toast("Tempo esgotado!"); return; }
+        if (estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
+            window.toast("❌ Não classificado para esta fase!");
+            return;
+        }
+        if (window.soundManager) window.soundManager.playGameStart();
+
+        // Reseta contadores de notificação
+        sequenciaAcertos = 0;
+        sequenciaErros = 0;
+        notificacaoPendente = false;
+        recordeFaseAtual = 0;
+        recordeGeralAtual = 0;
+
+        perguntas = obterPerguntas(estadoAtual.modalidade);
+        perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
+        document.getElementById('pontuacao-acumulada').innerText = "0";
+        jogoAtivo = true;
+        document.getElementById('jogo-area').classList.remove('hidden');
+        document.getElementById('aguardando-aluno').classList.add('hidden');
+        proxima();
+    }
+
+    async function finalizar() {
+        jogoAtivo = false;
+        document.getElementById('jogo-area').classList.add('hidden');
+        document.getElementById('aguardando-aluno').classList.remove('hidden');
+
+        const faseAtual = estadoAtual.fase;
+        const refResultado = window.firebaseService.getResultadosRef(faseAtual).child(alunoId);
+
+        const dadosPartida = {
+            pontos: pontosPartida,
+            acertos: acertosPartida,
+            tempo: tempoTotalPartida,
+            timestamp: Date.now()
+        };
+
+        if (window.SyncService && window.SyncService.isOnline()) {
+            try {
+                await refResultado.transaction((currentData) => {
+                    const lista = currentData || [];
+                    lista.push(dadosPartida);
+                    return lista;
+                });
+                console.log('[Partida] Salva no Firebase com sucesso.');
+            } catch (error) {
+                console.warn('[Partida] Falha ao salvar no Firebase, salvando offline:', error);
+                window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
+            }
+        } else {
+            console.log('[Partida] Offline, salvando partida localmente.');
+            window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
+        }
+
+        await window.firebaseService.removerResultadosTemp(faseAtual, alunoId);
+
+        let posicao = 0;
+        if (window.SyncService && window.SyncService.isOnline()) {
+            const snapRanking = await window.firebaseService.getResultadosRef(faseAtual).once('value');
+            let rankingPosicoes = [];
+            if (snapRanking.val()) {
+                Object.keys(snapRanking.val()).forEach(key => {
+                    const partidas = snapRanking.val()[key];
+                    if (partidas && partidas.length) {
+                        const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                        rankingPosicoes.push({ id: key, pontos: melhor.pontos });
+                    }
+                });
+            }
+            rankingPosicoes.sort((a,b) => b.pontos - a.pontos);
+            posicao = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
+        } else {
+            posicao = 0;
+        }
+
+        if (alunoId) {
+            const minhasPartidas = estadoAtual.resultados?.[faseAtual]?.[alunoId] || [];
+            const partidasAtualizadas = [...minhasPartidas, { acertos: acertosPartida, tempo: tempoTotalPartida }];
+            const dadosAluno = {
+                totalPartidas: partidasAtualizadas.length,
+                melhorAcertos: Math.max(...partidasAtualizadas.map(p => p.acertos)),
+                classificado: false,
+                faseMaxima: estadoAtual.fase,
+                campeao: false,
+                melhorTempoTotal: Math.min(...partidasAtualizadas.map(p => p.tempo))
+            };
+            window.achievementManager.verificarConquistas(alunoId, dadosAluno);
+        }
+
+        if (posicao > 0) {
+            atualizarPosicaoAluno(posicao);
+            exibirModalResultadosSimples(posicao, pontosPartida);
+        } else {
+            window.toast('📶 Partida salva. A posição será atualizada quando a conexão for restabelecida.');
+            exibirModalResultadosSimples('?', pontosPartida);
+            renderAluno();
+        }
+    }
+
+    // =================================================================
+    // UI PRINCIPAL (renderAluno, atualizarUI, etc.)
+    // =================================================================
     function renderAluno() {
         if (!estadoAtual) return;
         const agora = Date.now();
@@ -2274,6 +2885,10 @@
             if (tabDash && !tabDash.classList.contains('hidden')) {
                 renderDashboard();
             }
+            const tabNotif = document.getElementById('tab-notificacoes');
+            if (tabNotif && !tabNotif.classList.contains('hidden')) {
+                renderPainelNotificacoes();
+            }
         } else if (meuTipo === 'aluno') renderAluno();
         else if (meuTipo === 'projecao') {
             if (estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) {
@@ -2306,285 +2921,102 @@
     }
 
     // =================================================================
-    // LÓGICA DO JOGO
+    // GAMEPAD
     // =================================================================
-    let animFrameId = null;
+    let opcaoSelecionadaGamepad = -1;
 
-    function startTimer() {
-        tempoRestantePergunta = 10;
-        const barra = document.getElementById('progresso-tempo');
-        if (timerPergunta) {
-            clearInterval(timerPergunta);
-            timerPergunta = null;
-        }
-        if (animFrameId) cancelAnimationFrame(animFrameId);
-        let inicio = performance.now();
+    function configurarGamepad() {
+        window._gamepadCallbacks = {
+            onButtonPress: function(index, gp) {
+                const confirmar = window.GamepadManager.BOTOES.CONFIRMAR;
+                const cancelar = window.GamepadManager.BOTOES.CANCELAR;
+                const start = window.GamepadManager.BOTOES.START;
+                const back = window.GamepadManager.BOTOES.BACK;
+                const dpadCima = window.GamepadManager.BOTOES.DPAD_CIMA;
+                const dpadBaixo = window.GamepadManager.BOTOES.DPAD_BAIXO;
+                const dpadEsquerda = window.GamepadManager.BOTOES.DPAD_ESQUERDA;
+                const dpadDireita = window.GamepadManager.BOTOES.DPAD_DIREITA;
 
-        function atualizarBarra(timestamp) {
-            const decorrido = (timestamp - inicio) / 1000;
-            tempoRestantePergunta = Math.max(0, 10 - decorrido);
-            if (barra) {
-                barra.style.width = (tempoRestantePergunta * 10) + '%';
-                barra.setAttribute('aria-valuenow', tempoRestantePergunta * 10);
-            }
-            if (tempoRestantePergunta > 0) {
-                animFrameId = requestAnimationFrame(atualizarBarra);
-            } else {
-                if (window.soundManager) window.soundManager.playTimeUp();
-                responder(-1);
-            }
-        }
-        animFrameId = requestAnimationFrame(atualizarBarra);
-        if (timerPergunta) clearInterval(timerPergunta);
-        timerPergunta = setInterval(() => {
-            if (tempoRestantePergunta <= 0) {
-                clearInterval(timerPergunta);
-                timerPergunta = null;
-            }
-        }, 100);
-    }
-
-    function proxima() {
-        if (perguntaIdx >= window.TOTAL_PERGUNTAS) { finalizar(); return; }
-        const p = perguntas[perguntaIdx];
-        document.getElementById('pergunta').innerText = `${p.a} x ${p.b} = ?`;
-        const btns = document.querySelectorAll('.opcao');
-        p.opts.forEach((o, i) => { btns[i].innerText = o; btns[i].disabled = false; btns[i].style.background = ''; btns[i].style.transform = ''; });
-        document.getElementById('pergunta-num').innerText = perguntaIdx + 1;
-        opcaoSelecionadaGamepad = -1; // reset destaque
-        startTimer();
-    }
-
-    window.responder = async function(idx) {
-        // Limpa destaque do gamepad
-        document.querySelectorAll('.opcao').forEach(btn => {
-            btn.style.border = '';
-            btn.style.boxShadow = '';
-        });
-        opcaoSelecionadaGamepad = -1;
-
-        if (timerPergunta) {
-            clearInterval(timerPergunta);
-            timerPergunta = null;
-        }
-        if (animFrameId) {
-            cancelAnimationFrame(animFrameId);
-            animFrameId = null;
-        }
-        const tempoGasto = 10 - Math.max(0, tempoRestantePergunta);
-        tempoTotalPartida += tempoGasto;
-        const p = perguntas[perguntaIdx];
-        const respCerta = p.a * p.b;
-        const botoes = document.querySelectorAll('.opcao');
-        let acertou = false;
-
-        if (idx !== -1) {
-            const resp = parseInt(botoes[idx].innerText);
-            if (resp === respCerta) {
-                acertou = true;
-                acertosPartida++;
-                const pontosGanhos = Math.round(100 * (Math.max(0, tempoRestantePergunta) / 10));
-                pontosPartida += pontosGanhos;
-                if (window.soundManager) window.soundManager.playCorrect();
-
-                if (acertosPartida === 10 || acertosPartida === 20) {
-                    if (window.confettiManager) {
-                        window.confettiManager.fireHit();
-                    }
-                }
-                if (acertosPartida === 20) {
-                    const key = `recorde_${alunoId}_fase${estadoAtual.fase}`;
-                    const recordeAnterior = parseInt(localStorage.getItem(key)) || 0;
-                    if (acertosPartida > recordeAnterior) {
-                        localStorage.setItem(key, acertosPartida);
-                        if (window.confettiManager) {
-                            window.confettiManager.fireRecord();
+                if (meuTipo === 'aluno' && !jogoAtivo) {
+                    const btnJogar = document.getElementById('btn-iniciar-partida');
+                    if (btnJogar && !btnJogar.classList.contains('hidden')) {
+                        if (index === confirmar || index === start) {
+                            btnJogar.click();
+                            return;
                         }
                     }
                 }
-            } else {
-                if (window.soundManager) window.soundManager.playWrong();
+
+                if (jogoAtivo && document.getElementById('jogo-area') && !document.getElementById('jogo-area').classList.contains('hidden')) {
+                    const opcoes = document.querySelectorAll('.opcao:not([disabled])');
+                    if (opcoes.length === 0) return;
+
+                    if (index === dpadDireita || index === dpadBaixo) {
+                        opcaoSelecionadaGamepad = (opcaoSelecionadaGamepad + 1) % opcoes.length;
+                        destacarOpcaoGamepad(opcaoSelecionadaGamepad);
+                    } else if (index === dpadEsquerda || index === dpadCima) {
+                        opcaoSelecionadaGamepad = (opcaoSelecionadaGamepad - 1 + opcoes.length) % opcoes.length;
+                        destacarOpcaoGamepad(opcaoSelecionadaGamepad);
+                    }
+
+                    if (index === confirmar && opcaoSelecionadaGamepad >= 0 && opcaoSelecionadaGamepad < opcoes.length) {
+                        const btn = opcoes[opcaoSelecionadaGamepad];
+                        if (!btn.disabled) {
+                            btn.click();
+                        }
+                    }
+
+                    if (index === back) {
+                        const sairBtn = document.getElementById('btn-sair-aluno');
+                        if (sairBtn) sairBtn.click();
+                    }
+                }
+
+                if (index === cancelar || index === back) {
+                    const modalPerfil = document.getElementById('modal-perfil-aluno');
+                    if (modalPerfil && !modalPerfil.classList.contains('hidden')) {
+                        fecharPerfilAluno();
+                    }
+                    const modalLogin = document.getElementById('login-modal');
+                    if (modalLogin && !modalLogin.classList.contains('hidden')) {
+                        esconderModalLogin();
+                    }
+                }
+            },
+            onAxisMove: function(axis, value, gp) {
+                if (axis === 0 && jogoAtivo) {
+                    const opcoes = document.querySelectorAll('.opcao:not([disabled])');
+                    if (opcoes.length === 0) return;
+                    if (value > 0.5) {
+                        opcaoSelecionadaGamepad = (opcaoSelecionadaGamepad + 1) % opcoes.length;
+                        destacarOpcaoGamepad(opcaoSelecionadaGamepad);
+                    } else if (value < -0.5) {
+                        opcaoSelecionadaGamepad = (opcaoSelecionadaGamepad - 1 + opcoes.length) % opcoes.length;
+                        destacarOpcaoGamepad(opcaoSelecionadaGamepad);
+                    }
+                }
             }
-        }
-
-        botoes.forEach((btn, i) => {
-            const valor = parseInt(btn.innerText);
-            if (valor === respCerta) {
-                btn.style.background = '#27ae60';
-                btn.style.borderColor = '#2ecc71';
-                btn.style.transform = 'scale(1.05)';
-            } else if (i === idx && idx !== -1 && !acertou) {
-                btn.style.background = '#e74c3c';
-                btn.style.borderColor = '#e74c3c';
-                btn.style.transform = 'scale(0.95)';
-            }
-            btn.disabled = true;
-        });
-
-        const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
-        if (pontuacaoSpan) pontuacaoSpan.innerText = pontosPartida;
-
-        perguntaIdx++;
-        await atualizarPontuacaoParcial();
-
-        setTimeout(() => {
-            botoes.forEach(btn => {
-                btn.style.background = '';
-                btn.style.borderColor = '';
-                btn.style.transform = '';
-            });
-            proxima();
-        }, 600);
-    };
-
-    async function atualizarPontuacaoParcial() {
-        if (!alunoId || !estadoAtual) return;
-        const faseAtual = estadoAtual.fase;
-        const ref = window.firebaseService.getResultadosTempRef(faseAtual).child(alunoId);
-        await ref.set({
-            nome: alunoNome,
-            turma: alunoTurma,
-            pontos: pontosPartida,
-            acertos: acertosPartida,
-            tempo: tempoTotalPartida,
-            perguntas: perguntaIdx,
-            timestamp: Date.now()
-        });
-    }
-
-    function exibirModalResultadosSimples(posicao, pontos) {
-        let posEmoji = "";
-        if (posicao === 1) posEmoji = "🥇";
-        else if (posicao === 2) posEmoji = "🥈";
-        else if (posicao === 3) posEmoji = "🥉";
-        else posEmoji = "🏆";
-
-        if (window.soundManager) window.soundManager.playFanfare();
-
-        let htmlModal = `
-            <div class="modal-resultados" id="modal-pos-jogo" role="dialog" aria-modal="true" aria-labelledby="modal-pos-jogo-title">
-                <h2 id="modal-pos-jogo-title">🏁 RESULTADO DA PARTIDA</h2>
-                <div style="font-size: 48px; margin: 10px 0;" aria-hidden="true">${posEmoji}</div>
-                <div style="font-size: 28px; font-weight: bold;">${posicao}º lugar</div>
-                <hr style="border-color: var(--glass-border); margin: 15px 0;">
-                <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
-                <div>✅ Acertos: ${acertosPartida}/20</div>
-                <div>⏱️ Tempo médio: ${(tempoTotalPartida / 20).toFixed(1)} s/pergunta</div>
-                <div style="margin-top: 20px;">
-                    <button class="fechar" id="btn-fechar-modal">Fechar</button>
-                    ${estadoAtual?.status === 'em_andamento' && Date.now() < estadoAtual.fim ? '<button class="jogar-novamente" id="btn-jogar-novamente">🔄 Tentar melhorar</button>' : ''}
-                </div>
-            </div>`;
-        const modalExistente = document.getElementById('modal-pos-jogo');
-        if (modalExistente) modalExistente.remove();
-        document.body.insertAdjacentHTML('beforeend', htmlModal);
-        document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
-            document.getElementById('modal-pos-jogo')?.remove();
-        });
-        const btnNovamente = document.getElementById('btn-jogar-novamente');
-        if (btnNovamente) {
-            btnNovamente.addEventListener('click', () => {
-                document.getElementById('modal-pos-jogo')?.remove();
-                iniciarNovaPartida();
-            });
-        }
-        setTimeout(() => document.getElementById('btn-fechar-modal')?.focus(), 100);
-    }
-
-    async function iniciarNovaPartida() {
-        if (jogoAtivo) return;
-        if (estadoAtual.status !== 'em_andamento') { window.toast("Fase inativa!"); return; }
-        if (Date.now() >= estadoAtual.fim) { window.toast("Tempo esgotado!"); return; }
-        if (estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
-            window.toast("❌ Não classificado para esta fase!");
-            return;
-        }
-        if (window.soundManager) window.soundManager.playGameStart();
-
-        perguntas = obterPerguntas(estadoAtual.modalidade);
-        perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
-        document.getElementById('pontuacao-acumulada').innerText = "0";
-        jogoAtivo = true;
-        document.getElementById('jogo-area').classList.remove('hidden');
-        document.getElementById('aguardando-aluno').classList.add('hidden');
-        proxima();
-    }
-
-    async function finalizar() {
-        jogoAtivo = false;
-        document.getElementById('jogo-area').classList.add('hidden');
-        document.getElementById('aguardando-aluno').classList.remove('hidden');
-
-        const faseAtual = estadoAtual.fase;
-        const refResultado = window.firebaseService.getResultadosRef(faseAtual).child(alunoId);
-
-        const dadosPartida = {
-            pontos: pontosPartida,
-            acertos: acertosPartida,
-            tempo: tempoTotalPartida,
-            timestamp: Date.now()
         };
 
-        if (window.SyncService && window.SyncService.isOnline()) {
-            try {
-                await refResultado.transaction((currentData) => {
-                    const lista = currentData || [];
-                    lista.push(dadosPartida);
-                    return lista;
-                });
-                console.log('[Partida] Salva no Firebase com sucesso.');
-            } catch (error) {
-                console.warn('[Partida] Falha ao salvar no Firebase, salvando offline:', error);
-                window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
+        window.GamepadManager.on('onConnect', function() {
+            document.getElementById('gamepad-indicator').style.display = 'flex';
+        });
+        window.GamepadManager.on('onDisconnect', function() {
+            document.getElementById('gamepad-indicator').style.display = 'none';
+        });
+    }
+
+    function destacarOpcaoGamepad(index) {
+        const opcoes = document.querySelectorAll('.opcao:not([disabled])');
+        opcoes.forEach((btn, i) => {
+            if (i === index) {
+                btn.style.border = '3px solid #f39c12';
+                btn.style.boxShadow = '0 0 20px rgba(243, 156, 18, 0.5)';
+            } else {
+                btn.style.border = '';
+                btn.style.boxShadow = '';
             }
-        } else {
-            console.log('[Partida] Offline, salvando partida localmente.');
-            window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
-        }
-
-        await window.firebaseService.removerResultadosTemp(faseAtual, alunoId);
-
-        let posicao = 0;
-        if (window.SyncService && window.SyncService.isOnline()) {
-            const snapRanking = await window.firebaseService.getResultadosRef(faseAtual).once('value');
-            let rankingPosicoes = [];
-            if (snapRanking.val()) {
-                Object.keys(snapRanking.val()).forEach(key => {
-                    const partidas = snapRanking.val()[key];
-                    if (partidas && partidas.length) {
-                        const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-                        rankingPosicoes.push({ id: key, pontos: melhor.pontos });
-                    }
-                });
-            }
-            rankingPosicoes.sort((a,b) => b.pontos - a.pontos);
-            posicao = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
-        } else {
-            posicao = 0;
-        }
-
-        if (alunoId) {
-            const minhasPartidas = estadoAtual.resultados?.[faseAtual]?.[alunoId] || [];
-            const partidasAtualizadas = [...minhasPartidas, { acertos: acertosPartida, tempo: tempoTotalPartida }];
-            const dadosAluno = {
-                totalPartidas: partidasAtualizadas.length,
-                melhorAcertos: Math.max(...partidasAtualizadas.map(p => p.acertos)),
-                classificado: false,
-                faseMaxima: estadoAtual.fase,
-                campeao: false,
-                melhorTempoTotal: Math.min(...partidasAtualizadas.map(p => p.tempo))
-            };
-            window.achievementManager.verificarConquistas(alunoId, dadosAluno);
-        }
-
-        if (posicao > 0) {
-            atualizarPosicaoAluno(posicao);
-            exibirModalResultadosSimples(posicao, pontosPartida);
-        } else {
-            window.toast('📶 Partida salva. A posição será atualizada quando a conexão for restabelecida.');
-            exibirModalResultadosSimples('?', pontosPartida);
-            renderAluno();
-        }
+        });
     }
 
     // =================================================================
@@ -2623,7 +3055,7 @@
             }
         });
 
-        // --- EVENTOS DAS ABAS (acessíveis) ---
+        // --- EVENTOS DAS ABAS ---
         document.querySelectorAll('.tab-btn[role="tab"]').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 document.querySelectorAll('.tab-btn[role="tab"]').forEach(b => {
@@ -2646,6 +3078,7 @@
                     if (tabId === 'gerenciar-alunos') renderListaAlunosGerenciar();
                     if (tabId === 'gerenciar-turmas') renderListaTurmas();
                     if (tabId === 'dashboard') renderDashboard();
+                    if (tabId === 'notificacoes') renderPainelNotificacoes();
                 }
             });
         });
