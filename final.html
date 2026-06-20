@@ -119,11 +119,12 @@
             <button class="tab-btn" data-tab="ranking-turmas" role="tab" aria-selected="false" aria-controls="tab-ranking-turmas" id="tab-ranking-turmas-btn">🏆 Ranking por Turma</button>
             <button class="tab-btn" data-tab="estatisticas" role="tab" aria-selected="false" aria-controls="tab-estatisticas" id="tab-estatisticas-btn">📈 Estatísticas</button>
             <button class="tab-btn" data-tab="notificacoes" role="tab" aria-selected="false" aria-controls="tab-notificacoes" id="tab-notificacoes-btn">🎨 Efeitos Visuais</button>
+            <button class="tab-btn" data-tab="bonus" role="tab" aria-selected="false" aria-controls="tab-bonus" id="tab-bonus-btn">🎯 Bônus por Velocidade</button>
             <button class="tab-btn" data-tab="gerenciar-alunos" role="tab" aria-selected="false" aria-controls="tab-gerenciar-alunos" id="tab-gerenciar-alunos-btn">✏️ Gerenciar Alunos</button>
             <button class="tab-btn" data-tab="gerenciar-turmas" role="tab" aria-selected="false" aria-controls="tab-gerenciar-turmas" id="tab-gerenciar-turmas-btn">🏷️ Gerenciar Turmas</button>
         </div>
 
-        <!-- DASHBOARD (mantido igual) -->
+        <!-- DASHBOARD -->
         <div id="tab-dashboard" class="tab-content" role="tabpanel" aria-labelledby="tab-dashboard-btn">
             <h3>📊 Resumo da Competição</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
@@ -169,7 +170,7 @@
             </div>
         </div>
 
-        <!-- CONTROLE (mantido igual) -->
+        <!-- CONTROLE -->
         <div id="tab-controle" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-controle-btn">
             <div class="flex-grid">
                 <div>
@@ -218,7 +219,7 @@
             <div id="podium-container" class="status-box hidden"></div>
         </div>
 
-        <!-- RANKING GERAL (mantido igual) -->
+        <!-- RANKING GERAL -->
         <div id="tab-ranking-geral" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-ranking-geral-btn">
             <h3>📊 Classificação Geral - Todos os Participantes</h3>
             <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
@@ -228,7 +229,7 @@
             <div id="ranking-geral-container" class="status-box" aria-live="polite">Processando ranking geral...</div>
         </div>
 
-        <!-- RANKING POR FASE (mantido igual) -->
+        <!-- RANKING POR FASE -->
         <div id="tab-ranking-fase" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-ranking-fase-btn">
             <h3>Ranking por Fase (Atualização automática)</h3>
             <div class="fase-selector">
@@ -239,23 +240,23 @@
             <div id="ranking-parcial" class="status-box" aria-live="polite">Aguardando dados...</div>
         </div>
 
-        <!-- RANKING ACUMULADO (NOVO) -->
+        <!-- RANKING ACUMULADO -->
         <div id="tab-ranking-acumulado" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-ranking-acumulado-btn">
             <h3>🏆 Ranking Acumulado (Campeão Geral)</h3>
-            <p style="opacity:0.7; margin-bottom: 15px;">Pontos somados de <strong>todas as fases</strong>. O maior acumulado define o campeão da competição.</p>
+            <p style="opacity:0.7; margin-bottom: 15px;">Pontos somados de <strong>todas as fases</strong> com bônus aplicados. O maior acumulado define o campeão da competição.</p>
             <div id="ranking-acumulado-container" class="status-box" aria-live="polite">Carregando...</div>
         </div>
 
-        <!-- RANKING POR TURMAS (mantido igual) -->
+        <!-- RANKING POR TURMAS -->
         <div id="tab-ranking-turmas" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-ranking-turmas-btn">
-            <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
+            <h3>🏆 Ranking por Equipes (Média das melhores pontuações com bônus)</h3>
             <div style="margin-bottom: 15px;">
                 <button id="btn-atualizar-ranking-turmas" class="btn-secondary">🔄 Atualizar</button>
             </div>
             <div id="ranking-turmas-container" class="status-box" aria-live="polite">Carregando...</div>
         </div>
 
-        <!-- ESTATÍSTICAS (mantido igual) -->
+        <!-- ESTATÍSTICAS -->
         <div id="tab-estatisticas" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-estatisticas-btn">
             <h3>📈 Estatísticas da Competição</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
@@ -277,7 +278,7 @@
             </div>
         </div>
 
-        <!-- NOTIFICAÇÕES (mantido igual) -->
+        <!-- NOTIFICAÇÕES -->
         <div id="tab-notificacoes" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-notificacoes-btn">
             <h3>🎨 Configuração de Efeitos Visuais</h3>
             <p style="opacity:0.7; margin-bottom: 16px;">Configure as notificações que aparecem durante o jogo. O tempo de exibição <strong>não afeta</strong> o tempo de resposta do aluno.</p>
@@ -291,14 +292,123 @@
             <div id="notificacoes-status" style="margin-top: 15px; font-size: 14px; opacity: 0.7;"></div>
         </div>
 
-        <!-- GERENCIAR ALUNOS (mantido igual) -->
+        <!-- BÔNUS POR VELOCIDADE (NOVA ABA) -->
+        <div id="tab-bonus" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-bonus-btn">
+            <h3>🎯 Configuração de Bônus por Velocidade</h3>
+            <p style="opacity:0.7; margin-bottom: 16px;">Configure os bônus e punições aplicados com base na velocidade dos alunos.</p>
+            
+            <div class="bonus-config-panel" style="display: grid; gap: 20px;">
+                <!-- SISTEMA GERAL -->
+                <div class="status-box" style="padding: 20px;">
+                    <h4>⚙️ Sistema Geral</h4>
+                    <label style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="bonus-geral-ativo" checked>
+                        <span>✅ Ativar Sistema de Bônus</span>
+                    </label>
+                </div>
+
+                <!-- 1. BÔNUS POR CONSISTÊNCIA -->
+                <div class="status-box" style="padding: 20px;">
+                    <h4>📊 1. Bônus por Consistência (Delta de Velocidade)</h4>
+                    <label style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="bonus-delta-ativo" checked>
+                        <span>Ativar Bônus por Velocidade</span>
+                    </label>
+                    
+                    <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="escala-item" style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--glass-border);">
+                            <span>Delta ≥ 0.00 (melhorou/manteve)</span>
+                            <input type="number" id="bonus-delta-max" value="200" min="-500" max="500" style="width: 70px; padding: 4px; border-radius: 5px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);">
+                        </div>
+                        <div class="escala-item" style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--glass-border);">
+                            <span>Delta -0.01 a -0.10</span>
+                            <input type="number" id="bonus-delta-alto" value="100" min="-500" max="500" style="width: 70px; padding: 4px; border-radius: 5px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);">
+                        </div>
+                        <div class="escala-item" style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--glass-border);">
+                            <span>Delta -0.11 a -0.20</span>
+                            <input type="number" id="bonus-delta-medio" value="50" min="-500" max="500" style="width: 70px; padding: 4px; border-radius: 5px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);">
+                        </div>
+                        <div class="escala-item" style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--glass-border);">
+                            <span>Delta -0.21 a -0.50</span>
+                            <input type="number" id="bonus-delta-baixo" value="-100" min="-500" max="500" style="width: 70px; padding: 4px; border-radius: 5px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);">
+                        </div>
+                        <div class="escala-item" style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--glass-border);">
+                            <span>Delta < -0.50</span>
+                            <input type="number" id="bonus-delta-pessimo" value="-200" min="-500" max="500" style="width: 70px; padding: 4px; border-radius: 5px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);">
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label>Mínimo de Partidas para Bônus:</label>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <input type="range" id="min-partidas" min="1" max="20" value="5" style="flex: 1;">
+                                <span id="min-partidas-valor" style="min-width: 30px;">5</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label>Punição por menos partidas:</label>
+                            <input type="number" id="punicao-min-partidas" value="-100" min="-500" max="0" style="width: 100px; padding: 4px; border-radius: 5px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. BÔNUS DE MELHOR VOLTA DA FASE -->
+                <div class="status-box" style="padding: 20px;">
+                    <h4>🏁 2. Bônus de "Melhor Volta" (Recorde da Fase)</h4>
+                    <label style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="bonus-recorde-fase-ativo" checked>
+                        <span>Ativar Bônus de Melhor Volta</span>
+                    </label>
+                    <div style="margin-top: 10px; display: flex; align-items: center; gap: 15px;">
+                        <label>Valor do Bônus:</label>
+                        <input type="number" id="bonus-recorde-fase-valor" value="50" min="0" max="500" style="width: 80px; padding: 4px; border-radius: 5px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);">
+                        <label>
+                            <input type="checkbox" id="bonus-recorde-fase-unico" checked>
+                            Apenas o recordista
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3. BÔNUS DE RECORDE GLOBAL -->
+                <div class="status-box" style="padding: 20px;">
+                    <h4>🌍 3. Bônus de "Recorde Global" (Apenas na Fase 5)</h4>
+                    <label style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="bonus-recorde-global-ativo" checked>
+                        <span>Ativar Bônus de Recorde Global</span>
+                    </label>
+                    <div style="margin-top: 10px; display: flex; align-items: center; gap: 15px;">
+                        <label>Valor do Bônus:</label>
+                        <input type="number" id="bonus-recorde-global-valor" value="50" min="0" max="500" style="width: 80px; padding: 4px; border-radius: 5px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--glass-border);">
+                        <span style="opacity:0.6;">(Aplicado apenas na Fase 5)</span>
+                    </div>
+                </div>
+
+                <!-- BOTÕES -->
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button id="btn-salvar-bonus-config" class="btn-success">💾 Salvar Configurações</button>
+                    <button id="btn-reset-bonus-config" class="btn-warning">🔄 Resetar Padrões</button>
+                </div>
+                <div id="bonus-config-status" style="font-size: 14px; opacity: 0.7;"></div>
+            </div>
+
+            <!-- RECORDISTAS POR FASE -->
+            <div class="status-box" style="margin-top: 20px; padding: 20px;">
+                <h4>🏆 Recordistas por Fase</h4>
+                <div id="recordistas-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <p style="opacity:0.6;">Carregando recordistas...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- GERENCIAR ALUNOS -->
         <div id="tab-gerenciar-alunos" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-gerenciar-alunos-btn">
             <h3>📝 Gerenciar Alunos da Fase Atual</h3>
             <div id="lista-alunos-gerenciavel" class="status-box scroll-list" aria-live="polite">Carregando...</div>
             <button id="btn-atualizar-lista-alunos" class="btn-secondary">🔄 Recarregar</button>
         </div>
 
-        <!-- GERENCIAR TURMAS (mantido igual) -->
+        <!-- GERENCIAR TURMAS -->
         <div id="tab-gerenciar-turmas" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-gerenciar-turmas-btn">
             <h3>🏷️ Gerenciar Turmas Disponíveis</h3>
             <button id="btn-adicionar-turma" class="btn-success">➕ Adicionar Nova Turma</button>
@@ -306,7 +416,7 @@
         </div>
     </div>
 
-    <!-- TELA DO ALUNO (mantido igual) -->
+    <!-- TELA DO ALUNO -->
     <div id="tela-aluno" class="card hidden">
         <div class="header-actions">
             <h2 id="aluno-nome-display">Aluno</h2>
@@ -356,7 +466,7 @@
         <div id="podium-aluno-container" class="status-box hidden"></div>
     </div>
 
-    <!-- TELA DE TORCIDA (com botão para alternar ranking) -->
+    <!-- TELA DE TORCIDA -->
     <div id="tela-torcida" class="card hidden">
         <div class="header-actions">
             <h2>📺 RANKING EM TEMPO REAL <span class="live-badge" aria-hidden="true">AO VIVO</span></h2>
@@ -404,9 +514,233 @@
 <script src="js/utils/notifications.js"></script>
 
 <script>
-    // =================================================================
-    // INICIALIZAÇÃO
-    // =================================================================
+    // =============================================================
+    // BONUS-CONFIG.JS (EMBUTIDO)
+    // =============================================================
+    window.BONUS_CONFIG = {
+        // ========== CONFIGURAÇÕES GERAIS ==========
+        minimoPartidas: 5,
+        minimoPartidasMin: 1,
+        minimoPartidasMax: 20,
+        ativo: true,
+        deltaAtivo: true,
+        recordeFaseAtivo: true,
+        recordeGlobalAtivo: true,
+
+        // ========== ESCALA DE BÔNUS/PUNIÇÃO ==========
+        escalas: {
+            maximo: 200,    // Delta >= 0
+            alto: 100,      // Delta -0.01 a -0.10
+            medio: 50,      // Delta -0.11 a -0.20
+            baixo: -100,    // Delta -0.21 a -0.50
+            pessimo: -200   // Delta < -0.50
+        },
+        punicaoMinPartidas: -100,
+        recordeFaseValor: 50,
+        recordeGlobalValor: 50,
+        recordeFaseUnico: true,
+
+        salvar: function() {
+            try {
+                localStorage.setItem('bonus_config', JSON.stringify({
+                    minimoPartidas: this.minimoPartidas,
+                    ativo: this.ativo,
+                    deltaAtivo: this.deltaAtivo,
+                    recordeFaseAtivo: this.recordeFaseAtivo,
+                    recordeGlobalAtivo: this.recordeGlobalAtivo,
+                    escalas: this.escalas,
+                    punicaoMinPartidas: this.punicaoMinPartidas,
+                    recordeFaseValor: this.recordeFaseValor,
+                    recordeGlobalValor: this.recordeGlobalValor,
+                    recordeFaseUnico: this.recordeFaseUnico
+                }));
+            } catch (e) {
+                console.warn('Erro ao salvar configuração de bônus:', e);
+            }
+        },
+
+        carregar: function() {
+            try {
+                const salvo = localStorage.getItem('bonus_config');
+                if (salvo) {
+                    const config = JSON.parse(salvo);
+                    Object.keys(config).forEach(key => {
+                        if (key === 'escalas') {
+                            Object.keys(config.escalas).forEach(k => {
+                                if (this.escalas[k] !== undefined) {
+                                    this.escalas[k] = config.escalas[k];
+                                }
+                            });
+                        } else if (this[key] !== undefined) {
+                            this[key] = config[key];
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('Erro ao carregar configuração de bônus:', e);
+            }
+        },
+
+        calcularBonusDelta: function(quantidadePartidas, delta) {
+            if (!this.ativo || !this.deltaAtivo) return 0;
+            if (quantidadePartidas < this.minimoPartidas) {
+                return this.punicaoMinPartidas;
+            }
+            if (delta >= 0) return this.escalas.maximo;
+            const absDelta = Math.abs(delta);
+            if (absDelta <= 0.10) return this.escalas.alto;
+            if (absDelta <= 0.20) return this.escalas.medio;
+            if (absDelta <= 0.50) return this.escalas.baixo;
+            return this.escalas.pessimo;
+        }
+    };
+    window.BONUS_CONFIG.carregar();
+
+    // =============================================================
+    // BONUS-CALCULATOR.JS (EMBUTIDO)
+    // =============================================================
+    window.BonusCalculator = (function() {
+        const config = window.BONUS_CONFIG;
+
+        function calcularDelta(partidas) {
+            if (!partidas || partidas.length === 0) return 0;
+            
+            let recordeVelocidade = Infinity;
+            let somaTempo = 0;
+            let totalAcertos = 0;
+            let ultimaPartida = null;
+
+            partidas.forEach(p => {
+                if (p.acertos > 0 && p.tempo > 0) {
+                    const velocidade = p.tempo / p.acertos;
+                    if (velocidade < recordeVelocidade) {
+                        recordeVelocidade = velocidade;
+                    }
+                    somaTempo += p.tempo;
+                    totalAcertos += p.acertos;
+                    ultimaPartida = p;
+                }
+            });
+
+            if (recordeVelocidade === Infinity || totalAcertos === 0 || !ultimaPartida) {
+                return 0;
+            }
+
+            const velocidadeMedia = ultimaPartida.tempo / ultimaPartida.acertos;
+            const delta = (velocidadeMedia - recordeVelocidade) / recordeVelocidade;
+            return delta;
+        }
+
+        function calcularBonusConsistencia(partidas) {
+            if (!partidas || partidas.length === 0) return 0;
+            const delta = calcularDelta(partidas);
+            return config.calcularBonusDelta(partidas.length, delta);
+        }
+
+        function getRecordeFase(alunoId, fase) {
+            return window.firebaseService.getCopaRef().child('recordeFase').child(fase.toString()).once('value');
+        }
+
+        function setRecordeFase(alunoId, fase, velocidade) {
+            return window.firebaseService.getCopaRef().child('recordeFase').child(fase.toString()).set({
+                alunoId: alunoId,
+                velocidade: velocidade,
+                timestamp: Date.now()
+            });
+        }
+
+        function getRecordeGlobal() {
+            return window.firebaseService.getCopaRef().child('recordeGlobal').once('value');
+        }
+
+        function setRecordeGlobal(alunoId, fase, velocidade) {
+            return window.firebaseService.getCopaRef().child('recordeGlobal').set({
+                alunoId: alunoId,
+                fase: fase,
+                velocidade: velocidade,
+                timestamp: Date.now()
+            });
+        }
+
+        function getMelhorVelocidadeFase(resultadosFase, alunoId) {
+            const partidas = resultadosFase[alunoId] || [];
+            let melhor = Infinity;
+            partidas.forEach(p => {
+                if (p.acertos > 0 && p.tempo > 0) {
+                    const v = p.tempo / p.acertos;
+                    if (v < melhor) melhor = v;
+                }
+            });
+            return melhor === Infinity ? null : melhor;
+        }
+
+        function getMelhorVelocidadeGlobal(resultados) {
+            let melhor = Infinity;
+            let detentor = null;
+            let faseDetentor = null;
+            for (let fase = 1; fase <= 5; fase++) {
+                const resFase = resultados[fase] || {};
+                for (let id in resFase) {
+                    const partidas = resFase[id] || [];
+                    partidas.forEach(p => {
+                        if (p.acertos > 0 && p.tempo > 0) {
+                            const v = p.tempo / p.acertos;
+                            if (v < melhor) {
+                                melhor = v;
+                                detentor = id;
+                                faseDetentor = fase;
+                            }
+                        }
+                    });
+                }
+            }
+            return melhor === Infinity ? null : { alunoId: detentor, velocidade: melhor, fase: faseDetentor };
+        }
+
+        function calcularBonusTotalPartida(partidas, alunoId, fase, resultados) {
+            let bonusTotal = 0;
+            let bonusConsistencia = 0;
+            let bonusRecordeFase = 0;
+            let bonusRecordeGlobal = 0;
+
+            // 1. Bônus de Consistência
+            if (config.ativo && config.deltaAtivo) {
+                bonusConsistencia = calcularBonusConsistencia(partidas);
+                bonusTotal += bonusConsistencia;
+            }
+
+            // 2. Bônus de Recorde da Fase (apenas no final da fase)
+            // Será aplicado quando a fase for finalizada
+
+            // 3. Bônus de Recorde Global (apenas na Fase 5)
+            // Será aplicado no final da Fase 5
+
+            return {
+                bonusConsistencia,
+                bonusRecordeFase,
+                bonusRecordeGlobal,
+                bonusTotal,
+                delta: calcularDelta(partidas)
+            };
+        }
+
+        return {
+            calcularDelta,
+            calcularBonusConsistencia,
+            calcularBonusTotalPartida,
+            getRecordeFase,
+            setRecordeFase,
+            getRecordeGlobal,
+            setRecordeGlobal,
+            getMelhorVelocidadeFase,
+            getMelhorVelocidadeGlobal,
+            getConfig: () => config
+        };
+    })();
+
+    // =============================================================
+    // INICIALIZAÇÃO FIREBASE E CÓDIGO PRINCIPAL
+    // =============================================================
     firebase.initializeApp(window.firebaseConfig);
     const db = firebase.database();
 
@@ -426,7 +760,7 @@
     let torcidaId = null;
     let faseTorcidaSelecionada = 1;
     let atualizandoSeletorTorcida = false;
-    let torcidaModoAcumulado = false; // alterna entre fase e acumulado
+    let torcidaModoAcumulado = false;
 
     let intervaloIndividualSegundos = 4;
     let intervaloEquipesSegundos = 60;
@@ -457,6 +791,23 @@
         const horas = Math.floor(minutos / 60);
         const mins = minutos % 60;
         return `${horas}h ${mins}min`;
+    }
+
+    function formatarDelta(delta) {
+        if (delta === undefined || delta === null || isNaN(delta)) return '--';
+        return (delta * 100).toFixed(1) + '%';
+    }
+
+    function getBonusIcon(bonus) {
+        if (bonus > 0) return '🟢';
+        if (bonus < 0) return '🔴';
+        return '⚪';
+    }
+
+    function getBonusClass(bonus) {
+        if (bonus > 0) return 'bonus-positivo';
+        if (bonus < 0) return 'bonus-negativo';
+        return 'bonus-zero';
     }
 
     // =================================================================
@@ -574,11 +925,12 @@
                     index: totalPartidas
                 });
                 totalPartidas++;
-                somaPontos += p.pontos || 0;
+                const pontuacaoFinal = p.pontuacaoFinal || p.pontos || 0;
+                somaPontos += pontuacaoFinal;
                 totalAcertos += p.acertos || 0;
                 somaTempo += p.tempo || 0;
                 somaAcertos += p.acertos || 0;
-                if ((p.pontos || 0) > melhorPontos) melhorPontos = p.pontos || 0;
+                if (pontuacaoFinal > melhorPontos) melhorPontos = pontuacaoFinal;
             });
         }
 
@@ -599,14 +951,14 @@
         if (chartPerfilEvolucao) chartPerfilEvolucao.destroy();
 
         const labels = todasPartidas.map((_, idx) => `#${idx+1}`);
-        const dataPontos = todasPartidas.map(p => p.pontos || 0);
+        const dataPontos = todasPartidas.map(p => p.pontuacaoFinal || p.pontos || 0);
 
         chartPerfilEvolucao = new Chart(ctxEvolucao, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Pontuação',
+                    label: 'Pontuação Final',
                     data: dataPontos,
                     borderColor: '#f39c12',
                     backgroundColor: 'rgba(243, 156, 18, 0.1)',
@@ -820,6 +1172,8 @@
             if (!estadoAtual.resultados) estadoAtual.resultados = metadata.resultados || {};
             if (!estadoAtual.participantes) estadoAtual.participantes = metadata.participantes || {};
             if (!estadoAtual.classificados) estadoAtual.classificados = metadata.classificados || {};
+            if (!estadoAtual.recordeFase) estadoAtual.recordeFase = metadata.recordeFase || {};
+            if (!estadoAtual.recordeGlobal) estadoAtual.recordeGlobal = metadata.recordeGlobal || {};
 
             if (meuTipo === 'aluno' && alunoId) {
                 const faseAnterior = sessionStorage.getItem('ultimaFase');
@@ -845,6 +1199,7 @@
                 }
                 popularSelectFases();
                 renderListaTurmas();
+                renderRecordistas();
             }
         });
 
@@ -859,6 +1214,9 @@
                 if (meuTipo === 'professor' || meuTipo === 'projecao') atualizarUI();
                 if (meuTipo === 'aluno' && !document.getElementById('modal-perfil-aluno').classList.contains('hidden')) {
                     renderPerfilAluno();
+                }
+                if (meuTipo === 'professor') {
+                    renderRecordistas();
                 }
             });
         }
@@ -978,10 +1336,11 @@
             for (let id in resFase) {
                 const partidas = resFase[id];
                 if (!partidas || partidas.length === 0) continue;
-                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                const melhor = partidas.sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
                 const nome = partFase[id]?.nome || 'Anônimo';
-                if (!pontuacoesPorAluno.has(id) || melhor.pontos > pontuacoesPorAluno.get(id).pontos) {
-                    pontuacoesPorAluno.set(id, { nome, pontos: melhor.pontos });
+                const pontuacao = melhor.pontuacaoFinal || melhor.pontos || 0;
+                if (!pontuacoesPorAluno.has(id) || pontuacao > pontuacoesPorAluno.get(id).pontos) {
+                    pontuacoesPorAluno.set(id, { nome, pontos: pontuacao });
                 }
             }
         }
@@ -1003,12 +1362,12 @@
             for (let id in resFase) {
                 const partidas = resFase[id];
                 if (!partidas || partidas.length === 0) continue;
-                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                const melhor = partidas.sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
                 let turma = partFase[id]?.turma || '?';
                 if (!turmasMap.has(turma)) {
                     turmasMap.set(turma, { soma: 0, count: 0 });
                 }
-                turmasMap.get(turma).soma += melhor.pontos;
+                turmasMap.get(turma).soma += (melhor.pontuacaoFinal || melhor.pontos || 0);
                 turmasMap.get(turma).count++;
             }
         }
@@ -1051,7 +1410,7 @@
                 if (!partidas || partidas.length === 0) continue;
                 const ultima = partidas[partidas.length - 1];
                 const nome = partFase[id]?.nome || 'Anônimo';
-                ultimos.push({ nome, pontos: ultima.pontos, timestamp: ultima.timestamp || Date.now() });
+                ultimos.push({ nome, pontos: ultima.pontuacaoFinal || ultima.pontos || 0, timestamp: ultima.timestamp || Date.now() });
             }
         }
         ultimos.sort((a,b) => b.timestamp - a.timestamp);
@@ -1093,13 +1452,13 @@
     }
 
     // =================================================================
-    // RANKING DA FASE (com Tempo Total)
+    // RANKING DA FASE (COM BÔNUS)
     // =================================================================
     let cacheRanking = {};
 
     async function renderRanking(faseNum, containerId, tipo = 'individual', exibirClassificacao = false) {
         if (!estadoAtual) return;
-        const cacheKey = `${faseNum}_${tipo}_${exibirClassificacao}`;
+        const cacheKey = `${faseNum}_${tipo}_${exibirClassificacao}_bonus`;
         if (cacheRanking[cacheKey] && (Date.now() - cacheRanking[cacheKey].timestamp < 2000)) {
             document.getElementById(containerId).innerHTML = cacheRanking[cacheKey].html;
             return;
@@ -1123,6 +1482,17 @@
             const snapFinal = await window.firebaseService.getResultadosRef(faseNum).once('value');
             const snapTemp = await window.firebaseService.getResultadosTempRef(faseNum).once('value');
             const participantes = estadoAtual.participantes?.[faseNum] || {};
+
+            // Buscar recorde da fase
+            const snapRecordeFase = await window.firebaseService.getCopaRef().child('recordeFase').child(faseNum.toString()).once('value');
+            const recordeFase = snapRecordeFase.val() || null;
+
+            // Buscar recorde global (apenas para fase 5)
+            let recordeGlobal = null;
+            if (faseNum === 5) {
+                const snapRecordeGlobal = await window.firebaseService.getCopaRef().child('recordeGlobal').once('value');
+                recordeGlobal = snapRecordeGlobal.val() || null;
+            }
 
             const statusMap = new Map();
             if (snapTemp.val()) {
@@ -1158,33 +1528,16 @@
             }
 
             const todasFases = estadoAtual.resultados || {};
-            const recordeVelocMap = new Map();
-            for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
-                const resultados = todasFases[fase] || {};
-                for (let id in resultados) {
-                    const partidas = resultados[id];
-                    if (!partidas || partidas.length === 0) continue;
-                    for (let partida of partidas) {
-                        if (partida.acertos > 0) {
-                            const vel = partida.tempo / partida.acertos;
-                            if (!recordeVelocMap.has(id) || vel < recordeVelocMap.get(id)) {
-                                recordeVelocMap.set(id, vel);
-                            }
-                        }
-                    }
-                }
-            }
 
             let mapa = new Map();
             if (snapFinal.val()) {
                 Object.keys(snapFinal.val()).forEach(key => {
                     const partidas = snapFinal.val()[key];
                     if (partidas && partidas.length) {
-                        const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
+                        const melhor = [...partidas].sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
                         let info = participantes[key];
                         const nome = info?.nome || melhor.nome || "Anônimo";
                         const turma = info?.turma || melhor.turma || "?";
-                        const velocidadeAtual = (melhor.acertos > 0) ? (melhor.tempo / melhor.acertos) : null;
                         const statusInfo = statusMap.get(key) || { status: 'aguardando', progresso: 0 };
                         let progresso = statusInfo.progresso;
                         if (statusInfo.status === 'aguardando') progresso = 0;
@@ -1192,19 +1545,37 @@
                         const ultimaPosicao = ultimaPartida?.posicao || null;
                         let tempoTotalFase = 0;
                         partidas.forEach(p => { tempoTotalFase += p.tempo || 0; });
+                        
+                        // Calcular velocidade
+                        let melhorVelocidade = null;
+                        partidas.forEach(p => {
+                            if (p.acertos > 0 && p.tempo > 0) {
+                                const v = p.tempo / p.acertos;
+                                if (melhorVelocidade === null || v < melhorVelocidade) {
+                                    melhorVelocidade = v;
+                                }
+                            }
+                        });
+
                         mapa.set(key, {
                             nome, turma,
-                            pontos: melhor.pontos,
-                            acertos: melhor.acertos,
-                            tempo: melhor.tempo,
+                            pontos: melhor.pontos || 0,
+                            pontuacaoFinal: melhor.pontuacaoFinal || melhor.pontos || 0,
+                            bonusConsistencia: melhor.bonusConsistencia || 0,
+                            bonusRecordeFase: melhor.bonusRecordeFase || 0,
+                            bonusRecordeGlobal: melhor.bonusRecordeGlobal || 0,
+                            bonusTotal: melhor.bonusTotal || 0,
+                            delta: melhor.delta || 0,
+                            acertos: melhor.acertos || 0,
+                            tempo: melhor.tempo || 0,
                             tempoTotal: tempoTotalFase,
                             perguntas: 20,
                             isTemp: false,
                             partidas: partidas.length,
-                            velocidadeAtual: velocidadeAtual,
                             status: statusInfo.status,
                             progresso: progresso,
-                            ultimaPosicao: ultimaPosicao
+                            ultimaPosicao: ultimaPosicao,
+                            velocidade: melhorVelocidade
                         });
                     }
                 });
@@ -1215,32 +1586,36 @@
                     const existente = mapa.get(key);
                     const statusInfo = statusMap.get(key) || { status: 'em_jogo', progresso: data.perguntas || 0 };
                     if (!existente) {
-                        const velocidadeAtual = (data.acertos > 0) ? (data.tempo / data.acertos) : null;
                         mapa.set(key, {
                             nome: data.nome,
                             turma: data.turma,
-                            pontos: data.pontos,
-                            acertos: data.acertos,
-                            tempo: data.tempo,
+                            pontos: data.pontos || 0,
+                            pontuacaoFinal: data.pontos || 0,
+                            bonusConsistencia: 0,
+                            bonusRecordeFase: 0,
+                            bonusRecordeGlobal: 0,
+                            bonusTotal: 0,
+                            delta: 0,
+                            acertos: data.acertos || 0,
+                            tempo: data.tempo || 0,
                             tempoTotal: data.tempo || 0,
                             perguntas: data.perguntas || 0,
                             isTemp: true,
                             partidas: 1,
-                            velocidadeAtual: velocidadeAtual,
                             status: statusInfo.status,
                             progresso: statusInfo.progresso,
-                            ultimaPosicao: null
+                            ultimaPosicao: null,
+                            velocidade: data.acertos > 0 && data.tempo > 0 ? data.tempo / data.acertos : null
                         });
                     } else {
                         existente.partidas = (existente.partidas || 0) + 1;
-                        if (data.pontos > existente.pontos) {
-                            existente.pontos = data.pontos;
-                            existente.acertos = data.acertos;
-                            existente.tempo = data.tempo;
+                        if ((data.pontos || 0) > existente.pontos) {
+                            existente.pontos = data.pontos || 0;
+                            existente.pontuacaoFinal = data.pontos || 0;
+                            existente.acertos = data.acertos || 0;
+                            existente.tempo = data.tempo || 0;
                             existente.perguntas = data.perguntas || 0;
                             existente.isTemp = true;
-                            const velAtual = (data.acertos > 0) ? (data.tempo / data.acertos) : null;
-                            if (velAtual !== null) existente.velocidadeAtual = velAtual;
                         }
                         if (statusInfo) {
                             existente.status = statusInfo.status;
@@ -1249,16 +1624,55 @@
                         if (data.tempo) {
                             existente.tempoTotal = (existente.tempoTotal || 0) + data.tempo;
                         }
+                        if (data.acertos > 0 && data.tempo > 0) {
+                            const v = data.tempo / data.acertos;
+                            if (existente.velocidade === null || v < existente.velocidade) {
+                                existente.velocidade = v;
+                            }
+                        }
                     }
                 });
             }
 
             let listaComId = [];
             for (let [id, dados] of mapa.entries()) {
-                dados.recordeVelocidade = recordeVelocMap.get(id) || null;
                 listaComId.push({ id, ...dados });
             }
-            listaComId.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
+
+            // Verificar recorde da fase e aplicar bônus
+            if (recordeFase && window.BONUS_CONFIG.ativo && window.BONUS_CONFIG.recordeFaseAtivo) {
+                const recordistaId = recordeFase.alunoId;
+                const bonusValor = window.BONUS_CONFIG.recordeFaseValor || 50;
+                listaComId.forEach(item => {
+                    if (item.id === recordistaId && !item.isTemp) {
+                        item.bonusRecordeFase = bonusValor;
+                        item.pontuacaoFinal = (item.pontos || 0) + (item.bonusConsistencia || 0) + bonusValor;
+                    }
+                });
+            }
+
+            // Verificar recorde global (apenas fase 5)
+            if (faseNum === 5 && recordeGlobal && window.BONUS_CONFIG.ativo && window.BONUS_CONFIG.recordeGlobalAtivo) {
+                const globalId = recordeGlobal.alunoId;
+                const bonusValor = window.BONUS_CONFIG.recordeGlobalValor || 50;
+                listaComId.forEach(item => {
+                    if (item.id === globalId && !item.isTemp) {
+                        item.bonusRecordeGlobal = bonusValor;
+                        item.pontuacaoFinal = (item.pontos || 0) + (item.bonusConsistencia || 0) + (item.bonusRecordeFase || 0) + bonusValor;
+                    }
+                });
+            }
+
+            // Recalcular pontuação final para todos
+            listaComId.forEach(item => {
+                if (!item.isTemp) {
+                    item.bonusTotal = (item.bonusConsistencia || 0) + (item.bonusRecordeFase || 0) + (item.bonusRecordeGlobal || 0);
+                    item.pontuacaoFinal = (item.pontos || 0) + item.bonusTotal;
+                }
+            });
+
+            // Ordenar por pontuação final
+            listaComId.sort((a,b) => b.pontuacaoFinal - a.pontuacaoFinal || b.acertos - a.acertos || a.tempo - b.tempo);
 
             if (listaComId.length === 0) {
                 container.innerHTML = '<p>⏳ Nenhum resultado registrado ainda. Aguarde os primeiros jogadores...</p>';
@@ -1266,61 +1680,26 @@
                 return;
             }
 
-            for (let i = 0; i < listaComId.length; i++) {
-                const jogador = listaComId[i];
-                if (jogador.ultimaPosicao === null) {
-                    const snapPartidas = await window.firebaseService.getResultadosRef(faseNum).child(jogador.id).once('value');
-                    const partidas = snapPartidas.val() || [];
-                    if (partidas.length > 0) {
-                        const ultima = partidas[partidas.length - 1];
-                        if (ultima.posicao !== undefined) {
-                            jogador.ultimaPosicao = ultima.posicao;
-                        }
-                    }
-                }
-            }
-
-            let posProjetadaMap = new Map();
-            if (estadoAtual.status !== 'finalizado') {
-                let projecaoValida = false;
-                for (let item of listaComId) {
-                    const perguntasResp = item.perguntas || 0;
-                    if (perguntasResp > 0) {
-                        const ritmo = item.pontos / perguntasResp;
-                        const proj = ritmo * 20;
-                        item.projecao = proj;
-                        if (proj > 0) projecaoValida = true;
-                    } else {
-                        item.projecao = 0;
-                    }
-                }
-                if (projecaoValida) {
-                    let itensComProj = listaComId.filter(item => item.projecao > 0);
-                    itensComProj.sort((a,b) => b.projecao - a.projecao);
-                    itensComProj.forEach((item, idx) => {
-                        posProjetadaMap.set(item.id, idx + 1);
-                    });
-                }
-            }
-
-            const maxPontos = listaComId[0].pontos;
+            const maxPontos = listaComId[0].pontuacaoFinal || 0;
             const vagas = window.VAGAS_POR_FASE[faseNum] || 30;
             const mostrarClassificacao = (containerId === 'ranking-torcida-container' && !torcidaModoAcumulado) ? true : exibirClassificacao;
+
+            // Detectar se é fase 5 para mostrar recorde global
+            const isFase5 = (faseNum === 5);
 
             let html = `<table class="ranking-table"><thead><tr>
                 <th>Pos</th>
                 <th>Nome</th>
-                <th>Ameaça</th>
-                <th>Pontuação</th>
-                <th>Delta Líder</th>
-                <th>Tempo Total</th>
-                <th>Veloc.<br>Média</th>
-                <th>Veloc.<br>Recorde</th>
-                <th>Δ Veloc.</th>
-                <th>Progresso</th>
-                ${mostrarClassificacao ? '<th>Classificação</th>' : ''}
-                <th>Partidas</th>
                 <th>Turma</th>
+                <th>Pontuação</th>
+                <th>Δ Veloc.</th>
+                <th>Bônus Consist.</th>
+                <th>🏁 Melhor Volta</th>
+                ${isFase5 ? '<th>🌍 Recorde Global</th>' : ''}
+                <th>Bônus Total</th>
+                <th>Pont. Final</th>
+                <th>Partidas</th>
+                ${mostrarClassificacao ? '<th>Classificação</th>' : ''}
              </tr></thead><tbody>`;
 
             const alunoLogadoId = (meuTipo === 'aluno') ? alunoId : null;
@@ -1335,56 +1714,22 @@
                     else if (posAtual > posAnterior) classePos = 'posicao-desceu';
                 }
 
-                const deltaLider = maxPontos - j.pontos;
+                const deltaLider = maxPontos - j.pontuacaoFinal;
                 const deltaText = deltaLider === 0 ? "🏆 Líder" : `+${deltaLider}`;
 
-                let velocidadeAtualStr = "-", velocidadeAtualNum = null;
-                if (j.velocidadeAtual !== null && j.velocidadeAtual !== undefined) {
-                    velocidadeAtualNum = j.velocidadeAtual;
-                    velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
-                } else if (j.acertos > 0 && j.tempo > 0) {
-                    velocidadeAtualNum = j.tempo / j.acertos;
-                    velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
+                const bonusConsistencia = j.bonusConsistencia || 0;
+                const bonusConsistenciaStr = bonusConsistencia !== 0 ? `${getBonusIcon(bonusConsistencia)} ${bonusConsistencia}` : '0';
+                const bonusConsistenciaClass = getBonusClass(bonusConsistencia);
+
+                const bonusFaseStr = j.bonusRecordeFase > 0 ? `✅ +${j.bonusRecordeFase}` : '❌';
+                const bonusGlobalStr = j.bonusRecordeGlobal > 0 ? `✅ +${j.bonusRecordeGlobal}` : '❌';
+
+                let rowClass = '';
+                if (alunoLogadoId && j.id === alunoLogadoId) {
+                    rowClass = 'destaque-aluno';
                 }
 
-                let recordeStr = "-";
-                let recordeNum = j.recordeVelocidade;
-                if (recordeNum !== null && recordeNum > 0) {
-                    recordeStr = recordeNum.toFixed(2) + " s";
-                }
-
-                let deltaVelocidadeHtml = "";
-                if (velocidadeAtualNum !== null && recordeNum !== null && recordeNum > 0) {
-                    const diff = velocidadeAtualNum - recordeNum;
-                    const diffAbs = Math.abs(diff);
-                    const diffStr = diffAbs.toFixed(2);
-                    let icon = "", classe = "";
-                    if (diff < -0.01) { icon = "🟢"; classe = "veloc-melhor"; }
-                    else if (diff > 0.01) { icon = "🔴"; classe = "veloc-pior"; }
-                    else { icon = "⚪"; classe = "veloc-igual"; }
-                    deltaVelocidadeHtml = `<span class="${classe}">${icon} ${diffStr}s</span>`;
-                } else {
-                    deltaVelocidadeHtml = "—";
-                }
-
-                let ameacaHtml = "";
-                const posProjetada = posProjetadaMap.get(j.id);
-                if (posProjetada !== undefined && posProjetada < posAtual) {
-                    ameacaHtml = posProjetada.toString();
-                } else {
-                    ameacaHtml = "—";
-                }
-                if ((j.perguntas || 0) === 0) ameacaHtml = "—";
-
-                let progressoHtml = "";
-                if (j.status === 'em_jogo') {
-                    progressoHtml = `${j.progresso}/20`;
-                } else if (j.status === 'finalizado') {
-                    progressoHtml = `✅ Finalizado`;
-                } else {
-                    progressoHtml = `—`;
-                }
-                if (!j.status) progressoHtml = `—`;
+                const deltaFormatado = formatarDelta(j.delta);
 
                 let colunaStatus = "";
                 if (mostrarClassificacao) {
@@ -1396,25 +1741,19 @@
                     }
                 }
 
-                let rowClass = '';
-                if (alunoLogadoId && j.id === alunoLogadoId) {
-                    rowClass = 'destaque-aluno';
-                }
-
                 html += `<tr class="${rowClass}">
                     <td class="${classePos}">${idx+1}º</td>
                     <td>${window.escapeHtml(j.nome)}</td>
-                    <td>${ameacaHtml}</td>
-                    <td>${j.pontos}</td>
-                    <td>${deltaText}</td>
-                    <td>${formatarTempo(j.tempoTotal)}</td>
-                    <td>${velocidadeAtualStr}</td>
-                    <td>${recordeStr}</td>
-                    <td>${deltaVelocidadeHtml}</td>
-                    <td>${progressoHtml}</td>
-                    ${mostrarClassificacao ? colunaStatus : ''}
-                    <td>${j.partidas}</td>
                     <td>${window.escapeHtml(j.turma)}</td>
+                    <td>${j.pontos || 0}</td>
+                    <td>${deltaFormatado}</td>
+                    <td class="${bonusConsistenciaClass}">${bonusConsistenciaStr}</td>
+                    <td>${bonusFaseStr}</td>
+                    ${isFase5 ? `<td>${bonusGlobalStr}</td>` : ''}
+                    <td>${j.bonusTotal || 0}</td>
+                    <td><strong>${j.pontuacaoFinal || j.pontos || 0}</strong></td>
+                    <td>${j.partidas || 0}</td>
+                    ${mostrarClassificacao ? colunaStatus : ''}
                  </tr>`;
             }
             html += '</tbody></table>';
@@ -1436,7 +1775,7 @@
     }
 
     // =================================================================
-    // RANKING ACUMULADO (NOVO)
+    // RANKING ACUMULADO (COM BÔNUS)
     // =================================================================
     async function renderRankingAcumulado(containerId) {
         if (!estadoAtual) return;
@@ -1457,7 +1796,6 @@
 
             let lista = [];
             for (let id in acumulado) {
-                // Buscar nome e turma do aluno (em qualquer fase)
                 let nome = 'Anônimo', turma = '?';
                 for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
                     const partFase = participantesPorFase[fase] || {};
@@ -1467,7 +1805,6 @@
                         break;
                     }
                 }
-                // Se não encontrou, tenta buscar nos resultados
                 if (nome === 'Anônimo') {
                     for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
                         const resFase = resultados[fase] || {};
@@ -1496,8 +1833,8 @@
             let html = `<table class="ranking-table"><thead><tr>
                 <th>Pos</th>
                 <th>Nome</th>
-                <th>Pontos Acumulados</th>
                 <th>Turma</th>
+                <th>Pontos Acumulados</th>
              </tr></thead><tbody>`;
 
             lista.forEach((item, idx) => {
@@ -1505,8 +1842,8 @@
                 html += `<tr>
                     <td>${posAtual}º</td>
                     <td>${window.escapeHtml(item.nome)}</td>
-                    <td>${item.acumulado}</td>
                     <td>${window.escapeHtml(item.turma)}</td>
+                    <td><strong>${item.acumulado}</strong></td>
                  </tr>`;
             });
             html += '</tbody></table>';
@@ -1523,7 +1860,7 @@
     }
 
     // =================================================================
-    // RANKING POR TURMAS
+    // RANKING POR TURMAS (COM BÔNUS)
     // =================================================================
     async function renderRankingTurmas(containerId) {
         if (!estadoAtual) return;
@@ -1534,7 +1871,7 @@
             for (let id in resultados) {
                 const partidas = resultados[id];
                 if (!partidas || partidas.length === 0) continue;
-                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                const melhor = partidas.sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
                 let turma = participantes[id]?.turma;
                 if (!turma && fase > 1 && estadoAtual.participantes?.[fase-1]?.[id]) {
                     turma = estadoAtual.participantes[fase-1][id].turma;
@@ -1557,8 +1894,9 @@
                     });
                 }
                 let turmaData = turmasMap.get(turma);
-                if (!turmaData.alunos.has(id) || melhor.pontos > turmaData.alunos.get(id).pontos) {
-                    turmaData.alunos.set(id, { pontos: melhor.pontos, nome: nome });
+                const pontuacao = melhor.pontuacaoFinal || melhor.pontos || 0;
+                if (!turmaData.alunos.has(id) || pontuacao > turmaData.alunos.get(id).pontos) {
+                    turmaData.alunos.set(id, { pontos: pontuacao, nome: nome });
                 }
                 turmaData.totalPartidas += partidas.length;
             }
@@ -1617,7 +1955,7 @@
     }
 
     // =================================================================
-    // RANKING GERAL (mantido igual)
+    // RANKING GERAL (COM BÔNUS)
     // =================================================================
     function renderRankingGeral() {
         if (!estadoAtual) return;
@@ -1631,7 +1969,7 @@
             for (let id in resultadosFase) {
                 const partidas = resultadosFase[id];
                 if (!partidas || partidas.length === 0) continue;
-                const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
+                const melhor = [...partidas].sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
                 let nome = participantesFase[id]?.nome;
                 if (!nome && fase > 1 && participantesPorFase[fase-1]?.[id]) nome = participantesPorFase[fase-1][id].nome;
                 if (!nome) nome = "Anônimo";
@@ -1643,29 +1981,31 @@
                     partidas.forEach(p => { tempoTotal += p.tempo || 0; });
                     jogadores.set(id, {
                         id, nome, turma,
-                        melhorPontuacao: melhor.pontos,
-                        melhorAcertos: melhor.acertos,
-                        melhorTempo: melhor.tempo,
+                        melhorPontuacao: melhor.pontuacaoFinal || melhor.pontos || 0,
+                        melhorAcertos: melhor.acertos || 0,
+                        melhorTempo: melhor.tempo || 0,
                         tempoTotal: tempoTotal,
                         ultimaFase: fase,
                         faseEliminacao: null,
                         totalPartidas: partidas.length,
-                        melhorVelocidade: null
+                        melhorVelocidade: null,
+                        melhorBonus: melhor.bonusTotal || 0
                     });
                 } else {
                     const existente = jogadores.get(id);
                     if (fase > existente.ultimaFase) {
                         existente.ultimaFase = fase;
-                        existente.melhorPontuacao = melhor.pontos;
-                        existente.melhorAcertos = melhor.acertos;
-                        existente.melhorTempo = melhor.tempo;
+                        existente.melhorPontuacao = melhor.pontuacaoFinal || melhor.pontos || 0;
+                        existente.melhorAcertos = melhor.acertos || 0;
+                        existente.melhorTempo = melhor.tempo || 0;
+                        existente.melhorBonus = melhor.bonusTotal || 0;
                     }
                     existente.totalPartidas += partidas.length;
                     partidas.forEach(p => { existente.tempoTotal += p.tempo || 0; });
                 }
                 const jogador = jogadores.get(id);
                 for (let partida of partidas) {
-                    if (partida.acertos > 0) {
+                    if (partida.acertos > 0 && partida.tempo > 0) {
                         const velocidade = partida.tempo / partida.acertos;
                         if (jogador.melhorVelocidade === null || velocidade < jogador.melhorVelocidade) {
                             jogador.melhorVelocidade = velocidade;
@@ -1689,6 +2029,7 @@
             <th>Pos</th>
             <th>Nome</th>
             <th>Melhor Pontuação</th>
+            <th>Melhor Bônus</th>
             <th>Tempo Total</th>
             <th>Melhor Velocidade</th>
             <th>Fase Máxima</th>
@@ -1702,10 +2043,12 @@
             else if (r.ultimaFase === 5) status = "🏆 Finalista";
             else status += ` (Classificado para Fase ${r.ultimaFase+1})`;
             const vel = r.melhorVelocidade !== null ? r.melhorVelocidade.toFixed(2) + " s" : "-";
+            const bonusStr = r.melhorBonus !== 0 ? `${getBonusIcon(r.melhorBonus)} ${r.melhorBonus}` : '0';
             html += `<tr>
                 <td>${i+1}º</td>
                 <td>${window.escapeHtml(r.nome)}</td>
                 <td>${r.melhorPontuacao}</td>
+                <td>${bonusStr}</td>
                 <td>${formatarTempo(r.tempoTotal)}</td>
                 <td>${vel}</td>
                 <td>${r.ultimaFase}</td>
@@ -1720,6 +2063,99 @@
             row.classList.add('animate-stagger');
             row.style.animationDelay = `${0.05 * (index + 1)}s`;
         });
+    }
+
+    // =================================================================
+    // RECORDISTAS POR FASE
+    // =================================================================
+    function renderRecordistas() {
+        const container = document.getElementById('recordistas-container');
+        if (!container || meuTipo !== 'professor') return;
+
+        const recordeFase = estadoAtual?.recordeFase || {};
+        const participantes = estadoAtual?.participantes || {};
+        const resultados = estadoAtual?.resultados || {};
+
+        let html = '';
+        for (let fase = 1; fase <= 5; fase++) {
+            const recFase = recordeFase[fase] || null;
+            let info = '';
+            if (recFase) {
+                let nome = 'Desconhecido';
+                let turma = '?';
+                // Buscar nome do aluno
+                for (let f = 1; f <= 5; f++) {
+                    if (participantes[f] && participantes[f][recFase.alunoId]) {
+                        nome = participantes[f][recFase.alunoId].nome || 'Desconhecido';
+                        turma = participantes[f][recFase.alunoId].turma || '?';
+                        break;
+                    }
+                }
+                if (nome === 'Desconhecido') {
+                    // Tentar buscar nos resultados
+                    for (let f = 1; f <= 5; f++) {
+                        if (resultados[f] && resultados[f][recFase.alunoId] && resultados[f][recFase.alunoId].length > 0) {
+                            nome = resultados[f][recFase.alunoId][0].nome || 'Desconhecido';
+                            turma = resultados[f][recFase.alunoId][0].turma || '?';
+                            break;
+                        }
+                    }
+                }
+                const bonusValor = window.BONUS_CONFIG.recordeFaseValor || 50;
+                info = `
+                    <div style="padding: 10px; background: var(--bg-card); border-radius: 10px; border: 1px solid var(--glass-border);">
+                        <strong>🏁 Fase ${fase}</strong><br>
+                        <span>${window.escapeHtml(nome)}</span><br>
+                        <span style="font-size: 12px; opacity: 0.7;">${window.escapeHtml(turma)}</span><br>
+                        <span style="color: #f39c12;">⚡ ${recFase.velocidade ? recFase.velocidade.toFixed(2) : '--'}s por acerto</span><br>
+                        <span style="color: #2ecc71;">✅ +${bonusValor} pts (Melhor Volta)</span>
+                    </div>
+                `;
+            } else {
+                info = `
+                    <div style="padding: 10px; background: var(--bg-card); border-radius: 10px; border: 1px solid var(--glass-border); opacity: 0.5;">
+                        <strong>🏁 Fase ${fase}</strong><br>
+                        <span style="font-size: 12px;">Nenhum recorde ainda</span>
+                    </div>
+                `;
+            }
+            html += info;
+        }
+
+        // Recorde Global
+        const recGlobal = estadoAtual?.recordeGlobal || null;
+        if (recGlobal) {
+            let nome = 'Desconhecido';
+            let turma = '?';
+            for (let f = 1; f <= 5; f++) {
+                if (participantes[f] && participantes[f][recGlobal.alunoId]) {
+                    nome = participantes[f][recGlobal.alunoId].nome || 'Desconhecido';
+                    turma = participantes[f][recGlobal.alunoId].turma || '?';
+                    break;
+                }
+            }
+            if (nome === 'Desconhecido') {
+                for (let f = 1; f <= 5; f++) {
+                    if (resultados[f] && resultados[f][recGlobal.alunoId] && resultados[f][recGlobal.alunoId].length > 0) {
+                        nome = resultados[f][recGlobal.alunoId][0].nome || 'Desconhecido';
+                        turma = resultados[f][recGlobal.alunoId][0].turma || '?';
+                        break;
+                    }
+                }
+            }
+            const bonusValor = window.BONUS_CONFIG.recordeGlobalValor || 50;
+            html += `
+                <div style="padding: 10px; background: var(--bg-card); border-radius: 10px; border: 2px solid #f39c12; grid-column: 1 / -1;">
+                    <strong style="color: #f39c12;">🌍 RECORDE GLOBAL</strong><br>
+                    <span>${window.escapeHtml(nome)}</span><br>
+                    <span style="font-size: 12px; opacity: 0.7;">${window.escapeHtml(turma)}</span><br>
+                    <span style="color: #f39c12;">⚡ ${recGlobal.velocidade ? recGlobal.velocidade.toFixed(2) : '--'}s por acerto</span><br>
+                    <span style="color: #2ecc71;">✅ +${bonusValor} pts (Recorde Global - Fase 5)</span>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
     }
 
     // =================================================================
@@ -1902,19 +2338,21 @@
             for (let id in resultadosFase) {
                 const partidas = resultadosFase[id];
                 if (!partidas || partidas.length === 0) continue;
-                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                const melhor = partidas.sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
                 let nome = participantesFase[id]?.nome || "Anônimo";
                 let turma = participantesFase[id]?.turma || "?";
                 if (!alunosMap.has(id)) {
-                    alunosMap.set(id, { nome, turma, fases: {} });
+                    alunosMap.set(id, { nome, turma, fases: {}, bonus: {} });
                 }
-                alunosMap.get(id).fases[fase] = melhor.pontos;
+                alunosMap.get(id).fases[fase] = melhor.pontuacaoFinal || melhor.pontos || 0;
+                alunosMap.get(id).bonus[fase] = melhor.bonusTotal || 0;
             }
         }
         for (let [id, info] of alunosMap) {
             const linha = { Nome: info.nome, Turma: info.turma };
             for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
                 linha[`Fase ${fase}`] = info.fases[fase] || 0;
+                linha[`Bônus F${fase}`] = info.bonus[fase] || 0;
             }
             dados.push(linha);
         }
@@ -1948,11 +2386,14 @@
         doc.text('Relatório - Copa Tabuada CEIB 2026', 14, 22);
         doc.setFontSize(10);
         doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 30);
-        const colunas = ['Pos', 'Nome', 'Turma', ...Array.from({length: window.TOTAL_FASES}, (_,i) => `F${i+1}`)];
+        const colunas = ['Pos', 'Nome', 'Turma', ...Array.from({length: window.TOTAL_FASES}, (_,i) => `F${i+1}`), ...Array.from({length: window.TOTAL_FASES}, (_,i) => `Bônus F${i+1}`)];
         const linhas = dados.map((d, idx) => {
             const linha = [idx+1, d.Nome, d.Turma];
             for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
                 linha.push(d[`Fase ${fase}`] || 0);
+            }
+            for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+                linha.push(d[`Bônus F${fase}`] || 0);
             }
             return linha;
         });
@@ -1960,7 +2401,7 @@
             head: [colunas],
             body: linhas,
             startY: 35,
-            styles: { fontSize: 8 },
+            styles: { fontSize: 7 },
             headStyles: { fillColor: [41, 128, 185], textColor: 255 },
             alternateRowStyles: { fillColor: [240, 240, 240] }
         });
@@ -1969,12 +2410,11 @@
     }
 
     // =================================================================
-    // PÓDIO FINAL (baseado no acumulado)
+    // PÓDIO FINAL (baseado no acumulado com bônus)
     // =================================================================
     function renderPodioFinal(containerId) {
         if (!estadoAtual || estadoAtual.fase !== 5) return;
 
-        // Buscar acumulado do Firebase
         window.firebaseService.getCopaRef().child('acumulado').once('value').then((snap) => {
             const acumulado = snap.val() || {};
             const participantesPorFase = estadoAtual.participantes || {};
@@ -2010,7 +2450,7 @@
             if (!container) return;
             if (top5.length === 0) { container.classList.add('hidden'); return; }
 
-            let podiumHtml = '<h3>🏆 PÓDIO FINAL (Pontos Acumulados) - COPA TABUADA CEIB 2026 🏆</h3><div class="podium">';
+            let podiumHtml = '<h3>🏆 PÓDIO FINAL (Pontos Acumulados com Bônus) - COPA TABUADA CEIB 2026 🏆</h3><div class="podium">';
             const medals = ['🥇', '🥈', '🥉', '4º', '5º'];
             top5.forEach((jogador, idx) => {
                 podiumHtml += `<div class="podium-card podium-${idx+1}">
@@ -2019,31 +2459,6 @@
                            </div>`;
             });
             podiumHtml += '</div>';
-            // Adiciona também o campeão da fase 5 (finalista)
-            const resultadosFase5 = estadoAtual.resultados?.[5] || {};
-            const participantesFase5 = estadoAtual.participantes?.[5] || {};
-            let listaFase5 = [];
-            for (let id in resultadosFase5) {
-                const partidas = resultadosFase5[id];
-                if (partidas && partidas.length) {
-                    const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
-                    let nome = participantesFase5[id]?.nome;
-                    if (!nome && estadoAtual.participantes?.[4]?.[id]) nome = estadoAtual.participantes[4][id].nome;
-                    if (!nome) nome = "Anônimo";
-                    let turma = participantesFase5[id]?.turma;
-                    if (!turma && estadoAtual.participantes?.[4]?.[id]) turma = estadoAtual.participantes[4][id].turma;
-                    if (!turma) turma = "?";
-                    listaFase5.push({ nome, turma, pontos: melhor.pontos });
-                }
-            }
-            listaFase5.sort((a,b) => b.pontos - a.pontos);
-            if (listaFase5.length > 0) {
-                const campeaoFase5 = listaFase5[0];
-                podiumHtml += `<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border);">
-                    <h4>🏆 Campeão da Fase Final</h4>
-                    <div style="font-size: 24px;">${window.escapeHtml(campeaoFase5.nome)} (${window.escapeHtml(campeaoFase5.turma)}) — ${campeaoFase5.pontos} pts</div>
-                </div>`;
-            }
             container.innerHTML = podiumHtml;
             container.classList.remove('hidden');
         }).catch(err => {
@@ -2076,6 +2491,7 @@
         await window.firebaseService.removerParticipantes(faseAtual);
         await window.firebaseService.removerResultadosTemp(faseAtual);
         await window.firebaseService.removerClassificados(faseAtual);
+        await window.firebaseService.getCopaRef().child('recordeFase').child(faseAtual.toString()).remove();
         await window.firebaseService.updateCopa({ status: 'aguardando', fim: 0, tempoRestantePausa: null });
         window.toast(`✅ Fase ${faseAtual} resetada!`);
         atualizarUI();
@@ -2083,19 +2499,152 @@
     async function avancarFase() {
         const faseAtual = estadoAtual.fase;
         if (faseAtual > window.TOTAL_FASES) { window.toast("Competição já finalizada!"); return; }
-        const res = estadoAtual.resultados?.[faseAtual] || {};
+        
+        // =============================================================
+        // APLICAR BÔNUS DE RECORDE DA FASE
+        // =============================================================
+        const resultadosFase = estadoAtual.resultados?.[faseAtual] || {};
+        const participantesFase = estadoAtual.participantes?.[faseAtual] || {};
+        
+        // Encontrar o recordista da fase (melhor velocidade)
+        let recordistaId = null;
+        let melhorVelocidade = Infinity;
+        
+        for (let id in resultadosFase) {
+            const partidas = resultadosFase[id] || [];
+            let melhorVel = Infinity;
+            let totalAcertos = 0;
+            let totalTempo = 0;
+            partidas.forEach(p => {
+                if (p.acertos > 0 && p.tempo > 0) {
+                    const v = p.tempo / p.acertos;
+                    if (v < melhorVel) melhorVel = v;
+                    totalAcertos += p.acertos;
+                    totalTempo += p.tempo;
+                }
+            });
+            // Calcular velocidade média da melhor partida (ou a que tem mais acertos)
+            if (totalAcertos > 0 && totalTempo > 0) {
+                const media = totalTempo / totalAcertos;
+                // Usar a melhor velocidade da fase (mais rápida)
+                if (melhorVel < melhorVelocidade) {
+                    melhorVelocidade = melhorVel;
+                    recordistaId = id;
+                }
+            }
+        }
+
+        // Salvar recorde da fase no Firebase
+        if (recordistaId && melhorVelocidade !== Infinity) {
+            await window.firebaseService.getCopaRef().child('recordeFase').child(faseAtual.toString()).set({
+                alunoId: recordistaId,
+                velocidade: melhorVelocidade,
+                timestamp: Date.now()
+            });
+            
+            // Atualizar recorde global se for a fase 5
+            if (faseAtual === 5 && window.BONUS_CONFIG.ativo && window.BONUS_CONFIG.recordeGlobalAtivo) {
+                // Buscar recorde global anterior
+                const snapGlobal = await window.firebaseService.getCopaRef().child('recordeGlobal').once('value');
+                const recordeGlobal = snapGlobal.val();
+                if (!recordeGlobal || melhorVelocidade < recordeGlobal.velocidade) {
+                    await window.firebaseService.getCopaRef().child('recordeGlobal').set({
+                        alunoId: recordistaId,
+                        fase: faseAtual,
+                        velocidade: melhorVelocidade,
+                        timestamp: Date.now()
+                    });
+                }
+            }
+        }
+
+        // =============================================================
+        // ATUALIZAR BÔNUS NAS PARTIDAS DA FASE
+        // =============================================================
+        const bonusConsistenciaConfig = window.BONUS_CONFIG;
+        const bonusRecordeFaseValor = bonusConsistenciaConfig.recordeFaseValor || 50;
+        const bonusRecordeGlobalValor = bonusConsistenciaConfig.recordeGlobalValor || 50;
+
+        // Buscar recorde global para a fase 5
+        let recordeGlobalData = null;
+        if (faseAtual === 5) {
+            const snapGlobal = await window.firebaseService.getCopaRef().child('recordeGlobal').once('value');
+            recordeGlobalData = snapGlobal.val();
+        }
+
+        for (let id in resultadosFase) {
+            const partidas = resultadosFase[id] || [];
+            if (partidas.length === 0) continue;
+
+            // Encontrar a melhor partida (com pontuação final já incluída)
+            const partidasComBonus = partidas.map(p => {
+                // Calcular bônus de consistência (delta)
+                const delta = window.BonusCalculator.calcularDelta(partidas);
+                const bonusConsistencia = window.BonusCalculator.calcularBonusConsistencia(partidas);
+                
+                // Bônus de recorde da fase (apenas para o recordista)
+                let bonusRecordeFase = 0;
+                if (bonusConsistenciaConfig.ativo && bonusConsistenciaConfig.recordeFaseAtivo) {
+                    if (id === recordistaId) {
+                        bonusRecordeFase = bonusRecordeFaseValor;
+                    }
+                }
+
+                // Bônus de recorde global (apenas fase 5)
+                let bonusRecordeGlobal = 0;
+                if (faseAtual === 5 && bonusConsistenciaConfig.ativo && bonusConsistenciaConfig.recordeGlobalAtivo) {
+                    if (recordeGlobalData && id === recordeGlobalData.alunoId) {
+                        bonusRecordeGlobal = bonusRecordeGlobalValor;
+                    }
+                }
+
+                const bonusTotal = (bonusConsistencia || 0) + bonusRecordeFase + bonusRecordeGlobal;
+                const pontuacaoFinal = (p.pontos || 0) + bonusTotal;
+
+                return {
+                    ...p,
+                    delta: delta || 0,
+                    bonusConsistencia: bonusConsistencia || 0,
+                    bonusRecordeFase: bonusRecordeFase,
+                    bonusRecordeGlobal: bonusRecordeGlobal,
+                    bonusTotal: bonusTotal,
+                    pontuacaoFinal: pontuacaoFinal
+                };
+            });
+
+            // Salvar as partidas atualizadas com bônus
+            await window.firebaseService.getResultadosRef(faseAtual).child(id).set(partidasComBonus);
+
+            // Atualizar acumulado com a pontuação final da melhor partida
+            const melhor = partidasComBonus.sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
+            const pontuacaoAcumulada = melhor.pontuacaoFinal || melhor.pontos || 0;
+            await window.firebaseService.getCopaRef().child('acumulado').child(id).transaction((current) => {
+                return (current || 0) + pontuacaoAcumulada;
+            });
+        }
+
+        // =============================================================
+        // CLASSIFICAR ALUNOS
+        // =============================================================
         let lista = [];
-        for (let id in res) {
-            const partidas = res[id];
+        for (let id in resultadosFase) {
+            const partidas = resultadosFase[id] || [];
             if (partidas?.length) {
-                const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
-                lista.push({ id, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo });
+                const melhor = partidas.sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
+                lista.push({ 
+                    id, 
+                    pontos: melhor.pontuacaoFinal || melhor.pontos || 0, 
+                    acertos: melhor.acertos || 0, 
+                    tempo: melhor.tempo || 0 
+                });
             }
         }
         lista.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
         const vagas = window.VAGAS_POR_FASE[faseAtual];
         const classificadosIds = lista.slice(0, vagas).map(l => l.id);
         await window.firebaseService.getClassificadosRef(faseAtual).set(classificadosIds);
+
+        // Preparar participantes para próxima fase
         const participantesAtual = estadoAtual.participantes?.[faseAtual] || {};
         const participantesProxima = {};
         for (let id of classificadosIds) {
@@ -2109,9 +2658,12 @@
                 }
             }
         }
-        if (Object.keys(participantesProxima).length > 0) await window.firebaseService.getParticipantesRef(faseAtual+1).set(participantesProxima);
+        if (Object.keys(participantesProxima).length > 0) {
+            await window.firebaseService.getParticipantesRef(faseAtual+1).set(participantesProxima);
+        }
         await window.firebaseService.removerResultadosTemp(faseAtual);
 
+        // Verificar conquistas
         for (let id of classificadosIds) {
             const partidas = estadoAtual.resultados?.[faseAtual]?.[id] || [];
             const dadosAluno = {
@@ -2136,6 +2688,7 @@
             forcarAlunosParaMenu();
             return;
         }
+
         await window.firebaseService.updateCopa({ fase: faseAtual + 1, status: 'aguardando', fim: 0, tempoRestantePausa: null });
         window.toast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados para a fase ${faseAtual+1}.`);
         if (meuTipo === 'projecao') {
@@ -2203,8 +2756,8 @@
             Object.keys(snapFinal.val()).forEach(key => {
                 const partidas = snapFinal.val()[key];
                 if (partidas && partidas.length) {
-                    const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-                    lista.push({ id: key, pontos: melhor.pontos });
+                    const melhor = partidas.sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
+                    lista.push({ id: key, pontos: melhor.pontuacaoFinal || melhor.pontos || 0 });
                 }
             });
         }
@@ -2352,10 +2905,13 @@
             });
         }
         const minhasPartidas = estadoAtual.resultados?.[estadoAtual.fase]?.[alunoId] || [];
-        const melhor = minhasPartidas.length ? Math.max(...minhasPartidas.map(p => p.pontos)) : 0;
+        const melhor = minhasPartidas.length ? Math.max(...minhasPartidas.map(p => p.pontuacaoFinal || p.pontos || 0)) : 0;
         document.getElementById('aluno-melhor-score').innerText = melhor;
         let histHtml = '<ul style="list-style:none; padding:0;">';
-        minhasPartidas.slice().reverse().forEach(p => histHtml += `<li style="padding:4px 0;">🏆 Pontos: ${p.pontos} | Acertos: ${p.acertos}</li>`);
+        minhasPartidas.slice().reverse().forEach(p => {
+            const bonusStr = p.bonusTotal ? ` (${getBonusIcon(p.bonusTotal)} +${p.bonusTotal})` : '';
+            histHtml += `<li style="padding:4px 0;">🏆 Pontos: ${p.pontuacaoFinal || p.pontos || 0}${bonusStr} | Acertos: ${p.acertos}</li>`;
+        });
         histHtml += '</ul>';
         document.getElementById('historico-aluno').innerHTML = histHtml;
 
@@ -2474,6 +3030,10 @@
             if (tabAcumulado && !tabAcumulado.classList.contains('hidden')) {
                 renderRankingAcumulado('ranking-acumulado-container');
             }
+            const tabBonus = document.getElementById('tab-bonus');
+            if (tabBonus && !tabBonus.classList.contains('hidden')) {
+                renderPainelBonus();
+            }
         } else if (meuTipo === 'aluno') renderAluno();
         else if (meuTipo === 'projecao') {
             if (estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) {
@@ -2503,6 +3063,94 @@
                 if (!intervaloTorcidaIndividual && !intervaloTorcidaEquipes) iniciarAtualizacaoTorcida();
             }
         }
+    }
+
+    // =================================================================
+    // PAINEL DE BÔNUS (PROFESSOR)
+    // =================================================================
+    function renderPainelBonus() {
+        const config = window.BONUS_CONFIG;
+        if (!config) return;
+
+        // Carregar valores do config
+        document.getElementById('bonus-geral-ativo').checked = config.ativo;
+        document.getElementById('bonus-delta-ativo').checked = config.deltaAtivo;
+        document.getElementById('bonus-recorde-fase-ativo').checked = config.recordeFaseAtivo;
+        document.getElementById('bonus-recorde-global-ativo').checked = config.recordeGlobalAtivo;
+        
+        document.getElementById('bonus-delta-max').value = config.escalas.maximo;
+        document.getElementById('bonus-delta-alto').value = config.escalas.alto;
+        document.getElementById('bonus-delta-medio').value = config.escalas.medio;
+        document.getElementById('bonus-delta-baixo').value = config.escalas.baixo;
+        document.getElementById('bonus-delta-pessimo').value = config.escalas.pessimo;
+        
+        document.getElementById('min-partidas').value = config.minimoPartidas;
+        document.getElementById('min-partidas-valor').innerText = config.minimoPartidas;
+        document.getElementById('punicao-min-partidas').value = config.punicaoMinPartidas;
+        
+        document.getElementById('bonus-recorde-fase-valor').value = config.recordeFaseValor;
+        document.getElementById('bonus-recorde-fase-unico').checked = config.recordeFaseUnico;
+        document.getElementById('bonus-recorde-global-valor').value = config.recordeGlobalValor;
+
+        // Eventos dos sliders
+        document.getElementById('min-partidas').addEventListener('input', function() {
+            document.getElementById('min-partidas-valor').innerText = this.value;
+        });
+
+        // Salvar configurações
+        document.getElementById('btn-salvar-bonus-config').onclick = function() {
+            config.ativo = document.getElementById('bonus-geral-ativo').checked;
+            config.deltaAtivo = document.getElementById('bonus-delta-ativo').checked;
+            config.recordeFaseAtivo = document.getElementById('bonus-recorde-fase-ativo').checked;
+            config.recordeGlobalAtivo = document.getElementById('bonus-recorde-global-ativo').checked;
+            
+            config.escalas.maximo = parseInt(document.getElementById('bonus-delta-max').value) || 200;
+            config.escalas.alto = parseInt(document.getElementById('bonus-delta-alto').value) || 100;
+            config.escalas.medio = parseInt(document.getElementById('bonus-delta-medio').value) || 50;
+            config.escalas.baixo = parseInt(document.getElementById('bonus-delta-baixo').value) || -100;
+            config.escalas.pessimo = parseInt(document.getElementById('bonus-delta-pessimo').value) || -200;
+            
+            config.minimoPartidas = parseInt(document.getElementById('min-partidas').value) || 5;
+            config.punicaoMinPartidas = parseInt(document.getElementById('punicao-min-partidas').value) || -100;
+            
+            config.recordeFaseValor = parseInt(document.getElementById('bonus-recorde-fase-valor').value) || 50;
+            config.recordeFaseUnico = document.getElementById('bonus-recorde-fase-unico').checked;
+            config.recordeGlobalValor = parseInt(document.getElementById('bonus-recorde-global-valor').value) || 50;
+
+            config.salvar();
+            window.toast('💾 Configurações de bônus salvas!');
+            document.getElementById('bonus-config-status').innerText = '✅ Configurações salvas com sucesso!';
+            
+            // Atualizar recordistas
+            renderRecordistas();
+        };
+
+        // Resetar padrões
+        document.getElementById('btn-reset-bonus-config').onclick = function() {
+            if (confirm('Resetar configurações de bônus para os valores padrão?')) {
+                const padrao = {
+                    minimoPartidas: 5,
+                    ativo: true,
+                    deltaAtivo: true,
+                    recordeFaseAtivo: true,
+                    recordeGlobalAtivo: true,
+                    escalas: { maximo: 200, alto: 100, medio: 50, baixo: -100, pessimo: -200 },
+                    punicaoMinPartidas: -100,
+                    recordeFaseValor: 50,
+                    recordeGlobalValor: 50,
+                    recordeFaseUnico: true
+                };
+                Object.assign(config, padrao);
+                config.salvar();
+                renderPainelBonus();
+                renderRecordistas();
+                window.toast('🔄 Configurações resetadas para os padrões.');
+                document.getElementById('bonus-config-status').innerText = '🔄 Configurações resetadas para os padrões.';
+            }
+        };
+
+        document.getElementById('bonus-config-status').innerText = '📊 Configurações carregadas.';
+        renderRecordistas();
     }
 
     // =================================================================
@@ -2754,7 +3402,7 @@
         });
     }
 
-    function exibirModalResultadosSimples(posicao, pontos) {
+    function exibirModalResultadosSimples(posicao, pontos, bonus = null) {
         let posEmoji = "";
         if (posicao === 1) posEmoji = "🥇";
         else if (posicao === 2) posEmoji = "🥈";
@@ -2762,6 +3410,22 @@
         else posEmoji = "🏆";
 
         if (window.soundManager) window.soundManager.playFanfare();
+
+        let bonusHtml = '';
+        if (bonus && bonus.bonusTotal !== 0) {
+            const icon = bonus.bonusTotal > 0 ? '🟢' : '🔴';
+            const cor = bonus.bonusTotal > 0 ? 'var(--text-success)' : 'var(--text-danger)';
+            bonusHtml = `
+                <hr style="border-color: var(--glass-border); margin: 10px 0;">
+                <div style="font-size: 18px;">
+                    <div>📊 Bônus de Consistência: <span style="color: ${cor};">${icon} ${bonus.bonusConsistencia || 0}</span></div>
+                    <div>🏁 Melhor Volta: <span style="color: var(--text-highlight);">${bonus.bonusRecordeFase > 0 ? '✅ +' + bonus.bonusRecordeFase : '❌'}</span></div>
+                    ${bonus.bonusRecordeGlobal !== undefined ? `<div>🌍 Recorde Global: <span style="color: var(--text-highlight);">${bonus.bonusRecordeGlobal > 0 ? '✅ +' + bonus.bonusRecordeGlobal : '❌'}</span></div>` : ''}
+                    <div style="font-size: 20px; font-weight: bold; margin-top: 5px;">Total Bônus: ${bonus.bonusTotal}</div>
+                    <div style="font-size: 24px; font-weight: bold; color: var(--text-highlight);">🏆 Pontuação Final: ${pontos + bonus.bonusTotal}</div>
+                </div>
+            `;
+        }
 
         let htmlModal = `
             <div class="modal-resultados" id="modal-pos-jogo" role="dialog" aria-modal="true" aria-labelledby="modal-pos-jogo-title">
@@ -2772,6 +3436,7 @@
                 <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
                 <div>✅ Acertos: ${acertosPartida}/20</div>
                 <div>⏱️ Tempo médio: ${(tempoTotalPartida / 20).toFixed(1)} s/pergunta</div>
+                ${bonusHtml}
                 <div style="margin-top: 20px;">
                     <button class="fechar" id="btn-fechar-modal">Fechar</button>
                     ${estadoAtual?.status === 'em_andamento' && Date.now() < estadoAtual.fim ? '<button class="jogar-novamente" id="btn-jogar-novamente">🔄 Tentar melhorar</button>' : ''}
@@ -2826,14 +3491,34 @@
         const faseAtual = estadoAtual.fase;
         const refResultado = window.firebaseService.getResultadosRef(faseAtual).child(alunoId);
 
+        // Calcular bônus
+        const partidasExistentes = estadoAtual.resultados?.[faseAtual]?.[alunoId] || [];
+        const todasPartidas = [...partidasExistentes, { pontos: pontosPartida, acertos: acertosPartida, tempo: tempoTotalPartida }];
+        
+        const delta = window.BonusCalculator.calcularDelta(todasPartidas);
+        const bonusConsistencia = window.BonusCalculator.calcularBonusConsistencia(todasPartidas);
+
+        // Verificar se o aluno é o recordista da fase (será aplicado ao final da fase)
+        // Por enquanto, apenas salvamos os dados
+        const bonusRecordeFase = 0; // Será aplicado quando a fase for finalizada
+        const bonusRecordeGlobal = 0; // Será aplicado na fase 5
+        const bonusTotal = (bonusConsistencia || 0) + bonusRecordeFase + bonusRecordeGlobal;
+        const pontuacaoFinal = pontosPartida + bonusTotal;
+
         const dadosPartida = {
             pontos: pontosPartida,
             acertos: acertosPartida,
             tempo: tempoTotalPartida,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            delta: delta || 0,
+            bonusConsistencia: bonusConsistencia || 0,
+            bonusRecordeFase: bonusRecordeFase,
+            bonusRecordeGlobal: bonusRecordeGlobal,
+            bonusTotal: bonusTotal,
+            pontuacaoFinal: pontuacaoFinal
         };
 
-        // Salvar no Firebase (online ou offline)
+        // Salvar no Firebase
         if (window.SyncService && window.SyncService.isOnline()) {
             try {
                 await refResultado.transaction((currentData) => {
@@ -2845,7 +3530,7 @@
                 
                 // Atualizar acumulado
                 await window.firebaseService.getCopaRef().child('acumulado').child(alunoId).transaction((current) => {
-                    return (current || 0) + dadosPartida.pontos;
+                    return (current || 0) + pontuacaoFinal;
                 });
                 
             } catch (error) {
@@ -2867,8 +3552,8 @@
                 Object.keys(snapRanking.val()).forEach(key => {
                     const partidas = snapRanking.val()[key];
                     if (partidas && partidas.length) {
-                        const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-                        rankingPosicoes.push({ id: key, pontos: melhor.pontos });
+                        const melhor = partidas.sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
+                        rankingPosicoes.push({ id: key, pontos: melhor.pontuacaoFinal || melhor.pontos || 0 });
                     }
                 });
             }
@@ -2892,12 +3577,19 @@
             window.achievementManager.verificarConquistas(alunoId, dadosAluno);
         }
 
+        const bonusInfo = {
+            bonusConsistencia: bonusConsistencia || 0,
+            bonusRecordeFase: 0,
+            bonusRecordeGlobal: 0,
+            bonusTotal: bonusTotal
+        };
+
         if (posicao > 0) {
             atualizarPosicaoAluno(posicao);
-            exibirModalResultadosSimples(posicao, pontosPartida);
+            exibirModalResultadosSimples(posicao, pontosPartida, bonusInfo);
         } else {
             window.toast('📶 Partida salva. A posição será atualizada quando a conexão for restabelecida.');
-            exibirModalResultadosSimples('?', pontosPartida);
+            exibirModalResultadosSimples('?', pontosPartida, bonusInfo);
             renderAluno();
         }
     }
@@ -3017,14 +3709,14 @@
             for (let id in resultadosFase) {
                 const partidas = resultadosFase[id];
                 if (!partidas || partidas.length === 0) continue;
-                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                const melhor = partidas.sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
                 let turma = participantesFase[id]?.turma;
                 if (!turma && fase > 1 && participantes[fase-1]?.[id]) turma = participantes[fase-1][id].turma;
                 if (!turma) turma = "?";
                 if (!turmasMap.has(turma)) {
                     turmasMap.set(turma, { soma: 0, count: 0 });
                 }
-                turmasMap.get(turma).soma += melhor.pontos;
+                turmasMap.get(turma).soma += (melhor.pontuacaoFinal || melhor.pontos || 0);
                 turmasMap.get(turma).count++;
             }
         }
@@ -3084,8 +3776,8 @@
             for (let id in resultadosFase) {
                 const partidas = resultadosFase[id];
                 if (!partidas || partidas.length === 0) continue;
-                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-                lista.push({ id, pontos: melhor.pontos, nome: participantesFase[id]?.nome || "Anônimo" });
+                const melhor = partidas.sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
+                lista.push({ id, pontos: melhor.pontuacaoFinal || melhor.pontos || 0, nome: participantesFase[id]?.nome || "Anônimo" });
             }
             lista.sort((a,b) => b.pontos - a.pontos);
             melhores = lista.slice(0, 5);
@@ -3099,8 +3791,8 @@
                 const resultadosFase = todasFases[fase] || {};
                 const partidas = resultadosFase[aluno.id] || [];
                 if (partidas.length > 0) {
-                    const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-                    pontosPorFase.push(melhor.pontos);
+                    const melhor = partidas.sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
+                    pontosPorFase.push(melhor.pontuacaoFinal || melhor.pontos || 0);
                 } else {
                     pontosPorFase.push(null);
                 }
@@ -3258,6 +3950,7 @@
                     if (tabId === 'dashboard') renderDashboard();
                     if (tabId === 'notificacoes') renderPainelNotificacoes();
                     if (tabId === 'ranking-acumulado') renderRankingAcumulado('ranking-acumulado-container');
+                    if (tabId === 'bonus') renderPainelBonus();
                 }
             });
         });
@@ -3345,7 +4038,7 @@
         if (btnResetTotal) {
             btnResetTotal.addEventListener('click', window.debounce(() => {
                 if (confirm("Reset total?")) {
-                    window.firebaseService.setCopa({ fase:1, status:'aguardando', tempoFase:12, fim:0, modalidade: estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} });
+                    window.firebaseService.setCopa({ fase:1, status:'aguardando', tempoFase:12, fim:0, modalidade: estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{}, recordeFase:{}, recordeGlobal:{} });
                     window.firebaseService.getOnlineRef().remove();
                     location.reload();
                 }
@@ -3356,7 +4049,7 @@
                 const novaModalidade = document.getElementById('select-modalidade').value;
                 if (novaModalidade === estadoAtual.modalidade) { window.toast("Já está nesta modalidade."); return; }
                 if (confirm(`⚠️ Mudar para ${window.MODALIDADE_CONFIG[novaModalidade].nome} irá REINICIAR toda a competição. Continuar?`)) {
-                    await window.firebaseService.setCopa({ fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: novaModalidade, resultados: {}, participantes: {}, classificados: {} });
+                    await window.firebaseService.setCopa({ fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: novaModalidade, resultados: {}, participantes: {}, classificados: {}, recordeFase: {}, recordeGlobal: {} });
                     await window.firebaseService.getOnlineRef().remove();
                     window.toast(`Modalidade alterada. Competição reiniciada.`);
                     setTimeout(() => location.reload(), 1500);
