@@ -100,7 +100,7 @@
         </div>
     </div>
 
-    <!-- PAINEL DO PROFESSOR -->
+    <!-- PAINEL DO PROFESSOR (COMPLETO) -->
     <div id="painel-professor" class="card hidden">
         <div class="header-actions">
             <h2>🔧 Painel do Professor <span id="prof-fase-info" class="fase-info"></span></h2>
@@ -434,17 +434,22 @@
     const poolPerguntas = {};
 
     // =================================================================
-    // NOTIFICAÇÕES: CONTROLE DE SEQUÊNCIA
+    // FUNÇÃO AUXILIAR: FORMATAR TEMPO
     // =================================================================
-    let sequenciaAcertos = 0;
-    let sequenciaErros = 0;
-    let recordeFaseAtual = 0;
-    let recordeGeralAtual = 0;
-    let notificacaoPendente = false;
-    let ultimoTempoResposta = 0;
+    function formatarTempo(segundos) {
+        if (!segundos || segundos < 0) return '0s';
+        segundos = Math.round(segundos);
+        if (segundos < 60) return `${segundos}s`;
+        const minutos = Math.floor(segundos / 60);
+        const segs = segundos % 60;
+        if (minutos < 60) return `${minutos}min ${segs}s`;
+        const horas = Math.floor(minutos / 60);
+        const mins = minutos % 60;
+        return `${horas}h ${mins}min`;
+    }
 
     // =================================================================
-    // FUNÇÕES AUXILIARES
+    // FUNÇÕES AUXILIARES (originais)
     // =================================================================
     function gerarPoolPerguntas(modalidade) {
         const config = window.MODALIDADE_CONFIG[modalidade];
@@ -791,7 +796,6 @@
         status.innerText = `📊 ${ativas}/${total} notificações ativas. Duração padrão: ${config.DURACAO_PADRAO}s.`;
     }
 
-    // Guardar configuração padrão para reset
     window.NOTIFICATION_CONFIG_PADRAO = JSON.parse(JSON.stringify(window.NOTIFICATION_CONFIG));
 
     // =================================================================
@@ -1082,7 +1086,7 @@
     }
 
     // =================================================================
-    // RANKING
+    // RANKING (com Tempo Total)
     // =================================================================
     let cacheRanking = {};
 
@@ -1179,11 +1183,15 @@
                         if (statusInfo.status === 'aguardando') progresso = 0;
                         const ultimaPartida = partidas[partidas.length - 1];
                         const ultimaPosicao = ultimaPartida?.posicao || null;
+                        // Calcula tempo total nesta fase
+                        let tempoTotalFase = 0;
+                        partidas.forEach(p => { tempoTotalFase += p.tempo || 0; });
                         mapa.set(key, {
                             nome, turma,
                             pontos: melhor.pontos,
                             acertos: melhor.acertos,
                             tempo: melhor.tempo,
+                            tempoTotal: tempoTotalFase,
                             perguntas: 20,
                             isTemp: false,
                             partidas: partidas.length,
@@ -1208,6 +1216,7 @@
                             pontos: data.pontos,
                             acertos: data.acertos,
                             tempo: data.tempo,
+                            tempoTotal: data.tempo || 0,
                             perguntas: data.perguntas || 0,
                             isTemp: true,
                             partidas: 1,
@@ -1230,6 +1239,10 @@
                         if (statusInfo) {
                             existente.status = statusInfo.status;
                             existente.progresso = statusInfo.progresso;
+                        }
+                        // Atualiza tempoTotal
+                        if (data.tempo) {
+                            existente.tempoTotal = (existente.tempoTotal || 0) + data.tempo;
                         }
                     }
                 });
@@ -1295,6 +1308,7 @@
                 <th>Ameaça</th>
                 <th>Pontuação</th>
                 <th>Delta Líder</th>
+                <th>Tempo Total</th>
                 <th>Veloc.<br>Média</th>
                 <th>Veloc.<br>Recorde</th>
                 <th>Δ Veloc.</th>
@@ -1388,6 +1402,7 @@
                     <td>${ameacaHtml}</td>
                     <td>${j.pontos}</td>
                     <td>${deltaText}</td>
+                    <td>${formatarTempo(j.tempoTotal)}</td>
                     <td>${velocidadeAtualStr}</td>
                     <td>${recordeStr}</td>
                     <td>${deltaVelocidadeHtml}</td>
@@ -1415,6 +1430,9 @@
         }
     }
 
+    // =================================================================
+    // RANKING POR TURMAS
+    // =================================================================
     async function renderRankingTurmas(containerId) {
         if (!estadoAtual) return;
         let turmasMap = new Map();
@@ -1500,6 +1518,113 @@
         html += '</tbody></table>';
         document.getElementById(containerId).innerHTML = html;
         const rows = document.querySelectorAll(`#${containerId} tbody tr`);
+        rows.forEach((row, index) => {
+            row.classList.add('animate-stagger');
+            row.style.animationDelay = `${0.05 * (index + 1)}s`;
+        });
+    }
+
+    // =================================================================
+    // RANKING GERAL (com Tempo Total)
+    // =================================================================
+    function renderRankingGeral() {
+        if (!estadoAtual) return;
+        const todasFases = estadoAtual.resultados || {};
+        const participantesPorFase = estadoAtual.participantes || {};
+        const classificadosPorFase = estadoAtual.classificados || {};
+        let jogadores = new Map();
+        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+            const resultadosFase = todasFases[fase] || {};
+            const participantesFase = participantesPorFase[fase] || {};
+            for (let id in resultadosFase) {
+                const partidas = resultadosFase[id];
+                if (!partidas || partidas.length === 0) continue;
+                const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
+                let nome = participantesFase[id]?.nome;
+                if (!nome && fase > 1 && participantesPorFase[fase-1]?.[id]) nome = participantesPorFase[fase-1][id].nome;
+                if (!nome) nome = "Anônimo";
+                let turma = participantesFase[id]?.turma;
+                if (!turma && fase > 1 && participantesPorFase[fase-1]?.[id]) turma = participantesPorFase[fase-1][id].turma;
+                if (!turma) turma = "?";
+                if (!jogadores.has(id)) {
+                    let tempoTotal = 0;
+                    partidas.forEach(p => { tempoTotal += p.tempo || 0; });
+                    jogadores.set(id, {
+                        id, nome, turma,
+                        melhorPontuacao: melhor.pontos,
+                        melhorAcertos: melhor.acertos,
+                        melhorTempo: melhor.tempo,
+                        tempoTotal: tempoTotal,
+                        ultimaFase: fase,
+                        faseEliminacao: null,
+                        totalPartidas: partidas.length,
+                        melhorVelocidade: null
+                    });
+                } else {
+                    const existente = jogadores.get(id);
+                    if (fase > existente.ultimaFase) {
+                        existente.ultimaFase = fase;
+                        existente.melhorPontuacao = melhor.pontos;
+                        existente.melhorAcertos = melhor.acertos;
+                        existente.melhorTempo = melhor.tempo;
+                    }
+                    existente.totalPartidas += partidas.length;
+                    // Adiciona tempo total
+                    partidas.forEach(p => { existente.tempoTotal += p.tempo || 0; });
+                }
+                const jogador = jogadores.get(id);
+                for (let partida of partidas) {
+                    if (partida.acertos > 0) {
+                        const velocidade = partida.tempo / partida.acertos;
+                        if (jogador.melhorVelocidade === null || velocidade < jogador.melhorVelocidade) {
+                            jogador.melhorVelocidade = velocidade;
+                        }
+                    }
+                }
+            }
+        }
+        for (let [id, info] of jogadores.entries()) {
+            const classificadosUltima = classificadosPorFase[info.ultimaFase] || [];
+            if (!classificadosUltima.includes(id)) info.faseEliminacao = info.ultimaFase;
+            else info.faseEliminacao = null;
+        }
+        let rankingArray = Array.from(jogadores.values());
+        rankingArray.sort((a,b) => {
+            if (a.ultimaFase !== b.ultimaFase) return b.ultimaFase - a.ultimaFase;
+            return b.melhorPontuacao - a.melhorPontuacao || b.melhorAcertos - a.melhorAcertos || a.melhorTempo - b.melhorTempo;
+        });
+        if (rankingArray.length === 0) { document.getElementById('ranking-geral-container').innerHTML = '<p>Nenhum dado ainda.</p>'; return; }
+        let html = `<table class="ranking-table"><thead><tr>
+            <th>Pos</th>
+            <th>Nome</th>
+            <th>Melhor Pontuação</th>
+            <th>Tempo Total</th>
+            <th>Melhor Velocidade</th>
+            <th>Fase Máxima</th>
+            <th>Status</th>
+            <th>Turma</th>
+            <th>Total Partidas</th>
+        </tr></thead><tbody>`;
+        rankingArray.forEach((r, i) => {
+            let status = `🎯 Fase ${r.ultimaFase}`;
+            if (r.faseEliminacao) status += ` (Eliminado na Fase ${r.faseEliminacao})`;
+            else if (r.ultimaFase === 5) status = "🏆 Finalista";
+            else status += ` (Classificado para Fase ${r.ultimaFase+1})`;
+            const vel = r.melhorVelocidade !== null ? r.melhorVelocidade.toFixed(2) + " s" : "-";
+            html += `<tr>
+                <td>${i+1}º</td>
+                <td>${window.escapeHtml(r.nome)}</td>
+                <td>${r.melhorPontuacao}</td>
+                <td>${formatarTempo(r.tempoTotal)}</td>
+                <td>${vel}</td>
+                <td>${r.ultimaFase}</td>
+                <td>${status}</td>
+                <td>${window.escapeHtml(r.turma)}</td>
+                <td>${r.totalPartidas}</td>
+            </tr>`;
+        });
+        document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
+        const rows = document.querySelectorAll('#ranking-geral-container tbody tr');
         rows.forEach((row, index) => {
             row.classList.add('animate-stagger');
             row.style.animationDelay = `${0.05 * (index + 1)}s`;
@@ -1665,284 +1790,6 @@
         await window.firebaseService.getIntervalosRef().update({ equipes: segundos });
         if (meuTipo === 'projecao' && modoTorcida === 'equipes') reiniciarIntervalosTorcida();
         window.toast(`Intervalo por equipes alterado para ${segundos} segundos`);
-    }
-
-    // =================================================================
-    // RANKING GERAL
-    // =================================================================
-    function renderRankingGeral() {
-        if (!estadoAtual) return;
-        const todasFases = estadoAtual.resultados || {};
-        const participantesPorFase = estadoAtual.participantes || {};
-        const classificadosPorFase = estadoAtual.classificados || {};
-        let jogadores = new Map();
-        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
-            const resultadosFase = todasFases[fase] || {};
-            const participantesFase = participantesPorFase[fase] || {};
-            for (let id in resultadosFase) {
-                const partidas = resultadosFase[id];
-                if (!partidas || partidas.length === 0) continue;
-                const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
-                let nome = participantesFase[id]?.nome;
-                if (!nome && fase > 1 && participantesPorFase[fase-1]?.[id]) nome = participantesPorFase[fase-1][id].nome;
-                if (!nome) nome = "Anônimo";
-                let turma = participantesFase[id]?.turma;
-                if (!turma && fase > 1 && participantesPorFase[fase-1]?.[id]) turma = participantesPorFase[fase-1][id].turma;
-                if (!turma) turma = "?";
-                if (!jogadores.has(id)) {
-                    jogadores.set(id, {
-                        id, nome, turma,
-                        melhorPontuacao: melhor.pontos,
-                        melhorAcertos: melhor.acertos,
-                        melhorTempo: melhor.tempo,
-                        ultimaFase: fase,
-                        faseEliminacao: null,
-                        totalPartidas: partidas.length,
-                        melhorVelocidade: null
-                    });
-                } else {
-                    const existente = jogadores.get(id);
-                    if (fase > existente.ultimaFase) {
-                        existente.ultimaFase = fase;
-                        existente.melhorPontuacao = melhor.pontos;
-                        existente.melhorAcertos = melhor.acertos;
-                        existente.melhorTempo = melhor.tempo;
-                    }
-                    existente.totalPartidas += partidas.length;
-                }
-                const jogador = jogadores.get(id);
-                for (let partida of partidas) {
-                    if (partida.acertos > 0) {
-                        const velocidade = partida.tempo / partida.acertos;
-                        if (jogador.melhorVelocidade === null || velocidade < jogador.melhorVelocidade) {
-                            jogador.melhorVelocidade = velocidade;
-                        }
-                    }
-                }
-            }
-        }
-        for (let [id, info] of jogadores.entries()) {
-            const classificadosUltima = classificadosPorFase[info.ultimaFase] || [];
-            if (!classificadosUltima.includes(id)) info.faseEliminacao = info.ultimaFase;
-            else info.faseEliminacao = null;
-        }
-        let rankingArray = Array.from(jogadores.values());
-        rankingArray.sort((a,b) => {
-            if (a.ultimaFase !== b.ultimaFase) return b.ultimaFase - a.ultimaFase;
-            return b.melhorPontuacao - a.melhorPontuacao || b.melhorAcertos - a.melhorAcertos || a.melhorTempo - b.melhorTempo;
-        });
-        if (rankingArray.length === 0) { document.getElementById('ranking-geral-container').innerHTML = '<p>Nenhum dado ainda.</p>'; return; }
-        let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Melhor Velocidade</th><th>Fase Máxima</th><th>Status</th><th>Turma</th><th>Total Partidas</th></tr></thead><tbody>';
-        rankingArray.forEach((r, i) => {
-            let status = `🎯 Fase ${r.ultimaFase}`;
-            if (r.faseEliminacao) status += ` (Eliminado na Fase ${r.faseEliminacao})`;
-            else if (r.ultimaFase === 5) status = "🏆 Finalista";
-            else status += ` (Classificado para Fase ${r.ultimaFase+1})`;
-            const vel = r.melhorVelocidade !== null ? r.melhorVelocidade.toFixed(2) + " s" : "-";
-            html += `<tr><td>${i+1}º</td><td>${window.escapeHtml(r.nome)}</td><td>${r.melhorPontuacao}</td><td>${vel}</td><td>${r.ultimaFase}</td><td>${status}</td><td>${window.escapeHtml(r.turma)}</td><td>${r.totalPartidas}</td></tr>`;
-        });
-        document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
-        const rows = document.querySelectorAll('#ranking-geral-container tbody tr');
-        rows.forEach((row, index) => {
-            row.classList.add('animate-stagger');
-            row.style.animationDelay = `${0.05 * (index + 1)}s`;
-        });
-    }
-
-    // =================================================================
-    // GRÁFICOS E ESTATÍSTICAS
-    // =================================================================
-    let chartTurmas = null, chartDistribuicao = null, chartEvolucao = null;
-
-    function gerarDadosTurmas() {
-        if (!estadoAtual) return null;
-        const todasFases = estadoAtual.resultados || {};
-        const participantes = estadoAtual.participantes || {};
-        const turmasMap = new Map();
-        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
-            const resultadosFase = todasFases[fase] || {};
-            const participantesFase = participantes[fase] || {};
-            for (let id in resultadosFase) {
-                const partidas = resultadosFase[id];
-                if (!partidas || partidas.length === 0) continue;
-                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-                let turma = participantesFase[id]?.turma;
-                if (!turma && fase > 1 && participantes[fase-1]?.[id]) turma = participantes[fase-1][id].turma;
-                if (!turma) turma = "?";
-                if (!turmasMap.has(turma)) {
-                    turmasMap.set(turma, { soma: 0, count: 0 });
-                }
-                turmasMap.get(turma).soma += melhor.pontos;
-                turmasMap.get(turma).count++;
-            }
-        }
-        const labels = [], data = [];
-        turmasMap.forEach((val, key) => {
-            labels.push(key);
-            data.push(parseFloat((val.soma / val.count).toFixed(1)));
-        });
-        return { labels, data };
-    }
-
-    function gerarDadosDistribuicao() {
-        if (!estadoAtual) return null;
-        const todasFases = estadoAtual.resultados || {};
-        const participantes = estadoAtual.participantes || {};
-        const classificados = estadoAtual.classificados || {};
-        const totalAlunos = new Set();
-        const eliminados = new Set();
-        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
-            const participantesFase = participantes[fase] || {};
-            Object.keys(participantesFase).forEach(id => totalAlunos.add(id));
-            const classificadosFase = classificados[fase] || [];
-            if (fase < window.TOTAL_FASES) {
-                classificadosFase.forEach(id => {
-                    if (totalAlunos.has(id)) eliminados.delete(id);
-                });
-                const participantesFaseIds = Object.keys(participantesFase);
-                participantesFaseIds.forEach(id => {
-                    if (!classificadosFase.includes(id)) {
-                        eliminados.add(id);
-                    }
-                });
-            }
-        }
-        const finalistas = new Set();
-        const classificadosFase5 = classificados[5] || [];
-        classificadosFase5.forEach(id => finalistas.add(id));
-        const classificadosSet = new Set([...classificadosFase5]);
-        const eliminadosCount = [...eliminados].filter(id => !classificadosSet.has(id)).length;
-        const classificadosCount = classificadosSet.size;
-        return {
-            labels: ['Classificados (Finalistas)', 'Eliminados'],
-            data: [classificadosCount, eliminadosCount]
-        };
-    }
-
-    function gerarDadosEvolucao() {
-        if (!estadoAtual) return null;
-        const todasFases = estadoAtual.resultados || {};
-        const participantes = estadoAtual.participantes || {};
-        let ultimaFase = estadoAtual.fase;
-        let melhores = [];
-        for (let fase = ultimaFase; fase >= 1; fase--) {
-            const resultadosFase = todasFases[fase] || {};
-            const participantesFase = participantes[fase] || {};
-            let lista = [];
-            for (let id in resultadosFase) {
-                const partidas = resultadosFase[id];
-                if (!partidas || partidas.length === 0) continue;
-                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-                lista.push({ id, pontos: melhor.pontos, nome: participantesFase[id]?.nome || "Anônimo" });
-            }
-            lista.sort((a,b) => b.pontos - a.pontos);
-            melhores = lista.slice(0, 5);
-            if (melhores.length > 0) break;
-        }
-        if (melhores.length === 0) return null;
-
-        const datasets = melhores.map((aluno, idx) => {
-            const pontosPorFase = [];
-            for (let fase = 1; fase <= ultimaFase; fase++) {
-                const resultadosFase = todasFases[fase] || {};
-                const partidas = resultadosFase[aluno.id] || [];
-                if (partidas.length > 0) {
-                    const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-                    pontosPorFase.push(melhor.pontos);
-                } else {
-                    pontosPorFase.push(null);
-                }
-            }
-            const data = pontosPorFase.map(p => p || 0);
-            return {
-                label: `Top ${idx+1}: ${aluno.nome}`,
-                data: data,
-                borderColor: ['#e74c3c', '#f39c12', '#2ecc71', '#3498db', '#9b59b6'][idx % 5],
-                backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71', '#3498db', '#9b59b6'][idx % 5] + '33',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.3
-            };
-        });
-        const labels = Array.from({ length: ultimaFase }, (_, i) => `Fase ${i+1}`);
-        return { labels, datasets };
-    }
-
-    function renderizarGraficos() {
-        if (meuTipo !== 'professor' || !professorAutenticado) return;
-        const dadosTurmas = gerarDadosTurmas();
-        if (dadosTurmas && dadosTurmas.labels.length > 0) {
-            const ctx = document.getElementById('chart-turmas').getContext('2d');
-            if (chartTurmas) chartTurmas.destroy();
-            chartTurmas = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: dadosTurmas.labels,
-                    datasets: [{
-                        label: 'Média de Pontos',
-                        data: dadosTurmas.data,
-                        backgroundColor: ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'],
-                        borderColor: '#fff',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        }
-
-        const dadosDist = gerarDadosDistribuicao();
-        if (dadosDist && dadosDist.data.some(v => v > 0)) {
-            const ctx2 = document.getElementById('chart-distribuicao').getContext('2d');
-            if (chartDistribuicao) chartDistribuicao.destroy();
-            chartDistribuicao = new Chart(ctx2, {
-                type: 'pie',
-                data: {
-                    labels: dadosDist.labels,
-                    datasets: [{
-                        data: dadosDist.data,
-                        backgroundColor: ['#2ecc71', '#e74c3c'],
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
-                }
-            });
-        }
-
-        const dadosEvol = gerarDadosEvolucao();
-        if (dadosEvol && dadosEvol.datasets.length > 0) {
-            const ctx3 = document.getElementById('chart-evolucao').getContext('2d');
-            if (chartEvolucao) chartEvolucao.destroy();
-            chartEvolucao = new Chart(ctx3, {
-                type: 'line',
-                data: {
-                    labels: dadosEvol.labels,
-                    datasets: dadosEvol.datasets
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'top' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        }
     }
 
     // =================================================================
@@ -2318,411 +2165,6 @@
         }
     }
 
-    // =================================================================
-    // NOTIFICAÇÕES: LÓGICA DE VERIFICAÇÃO
-    // =================================================================
-    function verificarNotificacoes(acertou, tempoResposta, pontosAtuais) {
-        const config = window.NOTIFICATION_CONFIG;
-        if (!config) return;
-
-        // Atualiza sequências
-        if (acertou) {
-            sequenciaAcertos++;
-            sequenciaErros = 0;
-        } else {
-            sequenciaErros++;
-            sequenciaAcertos = 0;
-        }
-
-        // Verifica notificações de sequência de acertos
-        if (acertou) {
-            if (sequenciaAcertos === 5 && config.notificacoes.seq5.ativo) {
-                mostrarNotificacao('seq5');
-            } else if (sequenciaAcertos === 10 && config.notificacoes.seq10.ativo) {
-                mostrarNotificacao('seq10');
-            } else if (sequenciaAcertos === 15 && config.notificacoes.seq15.ativo) {
-                mostrarNotificacao('seq15');
-            } else if (sequenciaAcertos === 20 && config.notificacoes.seq20.ativo) {
-                mostrarNotificacao('seq20');
-            }
-        }
-
-        // Verifica notificações de erro
-        if (!acertou) {
-            if (sequenciaErros === 3 && config.notificacoes.erro3.ativo) {
-                mostrarNotificacao('erro3');
-            } else if (sequenciaErros === 5 && config.notificacoes.erro5.ativo) {
-                mostrarNotificacao('erro5');
-            }
-        }
-
-        // Verifica resposta rápida
-        const limiteRapido = config.notificacoes.rapido.limiteRapido || 1.5;
-        if (acertou && tempoResposta < limiteRapido && config.notificacoes.rapido.ativo) {
-            mostrarNotificacao('rapido', { tempo: tempoResposta });
-        }
-
-        // Verifica resposta relâmpago (< 1s)
-        const limiteRelampago = config.notificacoes.relampago.limiteRelampago || 1.0;
-        if (acertou && tempoResposta < limiteRelampago && config.notificacoes.relampago.ativo) {
-            mostrarNotificacao('relampago', { tempo: tempoResposta });
-        }
-
-        // Verifica recorde da fase
-        if (acertou && pontosAtuais > recordeFaseAtual && config.notificacoes.recordeFase.ativo) {
-            recordeFaseAtual = pontosAtuais;
-            mostrarNotificacao('recordeFase', { pontos: pontosAtuais });
-        }
-
-        // Verifica recorde geral (todas as fases)
-        if (acertou && pontosAtuais > recordeGeralAtual && config.notificacoes.recordeGeral.ativo) {
-            recordeGeralAtual = pontosAtuais;
-            mostrarNotificacao('recordeGeral', { pontos: pontosAtuais });
-        }
-    }
-
-    function mostrarNotificacao(id, dados = {}) {
-        // Se já houver notificação pendente, aguarda
-        if (notificacaoPendente) return;
-        notificacaoPendente = true;
-
-        // Mostra a notificação
-        window.NotificationManager.mostrar(id, dados);
-
-        // Define o callback para quando a notificação terminar
-        window._onNotificationEnd = function() {
-            notificacaoPendente = false;
-            // Continua o jogo (próxima pergunta)
-            if (window._proximaPerguntaPendente) {
-                window._proximaPerguntaPendente();
-                window._proximaPerguntaPendente = null;
-            }
-        };
-    }
-
-    // =================================================================
-    // LÓGICA DO JOGO (com notificações)
-    // =================================================================
-    let animFrameId = null;
-
-    function startTimer() {
-        tempoRestantePergunta = 10;
-        const barra = document.getElementById('progresso-tempo');
-        if (timerPergunta) {
-            clearInterval(timerPergunta);
-            timerPergunta = null;
-        }
-        if (animFrameId) cancelAnimationFrame(animFrameId);
-        let inicio = performance.now();
-
-        function atualizarBarra(timestamp) {
-            const decorrido = (timestamp - inicio) / 1000;
-            tempoRestantePergunta = Math.max(0, 10 - decorrido);
-            if (barra) {
-                barra.style.width = (tempoRestantePergunta * 10) + '%';
-                barra.setAttribute('aria-valuenow', tempoRestantePergunta * 10);
-            }
-            if (tempoRestantePergunta > 0) {
-                animFrameId = requestAnimationFrame(atualizarBarra);
-            } else {
-                if (window.soundManager) window.soundManager.playTimeUp();
-                responder(-1);
-            }
-        }
-        animFrameId = requestAnimationFrame(atualizarBarra);
-        if (timerPergunta) clearInterval(timerPergunta);
-        timerPergunta = setInterval(() => {
-            if (tempoRestantePergunta <= 0) {
-                clearInterval(timerPergunta);
-                timerPergunta = null;
-            }
-        }, 100);
-    }
-
-    function proxima() {
-        if (perguntaIdx >= window.TOTAL_PERGUNTAS) { 
-            finalizar(); 
-            return; 
-        }
-        const p = perguntas[perguntaIdx];
-        document.getElementById('pergunta').innerText = `${p.a} x ${p.b} = ?`;
-        const btns = document.querySelectorAll('.opcao');
-        p.opts.forEach((o, i) => { 
-            btns[i].innerText = o; 
-            btns[i].disabled = false; 
-            btns[i].style.background = ''; 
-            btns[i].style.transform = ''; 
-        });
-        document.getElementById('pergunta-num').innerText = perguntaIdx + 1;
-        opcaoSelecionadaGamepad = -1;
-        startTimer();
-    }
-
-    window.responder = async function(idx) {
-        // Limpa destaque do gamepad
-        document.querySelectorAll('.opcao').forEach(btn => {
-            btn.style.border = '';
-            btn.style.boxShadow = '';
-        });
-        opcaoSelecionadaGamepad = -1;
-
-        if (timerPergunta) {
-            clearInterval(timerPergunta);
-            timerPergunta = null;
-        }
-        if (animFrameId) {
-            cancelAnimationFrame(animFrameId);
-            animFrameId = null;
-        }
-        const tempoGasto = 10 - Math.max(0, tempoRestantePergunta);
-        tempoTotalPartida += tempoGasto;
-        ultimoTempoResposta = tempoGasto;
-
-        const p = perguntas[perguntaIdx];
-        const respCerta = p.a * p.b;
-        const botoes = document.querySelectorAll('.opcao');
-        let acertou = false;
-
-        if (idx !== -1) {
-            const resp = parseInt(botoes[idx].innerText);
-            if (resp === respCerta) {
-                acertou = true;
-                acertosPartida++;
-                const pontosGanhos = Math.round(100 * (Math.max(0, tempoRestantePergunta) / 10));
-                pontosPartida += pontosGanhos;
-                if (window.soundManager) window.soundManager.playCorrect();
-
-                // Verifica notificações
-                verificarNotificacoes(true, tempoGasto, pontosPartida);
-
-                if (acertosPartida === 10 || acertosPartida === 20) {
-                    if (window.confettiManager) {
-                        window.confettiManager.fireHit();
-                    }
-                }
-                if (acertosPartida === 20) {
-                    const key = `recorde_${alunoId}_fase${estadoAtual.fase}`;
-                    const recordeAnterior = parseInt(localStorage.getItem(key)) || 0;
-                    if (acertosPartida > recordeAnterior) {
-                        localStorage.setItem(key, acertosPartida);
-                        if (window.confettiManager) {
-                            window.confettiManager.fireRecord();
-                        }
-                    }
-                }
-            } else {
-                acertou = false;
-                if (window.soundManager) window.soundManager.playWrong();
-                // Verifica notificações de erro
-                verificarNotificacoes(false, tempoGasto, pontosPartida);
-            }
-        }
-
-        // Feedback visual nos botões
-        botoes.forEach((btn, i) => {
-            const valor = parseInt(btn.innerText);
-            if (valor === respCerta) {
-                btn.style.background = '#27ae60';
-                btn.style.borderColor = '#2ecc71';
-                btn.style.transform = 'scale(1.05)';
-            } else if (i === idx && idx !== -1 && !acertou) {
-                btn.style.background = '#e74c3c';
-                btn.style.borderColor = '#e74c3c';
-                btn.style.transform = 'scale(0.95)';
-            }
-            btn.disabled = true;
-        });
-
-        const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
-        if (pontuacaoSpan) pontuacaoSpan.innerText = pontosPartida;
-
-        perguntaIdx++;
-        await atualizarPontuacaoParcial();
-
-        // Se houver notificação pendente, aguarda
-        if (notificacaoPendente) {
-            window._proximaPerguntaPendente = function() {
-                setTimeout(() => {
-                    botoes.forEach(btn => {
-                        btn.style.background = '';
-                        btn.style.borderColor = '';
-                        btn.style.transform = '';
-                    });
-                    proxima();
-                }, 300);
-            };
-        } else {
-            setTimeout(() => {
-                botoes.forEach(btn => {
-                    btn.style.background = '';
-                    btn.style.borderColor = '';
-                    btn.style.transform = '';
-                });
-                proxima();
-            }, 600);
-        }
-    };
-
-    async function atualizarPontuacaoParcial() {
-        if (!alunoId || !estadoAtual) return;
-        const faseAtual = estadoAtual.fase;
-        const ref = window.firebaseService.getResultadosTempRef(faseAtual).child(alunoId);
-        await ref.set({
-            nome: alunoNome,
-            turma: alunoTurma,
-            pontos: pontosPartida,
-            acertos: acertosPartida,
-            tempo: tempoTotalPartida,
-            perguntas: perguntaIdx,
-            timestamp: Date.now()
-        });
-    }
-
-    function exibirModalResultadosSimples(posicao, pontos) {
-        let posEmoji = "";
-        if (posicao === 1) posEmoji = "🥇";
-        else if (posicao === 2) posEmoji = "🥈";
-        else if (posicao === 3) posEmoji = "🥉";
-        else posEmoji = "🏆";
-
-        if (window.soundManager) window.soundManager.playFanfare();
-
-        let htmlModal = `
-            <div class="modal-resultados" id="modal-pos-jogo" role="dialog" aria-modal="true" aria-labelledby="modal-pos-jogo-title">
-                <h2 id="modal-pos-jogo-title">🏁 RESULTADO DA PARTIDA</h2>
-                <div style="font-size: 48px; margin: 10px 0;" aria-hidden="true">${posEmoji}</div>
-                <div style="font-size: 28px; font-weight: bold;">${posicao}º lugar</div>
-                <hr style="border-color: var(--glass-border); margin: 15px 0;">
-                <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
-                <div>✅ Acertos: ${acertosPartida}/20</div>
-                <div>⏱️ Tempo médio: ${(tempoTotalPartida / 20).toFixed(1)} s/pergunta</div>
-                <div style="margin-top: 20px;">
-                    <button class="fechar" id="btn-fechar-modal">Fechar</button>
-                    ${estadoAtual?.status === 'em_andamento' && Date.now() < estadoAtual.fim ? '<button class="jogar-novamente" id="btn-jogar-novamente">🔄 Tentar melhorar</button>' : ''}
-                </div>
-            </div>`;
-        const modalExistente = document.getElementById('modal-pos-jogo');
-        if (modalExistente) modalExistente.remove();
-        document.body.insertAdjacentHTML('beforeend', htmlModal);
-        document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
-            document.getElementById('modal-pos-jogo')?.remove();
-        });
-        const btnNovamente = document.getElementById('btn-jogar-novamente');
-        if (btnNovamente) {
-            btnNovamente.addEventListener('click', () => {
-                document.getElementById('modal-pos-jogo')?.remove();
-                iniciarNovaPartida();
-            });
-        }
-        setTimeout(() => document.getElementById('btn-fechar-modal')?.focus(), 100);
-    }
-
-    async function iniciarNovaPartida() {
-        if (jogoAtivo) return;
-        if (estadoAtual.status !== 'em_andamento') { window.toast("Fase inativa!"); return; }
-        if (Date.now() >= estadoAtual.fim) { window.toast("Tempo esgotado!"); return; }
-        if (estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
-            window.toast("❌ Não classificado para esta fase!");
-            return;
-        }
-        if (window.soundManager) window.soundManager.playGameStart();
-
-        // Reseta contadores de notificação
-        sequenciaAcertos = 0;
-        sequenciaErros = 0;
-        notificacaoPendente = false;
-        recordeFaseAtual = 0;
-        recordeGeralAtual = 0;
-
-        perguntas = obterPerguntas(estadoAtual.modalidade);
-        perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
-        document.getElementById('pontuacao-acumulada').innerText = "0";
-        jogoAtivo = true;
-        document.getElementById('jogo-area').classList.remove('hidden');
-        document.getElementById('aguardando-aluno').classList.add('hidden');
-        proxima();
-    }
-
-    async function finalizar() {
-        jogoAtivo = false;
-        document.getElementById('jogo-area').classList.add('hidden');
-        document.getElementById('aguardando-aluno').classList.remove('hidden');
-
-        const faseAtual = estadoAtual.fase;
-        const refResultado = window.firebaseService.getResultadosRef(faseAtual).child(alunoId);
-
-        const dadosPartida = {
-            pontos: pontosPartida,
-            acertos: acertosPartida,
-            tempo: tempoTotalPartida,
-            timestamp: Date.now()
-        };
-
-        if (window.SyncService && window.SyncService.isOnline()) {
-            try {
-                await refResultado.transaction((currentData) => {
-                    const lista = currentData || [];
-                    lista.push(dadosPartida);
-                    return lista;
-                });
-                console.log('[Partida] Salva no Firebase com sucesso.');
-            } catch (error) {
-                console.warn('[Partida] Falha ao salvar no Firebase, salvando offline:', error);
-                window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
-            }
-        } else {
-            console.log('[Partida] Offline, salvando partida localmente.');
-            window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
-        }
-
-        await window.firebaseService.removerResultadosTemp(faseAtual, alunoId);
-
-        let posicao = 0;
-        if (window.SyncService && window.SyncService.isOnline()) {
-            const snapRanking = await window.firebaseService.getResultadosRef(faseAtual).once('value');
-            let rankingPosicoes = [];
-            if (snapRanking.val()) {
-                Object.keys(snapRanking.val()).forEach(key => {
-                    const partidas = snapRanking.val()[key];
-                    if (partidas && partidas.length) {
-                        const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-                        rankingPosicoes.push({ id: key, pontos: melhor.pontos });
-                    }
-                });
-            }
-            rankingPosicoes.sort((a,b) => b.pontos - a.pontos);
-            posicao = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
-        } else {
-            posicao = 0;
-        }
-
-        if (alunoId) {
-            const minhasPartidas = estadoAtual.resultados?.[faseAtual]?.[alunoId] || [];
-            const partidasAtualizadas = [...minhasPartidas, { acertos: acertosPartida, tempo: tempoTotalPartida }];
-            const dadosAluno = {
-                totalPartidas: partidasAtualizadas.length,
-                melhorAcertos: Math.max(...partidasAtualizadas.map(p => p.acertos)),
-                classificado: false,
-                faseMaxima: estadoAtual.fase,
-                campeao: false,
-                melhorTempoTotal: Math.min(...partidasAtualizadas.map(p => p.tempo))
-            };
-            window.achievementManager.verificarConquistas(alunoId, dadosAluno);
-        }
-
-        if (posicao > 0) {
-            atualizarPosicaoAluno(posicao);
-            exibirModalResultadosSimples(posicao, pontosPartida);
-        } else {
-            window.toast('📶 Partida salva. A posição será atualizada quando a conexão for restabelecida.');
-            exibirModalResultadosSimples('?', pontosPartida);
-            renderAluno();
-        }
-    }
-
-    // =================================================================
-    // UI PRINCIPAL (renderAluno, atualizarUI, etc.)
-    // =================================================================
     function renderAluno() {
         if (!estadoAtual) return;
         const agora = Date.now();
@@ -2921,6 +2363,396 @@
     }
 
     // =================================================================
+    // NOTIFICAÇÕES: CONTROLE DE SEQUÊNCIA
+    // =================================================================
+    let sequenciaAcertos = 0;
+    let sequenciaErros = 0;
+    let recordeFaseAtual = 0;
+    let recordeGeralAtual = 0;
+    let notificacaoPendente = false;
+    let ultimoTempoResposta = 0;
+
+    function verificarNotificacoes(acertou, tempoResposta, pontosAtuais) {
+        const config = window.NOTIFICATION_CONFIG;
+        if (!config) return;
+
+        if (acertou) {
+            sequenciaAcertos++;
+            sequenciaErros = 0;
+        } else {
+            sequenciaErros++;
+            sequenciaAcertos = 0;
+        }
+
+        if (acertou) {
+            if (sequenciaAcertos === 5 && config.notificacoes.seq5.ativo) {
+                mostrarNotificacao('seq5');
+            } else if (sequenciaAcertos === 10 && config.notificacoes.seq10.ativo) {
+                mostrarNotificacao('seq10');
+            } else if (sequenciaAcertos === 15 && config.notificacoes.seq15.ativo) {
+                mostrarNotificacao('seq15');
+            } else if (sequenciaAcertos === 20 && config.notificacoes.seq20.ativo) {
+                mostrarNotificacao('seq20');
+            }
+        }
+
+        if (!acertou) {
+            if (sequenciaErros === 3 && config.notificacoes.erro3.ativo) {
+                mostrarNotificacao('erro3');
+            } else if (sequenciaErros === 5 && config.notificacoes.erro5.ativo) {
+                mostrarNotificacao('erro5');
+            }
+        }
+
+        const limiteRapido = config.notificacoes.rapido.limiteRapido || 1.5;
+        if (acertou && tempoResposta < limiteRapido && config.notificacoes.rapido.ativo) {
+            mostrarNotificacao('rapido', { tempo: tempoResposta });
+        }
+
+        const limiteRelampago = config.notificacoes.relampago.limiteRelampago || 1.0;
+        if (acertou && tempoResposta < limiteRelampago && config.notificacoes.relampago.ativo) {
+            mostrarNotificacao('relampago', { tempo: tempoResposta });
+        }
+
+        if (acertou && pontosAtuais > recordeFaseAtual && config.notificacoes.recordeFase.ativo) {
+            recordeFaseAtual = pontosAtuais;
+            mostrarNotificacao('recordeFase', { pontos: pontosAtuais });
+        }
+
+        if (acertou && pontosAtuais > recordeGeralAtual && config.notificacoes.recordeGeral.ativo) {
+            recordeGeralAtual = pontosAtuais;
+            mostrarNotificacao('recordeGeral', { pontos: pontosAtuais });
+        }
+    }
+
+    function mostrarNotificacao(id, dados = {}) {
+        if (notificacaoPendente) return;
+        notificacaoPendente = true;
+        window.NotificationManager.mostrar(id, dados);
+        window._onNotificationEnd = function() {
+            notificacaoPendente = false;
+            if (window._proximaPerguntaPendente) {
+                window._proximaPerguntaPendente();
+                window._proximaPerguntaPendente = null;
+            }
+        };
+    }
+
+    // =================================================================
+    // LÓGICA DO JOGO (com notificações)
+    // =================================================================
+    let animFrameId = null;
+
+    function startTimer() {
+        tempoRestantePergunta = 10;
+        const barra = document.getElementById('progresso-tempo');
+        if (timerPergunta) {
+            clearInterval(timerPergunta);
+            timerPergunta = null;
+        }
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        let inicio = performance.now();
+
+        function atualizarBarra(timestamp) {
+            const decorrido = (timestamp - inicio) / 1000;
+            tempoRestantePergunta = Math.max(0, 10 - decorrido);
+            if (barra) {
+                barra.style.width = (tempoRestantePergunta * 10) + '%';
+                barra.setAttribute('aria-valuenow', tempoRestantePergunta * 10);
+            }
+            if (tempoRestantePergunta > 0) {
+                animFrameId = requestAnimationFrame(atualizarBarra);
+            } else {
+                if (window.soundManager) window.soundManager.playTimeUp();
+                responder(-1);
+            }
+        }
+        animFrameId = requestAnimationFrame(atualizarBarra);
+        if (timerPergunta) clearInterval(timerPergunta);
+        timerPergunta = setInterval(() => {
+            if (tempoRestantePergunta <= 0) {
+                clearInterval(timerPergunta);
+                timerPergunta = null;
+            }
+        }, 100);
+    }
+
+    function proxima() {
+        if (perguntaIdx >= window.TOTAL_PERGUNTAS) { 
+            finalizar(); 
+            return; 
+        }
+        const p = perguntas[perguntaIdx];
+        document.getElementById('pergunta').innerText = `${p.a} x ${p.b} = ?`;
+        const btns = document.querySelectorAll('.opcao');
+        p.opts.forEach((o, i) => { 
+            btns[i].innerText = o; 
+            btns[i].disabled = false; 
+            btns[i].style.background = ''; 
+            btns[i].style.transform = ''; 
+        });
+        document.getElementById('pergunta-num').innerText = perguntaIdx + 1;
+        opcaoSelecionadaGamepad = -1;
+        startTimer();
+    }
+
+    window.responder = async function(idx) {
+        document.querySelectorAll('.opcao').forEach(btn => {
+            btn.style.border = '';
+            btn.style.boxShadow = '';
+        });
+        opcaoSelecionadaGamepad = -1;
+
+        if (timerPergunta) {
+            clearInterval(timerPergunta);
+            timerPergunta = null;
+        }
+        if (animFrameId) {
+            cancelAnimationFrame(animFrameId);
+            animFrameId = null;
+        }
+        const tempoGasto = 10 - Math.max(0, tempoRestantePergunta);
+        tempoTotalPartida += tempoGasto;
+        ultimoTempoResposta = tempoGasto;
+
+        const p = perguntas[perguntaIdx];
+        const respCerta = p.a * p.b;
+        const botoes = document.querySelectorAll('.opcao');
+        let acertou = false;
+
+        if (idx !== -1) {
+            const resp = parseInt(botoes[idx].innerText);
+            if (resp === respCerta) {
+                acertou = true;
+                acertosPartida++;
+                const pontosGanhos = Math.round(100 * (Math.max(0, tempoRestantePergunta) / 10));
+                pontosPartida += pontosGanhos;
+                if (window.soundManager) window.soundManager.playCorrect();
+
+                verificarNotificacoes(true, tempoGasto, pontosPartida);
+
+                if (acertosPartida === 10 || acertosPartida === 20) {
+                    if (window.confettiManager) {
+                        window.confettiManager.fireHit();
+                    }
+                }
+                if (acertosPartida === 20) {
+                    const key = `recorde_${alunoId}_fase${estadoAtual.fase}`;
+                    const recordeAnterior = parseInt(localStorage.getItem(key)) || 0;
+                    if (acertosPartida > recordeAnterior) {
+                        localStorage.setItem(key, acertosPartida);
+                        if (window.confettiManager) {
+                            window.confettiManager.fireRecord();
+                        }
+                    }
+                }
+            } else {
+                acertou = false;
+                if (window.soundManager) window.soundManager.playWrong();
+                verificarNotificacoes(false, tempoGasto, pontosPartida);
+            }
+        }
+
+        botoes.forEach((btn, i) => {
+            const valor = parseInt(btn.innerText);
+            if (valor === respCerta) {
+                btn.style.background = '#27ae60';
+                btn.style.borderColor = '#2ecc71';
+                btn.style.transform = 'scale(1.05)';
+            } else if (i === idx && idx !== -1 && !acertou) {
+                btn.style.background = '#e74c3c';
+                btn.style.borderColor = '#e74c3c';
+                btn.style.transform = 'scale(0.95)';
+            }
+            btn.disabled = true;
+        });
+
+        const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
+        if (pontuacaoSpan) pontuacaoSpan.innerText = pontosPartida;
+
+        perguntaIdx++;
+        await atualizarPontuacaoParcial();
+
+        if (notificacaoPendente) {
+            window._proximaPerguntaPendente = function() {
+                setTimeout(() => {
+                    botoes.forEach(btn => {
+                        btn.style.background = '';
+                        btn.style.borderColor = '';
+                        btn.style.transform = '';
+                    });
+                    proxima();
+                }, 300);
+            };
+        } else {
+            setTimeout(() => {
+                botoes.forEach(btn => {
+                    btn.style.background = '';
+                    btn.style.borderColor = '';
+                    btn.style.transform = '';
+                });
+                proxima();
+            }, 600);
+        }
+    };
+
+    async function atualizarPontuacaoParcial() {
+        if (!alunoId || !estadoAtual) return;
+        const faseAtual = estadoAtual.fase;
+        const ref = window.firebaseService.getResultadosTempRef(faseAtual).child(alunoId);
+        await ref.set({
+            nome: alunoNome,
+            turma: alunoTurma,
+            pontos: pontosPartida,
+            acertos: acertosPartida,
+            tempo: tempoTotalPartida,
+            perguntas: perguntaIdx,
+            timestamp: Date.now()
+        });
+    }
+
+    function exibirModalResultadosSimples(posicao, pontos) {
+        let posEmoji = "";
+        if (posicao === 1) posEmoji = "🥇";
+        else if (posicao === 2) posEmoji = "🥈";
+        else if (posicao === 3) posEmoji = "🥉";
+        else posEmoji = "🏆";
+
+        if (window.soundManager) window.soundManager.playFanfare();
+
+        let htmlModal = `
+            <div class="modal-resultados" id="modal-pos-jogo" role="dialog" aria-modal="true" aria-labelledby="modal-pos-jogo-title">
+                <h2 id="modal-pos-jogo-title">🏁 RESULTADO DA PARTIDA</h2>
+                <div style="font-size: 48px; margin: 10px 0;" aria-hidden="true">${posEmoji}</div>
+                <div style="font-size: 28px; font-weight: bold;">${posicao}º lugar</div>
+                <hr style="border-color: var(--glass-border); margin: 15px 0;">
+                <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
+                <div>✅ Acertos: ${acertosPartida}/20</div>
+                <div>⏱️ Tempo médio: ${(tempoTotalPartida / 20).toFixed(1)} s/pergunta</div>
+                <div style="margin-top: 20px;">
+                    <button class="fechar" id="btn-fechar-modal">Fechar</button>
+                    ${estadoAtual?.status === 'em_andamento' && Date.now() < estadoAtual.fim ? '<button class="jogar-novamente" id="btn-jogar-novamente">🔄 Tentar melhorar</button>' : ''}
+                </div>
+            </div>`;
+        const modalExistente = document.getElementById('modal-pos-jogo');
+        if (modalExistente) modalExistente.remove();
+        document.body.insertAdjacentHTML('beforeend', htmlModal);
+        document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
+            document.getElementById('modal-pos-jogo')?.remove();
+        });
+        const btnNovamente = document.getElementById('btn-jogar-novamente');
+        if (btnNovamente) {
+            btnNovamente.addEventListener('click', () => {
+                document.getElementById('modal-pos-jogo')?.remove();
+                iniciarNovaPartida();
+            });
+        }
+        setTimeout(() => document.getElementById('btn-fechar-modal')?.focus(), 100);
+    }
+
+    async function iniciarNovaPartida() {
+        if (jogoAtivo) return;
+        if (estadoAtual.status !== 'em_andamento') { window.toast("Fase inativa!"); return; }
+        if (Date.now() >= estadoAtual.fim) { window.toast("Tempo esgotado!"); return; }
+        if (estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
+            window.toast("❌ Não classificado para esta fase!");
+            return;
+        }
+        if (window.soundManager) window.soundManager.playGameStart();
+
+        sequenciaAcertos = 0;
+        sequenciaErros = 0;
+        notificacaoPendente = false;
+        recordeFaseAtual = 0;
+        recordeGeralAtual = 0;
+
+        perguntas = obterPerguntas(estadoAtual.modalidade);
+        perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
+        document.getElementById('pontuacao-acumulada').innerText = "0";
+        jogoAtivo = true;
+        document.getElementById('jogo-area').classList.remove('hidden');
+        document.getElementById('aguardando-aluno').classList.add('hidden');
+        proxima();
+    }
+
+    async function finalizar() {
+        jogoAtivo = false;
+        document.getElementById('jogo-area').classList.add('hidden');
+        document.getElementById('aguardando-aluno').classList.remove('hidden');
+
+        const faseAtual = estadoAtual.fase;
+        const refResultado = window.firebaseService.getResultadosRef(faseAtual).child(alunoId);
+
+        const dadosPartida = {
+            pontos: pontosPartida,
+            acertos: acertosPartida,
+            tempo: tempoTotalPartida,
+            timestamp: Date.now()
+        };
+
+        if (window.SyncService && window.SyncService.isOnline()) {
+            try {
+                await refResultado.transaction((currentData) => {
+                    const lista = currentData || [];
+                    lista.push(dadosPartida);
+                    return lista;
+                });
+                console.log('[Partida] Salva no Firebase com sucesso.');
+            } catch (error) {
+                console.warn('[Partida] Falha ao salvar no Firebase, salvando offline:', error);
+                window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
+            }
+        } else {
+            console.log('[Partida] Offline, salvando partida localmente.');
+            window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
+        }
+
+        await window.firebaseService.removerResultadosTemp(faseAtual, alunoId);
+
+        let posicao = 0;
+        if (window.SyncService && window.SyncService.isOnline()) {
+            const snapRanking = await window.firebaseService.getResultadosRef(faseAtual).once('value');
+            let rankingPosicoes = [];
+            if (snapRanking.val()) {
+                Object.keys(snapRanking.val()).forEach(key => {
+                    const partidas = snapRanking.val()[key];
+                    if (partidas && partidas.length) {
+                        const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                        rankingPosicoes.push({ id: key, pontos: melhor.pontos });
+                    }
+                });
+            }
+            rankingPosicoes.sort((a,b) => b.pontos - a.pontos);
+            posicao = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
+        } else {
+            posicao = 0;
+        }
+
+        if (alunoId) {
+            const minhasPartidas = estadoAtual.resultados?.[faseAtual]?.[alunoId] || [];
+            const partidasAtualizadas = [...minhasPartidas, { acertos: acertosPartida, tempo: tempoTotalPartida }];
+            const dadosAluno = {
+                totalPartidas: partidasAtualizadas.length,
+                melhorAcertos: Math.max(...partidasAtualizadas.map(p => p.acertos)),
+                classificado: false,
+                faseMaxima: estadoAtual.fase,
+                campeao: false,
+                melhorTempoTotal: Math.min(...partidasAtualizadas.map(p => p.tempo))
+            };
+            window.achievementManager.verificarConquistas(alunoId, dadosAluno);
+        }
+
+        if (posicao > 0) {
+            atualizarPosicaoAluno(posicao);
+            exibirModalResultadosSimples(posicao, pontosPartida);
+        } else {
+            window.toast('📶 Partida salva. A posição será atualizada quando a conexão for restabelecida.');
+            exibirModalResultadosSimples('?', pontosPartida);
+            renderAluno();
+        }
+    }
+
+    // =================================================================
     // GAMEPAD
     // =================================================================
     let opcaoSelecionadaGamepad = -1;
@@ -3017,6 +2849,202 @@
                 btn.style.boxShadow = '';
             }
         });
+    }
+
+    // =================================================================
+    // GRÁFICOS
+    // =================================================================
+    let chartTurmas = null, chartDistribuicao = null, chartEvolucao = null;
+
+    function gerarDadosTurmas() {
+        if (!estadoAtual) return null;
+        const todasFases = estadoAtual.resultados || {};
+        const participantes = estadoAtual.participantes || {};
+        const turmasMap = new Map();
+        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+            const resultadosFase = todasFases[fase] || {};
+            const participantesFase = participantes[fase] || {};
+            for (let id in resultadosFase) {
+                const partidas = resultadosFase[id];
+                if (!partidas || partidas.length === 0) continue;
+                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                let turma = participantesFase[id]?.turma;
+                if (!turma && fase > 1 && participantes[fase-1]?.[id]) turma = participantes[fase-1][id].turma;
+                if (!turma) turma = "?";
+                if (!turmasMap.has(turma)) {
+                    turmasMap.set(turma, { soma: 0, count: 0 });
+                }
+                turmasMap.get(turma).soma += melhor.pontos;
+                turmasMap.get(turma).count++;
+            }
+        }
+        const labels = [], data = [];
+        turmasMap.forEach((val, key) => {
+            labels.push(key);
+            data.push(parseFloat((val.soma / val.count).toFixed(1)));
+        });
+        return { labels, data };
+    }
+
+    function gerarDadosDistribuicao() {
+        if (!estadoAtual) return null;
+        const todasFases = estadoAtual.resultados || {};
+        const participantes = estadoAtual.participantes || {};
+        const classificados = estadoAtual.classificados || {};
+        const totalAlunos = new Set();
+        const eliminados = new Set();
+        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+            const participantesFase = participantes[fase] || {};
+            Object.keys(participantesFase).forEach(id => totalAlunos.add(id));
+            const classificadosFase = classificados[fase] || [];
+            if (fase < window.TOTAL_FASES) {
+                classificadosFase.forEach(id => {
+                    if (totalAlunos.has(id)) eliminados.delete(id);
+                });
+                const participantesFaseIds = Object.keys(participantesFase);
+                participantesFaseIds.forEach(id => {
+                    if (!classificadosFase.includes(id)) {
+                        eliminados.add(id);
+                    }
+                });
+            }
+        }
+        const finalistas = new Set();
+        const classificadosFase5 = classificados[5] || [];
+        classificadosFase5.forEach(id => finalistas.add(id));
+        const classificadosSet = new Set([...classificadosFase5]);
+        const eliminadosCount = [...eliminados].filter(id => !classificadosSet.has(id)).length;
+        const classificadosCount = classificadosSet.size;
+        return {
+            labels: ['Classificados (Finalistas)', 'Eliminados'],
+            data: [classificadosCount, eliminadosCount]
+        };
+    }
+
+    function gerarDadosEvolucao() {
+        if (!estadoAtual) return null;
+        const todasFases = estadoAtual.resultados || {};
+        const participantes = estadoAtual.participantes || {};
+        let ultimaFase = estadoAtual.fase;
+        let melhores = [];
+        for (let fase = ultimaFase; fase >= 1; fase--) {
+            const resultadosFase = todasFases[fase] || {};
+            const participantesFase = participantes[fase] || {};
+            let lista = [];
+            for (let id in resultadosFase) {
+                const partidas = resultadosFase[id];
+                if (!partidas || partidas.length === 0) continue;
+                const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                lista.push({ id, pontos: melhor.pontos, nome: participantesFase[id]?.nome || "Anônimo" });
+            }
+            lista.sort((a,b) => b.pontos - a.pontos);
+            melhores = lista.slice(0, 5);
+            if (melhores.length > 0) break;
+        }
+        if (melhores.length === 0) return null;
+
+        const datasets = melhores.map((aluno, idx) => {
+            const pontosPorFase = [];
+            for (let fase = 1; fase <= ultimaFase; fase++) {
+                const resultadosFase = todasFases[fase] || {};
+                const partidas = resultadosFase[aluno.id] || [];
+                if (partidas.length > 0) {
+                    const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                    pontosPorFase.push(melhor.pontos);
+                } else {
+                    pontosPorFase.push(null);
+                }
+            }
+            const data = pontosPorFase.map(p => p || 0);
+            return {
+                label: `Top ${idx+1}: ${aluno.nome}`,
+                data: data,
+                borderColor: ['#e74c3c', '#f39c12', '#2ecc71', '#3498db', '#9b59b6'][idx % 5],
+                backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71', '#3498db', '#9b59b6'][idx % 5] + '33',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3
+            };
+        });
+        const labels = Array.from({ length: ultimaFase }, (_, i) => `Fase ${i+1}`);
+        return { labels, datasets };
+    }
+
+    function renderizarGraficos() {
+        if (meuTipo !== 'professor' || !professorAutenticado) return;
+        const dadosTurmas = gerarDadosTurmas();
+        if (dadosTurmas && dadosTurmas.labels.length > 0) {
+            const ctx = document.getElementById('chart-turmas').getContext('2d');
+            if (chartTurmas) chartTurmas.destroy();
+            chartTurmas = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dadosTurmas.labels,
+                    datasets: [{
+                        label: 'Média de Pontos',
+                        data: dadosTurmas.data,
+                        backgroundColor: ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'],
+                        borderColor: '#fff',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        const dadosDist = gerarDadosDistribuicao();
+        if (dadosDist && dadosDist.data.some(v => v > 0)) {
+            const ctx2 = document.getElementById('chart-distribuicao').getContext('2d');
+            if (chartDistribuicao) chartDistribuicao.destroy();
+            chartDistribuicao = new Chart(ctx2, {
+                type: 'pie',
+                data: {
+                    labels: dadosDist.labels,
+                    datasets: [{
+                        data: dadosDist.data,
+                        backgroundColor: ['#2ecc71', '#e74c3c'],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        const dadosEvol = gerarDadosEvolucao();
+        if (dadosEvol && dadosEvol.datasets.length > 0) {
+            const ctx3 = document.getElementById('chart-evolucao').getContext('2d');
+            if (chartEvolucao) chartEvolucao.destroy();
+            chartEvolucao = new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    labels: dadosEvol.labels,
+                    datasets: dadosEvol.datasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
     }
 
     // =================================================================
