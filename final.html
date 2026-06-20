@@ -264,6 +264,7 @@
 <script src="js/config/firebase-config.js"></script>
 <script src="js/services/firebase-service.js"></script>
 <script src="js/services/auth-service.js"></script>
+<script src="js/services/sync-service.js"></script>
 <script src="js/utils/constants.js"></script>
 <script src="js/utils/helpers.js"></script>
 <script src="js/utils/sounds.js"></script>
@@ -2112,43 +2113,61 @@
         const faseAtual = estadoAtual.fase;
         const refResultado = window.firebaseService.getResultadosRef(faseAtual).child(alunoId);
 
-        await refResultado.transaction((currentData) => {
-            const lista = currentData || [];
-            const novaPartida = { pontos: pontosPartida, acertos: acertosPartida, tempo: tempoTotalPartida };
-            lista.push(novaPartida);
-            return lista;
-        });
+        // Monta os dados da partida
+        const dadosPartida = {
+            pontos: pontosPartida,
+            acertos: acertosPartida,
+            tempo: tempoTotalPartida,
+            timestamp: Date.now()
+        };
 
+        // Verifica se está online
+        if (window.SyncService && window.SyncService.isOnline()) {
+            try {
+                await refResultado.transaction((currentData) => {
+                    const lista = currentData || [];
+                    lista.push(dadosPartida);
+                    return lista;
+                });
+                console.log('[Partida] Salva no Firebase com sucesso.');
+            } catch (error) {
+                console.warn('[Partida] Falha ao salvar no Firebase, salvando offline:', error);
+                // Salvar offline como fallback
+                window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
+            }
+        } else {
+            // Offline: salvar localmente
+            console.log('[Partida] Offline, salvando partida localmente.');
+            window.SyncService.addOfflinePartida(alunoId, faseAtual, dadosPartida);
+        }
+
+        // Remove dados temporários
         await window.firebaseService.removerResultadosTemp(faseAtual, alunoId);
 
-        const snapRanking = await window.firebaseService.getResultadosRef(faseAtual).once('value');
-        let rankingPosicoes = [];
-        if (snapRanking.val()) {
-            Object.keys(snapRanking.val()).forEach(key => {
-                const partidas = snapRanking.val()[key];
-                if (partidas && partidas.length) {
-                    const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-                    rankingPosicoes.push({ id: key, pontos: melhor.pontos });
-                }
-            });
-        }
-        rankingPosicoes.sort((a,b) => b.pontos - a.pontos);
-        const posicao = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
-
-        if (posicao > 0) {
-            await refResultado.transaction((currentData) => {
-                const lista = currentData || [];
-                if (lista.length > 0) {
-                    const ultima = lista[lista.length - 1];
-                    ultima.posicao = posicao;
-                }
-                return lista;
-            });
-            atualizarPosicaoAluno(posicao);
+        // Calcula posição (apenas se estiver online para pegar ranking completo, ou usa estimativa local)
+        let posicao = 0;
+        if (window.SyncService && window.SyncService.isOnline()) {
+            const snapRanking = await window.firebaseService.getResultadosRef(faseAtual).once('value');
+            let rankingPosicoes = [];
+            if (snapRanking.val()) {
+                Object.keys(snapRanking.val()).forEach(key => {
+                    const partidas = snapRanking.val()[key];
+                    if (partidas && partidas.length) {
+                        const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+                        rankingPosicoes.push({ id: key, pontos: melhor.pontos });
+                    }
+                });
+            }
+            rankingPosicoes.sort((a,b) => b.pontos - a.pontos);
+            posicao = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
+        } else {
+            // Offline: posição 0 = "sincronizando"
+            posicao = 0;
         }
 
+        // Verificar conquistas (apenas se tiver dados suficientes)
         if (alunoId) {
-            const minhasPartidas = estadoAtual.resultados?.[estadoAtual.fase]?.[alunoId] || [];
+            const minhasPartidas = estadoAtual.resultados?.[faseAtual]?.[alunoId] || [];
             const partidasAtualizadas = [...minhasPartidas, { acertos: acertosPartida, tempo: tempoTotalPartida }];
             const dadosAluno = {
                 totalPartidas: partidasAtualizadas.length,
@@ -2161,15 +2180,23 @@
             window.achievementManager.verificarConquistas(alunoId, dadosAluno);
         }
 
-        exibirModalResultadosSimples(posicao, pontosPartida);
-        renderAluno();
+        // Atualiza UI e exibe modal (se posicao > 0, senão mostra "sincronizando")
+        if (posicao > 0) {
+            atualizarPosicaoAluno(posicao);
+            exibirModalResultadosSimples(posicao, pontosPartida);
+        } else {
+            // Exibe modal com mensagem de sincronização pendente
+            window.toast('📶 Partida salva. A posição será atualizada quando a conexão for restabelecida.');
+            exibirModalResultadosSimples('?', pontosPartida);
+            // Força renderização da UI para mostrar as medalhas já conquistadas
+            renderAluno();
+        }
     }
 
     // =================================================================
-    // INICIALIZAÇÃO (CORRIGIDA)
+    // INICIALIZAÇÃO
     // =================================================================
     async function init() {
-        // Tenta carregar dados, mas não quebra a UI se falhar
         try {
             await carregarIntervalos();
             await carregarTurmas();
@@ -2178,7 +2205,7 @@
             window.toast('Erro ao carregar dados. Recarregue a página.');
         }
 
-        // --- LISTENER DE AUTENTICAÇÃO (sempre executado) ---
+        // --- LISTENER DE AUTENTICAÇÃO ---
         listenerAuth = window.authService.onAuthStateChanged((user) => {
             if (user) {
                 professorAutenticado = true;
@@ -2202,16 +2229,12 @@
             }
         });
 
-        // --- EVENTOS DAS ABAS (CORRIGIDO: SEMPRE EXECUTADO) ---
+        // --- EVENTOS DAS ABAS ---
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
-                // Remove active de todas
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                // Adiciona active à clicada
                 this.classList.add('active');
-                // Esconde todos os conteúdos
                 document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-                // Mostra o conteúdo correspondente
                 const tabId = this.getAttribute('data-tab');
                 const target = document.getElementById(`tab-${tabId}`);
                 if (target) {
