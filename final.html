@@ -97,6 +97,10 @@
             <button id="btn-professor" class="btn-primary" aria-label="Acessar painel do professor">👨‍🏫 Professor</button>
             <button id="btn-aluno" aria-label="Entrar como aluno">🎮 Aluno</button>
             <button id="btn-projecao" aria-label="Acessar tela da torcida">📺 Torcida</button>
+            <button id="btn-verificar-atualizacao" class="btn-secondary" aria-label="Verificar atualizações">🔄 Verificar Atualizações</button>
+        </div>
+        <div style="font-size: 12px; opacity: 0.5; margin-top: 5px; text-align: center;">
+            Versão: <span id="app-version-display">2.3.0</span>
         </div>
     </div>
 
@@ -515,10 +519,219 @@
 
 <script>
     // =============================================================
+    // SISTEMA DE VERSÃO E ATUALIZAÇÃO
+    // =============================================================
+    const APP_VERSION = "2.3.0";
+    const APP_VERSION_CHECK_URL = "version.json";
+    const APP_STORAGE_KEY = "app_version_cache";
+
+    // Função para obter a versão atual do servidor
+    async function verificarVersaoServidor() {
+        try {
+            const response = await fetch(APP_VERSION_CHECK_URL + '?t=' + Date.now(), {
+                cache: 'no-cache'
+            });
+            if (!response.ok) throw new Error('Falha ao buscar versão');
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.warn('Erro ao verificar versão:', error);
+            return null;
+        }
+    }
+
+    // Função para comparar versões
+    function compararVersoes(v1, v2) {
+        const partes1 = v1.split('.').map(Number);
+        const partes2 = v2.split('.').map(Number);
+        for (let i = 0; i < Math.max(partes1.length, partes2.length); i++) {
+            const p1 = partes1[i] || 0;
+            const p2 = partes2[i] || 0;
+            if (p1 > p2) return 1;
+            if (p1 < p2) return -1;
+        }
+        return 0;
+    }
+
+    // Função para verificar atualização
+    async function verificarAtualizacao(mostrarModal = true) {
+        const versaoLocal = APP_VERSION;
+        const dadosServidor = await verificarVersaoServidor();
+        
+        if (!dadosServidor) {
+            if (mostrarModal) {
+                window.toast('⚠️ Não foi possível verificar atualizações. Verifique sua conexão.');
+            }
+            return false;
+        }
+
+        const comparacao = compararVersoes(versaoLocal, dadosServidor.version);
+        
+        if (comparacao < 0) {
+            // Nova versão disponível
+            mostrarModalAtualizacao(versaoLocal, dadosServidor);
+            return true;
+        } else if (comparacao === 0) {
+            // Já está atualizado
+            if (mostrarModal) {
+                mostrarModalAtualizado(dadosServidor);
+            }
+            return false;
+        } else {
+            // Versão local é mais nova (desenvolvimento)
+            if (mostrarModal) {
+                window.toast('🔧 Você está usando uma versão de desenvolvimento.');
+            }
+            return false;
+        }
+    }
+
+    // Modal de atualização disponível
+    function mostrarModalAtualizacao(versaoAtual, dadosServidor) {
+        const modalHtml = `
+            <div class="modal-atualizacao" id="modal-atualizacao" role="dialog" aria-modal="true" aria-labelledby="modal-atualizacao-title" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100000; display:flex; justify-content:center; align-items:center;">
+                <div class="card" style="max-width:500px; width:90%; max-height:90vh; overflow-y:auto; padding:30px; text-align:center;">
+                    <h2 id="modal-atualizacao-title" style="color:#f39c12;">🚀 NOVA ATUALIZAÇÃO DISPONÍVEL!</h2>
+                    <div style="margin: 15px 0;">
+                        <div style="opacity:0.7;">Versão atual: <strong>${versaoAtual}</strong></div>
+                        <div style="font-size: 22px; color: #f39c12;">Nova versão: <strong>${dadosServidor.version}</strong></div>
+                        <div style="margin-top: 10px; font-size: 14px; opacity:0.7;">📅 ${dadosServidor.updateDate || 'Data não informada'}</div>
+                    </div>
+                    ${dadosServidor.message ? `
+                        <div style="background: var(--bg-card); padding: 15px; border-radius: 10px; margin: 10px 0; text-align: left;">
+                            <strong>📝 Novidades:</strong>
+                            <div style="white-space: pre-wrap; margin-top: 5px;">${dadosServidor.message}</div>
+                        </div>
+                    ` : ''}
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
+                        <button id="btn-atualizar-agora" class="btn-success" style="font-size: 18px; padding: 12px 30px;">
+                            🔄 ATUALIZAR AGORA
+                        </button>
+                        <button id="btn-atualizar-depois" class="btn-secondary">
+                            ⏰ Lembrar Depois
+                        </button>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 12px; opacity:0.6;">
+                        ⚠️ A atualização irá recarregar o jogo. Todas as configurações serão mantidas.
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const modalExistente = document.getElementById('modal-atualizacao');
+        if (modalExistente) modalExistente.remove();
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        document.getElementById('btn-atualizar-agora')?.addEventListener('click', function() {
+            document.getElementById('modal-atualizacao')?.remove();
+            forcarAtualizacao();
+        });
+        
+        document.getElementById('btn-atualizar-depois')?.addEventListener('click', function() {
+            document.getElementById('modal-atualizacao')?.remove();
+            localStorage.setItem('app_ultima_verificacao', Date.now().toString());
+            window.toast('⏰ Você será notificado na próxima vez que abrir o jogo.');
+        });
+        
+        document.addEventListener('keydown', function handler(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('modal-atualizacao');
+                if (modal) {
+                    modal.remove();
+                    localStorage.setItem('app_ultima_verificacao', Date.now().toString());
+                    document.removeEventListener('keydown', handler);
+                }
+            }
+        });
+        
+        setTimeout(() => document.getElementById('btn-atualizar-agora')?.focus(), 100);
+    }
+
+    // Modal "Jogo Atualizado"
+    function mostrarModalAtualizado(dadosServidor) {
+        const modalHtml = `
+            <div class="modal-atualizacao" id="modal-atualizado" role="dialog" aria-modal="true" aria-labelledby="modal-atualizado-title" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100000; display:flex; justify-content:center; align-items:center;">
+                <div class="card" style="max-width:400px; width:90%; padding:30px; text-align:center;">
+                    <h2 id="modal-atualizado-title" style="color:#2ecc71;">✅ JOGO ATUALIZADO!</h2>
+                    <div style="font-size: 48px; margin: 10px 0;">🚀</div>
+                    <div style="font-size: 20px;">Você está usando a versão mais recente do jogo.</div>
+                    <div style="margin: 15px 0; opacity:0.7;">
+                        <div>Versão: <strong>${dadosServidor.version}</strong></div>
+                        ${dadosServidor.updateDate ? `<div>📅 ${dadosServidor.updateDate}</div>` : ''}
+                    </div>
+                    <button id="btn-fechar-atualizado" class="btn-primary" style="margin-top: 15px;">🔙 Voltar</button>
+                </div>
+            </div>
+        `;
+        
+        const modalExistente = document.getElementById('modal-atualizado');
+        if (modalExistente) modalExistente.remove();
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        document.getElementById('btn-fechar-atualizado')?.addEventListener('click', function() {
+            document.getElementById('modal-atualizado')?.remove();
+        });
+        
+        setTimeout(() => document.getElementById('btn-fechar-atualizado')?.focus(), 100);
+    }
+
+    // Forçar atualização do jogo
+    async function forcarAtualizacao() {
+        window.toast('🔄 Baixando atualização...');
+        
+        try {
+            // 1. Desregistrar Service Workers
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const registration of registrations) {
+                    await registration.unregister();
+                    console.log('Service Worker desregistrado:', registration);
+                }
+            }
+            
+            // 2. Limpar cache
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                for (const key of keys) {
+                    await caches.delete(key);
+                    console.log('Cache deletado:', key);
+                }
+            }
+            
+            // 3. Remover versão armazenada
+            localStorage.removeItem(APP_STORAGE_KEY);
+            localStorage.removeItem('app_ultima_verificacao');
+            
+            // 4. Recarregar a página com cache bypass
+            window.location.reload(true);
+            
+        } catch (error) {
+            console.error('Erro ao forçar atualização:', error);
+            window.toast('⚠️ Erro ao atualizar. Tente limpar o cache manualmente.');
+            window.location.reload(true);
+        }
+    }
+
+    // Verificar atualizações ao iniciar o jogo
+    async function verificarAtualizacaoAoIniciar() {
+        const ultimaVerificacao = localStorage.getItem('app_ultima_verificacao');
+        const agora = Date.now();
+        const UMA_HORA = 60 * 60 * 1000;
+        
+        if (ultimaVerificacao && (agora - parseInt(ultimaVerificacao)) < UMA_HORA) {
+            console.log('⏳ Última verificação há menos de 1 hora, pulando...');
+            return;
+        }
+        
+        console.log('🔍 Verificando atualizações...');
+        const temAtualizacao = await verificarAtualizacao(false);
+        localStorage.setItem('app_ultima_verificacao', agora.toString());
+    }
+
+    // =============================================================
     // BONUS-CONFIG.JS (EMBUTIDO)
     // =============================================================
     window.BONUS_CONFIG = {
-        // ========== CONFIGURAÇÕES GERAIS ==========
         minimoPartidas: 5,
         minimoPartidasMin: 1,
         minimoPartidasMax: 20,
@@ -527,13 +740,12 @@
         recordeFaseAtivo: true,
         recordeGlobalAtivo: true,
 
-        // ========== ESCALA DE BÔNUS/PUNIÇÃO ==========
         escalas: {
-            maximo: 200,    // Delta >= 0
-            alto: 100,      // Delta -0.01 a -0.10
-            medio: 50,      // Delta -0.11 a -0.20
-            baixo: -100,    // Delta -0.21 a -0.50
-            pessimo: -200   // Delta < -0.50
+            maximo: 200,
+            alto: 100,
+            medio: 50,
+            baixo: -100,
+            pessimo: -200
         },
         punicaoMinPartidas: -100,
         recordeFaseValor: 50,
@@ -703,17 +915,10 @@
             let bonusRecordeFase = 0;
             let bonusRecordeGlobal = 0;
 
-            // 1. Bônus de Consistência
             if (config.ativo && config.deltaAtivo) {
                 bonusConsistencia = calcularBonusConsistencia(partidas);
                 bonusTotal += bonusConsistencia;
             }
-
-            // 2. Bônus de Recorde da Fase (apenas no final da fase)
-            // Será aplicado quando a fase for finalizada
-
-            // 3. Bônus de Recorde Global (apenas na Fase 5)
-            // Será aplicado no final da Fase 5
 
             return {
                 bonusConsistencia,
@@ -1483,11 +1688,9 @@
             const snapTemp = await window.firebaseService.getResultadosTempRef(faseNum).once('value');
             const participantes = estadoAtual.participantes?.[faseNum] || {};
 
-            // Buscar recorde da fase
             const snapRecordeFase = await window.firebaseService.getCopaRef().child('recordeFase').child(faseNum.toString()).once('value');
             const recordeFase = snapRecordeFase.val() || null;
 
-            // Buscar recorde global (apenas para fase 5)
             let recordeGlobal = null;
             if (faseNum === 5) {
                 const snapRecordeGlobal = await window.firebaseService.getCopaRef().child('recordeGlobal').once('value');
@@ -1546,7 +1749,6 @@
                         let tempoTotalFase = 0;
                         partidas.forEach(p => { tempoTotalFase += p.tempo || 0; });
                         
-                        // Calcular velocidade
                         let melhorVelocidade = null;
                         partidas.forEach(p => {
                             if (p.acertos > 0 && p.tempo > 0) {
@@ -1639,7 +1841,6 @@
                 listaComId.push({ id, ...dados });
             }
 
-            // Verificar recorde da fase e aplicar bônus
             if (recordeFase && window.BONUS_CONFIG.ativo && window.BONUS_CONFIG.recordeFaseAtivo) {
                 const recordistaId = recordeFase.alunoId;
                 const bonusValor = window.BONUS_CONFIG.recordeFaseValor || 50;
@@ -1651,7 +1852,6 @@
                 });
             }
 
-            // Verificar recorde global (apenas fase 5)
             if (faseNum === 5 && recordeGlobal && window.BONUS_CONFIG.ativo && window.BONUS_CONFIG.recordeGlobalAtivo) {
                 const globalId = recordeGlobal.alunoId;
                 const bonusValor = window.BONUS_CONFIG.recordeGlobalValor || 50;
@@ -1663,7 +1863,6 @@
                 });
             }
 
-            // Recalcular pontuação final para todos
             listaComId.forEach(item => {
                 if (!item.isTemp) {
                     item.bonusTotal = (item.bonusConsistencia || 0) + (item.bonusRecordeFase || 0) + (item.bonusRecordeGlobal || 0);
@@ -1671,7 +1870,6 @@
                 }
             });
 
-            // Ordenar por pontuação final
             listaComId.sort((a,b) => b.pontuacaoFinal - a.pontuacaoFinal || b.acertos - a.acertos || a.tempo - b.tempo);
 
             if (listaComId.length === 0) {
@@ -1683,8 +1881,6 @@
             const maxPontos = listaComId[0].pontuacaoFinal || 0;
             const vagas = window.VAGAS_POR_FASE[faseNum] || 30;
             const mostrarClassificacao = (containerId === 'ranking-torcida-container' && !torcidaModoAcumulado) ? true : exibirClassificacao;
-
-            // Detectar se é fase 5 para mostrar recorde global
             const isFase5 = (faseNum === 5);
 
             let html = `<table class="ranking-table"><thead><tr>
@@ -2083,7 +2279,6 @@
             if (recFase) {
                 let nome = 'Desconhecido';
                 let turma = '?';
-                // Buscar nome do aluno
                 for (let f = 1; f <= 5; f++) {
                     if (participantes[f] && participantes[f][recFase.alunoId]) {
                         nome = participantes[f][recFase.alunoId].nome || 'Desconhecido';
@@ -2092,7 +2287,6 @@
                     }
                 }
                 if (nome === 'Desconhecido') {
-                    // Tentar buscar nos resultados
                     for (let f = 1; f <= 5; f++) {
                         if (resultados[f] && resultados[f][recFase.alunoId] && resultados[f][recFase.alunoId].length > 0) {
                             nome = resultados[f][recFase.alunoId][0].nome || 'Desconhecido';
@@ -2122,7 +2316,6 @@
             html += info;
         }
 
-        // Recorde Global
         const recGlobal = estadoAtual?.recordeGlobal || null;
         if (recGlobal) {
             let nome = 'Desconhecido';
@@ -2500,13 +2693,9 @@
         const faseAtual = estadoAtual.fase;
         if (faseAtual > window.TOTAL_FASES) { window.toast("Competição já finalizada!"); return; }
         
-        // =============================================================
-        // APLICAR BÔNUS DE RECORDE DA FASE
-        // =============================================================
         const resultadosFase = estadoAtual.resultados?.[faseAtual] || {};
         const participantesFase = estadoAtual.participantes?.[faseAtual] || {};
         
-        // Encontrar o recordista da fase (melhor velocidade)
         let recordistaId = null;
         let melhorVelocidade = Infinity;
         
@@ -2523,10 +2712,7 @@
                     totalTempo += p.tempo;
                 }
             });
-            // Calcular velocidade média da melhor partida (ou a que tem mais acertos)
             if (totalAcertos > 0 && totalTempo > 0) {
-                const media = totalTempo / totalAcertos;
-                // Usar a melhor velocidade da fase (mais rápida)
                 if (melhorVel < melhorVelocidade) {
                     melhorVelocidade = melhorVel;
                     recordistaId = id;
@@ -2534,7 +2720,6 @@
             }
         }
 
-        // Salvar recorde da fase no Firebase
         if (recordistaId && melhorVelocidade !== Infinity) {
             await window.firebaseService.getCopaRef().child('recordeFase').child(faseAtual.toString()).set({
                 alunoId: recordistaId,
@@ -2542,9 +2727,7 @@
                 timestamp: Date.now()
             });
             
-            // Atualizar recorde global se for a fase 5
             if (faseAtual === 5 && window.BONUS_CONFIG.ativo && window.BONUS_CONFIG.recordeGlobalAtivo) {
-                // Buscar recorde global anterior
                 const snapGlobal = await window.firebaseService.getCopaRef().child('recordeGlobal').once('value');
                 const recordeGlobal = snapGlobal.val();
                 if (!recordeGlobal || melhorVelocidade < recordeGlobal.velocidade) {
@@ -2558,14 +2741,10 @@
             }
         }
 
-        // =============================================================
-        // ATUALIZAR BÔNUS NAS PARTIDAS DA FASE
-        // =============================================================
         const bonusConsistenciaConfig = window.BONUS_CONFIG;
         const bonusRecordeFaseValor = bonusConsistenciaConfig.recordeFaseValor || 50;
         const bonusRecordeGlobalValor = bonusConsistenciaConfig.recordeGlobalValor || 50;
 
-        // Buscar recorde global para a fase 5
         let recordeGlobalData = null;
         if (faseAtual === 5) {
             const snapGlobal = await window.firebaseService.getCopaRef().child('recordeGlobal').once('value');
@@ -2576,13 +2755,10 @@
             const partidas = resultadosFase[id] || [];
             if (partidas.length === 0) continue;
 
-            // Encontrar a melhor partida (com pontuação final já incluída)
             const partidasComBonus = partidas.map(p => {
-                // Calcular bônus de consistência (delta)
                 const delta = window.BonusCalculator.calcularDelta(partidas);
                 const bonusConsistencia = window.BonusCalculator.calcularBonusConsistencia(partidas);
                 
-                // Bônus de recorde da fase (apenas para o recordista)
                 let bonusRecordeFase = 0;
                 if (bonusConsistenciaConfig.ativo && bonusConsistenciaConfig.recordeFaseAtivo) {
                     if (id === recordistaId) {
@@ -2590,7 +2766,6 @@
                     }
                 }
 
-                // Bônus de recorde global (apenas fase 5)
                 let bonusRecordeGlobal = 0;
                 if (faseAtual === 5 && bonusConsistenciaConfig.ativo && bonusConsistenciaConfig.recordeGlobalAtivo) {
                     if (recordeGlobalData && id === recordeGlobalData.alunoId) {
@@ -2612,10 +2787,8 @@
                 };
             });
 
-            // Salvar as partidas atualizadas com bônus
             await window.firebaseService.getResultadosRef(faseAtual).child(id).set(partidasComBonus);
 
-            // Atualizar acumulado com a pontuação final da melhor partida
             const melhor = partidasComBonus.sort((a,b) => (b.pontuacaoFinal || b.pontos || 0) - (a.pontuacaoFinal || a.pontos || 0))[0];
             const pontuacaoAcumulada = melhor.pontuacaoFinal || melhor.pontos || 0;
             await window.firebaseService.getCopaRef().child('acumulado').child(id).transaction((current) => {
@@ -2623,9 +2796,6 @@
             });
         }
 
-        // =============================================================
-        // CLASSIFICAR ALUNOS
-        // =============================================================
         let lista = [];
         for (let id in resultadosFase) {
             const partidas = resultadosFase[id] || [];
@@ -2644,7 +2814,6 @@
         const classificadosIds = lista.slice(0, vagas).map(l => l.id);
         await window.firebaseService.getClassificadosRef(faseAtual).set(classificadosIds);
 
-        // Preparar participantes para próxima fase
         const participantesAtual = estadoAtual.participantes?.[faseAtual] || {};
         const participantesProxima = {};
         for (let id of classificadosIds) {
@@ -2663,7 +2832,6 @@
         }
         await window.firebaseService.removerResultadosTemp(faseAtual);
 
-        // Verificar conquistas
         for (let id of classificadosIds) {
             const partidas = estadoAtual.resultados?.[faseAtual]?.[id] || [];
             const dadosAluno = {
@@ -3072,7 +3240,6 @@
         const config = window.BONUS_CONFIG;
         if (!config) return;
 
-        // Carregar valores do config
         document.getElementById('bonus-geral-ativo').checked = config.ativo;
         document.getElementById('bonus-delta-ativo').checked = config.deltaAtivo;
         document.getElementById('bonus-recorde-fase-ativo').checked = config.recordeFaseAtivo;
@@ -3092,12 +3259,10 @@
         document.getElementById('bonus-recorde-fase-unico').checked = config.recordeFaseUnico;
         document.getElementById('bonus-recorde-global-valor').value = config.recordeGlobalValor;
 
-        // Eventos dos sliders
         document.getElementById('min-partidas').addEventListener('input', function() {
             document.getElementById('min-partidas-valor').innerText = this.value;
         });
 
-        // Salvar configurações
         document.getElementById('btn-salvar-bonus-config').onclick = function() {
             config.ativo = document.getElementById('bonus-geral-ativo').checked;
             config.deltaAtivo = document.getElementById('bonus-delta-ativo').checked;
@@ -3120,12 +3285,9 @@
             config.salvar();
             window.toast('💾 Configurações de bônus salvas!');
             document.getElementById('bonus-config-status').innerText = '✅ Configurações salvas com sucesso!';
-            
-            // Atualizar recordistas
             renderRecordistas();
         };
 
-        // Resetar padrões
         document.getElementById('btn-reset-bonus-config').onclick = function() {
             if (confirm('Resetar configurações de bônus para os valores padrão?')) {
                 const padrao = {
@@ -3491,17 +3653,14 @@
         const faseAtual = estadoAtual.fase;
         const refResultado = window.firebaseService.getResultadosRef(faseAtual).child(alunoId);
 
-        // Calcular bônus
         const partidasExistentes = estadoAtual.resultados?.[faseAtual]?.[alunoId] || [];
         const todasPartidas = [...partidasExistentes, { pontos: pontosPartida, acertos: acertosPartida, tempo: tempoTotalPartida }];
         
         const delta = window.BonusCalculator.calcularDelta(todasPartidas);
         const bonusConsistencia = window.BonusCalculator.calcularBonusConsistencia(todasPartidas);
 
-        // Verificar se o aluno é o recordista da fase (será aplicado ao final da fase)
-        // Por enquanto, apenas salvamos os dados
-        const bonusRecordeFase = 0; // Será aplicado quando a fase for finalizada
-        const bonusRecordeGlobal = 0; // Será aplicado na fase 5
+        const bonusRecordeFase = 0;
+        const bonusRecordeGlobal = 0;
         const bonusTotal = (bonusConsistencia || 0) + bonusRecordeFase + bonusRecordeGlobal;
         const pontuacaoFinal = pontosPartida + bonusTotal;
 
@@ -3518,7 +3677,6 @@
             pontuacaoFinal: pontuacaoFinal
         };
 
-        // Salvar no Firebase
         if (window.SyncService && window.SyncService.isOnline()) {
             try {
                 await refResultado.transaction((currentData) => {
@@ -3528,7 +3686,6 @@
                 });
                 console.log('[Partida] Salva no Firebase com sucesso.');
                 
-                // Atualizar acumulado
                 await window.firebaseService.getCopaRef().child('acumulado').child(alunoId).transaction((current) => {
                     return (current || 0) + pontuacaoFinal;
                 });
@@ -3901,6 +4058,19 @@
             window.toast('Erro ao carregar dados. Recarregue a página.');
         }
 
+        // Exibir versão do app
+        document.getElementById('app-version-display').innerText = APP_VERSION;
+
+        // Botão de verificar atualizações
+        document.getElementById('btn-verificar-atualizacao')?.addEventListener('click', function() {
+            this.disabled = true;
+            this.innerText = '⏳ Verificando...';
+            verificarAtualizacao(true).finally(() => {
+                this.disabled = false;
+                this.innerText = '🔄 Verificar Atualizações';
+            });
+        });
+
         // --- LISTENER DE AUTENTICAÇÃO ---
         listenerAuth = window.authService.onAuthStateChanged((user) => {
             if (user) {
@@ -4265,6 +4435,11 @@
                 if (modalFim) modalFim.remove();
             }
         });
+
+        // Verificar atualizações ao iniciar (após 2 segundos)
+        setTimeout(() => {
+            verificarAtualizacaoAoIniciar();
+        }, 2000);
 
         if (!listenerCopa) iniciarListeners();
     }
