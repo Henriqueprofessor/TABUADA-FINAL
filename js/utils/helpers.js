@@ -1,5 +1,3 @@
-// js/utils/helpers.js
-
 window.toast = function(message) {
   var t = document.getElementById('toast');
   if (t) {
