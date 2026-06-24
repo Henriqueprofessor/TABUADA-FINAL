@@ -1,41 +1,13 @@
 // js/services/auth-service.js
-// Serviço de autenticação com Firebase
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { app } from './firebase-service.js';
 
-// OBS: O Firebase Auth já está disponível via SDK compat (firebase.auth())
+const auth = getAuth(app);
 
-// ========== PERSISTÊNCIA ==========
-// Mantém o login mesmo após fechar o navegador (salva no localStorage)
-function setLocalPersistence() {
-    return firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-}
-
-// ========== LOGIN ==========
-function login(email, password) {
-    return setLocalPersistence().then(() => {
-        return firebase.auth().signInWithEmailAndPassword(email, password);
-    });
-}
-
-// ========== LOGOUT ==========
-function logout() {
-    return firebase.auth().signOut();
-}
-
-// ========== VERIFICAR ESTADO ==========
-function onAuthStateChanged(callback) {
-    return firebase.auth().onAuthStateChanged(callback);
-}
-
-// ========== USUÁRIO ATUAL ==========
-function getCurrentUser() {
-    return firebase.auth().currentUser;
-}
-
-// ========== EXPORTAÇÃO GLOBAL ==========
-window.authService = {
-    login,
-    logout,
-    onAuthStateChanged,
-    getCurrentUser,
-    setLocalPersistence
+export const loginProfessor = (email, password) => {
+  return signInWithEmailAndPassword(auth, email, password);
 };
+
+export const logout = () => signOut(auth);
+
+export const onAuthChange = (callback) => onAuthStateChanged(auth, callback);
