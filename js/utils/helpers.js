@@ -1,6 +1,5 @@
 // js/utils/helpers.js
 
-// Exibe mensagem no canto inferior
 window.toast = function(message) {
   var t = document.getElementById('toast');
   if (t) {
@@ -10,7 +9,6 @@ window.toast = function(message) {
   }
 };
 
-// Atualiza o horário da última sincronização
 window.updateLastSyncTime = function() {
   var span = document.getElementById('last-sync-time');
   if (span) {
@@ -19,7 +17,6 @@ window.updateLastSyncTime = function() {
   window.toast('Sincronizado!');
 };
 
-// Escapa caracteres especiais para HTML
 window.escapeHtml = function(str) {
   if (!str) return '';
   return str.replace(/[&<>]/g, function(m) {
@@ -30,7 +27,6 @@ window.escapeHtml = function(str) {
   }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) { return c; });
 };
 
-// Função para evitar múltiplos cliques rápidos
 window.debounce = function(fn, delay) {
   var timer = null;
   return function() {
@@ -44,7 +40,6 @@ window.debounce = function(fn, delay) {
   };
 };
 
-// Embaralha um array (modifica o original)
 window.shuffleArray = function(arr) {
   for (var i = arr.length - 1; i > 0; i--) {
     var j = Math.floor(Math.random() * (i + 1));
@@ -55,7 +50,6 @@ window.shuffleArray = function(arr) {
   return arr;
 };
 
-// Gera um número inteiro aleatório entre min e max (inclusive)
 window.randInt = function(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
