@@ -4,8 +4,360 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo</title>
-    <!-- CSS externo -->
-    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background: #0a0f1e;
+            color: #eee;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .card {
+            background: rgba(12,20,35,0.9);
+            backdrop-filter: blur(4px);
+            border-radius: 28px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(0,255,255,0.2);
+        }
+        .hidden { display: none; }
+        h1, h2, h3 { color: #ffd966; margin-bottom: 16px; }
+        button {
+            background: #1f3a4b;
+            color: #fff;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            margin: 4px;
+        }
+        button:hover { background: #2c5a6e; transform: scale(1.02); }
+        button:disabled { background: #333; cursor: not-allowed; opacity: 0.5; }
+        .btn-primary { background: #e67e22; }
+        .btn-success { background: #27ae60; }
+        .btn-danger { background: #c0392b; }
+        .btn-warning { background: #f39c12; }
+        .btn-secondary { background: #34495e; }
+        .status-box {
+            background: #000000aa;
+            border-radius: 20px;
+            padding: 16px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        .flex-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .timer-display {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffd966;
+            background: #000;
+            padding: 10px 20px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+        .online-badge {
+            background: #27ae60;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        .ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            font-size: 13px;
+            word-break: break-word;
+            white-space: normal;
+        }
+        .ranking-table th, .ranking-table td {
+            border-bottom: 1px solid #2c3e50;
+            padding: 8px 6px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .classificado-sim { color: #2ecc71; font-weight: bold; }
+        .classificado-nao { color: #e74c3c; font-weight: bold; }
+        .posicao-subiu { color: #2ecc71; font-weight: bold; }
+        .posicao-desceu { color: #e74c3c; font-weight: bold; }
+        .podium {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .podium-card {
+            text-align: center;
+            padding: 20px;
+            background: #1f3a4b;
+            border-radius: 20px;
+            min-width: 150px;
+        }
+        .podium-1 { background: linear-gradient(135deg, #ffd700, #ffb347); color: #000; }
+        .podium-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #000; }
+        .podium-3 { background: linear-gradient(135deg, #cd7f32, #b87333); color: #000; }
+        .podium-4, .podium-5 { background: #2c5a6e; }
+        .medalha { font-size: 40px; }
+        .barra-tempo {
+            width: 100%;
+            height: 12px;
+            background: #2c3e50;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .progresso-tempo {
+            width: 100%;
+            height: 100%;
+            background: #27ae60;
+            transition: width 0.05s linear;
+        }
+        .opcoes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .opcao {
+            background: #1f3a4b;
+            color: white;
+            padding: 15px;
+            font-size: 20px;
+            border-radius: 40px;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e67e22;
+            padding: 12px 24px;
+            border-radius: 60px;
+            z-index: 3000;
+            font-weight: bold;
+        }
+        .fase-selector { background: #0a0f1e; padding: 8px; border-radius: 20px; margin: 10px 0; }
+        .aluno-item {
+            background: #1f3a4b;
+            margin: 8px 0;
+            padding: 10px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .scroll-list { max-height: 300px; overflow-y: auto; margin-top: 10px; }
+        hr { margin: 15px 0; border-color: #2c3e50; }
+        .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { background: #1f3a4b; padding: 8px 20px; border-radius: 30px; cursor: pointer; }
+        .tab-btn.active { background: #e67e22; }
+        .modalidade-badge {
+            background: #2c5a6e;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: inline-block;
+            margin-left: 15px;
+        }
+        .live-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            margin-left: 10px;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.6; } 100% { opacity: 1; } }
+        .link-classificatoria {
+            font-size: 14px;
+            background: #1f3a4b;
+            padding: 6px 12px;
+            border-radius: 30px;
+            text-decoration: none;
+            color: #ffd966;
+            transition: 0.2s;
+        }
+        .link-classificatoria:hover {
+            background: #2c5a6e;
+            color: white;
+        }
+        .header-title {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        @media (max-width: 768px) {
+            .ranking-table th, .ranking-table td { font-size: 11px; padding: 4px 3px; }
+        }
+        .resumo-card {
+            background: #1f3a4b;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .modo-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .btn-modo {
+            background: #1f3a4b;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        .btn-modo.ativo { background: #e67e22; }
+        .fase-info {
+            font-size: 14px;
+            background: #1f3a4b;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-left: 15px;
+        }
+        .header-actions .fase-info { margin-left: auto; margin-right: 15px; }
+        .top-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .pontuacao-atual {
+            font-size: 24px;
+            font-weight: bold;
+            background: #000000aa;
+            padding: 6px 18px;
+            border-radius: 40px;
+            display: inline-block;
+        }
+        .indicador-posicao {
+            font-size: 28px;
+            font-weight: bold;
+            background: #000000aa;
+            padding: 6px 18px;
+            border-radius: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-resultados {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #0f172a;
+            border-radius: 32px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            z-index: 10000;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+            border: 2px solid #ffd966;
+            text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-classificado { border-color: #2ecc71; background: #0a2a1a; }
+        .modal-eliminado { border-color: #e74c3c; background: #2a0a0a; }
+        .modal-resultados .fechar {
+            margin-top: 20px;
+            background: #e67e22;
+        }
+        .progresso-bar {
+            width: 100%;
+            height: 20px;
+            background: #2c3e50;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .progresso-fill {
+            height: 100%;
+            background: #f39c12;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        .dica {
+            background: #1e293b;
+            padding: 12px;
+            border-radius: 20px;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
+        .modal-turma {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #0f172a;
+            border-radius: 32px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            z-index: 10001;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+            border: 2px solid #ffd966;
+            text-align: center;
+        }
+        .modal-turma select {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 20px;
+            background: #1f3a4b;
+            color: white;
+            font-size: 16px;
+        }
+        .modal-turma button {
+            margin-top: 10px;
+        }
+        .controle-atualizacao {
+            background: #1f3a4b;
+            padding: 15px;
+            border-radius: 20px;
+            margin-top: 15px;
+        }
+        .controle-atualizacao input {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 10px;
+            width: 80px;
+            text-align: center;
+        }
+        .info-intervalo {
+            font-size: 12px;
+            color: #ffd966;
+            margin-top: 5px;
+        }
+        .online-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .veloc-melhor { color: #2ecc71; }
+        .veloc-pior { color: #e74c3c; }
+        .veloc-igual { color: #f39c12; }
+        .status-em-jogo { color: #2ecc71; font-weight: bold; }
+        .status-aguardando { color: #f39c12; font-weight: bold; }
+        .status-finalizado { color: #3498db; font-weight: bold; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -196,15 +548,6 @@
 </div>
 <div id="toast" class="toast hidden"></div>
 
-<!-- FIREBASE SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-
-<!-- NOVOS ARQUIVOS DA ETAPA 1 -->
-<script src="js/utils/constants.js"></script>
-<script src="js/utils/helpers.js"></script>
-
-<!-- SCRIPT PRINCIPAL (CÓDIGO DO JOGO) -->
 <script>
     // ---------- CONFIGURAÇÃO DO FIREBASE ----------
     const firebaseConfig = {
@@ -234,34 +577,38 @@
     let faseTorcidaSelecionada = 1;
     let atualizandoSeletorTorcida = false;
 
-    // As constantes TOTAL_FASES, VAGAS_POR_FASE, MODALIDADE_CONFIG, TURMAS_PADRAO e TOTAL_PERGUNTAS
-    // agora estão em js/utils/constants.js (acessíveis via window)
-
+    const TOTAL_FASES = 5;
     let intervaloIndividualSegundos = 4;
     let intervaloEquipesSegundos = 60;
     let tempoEsgotadoProcessado = false;
 
-    // ---------- FUNÇÕES AUXILIARES (toast, escapeHtml, etc.) agora estão em js/utils/helpers.js ----------
+    const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
+    const MODALIDADE_CONFIG = {
+        "2-5": { min: 2, max: 5, nome: "Tabuada 2️⃣➡️5️⃣" },
+        "6-9": { min: 6, max: 9, nome: "Tabuada 6️⃣➡️9️⃣" },
+        "0-10": { min: 0, max: 10, nome: "Tabuada 0️⃣➡️🔟 (Completa)" }
+    };
+    
+    const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 
     // ---------- CACHE DE PERGUNTAS POR MODALIDADE ----------
     const poolPerguntas = {};
 
     function gerarPoolPerguntas(modalidade) {
-        const config = window.MODALIDADE_CONFIG[modalidade];
+        const config = MODALIDADE_CONFIG[modalidade];
         if (!config) return [];
         const minFator = config.min, maxFator = config.max;
         const pool = [];
         for (let i = 0; i < 100; i++) {
-            let a = window.randInt(minFator, maxFator);
-            let b = window.randInt(minFator, maxFator);
+            let a = Math.floor(Math.random() * (maxFator - minFator + 1)) + minFator;
+            let b = Math.floor(Math.random() * (maxFator - minFator + 1)) + minFator;
             let r = a * b;
             let opts = [r];
             while (opts.length < 4) {
-                let x = r + window.randInt(-5, 5);
+                let x = r + Math.floor(Math.random() * 11) - 5;
                 if (x >= 0 && !opts.includes(x)) opts.push(x);
             }
-            window.shuffleArray(opts);
-            pool.push({ a, b, opts });
+            pool.push({ a, b, opts: opts.sort((x,y) => x-y) });
         }
         return pool;
     }
@@ -272,8 +619,47 @@
         }
         const pool = poolPerguntas[modalidade];
         const shuffled = [...pool];
-        window.shuffleArray(shuffled);
-        return shuffled.slice(0, window.TOTAL_PERGUNTAS);
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled.slice(0, 20);
+    }
+
+    // ---------- FUNÇÕES AUXILIARES ----------
+    function toast(m) {
+        const t = document.getElementById('toast');
+        if (t) { t.innerText = m; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
+    }
+    function updateLastSyncTime() {
+        const span = document.getElementById('last-sync-time');
+        if (span) span.innerText = new Date().toLocaleString('pt-BR');
+        toast("Sincronizado!");
+    }
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) { return c; });
+    }
+
+    // ---------- DEBOUNCE ----------
+    function debounce(fn, delay) {
+        let timer = null;
+        return function(...args) {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => { fn.apply(this, args); timer = null; }, delay);
+        };
+    }
+
+    // ---------- CENTRALIZAÇÃO DE CLASSIFICAÇÃO ----------
+    function isClassificado(fase, alunoId) {
+        if (fase <= 1) return true;
+        const classificados = estadoAtual?.classificados?.[fase-1] || [];
+        return classificados.includes(alunoId);
     }
 
     // ---------- LISTENERS UNIFICADOS ----------
@@ -335,7 +721,7 @@
                 snap.forEach(child => {
                     const val = child.val();
                     if (!val || val.tipo === 'torcida') return;
-                    html += `<li>🟢 ${window.escapeHtml(val.nome)} (${window.escapeHtml(val.turma)})</li>`;
+                    html += `<li>🟢 ${escapeHtml(val.nome)} (${escapeHtml(val.turma)})</li>`;
                 });
                 html += '</ul><strong>📺 Espectadores (Torcida):</strong><ul style="list-style:none; margin:5px 0 0 0;">';
                 if (totalTorcida === 0) html += '<li>Nenhum espectador online</li>';
@@ -355,8 +741,8 @@
         const snap = await db.ref('copaV2/turmas').once('value');
         let turmas = snap.val();
         if (!turmas || !Array.isArray(turmas) || turmas.length === 0) {
-            await db.ref('copaV2/turmas').set(window.TURMAS_PADRAO);
-            return window.TURMAS_PADRAO;
+            await db.ref('copaV2/turmas').set(TURMAS_PADRAO);
+            return TURMAS_PADRAO;
         }
         return turmas;
     }
@@ -429,7 +815,7 @@
 
         const todasFases = estadoAtual.resultados || {};
         const recordeVelocMap = new Map();
-        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+        for (let fase = 1; fase <= TOTAL_FASES; fase++) {
             const resultados = todasFases[fase] || {};
             for (let id in resultados) {
                 const partidas = resultados[id];
@@ -540,6 +926,7 @@
             }
         }
 
+        // ---- PROJEÇÃO (AMEIAÇA) - OTIMIZAÇÃO 7 ----
         let posProjetadaMap = new Map();
         if (estadoAtual.status !== 'finalizado') {
             let projecaoValida = false;
@@ -564,9 +951,10 @@
         }
 
         const maxPontos = listaComId[0].pontos;
-        const vagas = window.VAGAS_POR_FASE[faseNum] || 30;
+        const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirClassificacao;
 
+        // Cabeçalho da tabela (sem a coluna Status)
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th>
             <th>Nome</th>
@@ -633,6 +1021,7 @@
             }
             if ((j.perguntas || 0) === 0) ameacaHtml = "—";
 
+            // Progresso (sem a coluna Status)
             let progressoHtml = "";
             if (j.status === 'em_jogo') {
                 progressoHtml = `${j.progresso}/20`;
@@ -655,7 +1044,7 @@
 
             html += `<tr>
                 <td class="${classePos}">${idx+1}º</td>
-                <td>${window.escapeHtml(j.nome)}</td>
+                <td>${escapeHtml(j.nome)}</td>
                 <td>${ameacaHtml}</td>
                 <td>${j.pontos}</td>
                 <td>${deltaText}</td>
@@ -665,7 +1054,7 @@
                 <td>${progressoHtml}</td>
                 ${mostrarClassificacao ? colunaStatus : ''}
                 <td>${j.partidas}</td>
-                <td>${window.escapeHtml(j.turma)}</td>
+                <td>${escapeHtml(j.turma)}</td>
              </tr>`;
         }
         html += '</tbody></table>';
@@ -676,11 +1065,11 @@
         cacheRanking[cacheKey] = { html, timestamp: Date.now() };
     }
 
-    // RANKING POR TURMAS
+    // RANKING POR TURMAS (mantido separado)
     async function renderRankingTurmas(containerId) {
         if (!estadoAtual) return;
         let turmasMap = new Map();
-        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+        for (let fase = 1; fase <= TOTAL_FASES; fase++) {
             const resultados = estadoAtual.resultados?.[fase] || {};
             const participantes = estadoAtual.participantes?.[fase] || {};
             for (let id in resultados) {
@@ -752,11 +1141,11 @@
         ranking.forEach((r, idx) => {
             html += `<tr>
                 <td>${idx+1}º</td>
-                <td>${window.escapeHtml(r.turma)}</td>
+                <td>${escapeHtml(r.turma)}</td>
                 <td>${r.media.toFixed(1)} pts</td>
                 <td>${r.totalAlunos}</td>
                 <td>${r.totalPartidas}</td>
-                <td>${window.escapeHtml(r.melhorNome)} (${r.melhorPontos} pts)</td>
+                <td>${escapeHtml(r.melhorNome)} (${r.melhorPontos} pts)</td>
              </tr>`;
         });
         html += '</tbody></table>';
@@ -782,7 +1171,7 @@
         if (meuTipo !== 'projecao' || modoTorcida !== 'individual') return;
         if (!estadoAtual) return;
         let fase = parseInt(document.getElementById('select-fase-torcida').value);
-        if (isNaN(fase) || fase < 1 || fase > window.TOTAL_FASES) {
+        if (isNaN(fase) || fase < 1 || fase > TOTAL_FASES) {
             fase = estadoAtual.fase;
         }
         faseTorcidaSelecionada = fase;
@@ -847,17 +1236,17 @@
         if (!turmas.includes(novaTurma)) {
             turmas.push(novaTurma);
             await db.ref('copaV2/turmas').set(turmas);
-            window.toast(`Turma ${novaTurma} adicionada!`);
+            toast(`Turma ${novaTurma} adicionada!`);
             renderListaTurmas();
         } else {
-            window.toast("Turma já existe!");
+            toast("Turma já existe!");
         }
     }
     async function removerTurma(turma) {
         let turmas = await carregarTurmas();
         turmas = turmas.filter(t => t !== turma);
         await db.ref('copaV2/turmas').set(turmas);
-        window.toast(`Turma ${turma} removida!`);
+        toast(`Turma ${turma} removida!`);
         renderListaTurmas();
     }
     async function renderListaTurmas() {
@@ -871,7 +1260,7 @@
         let html = '<ul style="list-style: none; padding: 0;">';
         turmas.forEach(turma => {
             html += `<li style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #2c3e50;">
-                        <span>🏷️ ${window.escapeHtml(turma)}</span>
+                        <span>🏷️ ${escapeHtml(turma)}</span>
                         <div>
                             <button class="btn-editar-turma btn-warning" data-turma="${turma}" style="padding: 4px 12px; margin: 0 4px;">✏️ Editar</button>
                             <button class="btn-excluir-turma btn-danger" data-turma="${turma}" style="padding: 4px 12px; margin: 0 4px;">🗑️ Excluir</button>
@@ -890,7 +1279,7 @@
                     if (index !== -1) {
                         turmas[index] = novaTurma;
                         await db.ref('copaV2/turmas').set(turmas);
-                        window.toast(`Turma alterada de ${turmaAntiga} para ${novaTurma}`);
+                        toast(`Turma alterada de ${turmaAntiga} para ${novaTurma}`);
                         renderListaTurmas();
                     }
                 }
@@ -909,13 +1298,13 @@
         intervaloIndividualSegundos = segundos;
         await db.ref('copaV2/configuracoes/intervalos/individual').set(segundos);
         if (meuTipo === 'projecao' && modoTorcida === 'individual') reiniciarIntervalosTorcida();
-        window.toast(`Intervalo individual alterado para ${segundos} segundos`);
+        toast(`Intervalo individual alterado para ${segundos} segundos`);
     }
     async function atualizarIntervaloEquipes(segundos) {
         intervaloEquipesSegundos = segundos;
         await db.ref('copaV2/configuracoes/intervalos/equipes').set(segundos);
         if (meuTipo === 'projecao' && modoTorcida === 'equipes') reiniciarIntervalosTorcida();
-        window.toast(`Intervalo por equipes alterado para ${segundos} segundos`);
+        toast(`Intervalo por equipes alterado para ${segundos} segundos`);
     }
 
     // ---------- RANKING GERAL ----------
@@ -925,7 +1314,7 @@
         const participantesPorFase = estadoAtual.participantes || {};
         const classificadosPorFase = estadoAtual.classificados || {};
         let jogadores = new Map();
-        for (let fase = 1; fase <= window.TOTAL_FASES; fase++) {
+        for (let fase = 1; fase <= TOTAL_FASES; fase++) {
             const resultadosFase = todasFases[fase] || {};
             const participantesFase = participantesPorFase[fase] || {};
             for (let id in resultadosFase) {
@@ -988,7 +1377,7 @@
             else if (r.ultimaFase === 5) status = "🏆 Finalista";
             else status += ` (Classificado para Fase ${r.ultimaFase+1})`;
             const vel = r.melhorVelocidade !== null ? r.melhorVelocidade.toFixed(2) + " s" : "-";
-            html += `<tr><td>${i+1}º</td><td>${window.escapeHtml(r.nome)}</td><td>${r.melhorPontuacao}</td><td>${vel}</td><td>${r.ultimaFase}</td><td>${status}</td><td>${window.escapeHtml(r.turma)}</td><td>${r.totalPartidas}</td></tr>`;
+            html += `<tr><td>${i+1}º</td><td>${escapeHtml(r.nome)}</td><td>${r.melhorPontuacao}</td><td>${vel}</td><td>${r.ultimaFase}</td><td>${status}</td><td>${escapeHtml(r.turma)}</td><td>${r.totalPartidas}</td></tr>`;
         });
         document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
     }
@@ -1022,7 +1411,7 @@
         top5.forEach((jogador, idx) => {
             podiumHtml += `<div class="podium-card podium-${idx+1}">
                             <div class="medalha">${medals[idx]}</div>
-                            <strong>${window.escapeHtml(jogador.nome)}</strong><br>${window.escapeHtml(jogador.turma)}<br>${jogador.pontos} pts<br><small>${jogador.partidas} partidas</small>
+                            <strong>${escapeHtml(jogador.nome)}</strong><br>${escapeHtml(jogador.turma)}<br>${jogador.pontos} pts<br><small>${jogador.partidas} partidas</small>
                            </div>`;
         });
         podiumHtml += '</div>';
@@ -1036,15 +1425,15 @@
         const agora = Date.now();
         const tempoRestante = Math.max(0, estadoAtual.fim - agora);
         await db.ref('copaV2').update({ status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
-        window.toast("⏸️ Fase pausada.");
+        toast("⏸️ Fase pausada.");
     }
     async function continuarFase() {
         if (!estadoAtual || estadoAtual.status !== 'pausado') return;
         const tempoRestante = estadoAtual.tempoRestantePausa || 0;
-        if (tempoRestante <= 0) { window.toast("⚠️ Tempo esgotado."); return; }
+        if (tempoRestante <= 0) { toast("⚠️ Tempo esgotado."); return; }
         const novoFim = Date.now() + tempoRestante;
         await db.ref('copaV2').update({ status: 'em_andamento', fim: novoFim, tempoRestantePausa: null });
-        window.toast("▶️ Fase retomada!");
+        toast("▶️ Fase retomada!");
     }
     async function resetarFase() {
         const faseAtual = estadoAtual.fase;
@@ -1054,12 +1443,12 @@
         await db.ref(`copaV2/resultados_temp/${faseAtual}`).remove();
         await db.ref(`copaV2/classificados/${faseAtual}`).remove();
         await db.ref('copaV2').update({ status: 'aguardando', fim: 0, tempoRestantePausa: null });
-        window.toast(`✅ Fase ${faseAtual} resetada!`);
+        toast(`✅ Fase ${faseAtual} resetada!`);
         atualizarUI();
     }
     async function avancarFase() {
         const faseAtual = estadoAtual.fase;
-        if (faseAtual > window.TOTAL_FASES) { window.toast("Competição já finalizada!"); return; }
+        if (faseAtual > TOTAL_FASES) { toast("Competição já finalizada!"); return; }
         const res = estadoAtual.resultados?.[faseAtual] || {};
         let lista = [];
         for (let id in res) {
@@ -1070,7 +1459,7 @@
             }
         }
         lista.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
-        const vagas = window.VAGAS_POR_FASE[faseAtual];
+        const vagas = VAGAS_POR_FASE[faseAtual];
         const classificadosIds = lista.slice(0, vagas).map(l => l.id);
         await db.ref(`copaV2/classificados/${faseAtual}`).set(classificadosIds);
         const participantesAtual = estadoAtual.participantes?.[faseAtual] || {};
@@ -1089,8 +1478,8 @@
         if (Object.keys(participantesProxima).length > 0) await db.ref(`copaV2/participantes/${faseAtual+1}`).set(participantesProxima);
         await db.ref(`copaV2/resultados_temp/${faseAtual}`).remove();
 
-        if (faseAtual === window.TOTAL_FASES) {
-            window.toast("🏆 COMPETIÇÃO FINALIZADA!");
+        if (faseAtual === TOTAL_FASES) {
+            toast("🏆 COMPETIÇÃO FINALIZADA!");
             await db.ref('copaV2').update({ status: 'finalizado', fim: 0, tempoRestantePausa: null });
             renderPodioFinal('podium-container');
             renderPodioFinal('podium-torcida-container');
@@ -1100,7 +1489,7 @@
             return;
         }
         await db.ref('copaV2').update({ fase: faseAtual + 1, status: 'aguardando', fim: 0, tempoRestantePausa: null });
-        window.toast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados para a fase ${faseAtual+1}.`);
+        toast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados para a fase ${faseAtual+1}.`);
         if (meuTipo === 'projecao') {
             const select = document.getElementById('select-fase-torcida');
             if (select) {
@@ -1118,7 +1507,7 @@
         if (!estadoAtual) return;
         if (estadoAtual.status === 'em_andamento' && Date.now() >= estadoAtual.fim && !tempoEsgotadoProcessado) {
             tempoEsgotadoProcessado = true;
-            window.toast("⏰ TEMPO ESGOTADO! Fase finalizada.");
+            toast("⏰ TEMPO ESGOTADO! Fase finalizada.");
             await avancarFase();
         }
     }
@@ -1130,7 +1519,7 @@
         if (estadoAtual.status !== 'em_andamento' || (estadoAtual.fim && Date.now() >= estadoAtual.fim)) {
             const ranking = await obterRankingCompleto(faseAtual);
             const posicao = ranking.findIndex(r => r.id === alunoId) + 1;
-            const vagas = window.VAGAS_POR_FASE[faseAtual];
+            const vagas = VAGAS_POR_FASE[faseAtual];
             const classificado = posicao > 0 && posicao <= vagas;
             let modalHtml = `
                 <div class="modal-resultados ${classificado ? 'modal-classificado' : 'modal-eliminado'}" id="modal-fim-tempo">
@@ -1176,7 +1565,7 @@
         let html = '';
         for (let id of ids) {
             const aluno = participantes[id];
-            html += `<div class="aluno-item"><div class="aluno-info"><strong>${window.escapeHtml(aluno.nome)}</strong> (${window.escapeHtml(aluno.turma)})<br><small>ID: ${id.substring(0,8)}...</small></div>
+            html += `<div class="aluno-item"><div class="aluno-info"><strong>${escapeHtml(aluno.nome)}</strong> (${escapeHtml(aluno.turma)})<br><small>ID: ${id.substring(0,8)}...</small></div>
                     <div class="aluno-actions"><button class="btn-editar-aluno btn-warning" data-id="${id}" data-nome="${aluno.nome}" data-turma="${aluno.turma}">✏️ Editar</button>
                     <button class="btn-excluir-aluno btn-danger" data-id="${id}">🗑️ Excluir</button></div></div>`;
         }
@@ -1210,7 +1599,7 @@
         const select = document.getElementById('select-fase-torcida');
         if (!select) return;
         let options = '';
-        for (let i = 1; i <= window.TOTAL_FASES; i++) options += `<option value="${i}">Fase ${i}</option>`;
+        for (let i = 1; i <= TOTAL_FASES; i++) options += `<option value="${i}">Fase ${i}</option>`;
         select.innerHTML = options;
         if (estadoAtual) {
             select.value = estadoAtual.fase;
@@ -1223,7 +1612,7 @@
         if (meuTipo !== 'projecao' || modoTorcida !== 'individual') return;
         const select = document.getElementById('select-fase-torcida');
         const fase = parseInt(select.value);
-        if (!isNaN(fase) && fase >= 1 && fase <= window.TOTAL_FASES) {
+        if (!isNaN(fase) && fase >= 1 && fase <= TOTAL_FASES) {
             faseTorcidaSelecionada = fase;
             atualizarTorcidaIndividual();
         }
@@ -1232,7 +1621,7 @@
         const select = document.getElementById('select-fase-ranking');
         if (!select) return;
         let options = '';
-        for (let i = 1; i <= window.TOTAL_FASES; i++) options += `<option value="${i}">Fase ${i}</option>`;
+        for (let i = 1; i <= TOTAL_FASES; i++) options += `<option value="${i}">Fase ${i}</option>`;
         select.innerHTML = options;
         select.value = faseSelecionadaProf;
     }
@@ -1245,7 +1634,7 @@
         const liberado = estadoAtual.status === 'em_andamento' && !encerrado;
         document.getElementById('aluno-nome-display').innerText = alunoNome;
         document.getElementById('aluno-turma-display').innerText = alunoTurma;
-        const modalidadeNome = window.MODALIDADE_CONFIG[estadoAtual.modalidade]?.nome || "Tabuada 2-5";
+        const modalidadeNome = MODALIDADE_CONFIG[estadoAtual.modalidade]?.nome || "Tabuada 2-5";
         document.getElementById('aluno-modalidade').innerText = modalidadeNome;
         const msgDiv = document.getElementById('msg-status-aluno');
         const btnJogar = document.getElementById('btn-iniciar-partida');
@@ -1288,7 +1677,7 @@
     function atualizarExibicaoFase() {
         if (!estadoAtual) return;
         const faseAtual = estadoAtual.fase;
-        const texto = `${faseAtual}/${window.TOTAL_FASES}`;
+        const texto = `${faseAtual}/${TOTAL_FASES}`;
         const elementos = [
             document.getElementById('fase-progresso'),
             document.getElementById('prof-fase-info'),
@@ -1302,7 +1691,7 @@
 
     function atualizarUI() {
         if (!estadoAtual) return;
-        const modalidadeNome = window.MODALIDADE_CONFIG[estadoAtual.modalidade]?.nome || "Tabuada 2-5";
+        const modalidadeNome = MODALIDADE_CONFIG[estadoAtual.modalidade]?.nome || "Tabuada 2-5";
         document.getElementById('modalidade-titulo').innerText = modalidadeNome;
         if (document.getElementById('torcida-modalidade')) document.getElementById('torcida-modalidade').innerText = modalidadeNome;
         document.getElementById('fase-atual-titulo').innerText = estadoAtual.fase;
@@ -1432,7 +1821,7 @@
     }
 
     function proxima() {
-        if (perguntaIdx >= window.TOTAL_PERGUNTAS) { finalizar(); return; }
+        if (perguntaIdx >= 20) { finalizar(); return; }
         const p = perguntas[perguntaIdx];
         document.getElementById('pergunta').innerText = `${p.a} x ${p.b} = ?`;
         const btns = document.querySelectorAll('.opcao');
@@ -1522,10 +1911,10 @@
 
     async function iniciarNovaPartida() {
         if (jogoAtivo) return;
-        if (estadoAtual.status !== 'em_andamento') { window.toast("Fase inativa!"); return; }
-        if (Date.now() >= estadoAtual.fim) { window.toast("Tempo esgotado!"); return; }
+        if (estadoAtual.status !== 'em_andamento') { toast("Fase inativa!"); return; }
+        if (Date.now() >= estadoAtual.fim) { toast("Tempo esgotado!"); return; }
         if (estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
-            window.toast("❌ Não classificado para esta fase!");
+            toast("❌ Não classificado para esta fase!");
             return;
         }
         perguntas = obterPerguntas(estadoAtual.modalidade);
@@ -1606,12 +1995,12 @@
         document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
             let val = parseInt(document.getElementById('intervalo-individual').value);
             if (val >= 1) atualizarIntervaloIndividual(val);
-            else window.toast("Valor inválido");
+            else toast("Valor inválido");
         });
         document.getElementById('btn-atualizar-intervalo-equipes')?.addEventListener('click', () => {
             let val = parseInt(document.getElementById('intervalo-equipes').value);
             if (val >= 1) atualizarIntervaloEquipes(val);
-            else window.toast("Valor inválido");
+            else toast("Valor inválido");
         });
         document.getElementById('btn-atualizar-ranking-turmas')?.addEventListener('click', () => {
             renderRanking(null, 'ranking-turmas-container', 'turmas', false);
@@ -1642,7 +2031,7 @@
         const btnAplicarModalidade = document.getElementById('btn-aplicar-modalidade');
 
         if (btnIniciarFase) {
-            btnIniciarFase.addEventListener('click', window.debounce(() => {
+            btnIniciarFase.addEventListener('click', debounce(() => {
                 let duracao = estadoAtual.tempoFase||12;
                 let fim = Date.now() + duracao*60000;
                 db.ref('copaV2').update({ status:'em_andamento', fim, tempoRestantePausa: null });
@@ -1650,15 +2039,15 @@
             }, debounceDelay));
         }
         if (btnAvancarFase) {
-            btnAvancarFase.addEventListener('click', window.debounce(async () => {
+            btnAvancarFase.addEventListener('click', debounce(async () => {
                 if (confirm("Finalizar fase?")) await avancarFase();
             }, debounceDelay));
         }
         if (btnResetFase) {
-            btnResetFase.addEventListener('click', window.debounce(async () => { await resetarFase(); }, debounceDelay));
+            btnResetFase.addEventListener('click', debounce(async () => { await resetarFase(); }, debounceDelay));
         }
         if (btnResetTotal) {
-            btnResetTotal.addEventListener('click', window.debounce(() => {
+            btnResetTotal.addEventListener('click', debounce(() => {
                 if (confirm("Reset total?")) {
                     db.ref('copaV2').set({ fase:1, status:'aguardando', tempoFase:12, fim:0, modalidade: estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} });
                     db.ref('online').remove();
@@ -1667,13 +2056,13 @@
             }, debounceDelay));
         }
         if (btnAplicarModalidade) {
-            btnAplicarModalidade.addEventListener('click', window.debounce(async () => {
+            btnAplicarModalidade.addEventListener('click', debounce(async () => {
                 const novaModalidade = document.getElementById('select-modalidade').value;
-                if (novaModalidade === estadoAtual.modalidade) { window.toast("Já está nesta modalidade."); return; }
-                if (confirm(`⚠️ Mudar para ${window.MODALIDADE_CONFIG[novaModalidade].nome} irá REINICIAR toda a competição. Continuar?`)) {
+                if (novaModalidade === estadoAtual.modalidade) { toast("Já está nesta modalidade."); return; }
+                if (confirm(`⚠️ Mudar para ${MODALIDADE_CONFIG[novaModalidade].nome} irá REINICIAR toda a competição. Continuar?`)) {
                     await db.ref('copaV2').set({ fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: novaModalidade, resultados: {}, participantes: {}, classificados: {} });
                     await db.ref('online').remove();
-                    window.toast(`Modalidade alterada. Competição reiniciada.`);
+                    toast(`Modalidade alterada. Competição reiniciada.`);
                     setTimeout(() => location.reload(), 1500);
                 }
             }, debounceDelay));
@@ -1697,16 +2086,16 @@
 
         document.getElementById('btn-aluno')?.addEventListener('click', async () => {
             if (!estadoAtual || estadoAtual.status !== 'em_andamento' || Date.now() >= estadoAtual.fim) {
-                window.toast("⏳ A fase não foi iniciada ou já terminou.");
+                toast("⏳ A fase não foi iniciada ou já terminou.");
                 return;
             }
             const nome = prompt("Seu nome completo:"); if (!nome) return;
             alunoNome = nome.trim();
             const turmas = await carregarTurmas();
-            if (turmas.length === 0) { window.toast("Nenhuma turma cadastrada. Aguarde o professor."); return; }
+            if (turmas.length === 0) { toast("Nenhuma turma cadastrada. Aguarde o professor."); return; }
             const modalDiv = document.createElement('div');
             modalDiv.className = 'modal-turma';
-            modalDiv.innerHTML = `<h3>Selecione sua turma</h3><select id="select-turma-aluno">${turmas.map(t => `<option value="${window.escapeHtml(t)}">${window.escapeHtml(t)}</option>`).join('')}</select><div><button id="btn-confirmar-turma" class="btn-success">Confirmar</button><button id="btn-cancelar-turma" class="btn-danger">Cancelar</button></div>`;
+            modalDiv.innerHTML = `<h3>Selecione sua turma</h3><select id="select-turma-aluno">${turmas.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('')}</select><div><button id="btn-confirmar-turma" class="btn-success">Confirmar</button><button id="btn-cancelar-turma" class="btn-danger">Cancelar</button></div>`;
             document.body.appendChild(modalDiv);
             const confirmar = () => {
                 const select = document.getElementById('select-turma-aluno');
@@ -1767,11 +2156,11 @@
             location.reload();
         });
 
-        document.getElementById('btn-sync-prof')?.addEventListener('click', () => window.updateLastSyncTime());
+        document.getElementById('btn-sync-prof')?.addEventListener('click', () => updateLastSyncTime());
         document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
         document.getElementById('btn-sair-aluno')?.addEventListener('click', () => location.reload());
         document.getElementById('btn-sync-torcida')?.addEventListener('click', () => {
-            window.updateLastSyncTime();
+            updateLastSyncTime();
             if (modoTorcida === 'individual') atualizarTorcidaIndividual();
             else atualizarTorcidaEquipes();
         });
@@ -1780,11 +2169,11 @@
             const novaTurma = prompt("Digite o nome da nova turma:");
             if (novaTurma && novaTurma.trim()) adicionarTurma(novaTurma.trim());
         });
-        document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => window.updateLastSyncTime());
+        document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => updateLastSyncTime());
         document.getElementById('btn-toggle-auto-ranking')?.addEventListener('click', () => {
             atualizacaoRankingAuto = !atualizacaoRankingAuto;
             document.getElementById('btn-toggle-auto-ranking').innerText = atualizacaoRankingAuto ? "⏸️ Pausar Atualização" : "▶️ Retomar Atualização";
-            window.toast(atualizacaoRankingAuto ? "Auto atualização retomada" : "Auto atualização pausada");
+            toast(atualizacaoRankingAuto ? "Auto atualização retomada" : "Auto atualização pausada");
             if (atualizacaoRankingAuto) atualizarRankingProfessor();
         });
 
