@@ -1,5 +1,6 @@
-window.firebaseConfig = {
-  apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBzO-o2HVhEE",
+// js/config/firebase-config.js
+export const firebaseConfig = {
+  apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBz0-o2HVhEE",
   authDomain: "final-copa-tabuada.firebaseapp.com",
   databaseURL: "https://final-copa-tabuada-default-rtdb.firebaseio.com",
   projectId: "final-copa-tabuada",
