@@ -1,4 +1,3 @@
-// js/utils/constants.js
 window.TOTAL_FASES = 5;
 
 window.VAGAS_POR_FASE = {
