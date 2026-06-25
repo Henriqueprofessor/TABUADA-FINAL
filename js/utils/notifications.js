@@ -1,16 +1,34 @@
-// js/utils/notifications.js
-// Sistema de notificações visuais durante o jogo
+// ============================================================
+// ARQUIVO: js/utils/notifications.js
+// DESCRIÇÃO: Sistema de Notificações Visuais durante o jogo
+// ============================================================
 
-window.NotificationManager = (function() {
-    // ========== ESTADO ==========
-    let notificacaoAtiva = false;
-    let timerId = null;
-    let container = null;
-    let config = window.NOTIFICATION_CONFIG || { notificacoes: {} };
+import { soundManager } from './sounds.js';
+import { confettiManager } from './confetti.js';
+import { NOTIFICATION_CONFIG } from '../config/notification-config.js';
+
+class NotificationManager {
+    constructor() {
+        this.config = {
+            notificacoes: true,
+            duracaoPadrao: 3,
+            notificacoesSequencias: true,
+            notificacoesRecordes: true,
+            notificacoesVelocidade: true,
+            notificacoesIncentivo: true,
+            limiteRapido: 1.5
+        };
+        this.notificacaoAtiva = false;
+        this.timerId = null;
+        this.container = null;
+        this.criarContainer();
+        this.injetarStyles();
+    }
 
     // ========== CRIAR CONTAINER ==========
-    function criarContainer() {
+    criarContainer() {
         if (document.getElementById('notification-container')) return;
+        
         const div = document.createElement('div');
         div.id = 'notification-container';
         div.style.cssText = `
@@ -18,7 +36,7 @@ window.NotificationManager = (function() {
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 9998;
+            z-index: 99998;
             pointer-events: none;
             text-align: center;
             display: none;
@@ -27,26 +45,82 @@ window.NotificationManager = (function() {
             padding: 20px;
         `;
         document.body.appendChild(div);
-        container = div;
+        this.container = div;
+    }
+
+    // ========== INJETAR ESTILOS ==========
+    injetarStyles() {
+        if (document.getElementById('notification-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            @keyframes notificationIn {
+                0% { opacity: 0; transform: scale(0.8) translateY(20px); }
+                100% { opacity: 1; transform: scale(1) translateY(0); }
+            }
+            @keyframes brilhoPulse {
+                0% { opacity: 0.3; transform: scale(1); }
+                50% { opacity: 0.7; transform: scale(1.1); }
+                100% { opacity: 0.3; transform: scale(1); }
+            }
+            .notification-popup {
+                pointer-events: none;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .notification-popup { animation: none; }
+                .notification-popup div[style*="animation"] { animation: none; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // ========== VERIFICAR SE NOTIFICAÇÃO DEVE SER EXIBIDA ==========
+    deveExibir(notificationId) {
+        if (!this.config.notificacoes) return false;
+        
+        const notif = NOTIFICATION_CONFIG.notificacoes[notificationId];
+        if (!notif || !notif.ativo) return false;
+
+        // Verifica categoria da notificação
+        const categorias = {
+            seq5: this.config.notificacoesSequencias,
+            seq10: this.config.notificacoesSequencias,
+            seq15: this.config.notificacoesSequencias,
+            seq20: this.config.notificacoesSequencias,
+            recordeFase: this.config.notificacoesRecordes,
+            recordeGeral: this.config.notificacoesRecordes,
+            rapido: this.config.notificacoesVelocidade,
+            relampago: this.config.notificacoesVelocidade,
+            erro3: this.config.notificacoesIncentivo,
+            erro5: this.config.notificacoesIncentivo
+        };
+
+        return categorias[notificationId] !== false;
     }
 
     // ========== MOSTRAR NOTIFICAÇÃO ==========
-    function mostrar(notificationId, dados = {}) {
-        if (notificacaoAtiva) return;
-        const notif = config.notificacoes[notificationId];
-        if (!notif || !notif.ativo) return;
+    mostrar(notificationId, dados = {}) {
+        if (this.notificacaoAtiva) return;
+        if (!this.deveExibir(notificationId)) return;
 
-        const duracao = notif.duracao || 3;
+        const notif = NOTIFICATION_CONFIG.notificacoes[notificationId];
+        if (!notif) return;
+
+        const duracao = notif.duracao || this.config.duracaoPadrao;
         const icone = notif.icone || '📢';
         let mensagem = notif.mensagem;
 
         // Substitui placeholders
-        if (dados.pontos) mensagem = mensagem.replace('{pontos}', dados.pontos);
-        if (dados.tempo) mensagem = mensagem.replace('{tempo}', dados.tempo.toFixed(1));
+        if (dados.pontos !== undefined) {
+            mensagem = mensagem.replace(/\{pontos\}/g, dados.pontos);
+        }
+        if (dados.tempo !== undefined) {
+            mensagem = mensagem.replace(/\{tempo\}/g, dados.tempo.toFixed(1));
+        }
 
-        // Cria o elemento da notificação
-        notificacaoAtiva = true;
-        criarContainer();
+        this.notificacaoAtiva = true;
+        this.criarContainer();
 
         const div = document.createElement('div');
         div.className = 'notification-popup';
@@ -95,21 +169,23 @@ window.NotificationManager = (function() {
             </div>
         `;
 
-        container.innerHTML = '';
-        container.appendChild(div);
-        container.style.display = 'block';
+        if (this.container) {
+            this.container.innerHTML = '';
+            this.container.appendChild(div);
+            this.container.style.display = 'block';
+        }
 
         // Efeitos especiais
-        if (notif.confete && window.confettiManager) {
+        if (notif.confete && confettiManager.config.confetes) {
             if (notificationId === 'seq20' || notificationId === 'recordeGeral') {
-                window.confettiManager.fireCelebration();
+                confettiManager.fireCelebration();
             } else {
-                window.confettiManager.fireHit();
+                confettiManager.fireHit();
             }
         }
 
-        if (notif.som && window.soundManager) {
-            window.soundManager.playCelebration();
+        if (notif.som && soundManager.config.sonsCelebracao) {
+            soundManager.playCelebration();
         }
 
         // Inicia contagem regressiva
@@ -117,13 +193,13 @@ window.NotificationManager = (function() {
         const progressBar = document.getElementById('notification-progress');
         const timerDisplay = document.getElementById('notification-timer');
 
-        if (timerId) clearInterval(timerId);
-        timerId = setInterval(() => {
+        if (this.timerId) clearInterval(this.timerId);
+        this.timerId = setInterval(() => {
             tempoRestante -= 0.1;
             if (tempoRestante <= 0) {
-                clearInterval(timerId);
-                timerId = null;
-                esconder();
+                clearInterval(this.timerId);
+                this.timerId = null;
+                this.esconder();
                 return;
             }
             if (timerDisplay) timerDisplay.innerText = tempoRestante.toFixed(1);
@@ -132,21 +208,21 @@ window.NotificationManager = (function() {
 
         // Fecha automaticamente após a duração
         setTimeout(() => {
-            if (timerId) {
-                clearInterval(timerId);
-                timerId = null;
+            if (this.timerId) {
+                clearInterval(this.timerId);
+                this.timerId = null;
             }
-            esconder();
+            this.esconder();
         }, duracao * 1000 + 100);
     }
 
     // ========== ESCONDER NOTIFICAÇÃO ==========
-    function esconder() {
-        if (!notificacaoAtiva) return;
-        notificacaoAtiva = false;
-        if (container) {
-            container.style.display = 'none';
-            container.innerHTML = '';
+    esconder() {
+        if (!this.notificacaoAtiva) return;
+        this.notificacaoAtiva = false;
+        if (this.container) {
+            this.container.style.display = 'none';
+            this.container.innerHTML = '';
         }
         // Chama o callback de fim (para iniciar próxima pergunta)
         if (typeof window._onNotificationEnd === 'function') {
@@ -155,45 +231,26 @@ window.NotificationManager = (function() {
     }
 
     // ========== VERIFICAR SE ESTÁ ATIVA ==========
-    function isAtiva() {
-        return notificacaoAtiva;
+    isAtiva() {
+        return this.notificacaoAtiva;
     }
 
-    // ========== INJETAR CSS ==========
-    function injectStyles() {
-        if (document.getElementById('notification-styles')) return;
-        const style = document.createElement('style');
-        style.id = 'notification-styles';
-        style.textContent = `
-            @keyframes notificationIn {
-                0% { opacity: 0; transform: scale(0.8) translateY(20px); }
-                100% { opacity: 1; transform: scale(1) translateY(0); }
-            }
-            @keyframes brilhoPulse {
-                0% { opacity: 0.3; transform: scale(1); }
-                50% { opacity: 0.7; transform: scale(1.1); }
-                100% { opacity: 0.3; transform: scale(1); }
-            }
-            .notification-popup {
-                pointer-events: none;
-            }
-            @media (prefers-reduced-motion: reduce) {
-                .notification-popup { animation: none; }
-                .notification-popup div[style*="animation"] { animation: none; }
-            }
-        `;
-        document.head.appendChild(style);
+    // ========== ATUALIZAR CONFIGURAÇÕES ==========
+    updateConfig(config) {
+        this.config = { ...this.config, ...config };
     }
 
-    // ========== INICIALIZAÇÃO ==========
-    injectStyles();
-    criarContainer();
+    // ========== VERIFICAR SE É RESPOSTA RÁPIDA ==========
+    isRespostaRapida(tempoGasto) {
+        return tempoGasto <= this.config.limiteRapido;
+    }
 
-    // ========== EXPORTAÇÃO ==========
-    return {
-        mostrar,
-        esconder,
-        isAtiva,
-        config: () => config
-    };
-})();
+    // ========== VERIFICAR SE É RESPOSTA RELÂMPAGO ==========
+    isRespostaRelampago(tempoGasto) {
+        const limiteRelampago = NOTIFICATION_CONFIG.notificacoes.relampago?.limiteRelampago || 1.0;
+        return tempoGasto <= limiteRelampago;
+    }
+}
+
+// ========== EXPORTAR INSTÂNCIA ÚNICA ==========
+export const notificationManager = new NotificationManager();
