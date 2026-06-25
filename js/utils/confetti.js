@@ -1,63 +1,139 @@
-// js/utils/confetti.js
-// Gerenciador de confetes (canvas-confetti via CDN)
+// ============================================================
+// ARQUIVO: js/utils/confetti.js
+// DESCRIÇÃO: Gerenciador de Confetes (canvas-confetti via CDN)
+// ============================================================
 
-window.ConfettiManager = (function() {
-
-    // Verifica se a biblioteca canvas-confetti está disponível
-    function isConfettiAvailable() {
-        return typeof confetti !== 'undefined';
+class ConfettiManager {
+    constructor() {
+        this.config = {
+            confetes: true
+        };
+        this.carregado = false;
+        this.carregarBiblioteca();
     }
 
-    // Lança uma chuva de confetes
-    function fire(option = {}) {
-        if (!isConfettiAvailable()) {
-            console.warn('Biblioteca canvas-confetti não carregada.');
+    // ========== CARREGAR BIBLIOTECA CANVAS-CONFETTI ==========
+    carregarBiblioteca() {
+        // Verifica se já está carregada
+        if (typeof confetti !== 'undefined') {
+            this.carregado = true;
             return;
         }
+
+        // Verifica se já existe um script carregando
+        if (document.querySelector('script[src*="canvas-confetti"]')) {
+            // Aguarda o carregamento
+            const checkLoaded = setInterval(() => {
+                if (typeof confetti !== 'undefined') {
+                    this.carregado = true;
+                    clearInterval(checkLoaded);
+                    console.log('[Confetti] Biblioteca carregada!');
+                }
+            }, 100);
+            return;
+        }
+
+        // Carrega a biblioteca do CDN
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1';
+        script.async = true;
+        script.onload = () => {
+            this.carregado = true;
+            console.log('[Confetti] Biblioteca carregada com sucesso!');
+        };
+        script.onerror = () => {
+            console.warn('[Confetti] Falha ao carregar biblioteca. Confetes desativados.');
+            this.config.confetes = false;
+        };
+        document.head.appendChild(script);
+    }
+
+    // ========== VERIFICAR SE ESTÁ DISPONÍVEL ==========
+    isAvailable() {
+        return this.carregado && typeof confetti !== 'undefined' && this.config.confetes;
+    }
+
+    // ========== LANÇAR CONFETES ==========
+    fire(option = {}) {
+        if (!this.isAvailable()) return;
+
         const defaults = {
             particleCount: 100,
             spread: 70,
             origin: { y: 0.6 }
         };
-        confetti({ ...defaults, ...option });
+
+        try {
+            confetti({ ...defaults, ...option });
+        } catch (e) {
+            console.warn('[Confetti] Erro ao lançar confetes:', e);
+        }
     }
 
-    // Lança confetes em comemoração (mais intenso)
-    function fireCelebration() {
-        if (!isConfettiAvailable()) return;
+    // ========== LANÇAR CONFETES EM COMEMORAÇÃO ==========
+    fireCelebration() {
+        if (!this.isAvailable()) return;
+
         const duration = 2 * 1000;
         const end = Date.now() + duration;
+
         (function frame() {
-            fire({ particleCount: 7, startVelocity: 30, spread: 80, origin: { y: 0.5 } });
-            fire({ particleCount: 7, startVelocity: 30, spread: 80, origin: { y: 0.5 } });
-            if (Date.now() < end) {
-                requestAnimationFrame(frame);
+            try {
+                confetti({ 
+                    particleCount: 7, 
+                    startVelocity: 30, 
+                    spread: 80, 
+                    origin: { y: 0.5 } 
+                });
+                confetti({ 
+                    particleCount: 7, 
+                    startVelocity: 30, 
+                    spread: 80, 
+                    origin: { y: 0.5 } 
+                });
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            } catch (e) {
+                // Silencia erros
             }
         })();
     }
 
-    // Lança confetes para acerto (moderado)
-    function fireHit() {
-        if (!isConfettiAvailable()) return;
-        fire({ particleCount: 30, spread: 50, origin: { y: 0.5 } });
+    // ========== LANÇAR CONFETES PARA ACERTO ==========
+    fireHit() {
+        if (!this.isAvailable()) return;
+        this.fire({ 
+            particleCount: 30, 
+            spread: 50, 
+            origin: { y: 0.5 } 
+        });
     }
 
-    // Lança confetes para recorde (intenso)
-    function fireRecord() {
-        if (!isConfettiAvailable()) return;
-        fire({ particleCount: 60, spread: 90, origin: { y: 0.4 } });
+    // ========== LANÇAR CONFETES PARA RECORDE ==========
+    fireRecord() {
+        if (!this.isAvailable()) return;
+        
+        this.fire({ 
+            particleCount: 60, 
+            spread: 90, 
+            origin: { y: 0.4 } 
+        });
+        
         setTimeout(() => {
-            fire({ particleCount: 40, spread: 70, origin: { y: 0.6 } });
+            this.fire({ 
+                particleCount: 40, 
+                spread: 70, 
+                origin: { y: 0.6 } 
+            });
         }, 300);
     }
 
-    // Expor funções globalmente
-    window.confettiManager = {
-        fire,
-        fireCelebration,
-        fireHit,
-        fireRecord
-    };
+    // ========== ATUALIZAR CONFIGURAÇÕES ==========
+    updateConfig(config) {
+        this.config = { ...this.config, ...config };
+    }
+}
 
-    return window.confettiManager;
-})();
+// ========== EXPORTAR INSTÂNCIA ÚNICA ==========
+export const confettiManager = new ConfettiManager();
