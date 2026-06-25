@@ -1,6 +1,14 @@
 // ============================================================
 // ARQUIVO: js/config/firebase-config.js
-// DESCRIÇÃO: Configuração do Firebase para a Copa Tabuada
+// DESCRIÇÃO: Configuração do Firebase - Versão CDN
+// ============================================================
+
+// Usando a versão compat do Firebase (já carregada no HTML)
+const firebaseApp = firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+// ============================================================
+// CONFIGURAÇÕES DO FIREBASE
 // ============================================================
 
 export const firebaseConfig = {
