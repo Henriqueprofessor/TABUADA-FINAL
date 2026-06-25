@@ -1,10 +1,21 @@
-// js/utils/achievements.js
-// Sistema de Medalhas e Conquistas (Gamificação)
+// ============================================================
+// ARQUIVO: js/utils/achievements.js
+// DESCRIÇÃO: Sistema de Conquistas e Medalhas (Gamificação)
+// ============================================================
 
-window.AchievementManager = (function() {
+import { soundManager } from './sounds.js';
+import { confettiManager } from './confetti.js';
+
+class AchievementManager {
+    constructor() {
+        this.config = {
+            conquistas: true
+        };
+        this.injetarStyles();
+    }
 
     // ========== DEFINIÇÃO DAS CONQUISTAS ==========
-    const ACHIEVEMENTS = {
+    ACHIEVEMENTS = {
         FIRST_GAME: {
             id: 'first_game',
             nome: '🎮 Primeira Partida',
@@ -63,9 +74,56 @@ window.AchievementManager = (function() {
         }
     };
 
+    // ========== INJETAR ESTILOS CSS ==========
+    injecterStyles() {
+        if (document.getElementById('achievement-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'achievement-styles';
+        style.textContent = `
+            @keyframes medalhaEntrada {
+                0% { opacity: 0; transform: translateX(60px) scale(0.8); }
+                100% { opacity: 1; transform: translateX(0) scale(1); }
+            }
+            .medalha-popup {
+                animation: medalhaEntrada 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .medalha-popup { animation: none; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // ========== OBTER CONQUISTAS DO ALUNO ==========
+    obterConquistas(alunoId) {
+        if (!alunoId) return [];
+        const key = `achievements_${alunoId}`;
+        try {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            console.warn('Erro ao obter conquistas:', e);
+            return [];
+        }
+    }
+
+    // ========== SALVAR CONQUISTAS DO ALUNO ==========
+    salvarConquistas(alunoId, conquistas) {
+        if (!alunoId) return;
+        const key = `achievements_${alunoId}`;
+        try {
+            localStorage.setItem(key, JSON.stringify(conquistas));
+        } catch (e) {
+            console.warn('Erro ao salvar conquistas:', e);
+        }
+    }
+
     // ========== VERIFICAR CONQUISTAS ==========
-    function verificarConquistas(alunoId, dados) {
-        const conquistadas = obterConquistasAluno(alunoId);
+    verificarConquistas(alunoId, dados) {
+        if (!this.config.conquistas || !alunoId) return [];
+
+        const conquistadas = this.obterConquistas(alunoId);
         const novas = [];
 
         // 1. Primeira partida
@@ -110,32 +168,21 @@ window.AchievementManager = (function() {
 
         // Salvar novas conquistas
         if (novas.length > 0) {
-            salvarConquistas(alunoId, conquistadas, novas);
+            const todas = [...conquistadas, ...novas];
+            this.salvarConquistas(alunoId, todas);
+            
             // Exibir popups
             novas.forEach(id => {
-                const ach = ACHIEVEMENTS[id];
-                if (ach) mostrarPopupMedalha(ach);
+                const ach = this.ACHIEVEMENTS[id];
+                if (ach) this.mostrarPopupMedalha(ach);
             });
         }
 
         return novas;
     }
 
-    // ========== SALVAR CONQUISTAS NO LOCALSTORAGE ==========
-    function obterConquistasAluno(alunoId) {
-        const key = `achievements_${alunoId}`;
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    }
-
-    function salvarConquistas(alunoId, existentes, novas) {
-        const key = `achievements_${alunoId}`;
-        const todas = [...existentes, ...novas];
-        localStorage.setItem(key, JSON.stringify(todas));
-    }
-
-    // ========== EXIBIR POPUP DA MEDALHA ==========
-    function mostrarPopupMedalha(achievement) {
+    // ========== MOSTRAR POPUP DA MEDALHA ==========
+    mostrarPopupMedalha(achievement) {
         // Remove popups antigos
         const antigos = document.querySelectorAll('.medalha-popup');
         antigos.forEach(el => el.remove());
@@ -157,6 +204,7 @@ window.AchievementManager = (function() {
             width: 90%;
             text-align: center;
             color: white;
+            pointer-events: none;
         `;
         popup.innerHTML = `
             <div style="font-size: 48px; margin-bottom: 5px;">${achievement.icone}</div>
@@ -164,7 +212,10 @@ window.AchievementManager = (function() {
             <div style="font-size: 22px; font-weight: bold; margin: 8px 0;">${achievement.nome}</div>
             <div style="font-size: 14px; opacity: 0.8;">${achievement.descricao}</div>
             <div style="margin-top: 12px;">
-                <button onclick="this.parentElement.parentElement.remove()" style="background: ${achievement.cor}; border: none; color: #fff; padding: 6px 20px; border-radius: 30px; cursor: pointer; font-weight: bold;">👏 Legal!</button>
+                <button onclick="this.parentElement.parentElement.remove()" 
+                    style="background: ${achievement.cor}; border: none; color: #fff; padding: 6px 20px; border-radius: 30px; cursor: pointer; font-weight: bold; pointer-events: auto;">
+                    👏 Legal!
+                </button>
             </div>
         `;
         document.body.appendChild(popup);
@@ -174,18 +225,22 @@ window.AchievementManager = (function() {
             if (popup.parentNode) popup.remove();
         }, 8000);
 
-        // Som de conquista
-        if (window.soundManager) {
-            window.soundManager.playCelebration();
+        // Efeitos visuais e sonoros
+        if (soundManager.config.sonsCelebracao) {
+            soundManager.playCelebration();
+        }
+        if (confettiManager.config.confetes) {
+            confettiManager.fireCelebration();
         }
     }
 
     // ========== RENDERIZAR MEDALHAS DO ALUNO ==========
-    function renderizarMedalhas(alunoId, containerId) {
+    renderizarMedalhas(alunoId, containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        const conquistas = obterConquistasAluno(alunoId);
+        const conquistas = this.obterConquistas(alunoId);
+        
         if (conquistas.length === 0) {
             container.innerHTML = '<p style="opacity:0.6; text-align:center;">Nenhuma medalha ainda. Continue jogando!</p>';
             return;
@@ -193,7 +248,7 @@ window.AchievementManager = (function() {
 
         let html = '<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;">';
         conquistas.forEach(id => {
-            const ach = ACHIEVEMENTS[id];
+            const ach = this.ACHIEVEMENTS[id];
             if (ach) {
                 html += `
                     <div style="background: #1f3a4b; border-radius: 16px; padding: 12px 16px; text-align: center; min-width: 80px; border: 2px solid ${ach.cor};">
@@ -207,32 +262,11 @@ window.AchievementManager = (function() {
         container.innerHTML = html;
     }
 
-    // ========== INJETAR CSS DA ANIMAÇÃO ==========
-    function injectStyles() {
-        if (document.getElementById('achievement-styles')) return;
-        const style = document.createElement('style');
-        style.id = 'achievement-styles';
-        style.textContent = `
-            @keyframes medalhaEntrada {
-                0% { opacity: 0; transform: translateX(60px) scale(0.8); }
-                100% { opacity: 1; transform: translateX(0) scale(1); }
-            }
-            .medalha-popup {
-                animation: medalhaEntrada 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-            }
-        `;
-        document.head.appendChild(style);
+    // ========== ATUALIZAR CONFIGURAÇÕES ==========
+    updateConfig(config) {
+        this.config = { ...this.config, ...config };
     }
+}
 
-    // ========== EXPORTAÇÃO GLOBAL ==========
-    injectStyles();
-
-    window.achievementManager = {
-        verificarConquistas,
-        renderizarMedalhas,
-        obterConquistasAluno,
-        ACHIEVEMENTS
-    };
-
-    return window.achievementManager;
-})();
+// ========== EXPORTAR INSTÂNCIA ÚNICA ==========
+export const achievementManager = new AchievementManager();
