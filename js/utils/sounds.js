@@ -1,128 +1,164 @@
-// js/utils/sounds.js
-// Gerador de sons usando Web Audio API
-// Nenhum arquivo de áudio externo necessário!
+// ============================================================
+// ARQUIVO: js/utils/sounds.js
+// DESCRIÇÃO: Sistema de sons usando Web Audio API
+// ============================================================
 
-window.SoundManager = (function() {
-    let audioCtx = null;
+import { toast } from './helpers.js';
 
-    // Inicializa o contexto de áudio (somente quando o usuário interagir)
-    function initAudio() {
-        if (!audioCtx) {
-            try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            } catch (e) {
-                console.warn('Web Audio API não suportada neste navegador.');
-                return null;
-            }
+class SoundManager {
+    constructor() {
+        this.audioCtx = null;
+        this.initialized = false;
+        this.config = {
+            sons: true,
+            sonsCelebracao: true,
+            sonsErro: true
+        };
+    }
+
+    // ========== INICIALIZAR CONTEXTO DE ÁUDIO ==========
+    initAudio() {
+        if (this.audioCtx) return this.audioCtx;
+        
+        try {
+            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            this.initialized = true;
+            return this.audioCtx;
+        } catch (e) {
+            console.warn('Web Audio API não suportada neste navegador.');
+            return null;
         }
-        return audioCtx;
     }
 
-    // Toca uma nota simples (frequência, duração, tipo de onda)
-    function playTone(freq, duration = 0.15, type = 'sine', volume = 0.3) {
-        const ctx = initAudio();
+    // ========== TOCAR NOTA ==========
+    playTone(freq, duration = 0.15, type = 'sine', volume = 0.3) {
+        const ctx = this.initAudio();
         if (!ctx) return;
 
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = type;
-        osc.frequency.value = freq;
-        gain.gain.value = volume;
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + duration);
+        try {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.type = type;
+            osc.frequency.value = freq;
+            
+            gain.gain.setValueAtTime(volume, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + duration);
+        } catch (e) {
+            console.warn('Erro ao tocar som:', e);
+        }
     }
 
-    // Som: Resposta correta
-    function playCorrect() {
-        const ctx = initAudio();
+    // ========== SOM: RESPOSTA CORRETA ==========
+    playCorrect() {
+        if (!this.config.sons) return;
+        const ctx = this.initAudio();
         if (!ctx) return;
+        
         // Acorde maior: Dó, Mi, Sol
-        playTone(523.25, 0.12, 'sine', 0.3); // Dó
-        setTimeout(() => playTone(659.25, 0.12, 'sine', 0.3), 100); // Mi
-        setTimeout(() => playTone(783.99, 0.15, 'sine', 0.3), 200); // Sol
+        this.playTone(523.25, 0.12, 'sine', 0.3);
+        setTimeout(() => this.playTone(659.25, 0.12, 'sine', 0.3), 100);
+        setTimeout(() => this.playTone(783.99, 0.15, 'sine', 0.3), 200);
     }
 
-    // Som: Resposta errada
-    function playWrong() {
-        const ctx = initAudio();
+    // ========== SOM: RESPOSTA ERRADA ==========
+    playWrong() {
+        if (!this.config.sons || !this.config.sonsErro) return;
+        const ctx = this.initAudio();
         if (!ctx) return;
-        // Nota grave e "suja" (onda dente de serra)
-        playTone(150, 0.3, 'sawtooth', 0.2);
-        // Pequeno ruído no final
-        setTimeout(() => playTone(80, 0.2, 'square', 0.15), 150);
+        
+        // Nota grave e "suja"
+        this.playTone(150, 0.3, 'sawtooth', 0.2);
+        setTimeout(() => this.playTone(80, 0.2, 'square', 0.15), 150);
     }
 
-    // Som: Tempo esgotado (bip duplo)
-    function playTimeUp() {
-        const ctx = initAudio();
+    // ========== SOM: TEMPO ESGOTADO ==========
+    playTimeUp() {
+        if (!this.config.sons || !this.config.sonsErro) return;
+        const ctx = this.initAudio();
         if (!ctx) return;
-        playTone(800, 0.1, 'square', 0.2);
-        setTimeout(() => playTone(600, 0.1, 'square', 0.2), 150);
+        
+        this.playTone(800, 0.1, 'square', 0.2);
+        setTimeout(() => this.playTone(600, 0.1, 'square', 0.2), 150);
     }
 
-    // Som: Início da partida (whoosh ascendente)
-    function playGameStart() {
-        const ctx = initAudio();
+    // ========== SOM: INÍCIO DA PARTIDA ==========
+    playGameStart() {
+        if (!this.config.sons) return;
+        const ctx = this.initAudio();
         if (!ctx) return;
+        
         const startFreq = 300;
         const endFreq = 800;
         const duration = 0.5;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(startFreq, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(endFreq, ctx.currentTime + duration);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + duration);
+        
+        try {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(startFreq, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(endFreq, ctx.currentTime + duration);
+            
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + duration);
+        } catch (e) {
+            console.warn('Erro ao tocar som de início:', e);
+        }
     }
 
-    // Som: Fanfarra (fim de partida)
-    function playFanfare() {
-        const ctx = initAudio();
+    // ========== SOM: FANFARRA (FIM DE PARTIDA) ==========
+    playFanfare() {
+        if (!this.config.sons || !this.config.sonsCelebracao) return;
+        const ctx = this.initAudio();
         if (!ctx) return;
-        // Sequência: Mi, Sol, Dó, Mi
+        
         const notes = [659.25, 783.99, 1046.5, 1318.5];
         notes.forEach((freq, i) => {
-            setTimeout(() => playTone(freq, 0.15, 'sine', 0.3), i * 120);
+            setTimeout(() => this.playTone(freq, 0.15, 'sine', 0.3), i * 120);
         });
     }
 
-    // Som: Comemoração (classificação para próxima fase)
-    function playCelebration() {
-        const ctx = initAudio();
+    // ========== SOM: COMEMORAÇÃO ==========
+    playCelebration() {
+        if (!this.config.sons || !this.config.sonsCelebracao) return;
+        const ctx = this.initAudio();
         if (!ctx) return;
-        // Sequência ascendente mais longa
+        
         const notes = [523, 587, 659, 784, 880, 988, 1047];
         notes.forEach((freq, i) => {
-            setTimeout(() => playTone(freq, 0.1, 'sine', 0.25), i * 80);
+            setTimeout(() => this.playTone(freq, 0.1, 'sine', 0.25), i * 80);
         });
     }
 
-    // Som: Clique (feedback tátil para botões)
-    function playClick() {
-        playTone(1200, 0.05, 'sine', 0.1);
+    // ========== SOM: CLIQUE ==========
+    playClick() {
+        if (!this.config.sons) return;
+        this.playTone(1200, 0.05, 'sine', 0.1);
     }
 
-    // Expor funções globalmente
-    window.soundManager = {
-        playCorrect,
-        playWrong,
-        playTimeUp,
-        playGameStart,
-        playFanfare,
-        playCelebration,
-        playClick,
-        // Para uso interno (caso necessário)
-        playTone,
-        initAudio
-    };
+    // ========== ATUALIZAR CONFIGURAÇÕES ==========
+    updateConfig(config) {
+        this.config = { ...this.config, ...config };
+    }
 
-    return window.soundManager;
-})();
+    // ========== VERIFICAR SE ÁUDIO ESTÁ DISPONÍVEL ==========
+    isAvailable() {
+        return this.initialized || !!this.audioCtx;
+    }
+}
+
+// ========== EXPORTAR INSTÂNCIA ÚNICA ==========
+export const soundManager = new SoundManager();
