@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📱 Offline - Copa Tabuada</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0a0f1e;
+            color: #eee;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+            max-width: 400px;
+        }
+        .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #ffd966;
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+        p {
+            color: #aaa;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .status-box {
+            background: #1f3a4b;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .btn {
+            background: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 14px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            background: #f39c12;
+        }
+        .btn-secondary {
+            background: #1f3a4b;
+        }
+        .btn-secondary:hover {
+            background: #2c5a6e;
+        }
+        .partidas-offline {
+            margin-top: 20px;
+            padding: 12px;
+            background: #00000066;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+        .status-indicador {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-offline {
+            background: #e74c3c;
+        }
+        .status-online {
+            background: #2ecc71;
+        }
+        .dicas {
+            margin-top: 20px;
+            padding: 16px;
+            background: #00000044;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 13px;
+        }
+        .dicas li {
+            margin-bottom: 8px;
+            list-style: none;
+        }
+        .dicas li::before {
+            content: "💡 ";
+        }
+        @media (max-width: 480px) {
+            .icon { font-size: 60px; }
+            h1 { font-size: 22px; }
+            .btn { padding: 12px 20px; font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📱</div>
+        <h1>Você está offline!</h1>
+        <p>Não se preocupe! Suas partidas serão salvas e sincronizadas quando a internet voltar.</p>
+        
+        <div class="status-box">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px;">
+                <span class="status-indicador status-offline" id="status-indicator"></span>
+                <span id="status-text">📶 Offline</span>
+            </div>
+            <div id="partidas-info" class="partidas-offline">
+                <span id="contador-partidas">0</span> partidas salvas localmente
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+            <button class="btn" id="btn-tentar-novamente">🔄 Tentar Novamente</button>
+            <button class="btn btn-secondary" id="btn-ir-jogo">🎮 Ir para o Jogo</button>
+        </div>
+
+        <div class="dicas">
+            <li><strong>Como funciona o offline?</strong></li>
+            <li>📌 Suas partidas são salvas no seu celular</li>
+            <li>📌 Quando a internet voltar, os dados são sincronizados</li>
+            <li>📌 Você pode instalar o app na tela inicial</li>
+        </div>
+        
+        <p style="margin-top: 20px; font-size: 12px; opacity: 0.5;">
+            💾 Os dados são salvos automaticamente no seu dispositivo.
+        </p>
+    </div>
+
+    <script>
+        // ========== VERIFICAR STATUS DA CONEXÃO ==========
+        function atualizarStatus() {
+            const online = navigator.onLine;
+            const indicator = document.getElementById('status-indicator');
+            const statusText = document.getElementById('status-text');
+            
+            if (online) {
+                indicator.className = 'status-indicador status-online';
+                statusText.textContent = '✅ Online - Conectado!';
+            } else {
+                indicator.className = 'status-indicador status-offline';
+                statusText.textContent = '📶 Offline - Aguardando conexão...';
+            }
+        }
+
+        // ========== CARREGAR PARTIDAS SALVAS ==========
+        function carregarPartidasOffline() {
+            try {
+                // Verificar no localStorage
+                const data = localStorage.getItem('offline_partidas');
+                const partidas = data ? JSON.parse(data) : [];
+                document.getElementById('contador-partidas').textContent = partidas.length;
+                
+                // Verificar no IndexedDB também
+                if (window.indexedDB) {
+                    const request = indexedDB.open('CopaTabuadaOffline', 1);
+                    request.onsuccess = (event) => {
+                        const db = event.target.result;
+                        if (db.objectStoreNames.contains('partidas')) {
+                            const transaction = db.transaction('partidas', 'readonly');
+                            const store = transaction.objectStore('partidas');
+                            const countRequest = store.count();
+                            countRequest.onsuccess = () => {
+                                const total = partidas.length + countRequest.result;
+                                document.getElementById('contador-partidas').textContent = total;
+                            };
+                        }
+                    };
+                }
+            } catch (e) {
+                document.getElementById('contador-partidas').textContent = '0';
+            }
+        }
+
+        // ========== EVENTOS ==========
+        document.getElementById('btn-tentar-novamente').addEventListener('click', () => {
+            if (navigator.onLine) {
+                window.location.href = 'final.html';
+            } else {
+                alert('📶 Você ainda está offline. Conecte-se à internet e tente novamente.');
+            }
+        });
+
+        document.getElementById('btn-ir-jogo').addEventListener('click', () => {
+            window.location.href = 'final.html';
+        });
+
+        // ========== OUVIR MUDANÇAS DE CONEXÃO ==========
+        window.addEventListener('online', () => {
+            atualizarStatus();
+            carregarPartidasOffline();
+            // Tentar redirecionar automaticamente após 2 segundos
+            setTimeout(() => {
+                window.location.href = 'final.html';
+            }, 2000);
+        });
+
+        window.addEventListener('offline', () => {
+            atualizarStatus();
+        });
+
+        // ========== INICIALIZAR ==========
+        atualizarStatus();
+        carregarPartidasOffline();
+
+        // Verificar a cada 5 segundos se voltou online
+        setInterval(() => {
+            if (navigator.onLine) {
+                atualizarStatus();
+                carregarPartidasOffline();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
