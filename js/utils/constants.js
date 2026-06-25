@@ -68,4 +68,4 @@ export const CORES = {
     alerta: "#f39c12",
     info: "#3498db",
     destaque: "#e67e22"
-};
+}; 
