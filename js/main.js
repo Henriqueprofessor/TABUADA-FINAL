@@ -1,8 +1,9 @@
 // ============================================================
 // ARQUIVO: js/main.js
-// DESCRIÇÃO: Ponto de entrada principal do jogo
+// DESCRIÇÃO: Ponto de entrada principal - VERSÃO CORRIGIDA
 // ============================================================
 
+// Importar tudo sem Firebase imports diretos
 import { appState } from './models/state.js';
 import { initProfessorUI } from './ui/professor-ui.js';
 import { initAlunoUI } from './ui/aluno-ui.js';
@@ -14,14 +15,12 @@ import {
     adicionarParticipante,
     setPresence
 } from './services/firebase-service.js';
-import { toast, isOnline } from './utils/helpers.js';
+import { toast, escapeHtml } from './utils/helpers.js';
 import { soundManager } from './utils/sounds.js';
 import { confettiManager } from './utils/confetti.js';
 import { achievementManager } from './utils/achievements.js';
 import { notificationManager } from './utils/notifications.js';
 import { gamepadManager } from './utils/gamepad.js';
-import { syncService } from './services/sync-service.js';
-import { CONFIG_PADRAO, MODALIDADE_CONFIG } from './config/firebase-config.js';
 
 // ========== INICIALIZAÇÃO ==========
 async function init() {
@@ -87,7 +86,6 @@ function mostrarMenuPrincipal() {
 function configurarEventosMenu() {
     // Botão Professor
     document.getElementById('btn-professor')?.addEventListener('click', async () => {
-        // Verificar se é o novo sistema de autenticação ou senha fixa
         const senha = prompt('🔐 Digite a senha do Professor:');
         if (senha === '......') {
             appState.setUserType('professor');
@@ -220,17 +218,6 @@ async function finalizarLoginAluno(nome, turma) {
     initAlunoUI(alunoId, nome, turma);
     
     toast(`👋 Bem-vindo, ${nome}!`);
-}
-
-// ========== ESCAPAR HTML (para o modal) ==========
-function escapeHtml(str) {
-    if (!str) return '';
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
 }
 
 // ========== INICIAR QUANDO O DOM ESTIVER PRONTO ==========
