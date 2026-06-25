@@ -1,114 +1,94 @@
 // ============================================================
 // ARQUIVO: js/services/firebase-service.js
-// DESCRIÇÃO: Serviço de comunicação com Firebase - Versão CDN
+// DESCRIÇÃO: Serviço Firebase - VERSÃO CORRIGIDA (SEM isOnline)
 // ============================================================
 
 import { firebaseConfig } from '../config/firebase-config.js';
 
-// ========== INICIALIZAR FIREBASE ==========
-// Usando a versão compat do Firebase (já carregada no HTML)
+// ============================================================
+// INICIALIZAR FIREBASE
+// ============================================================
+
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ========== REFERÊNCIAS PRINCIPAIS ==========
+// ============================================================
+// REFERÊNCIAS
+// ============================================================
+
 export const database = db;
 export const copaRef = db.ref('copaV2');
 export const onlineRef = db.ref('online');
 export const configRef = db.ref('copaV2/configuracoes');
 
-// ========== REFERÊNCIAS POR FASE ==========
 export const resultadosRef = (fase) => db.ref(`copaV2/resultados/${fase}`);
 export const resultadosTempRef = (fase) => db.ref(`copaV2/resultados_temp/${fase}`);
 export const participantesRef = (fase) => db.ref(`copaV2/participantes/${fase}`);
 export const classificadosRef = (fase) => db.ref(`copaV2/classificados/${fase}`);
 
-// ========== REFERÊNCIAS POR ALUNO ==========
 export const resultadoAlunoRef = (fase, alunoId) => db.ref(`copaV2/resultados/${fase}/${alunoId}`);
 export const resultadoTempAlunoRef = (fase, alunoId) => db.ref(`copaV2/resultados_temp/${fase}/${alunoId}`);
 export const participanteAlunoRef = (fase, alunoId) => db.ref(`copaV2/participantes/${fase}/${alunoId}`);
 
-// ========== MÉTODOS GENÉRICOS ==========
+// ============================================================
+// MÉTODOS
+// ============================================================
 
-// Atualizar dados da copa
 export const updateCopa = (data) => copaRef.update(data);
-
-// Definir dados da copa (substitui tudo)
 export const setCopa = (data) => copaRef.set(data);
-
-// Remover nó
 export const removeNode = (path) => db.ref(path).remove();
-
-// Obter dados uma vez
 export const getOnce = (path) => db.ref(path).once('value');
 
-// ========== LISTENERS ==========
+// ============================================================
+// LISTENERS
+// ============================================================
 
-// Escutar mudanças na copa
 export const listenToCopa = (callback) => {
-    return copaRef.on('value', (snap) => {
-        callback(snap.val());
-    });
+    return copaRef.on('value', (snap) => callback(snap.val()));
 };
 
-// Escutar mudanças nos resultados de uma fase
 export const listenToResultados = (fase, callback) => {
-    return resultadosRef(fase).on('value', (snap) => {
-        callback(snap.val());
-    });
+    return resultadosRef(fase).on('value', (snap) => callback(snap.val()));
 };
 
-// Escutar mudanças nos resultados temporários de uma fase
 export const listenToResultadosTemp = (fase, callback) => {
-    return resultadosTempRef(fase).on('value', (snap) => {
-        callback(snap.val());
-    });
+    return resultadosTempRef(fase).on('value', (snap) => callback(snap.val()));
 };
 
-// Escutar mudanças nos participantes de uma fase
 export const listenToParticipantes = (fase, callback) => {
-    return participantesRef(fase).on('value', (snap) => {
-        callback(snap.val());
-    });
+    return participantesRef(fase).on('value', (snap) => callback(snap.val()));
 };
 
-// Escutar mudanças nos classificados de uma fase
 export const listenToClassificados = (fase, callback) => {
-    return classificadosRef(fase).on('value', (snap) => {
-        callback(snap.val());
-    });
+    return classificadosRef(fase).on('value', (snap) => callback(snap.val()));
 };
 
-// Escutar usuários online
 export const listenToOnline = (callback) => {
-    return onlineRef.on('value', (snap) => {
-        callback(snap.val());
-    });
+    return onlineRef.on('value', (snap) => callback(snap.val()));
 };
 
-// Escutar configurações
 export const listenToConfiguracoes = (callback) => {
-    return configRef.on('value', (snap) => {
-        callback(snap.val());
-    });
+    return configRef.on('value', (snap) => callback(snap.val()));
 };
 
-// ========== PRESENÇA (ONLINE) ==========
+// ============================================================
+// PRESENÇA
+// ============================================================
 
-// Definir presença do usuário
 export const setPresence = (id, data) => {
     const presenceRef = db.ref(`online/${id}`);
     presenceRef.set(data);
     presenceRef.onDisconnect().remove();
 };
 
-// Remover presença
 export const removePresence = (id) => {
     db.ref(`online/${id}`).remove();
 };
 
-// ========== RESULTADOS ==========
+// ============================================================
+// RESULTADOS
+// ============================================================
 
-// Salvar resultado de uma partida
 export const salvarResultado = async (fase, alunoId, partida) => {
     const ref = resultadoAlunoRef(fase, alunoId);
     return ref.transaction((currentData) => {
@@ -118,57 +98,56 @@ export const salvarResultado = async (fase, alunoId, partida) => {
     });
 };
 
-// Salvar resultado temporário (durante a partida)
 export const salvarResultadoTemp = (fase, alunoId, dados) => {
     return resultadoTempAlunoRef(fase, alunoId).set(dados);
 };
 
-// Remover resultado temporário
 export const removerResultadoTemp = (fase, alunoId) => {
     return resultadoTempAlunoRef(fase, alunoId).remove();
 };
 
-// ========== PARTICIPANTES ==========
+// ============================================================
+// PARTICIPANTES
+// ============================================================
 
-// Adicionar participante
 export const adicionarParticipante = (fase, alunoId, dados) => {
     return participanteAlunoRef(fase, alunoId).set(dados);
 };
 
-// Remover participante
 export const removerParticipante = (fase, alunoId) => {
     return participanteAlunoRef(fase, alunoId).remove();
 };
 
-// ========== CLASSIFICADOS ==========
+// ============================================================
+// CLASSIFICADOS
+// ============================================================
 
-// Classificar alunos para a próxima fase
 export const classificarAlunos = async (fase, ids) => {
     return classificadosRef(fase).set(ids);
 };
 
-// Verificar se um aluno está classificado
 export const isClassificado = async (fase, alunoId) => {
     const snap = await classificadosRef(fase).once('value');
     const ids = snap.val() || [];
     return ids.includes(alunoId);
 };
 
-// ========== CONFIGURAÇÕES ==========
+// ============================================================
+// CONFIGURAÇÕES
+// ============================================================
 
-// Salvar configurações gerais
 export const salvarConfiguracoes = (config) => {
     return configRef.set(config);
 };
 
-// Salvar configuração específica
 export const salvarConfiguracao = (key, value) => {
     return db.ref(`copaV2/configuracoes/${key}`).set(value);
 };
 
-// ========== TURMAS ==========
+// ============================================================
+// TURMAS
+// ============================================================
 
-// Carregar turmas
 export const carregarTurmas = async () => {
     const snap = await db.ref('copaV2/turmas').once('value');
     let turmas = snap.val();
@@ -180,7 +159,6 @@ export const carregarTurmas = async () => {
     return turmas;
 };
 
-// Adicionar turma
 export const adicionarTurma = async (novaTurma) => {
     const turmas = await carregarTurmas();
     if (!turmas.includes(novaTurma)) {
@@ -191,16 +169,16 @@ export const adicionarTurma = async (novaTurma) => {
     return false;
 };
 
-// Remover turma
 export const removerTurma = async (turma) => {
     let turmas = await carregarTurmas();
     turmas = turmas.filter(t => t !== turma);
     await db.ref('copaV2/turmas').set(turmas);
 };
 
-// ========== INTERVALOS ==========
+// ============================================================
+// INTERVALOS
+// ============================================================
 
-// Carregar intervalos de atualização
 export const carregarIntervalos = async () => {
     const snap = await db.ref('copaV2/configuracoes/intervalos').once('value');
     const config = snap.val();
@@ -214,27 +192,24 @@ export const carregarIntervalos = async () => {
     return { individual: 4, equipes: 60 };
 };
 
-// Salvar intervalo individual
 export const salvarIntervaloIndividual = (segundos) => {
     return db.ref('copaV2/configuracoes/intervalos/individual').set(segundos);
 };
 
-// Salvar intervalo equipes
 export const salvarIntervaloEquipes = (segundos) => {
     return db.ref('copaV2/configuracoes/intervalos/equipes').set(segundos);
 };
 
-// ========== UTILITÁRIOS ==========
+// ============================================================
+// UTILITÁRIOS
+// ============================================================
 
-// Gerar ID único para aluno
 export const gerarIdAluno = (nome, turma) => {
     return btoa(nome.toLowerCase() + '|' + turma).slice(0, 16);
 };
 
-// ========== EXPORTAR INSTÂNCIA DO DATABASE ==========
-export default db;
+// ============================================================
+// EXPORTAR
+// ============================================================
 
-// ========== VERIFICAR SE ESTÁ ONLINE ==========
-export const isOnline = () => {
-    return navigator.onLine;
-};
+export default db;
