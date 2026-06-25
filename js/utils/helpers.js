@@ -1,53 +1,150 @@
-window.toast = function(message) {
-  var t = document.getElementById('toast');
-  if (t) {
-    t.innerText = message;
-    t.classList.remove('hidden');
-    setTimeout(function() { t.classList.add('hidden'); }, 3000);
-  }
-};
+// ============================================================
+// ARQUIVO: js/utils/helpers.js
+// DESCRIÇÃO: Funções auxiliares gerais do jogo
+// ============================================================
 
-window.updateLastSyncTime = function() {
-  var span = document.getElementById('last-sync-time');
-  if (span) {
-    span.innerText = new Date().toLocaleString('pt-BR');
-  }
-  window.toast('Sincronizado!');
-};
+// ========== TOAST (NOTIFICAÇÃO TEMPORÁRIA) ==========
+export function toast(message, duracao = 3000) {
+    const t = document.getElementById('toast');
+    if (t) {
+        t.innerText = message;
+        t.classList.remove('hidden');
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => {
+            t.classList.add('hidden');
+        }, duracao);
+    }
+}
 
-window.escapeHtml = function(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) { return c; });
-};
+// ========== ESCAPAR HTML ==========
+export function escapeHtml(str) {
+    if (!str) return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 
-window.debounce = function(fn, delay) {
-  var timer = null;
-  return function() {
-    var args = arguments;
-    var context = this;
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(function() {
-      fn.apply(context, args);
-      timer = null;
-    }, delay);
-  };
-};
+// ========== DEBOUNCE ==========
+export function debounce(fn, delay) {
+    let timer = null;
+    return function(...args) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+            fn.apply(this, args);
+            timer = null;
+        }, delay);
+    };
+}
 
-window.shuffleArray = function(arr) {
-  for (var i = arr.length - 1; i > 0; i--) {
-    var j = Math.floor(Math.random() * (i + 1));
-    var temp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = temp;
-  }
-  return arr;
-};
+// ========== EMBARALHAR ARRAY ==========
+export function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
 
-window.randInt = function(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-};
+// ========== NÚMERO ALEATÓRIO ==========
+export function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// ========== FORMATAR TEMPO ==========
+export function formatarTempo(ms) {
+    const totalSegundos = Math.floor(ms / 1000);
+    const minutos = Math.floor(totalSegundos / 60);
+    const segundos = totalSegundos % 60;
+    return `${minutos}:${segundos.toString().padStart(2, '0')}`;
+}
+
+// ========== FORMATAR DATA ==========
+export function formatarData(timestamp) {
+    return new Date(timestamp).toLocaleString('pt-BR');
+}
+
+// ========== GERAR ID ÚNICO ==========
+export function gerarId() {
+    return Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 6);
+}
+
+// ========== VALIDAR EMAIL ==========
+export function validarEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+}
+
+// ========== VALIDAR SENHA ==========
+export function validarSenha(senha) {
+    return senha.length >= 6;
+}
+
+// ========== TRUNCAR TEXTO ==========
+export function truncarTexto(texto, tamanho = 20) {
+    if (!texto) return '';
+    return texto.length > tamanho ? texto.substring(0, tamanho) + '...' : texto;
+}
+
+// ========== VERIFICAR SE É MOBILE ==========
+export function isMobile() {
+    return window.innerWidth <= 768;
+}
+
+// ========== VERIFICAR SE ESTÁ ONLINE ==========
+export function isOnline() {
+    return navigator.onLine;
+}
+
+// ========== COPIAR PARA ÁREA DE TRANSFERÊNCIA ==========
+export function copiarTexto(texto) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(texto);
+    } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = texto;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+    }
+}
+
+// ========== DOWNLOAD DE ARQUIVO ==========
+export function downloadArquivo(conteudo, nomeArquivo, tipo = 'text/plain') {
+    const blob = new Blob([conteudo], { type: tipo });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nomeArquivo;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ========== ATUALIZAR ÚLTIMA SINCRONIZAÇÃO ==========
+export function updateLastSyncTime() {
+    const span = document.getElementById('last-sync-time');
+    if (span) {
+        span.innerText = formatarData(Date.now());
+    }
+    toast('Sincronizado!');
+}
+
+// ========== VERIFICAR SE É PROFESSOR ==========
+export function isProfessor() {
+    return sessionStorage.getItem('userType') === 'professor';
+}
+
+// ========== VERIFICAR SE É ALUNO ==========
+export function isAluno() {
+    return sessionStorage.getItem('userType') === 'aluno';
+}
+
+// ========== VERIFICAR SE É TORCIDA ==========
+export function isTorcida() {
+    return sessionStorage.getItem('userType') === 'torcida';
+}
