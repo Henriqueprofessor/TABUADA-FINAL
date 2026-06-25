@@ -75,7 +75,7 @@ class AchievementManager {
     };
 
     // ========== INJETAR ESTILOS CSS ==========
-    injecterStyles() {
+    injetarStyles() {
         if (document.getElementById('achievement-styles')) return;
         
         const style = document.createElement('style');
