@@ -1,43 +1,21 @@
 // ============================================================
 // ARQUIVO: js/services/auth-service.js
-// DESCRIÇÃO: Serviço de Autenticação (Firebase Auth)
+// DESCRIÇÃO: Serviço de Autenticação - Versão CDN
 // ============================================================
 
-import { 
-    getAuth, 
-    signInWithEmailAndPassword, 
-    signOut, 
-    onAuthStateChanged,
-    createUserWithEmailAndPassword,
-    sendPasswordResetEmail,
-    updateProfile,
-    setPersistence,
-    browserLocalPersistence,
-    browserSessionPersistence
-} from 'firebase/auth';
-import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../config/firebase-config.js';
 
 // ========== INICIALIZAR FIREBASE AUTH ==========
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-// ========== CONFIGURAÇÕES DE PERSISTÊNCIA ==========
-export const setPersistenciaLocal = () => {
-    return setPersistence(auth, browserLocalPersistence);
-};
-
-export const setPersistenciaSessao = () => {
-    return setPersistence(auth, browserSessionPersistence);
-};
+// Usando a versão compat do Firebase (já carregada no HTML)
+const app = firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 
 // ========== LOGIN ==========
 
 // Login com email e senha (Professor)
 export const loginProfessor = async (email, password) => {
     try {
-        await setPersistenciaLocal();
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
         return { success: true, user: userCredential.user };
     } catch (error) {
         return { 
@@ -53,8 +31,8 @@ export const loginProfessor = async (email, password) => {
 // Criar conta (apenas para administradores)
 export const criarContaProfessor = async (email, password, nome) => {
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName: nome });
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        await userCredential.user.updateProfile({ displayName: nome });
         return { success: true, user: userCredential.user };
     } catch (error) {
         return { 
@@ -70,7 +48,7 @@ export const criarContaProfessor = async (email, password, nome) => {
 // Logout
 export const logout = async () => {
     try {
-        await signOut(auth);
+        await auth.signOut();
         return { success: true };
     } catch (error) {
         return { 
@@ -86,7 +64,7 @@ export const logout = async () => {
 // Enviar email de recuperação de senha
 export const recuperarSenha = async (email) => {
     try {
-        await sendPasswordResetEmail(auth, email);
+        await auth.sendPasswordResetEmail(email);
         return { success: true };
     } catch (error) {
         return { 
@@ -101,7 +79,7 @@ export const recuperarSenha = async (email) => {
 
 // Observar mudanças no estado de autenticação
 export const onAuthChange = (callback) => {
-    return onAuthStateChanged(auth, (user) => {
+    return auth.onAuthStateChanged((user) => {
         if (user) {
             callback({
                 authenticated: true,
