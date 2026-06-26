@@ -612,7 +612,7 @@ function obterPerguntas(modalidade) {
 }
 
 // ============================================================
-// LÓGICA DO JOGO
+// LÓGICA DO JOGO - PONTUAÇÃO CORRIGIDA
 // ============================================================
 function iniciarPartida(perguntas) {
     return {
@@ -646,9 +646,16 @@ function processarResposta(partida, opcaoSelecionada) {
         if (partida.sequenciaAcertos > partida.maiorSequencia) {
             partida.maiorSequencia = partida.sequenciaAcertos;
         }
-        // CORREÇÃO: pontos baseado no tempo restante (de 0 a 100)
+        
+        // ============================================================
+        // CORREÇÃO DA PONTUAÇÃO: Quanto mais rápido, mais pontos!
+        // tempoRestantePergunta = 10 → 100 pontos (resposta imediata)
+        // tempoRestantePergunta = 5  → 50 pontos
+        // tempoRestantePergunta = 0  → 0 pontos
+        // ============================================================
         const percentual = Math.max(0, partida.tempoRestantePergunta / TEMPO_PERGUNTA);
         pontosGanhos = Math.round(100 * percentual);
+        // Garantir que se acertou com tempo > 0, ganhe pelo menos 1 ponto
         if (pontosGanhos === 0 && partida.tempoRestantePergunta > 0) pontosGanhos = 1;
         partida.pontos += pontosGanhos;
     } else {
@@ -700,6 +707,113 @@ function criarObjetoPartida(partida) {
 }
 
 // ============================================================
+// RANKING POR EQUIPES (CORRIGIDO)
+// ============================================================
+async function renderRankingTurmas(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    try {
+        const turmasMap = new Map();
+        
+        for (let fase = 1; fase <= TOTAL_FASES; fase++) {
+            const snapResultados = await resultadosRef(fase).once('value');
+            const snapParticipantes = await participantesRef(fase).once('value');
+            
+            const resultados = snapResultados.val() || {};
+            const participantes = snapParticipantes.val() || {};
+            
+            for (const [id, partidas] of Object.entries(resultados)) {
+                if (!partidas || partidas.length === 0) continue;
+                
+                const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+                const participante = participantes[id] || {};
+                const turma = participante.turma || '?';
+                const nome = participante.nome || 'Anônimo';
+                
+                if (!turmasMap.has(turma)) {
+                    turmasMap.set(turma, {
+                        alunos: new Map(),
+                        totalAlunos: 0,
+                        somaPontos: 0,
+                        melhorAlunoNome: '',
+                        melhorAlunoPontos: 0,
+                        totalPartidas: 0
+                    });
+                }
+                
+                const turmaData = turmasMap.get(turma);
+                if (!turmaData.alunos.has(id) || melhor.pontos > turmaData.alunos.get(id).pontos) {
+                    turmaData.alunos.set(id, { pontos: melhor.pontos, nome });
+                }
+                turmaData.totalPartidas += partidas.length;
+            }
+        }
+
+        for (const [turma, data] of turmasMap.entries()) {
+            let soma = 0;
+            let melhorPontos = 0;
+            let melhorNome = '';
+            
+            for (const [id, info] of data.alunos.entries()) {
+                soma += info.pontos;
+                if (info.pontos > melhorPontos) {
+                    melhorPontos = info.pontos;
+                    melhorNome = info.nome;
+                }
+            }
+            
+            data.somaPontos = soma;
+            data.totalAlunos = data.alunos.size;
+            data.melhorAlunoPontos = melhorPontos;
+            data.melhorAlunoNome = melhorNome;
+        }
+
+        let ranking = Array.from(turmasMap.entries()).map(([turma, data]) => ({
+            turma,
+            media: data.totalAlunos > 0 ? (data.somaPontos / data.totalAlunos) : 0,
+            totalAlunos: data.totalAlunos,
+            melhorNome: data.melhorAlunoNome,
+            melhorPontos: data.melhorAlunoPontos,
+            totalPartidas: data.totalPartidas
+        }));
+        
+        ranking.sort((a, b) => b.media - a.media);
+
+        let html = `<table class="ranking-table"><thead><tr>
+            <th>Pos</th>
+            <th>Turma</th>
+            <th>Média</th>
+            <th>Participantes</th>
+            <th>Maior Pontuação</th>
+            <th>Total Partidas</th>
+        </tr></thead><tbody>`;
+
+        if (ranking.length === 0) {
+            html += `<tr><td colspan="6" style="text-align:center;padding:20px;">📭 Nenhum dado registrado ainda.</td></tr>`;
+        } else {
+            ranking.forEach((r, idx) => {
+                html += `<tr>
+                    <td>${idx + 1}º</td>
+                    <td><strong>${escapeHtml(r.turma)}</strong></td>
+                    <td>${r.media.toFixed(1)} pts</td>
+                    <td>${r.totalAlunos}</td>
+                    <td>${escapeHtml(r.melhorNome)} (${r.melhorPontos} pts)</td>
+                    <td>${r.totalPartidas}</td>
+                </tr>`;
+            });
+        }
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Erro ao renderizar ranking por turmas:', error);
+        container.innerHTML = '<p style="color:#e74c3c;">❌ Erro ao carregar ranking por turmas.</p>';
+    }
+}
+
+// ============================================================
 // VARIÁVEIS DO ALUNO
 // ============================================================
 let partidaAtual = null;
@@ -711,7 +825,7 @@ let unsubscribeEstado = null;
 let timerFaseInterval = null;
 
 // ============================================================
-// TIMER DA FASE (CORRIGIDO)
+// TIMER DA FASE
 // ============================================================
 function iniciarTimerFase() {
     if (timerFaseInterval) {
@@ -1040,6 +1154,14 @@ function initProfessorUI() {
     document.getElementById('online-stats').classList.remove('hidden');
     configurarEventosProfessor();
     carregarTurmas();
+    
+    // Atualizar ranking por turmas quando a aba for aberta
+    const tabRankingTurmas = document.querySelector('[data-tab="ranking-turmas"]');
+    if (tabRankingTurmas) {
+        tabRankingTurmas.addEventListener('click', () => {
+            setTimeout(() => renderRankingTurmas('ranking-turmas-container'), 100);
+        });
+    }
 }
 
 async function carregarTurmas() {
@@ -1058,12 +1180,17 @@ function configurarEventosProfessor() {
         const fim = Date.now() + duracao * 60000;
         copaRef.update({ status: 'em_andamento', fim, tempoRestantePausa: null });
         toast('▶️ Fase iniciada!');
-        // Atualizar timer imediatamente
         setTimeout(atualizarTimerFase, 100);
     });
     
     document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => {
         location.reload();
+    });
+    
+    // Botão para ranking por turmas
+    document.getElementById('btn-atualizar-ranking-turmas')?.addEventListener('click', () => {
+        renderRankingTurmas('ranking-turmas-container');
+        toast('🔄 Ranking por turmas atualizado!');
     });
 }
 
@@ -1180,7 +1307,6 @@ async function atualizarRankingTorcida() {
         }
         lista.sort((a, b) => b.pontos - a.pontos);
         
-        // Atualizar timer da torcida
         const timerDisplay = document.getElementById('torcida-timer');
         if (timerDisplay && data.status === 'em_andamento' && data.fim > 0) {
             const restante = Math.max(0, data.fim - Date.now());
@@ -1238,7 +1364,9 @@ document.getElementById('btn-modo-equipes')?.addEventListener('click', () => {
     document.getElementById('btn-modo-equipes').classList.add('ativo');
     document.getElementById('btn-modo-individual').classList.remove('ativo');
     document.querySelector('.fase-selector').style.display = 'none';
-    toast('👥 Ranking por equipes em breve!');
+    // Atualizar para o ranking por equipes
+    renderRankingTurmas('ranking-torcida-container');
+    document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
 });
 
 // ============================================================
@@ -1254,12 +1382,10 @@ if (appState.userType === 'aluno' && appState.alunoId) {
     configurarMenu();
 }
 
-// Atualizar timer da fase a cada segundo (para o menu principal)
 setInterval(atualizarTimerFase, 1000);
 
 console.log('🏆 Copa Tabuada CEIB 2026 - Carregado com sucesso!');
 
-// EXPORTA VARIÁVEIS GLOBAIS
 window.appState = appState;
 window.db = db;
 window.copaRef = copaRef;
