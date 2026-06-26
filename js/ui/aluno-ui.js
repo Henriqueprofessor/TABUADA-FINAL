@@ -1,6 +1,6 @@
 // ============================================================
 // ARQUIVO: js/ui/aluno-ui.js
-// DESCRIÇÃO: Interface do Aluno - PONTUAÇÃO CORRIGIDA
+// DESCRIÇÃO: Interface do Aluno - CORRIGIDO
 // ============================================================
 
 import { appState } from '../models/state.js';
@@ -235,7 +235,7 @@ function mostrarProximaPergunta() {
     });
     
     // ============================================================
-    // CORREÇÃO: Inicia o timer com o valor correto
+    // RESETAR O TEMPO RESTANTE PARA CADA PERGUNTA
     // ============================================================
     tempoRestantePergunta = TEMPO_PERGUNTA;
     partidaAtual.tempoRestantePergunta = TEMPO_PERGUNTA;
@@ -249,9 +249,9 @@ function mostrarProximaPergunta() {
     iniciarTimerPergunta();
 }
 
-// ========== TIMER DA PERGUNTA (CORRIGIDO) ==========
+// ========== TIMER DA PERGUNTA ==========
 function iniciarTimerPergunta() {
-    console.log('⏱️ iniciarTimerPergunta chamado - tempo:', tempoRestantePergunta);
+    console.log('⏱️ iniciarTimerPergunta - tempo:', tempoRestantePergunta);
     
     if (timerPergunta) {
         clearInterval(timerPergunta);
@@ -270,7 +270,7 @@ function iniciarTimerPergunta() {
         tempoRestantePergunta = Math.max(0, TEMPO_PERGUNTA - decorrido);
         
         // ============================================================
-        // CORREÇÃO: Atualiza o tempoRestantePergunta da partida
+        // ATUALIZA O tempoRestantePergunta NA PARTIDA
         // ============================================================
         if (partidaAtual) {
             partidaAtual.tempoRestantePergunta = tempoRestantePergunta;
@@ -292,7 +292,7 @@ function iniciarTimerPergunta() {
         if (tempoRestantePergunta > 0) {
             animFrameId = requestAnimationFrame(atualizarBarra);
         } else {
-            console.log('⏰ Tempo esgotado! Chamando responder(-1)');
+            console.log('⏰ Tempo esgotado!');
             window.responder(-1);
         }
     }
@@ -307,10 +307,10 @@ function iniciarTimerPergunta() {
     }, 100);
 }
 
-// ========== RESPONDER (CORRIGIDO) ==========
+// ========== RESPONDER ==========
 window.responder = async function(idx) {
-    console.log('🖱️ responder chamado com idx:', idx);
-    console.log('⏱️ tempoRestantePergunta antes:', partidaAtual?.tempoRestantePergunta);
+    console.log('🖱️ responder chamado - idx:', idx);
+    console.log('⏱️ tempoRestantePergunta na partida:', partidaAtual?.tempoRestantePergunta);
     
     if (!jogoAtivo || !partidaAtual || partidaAtual.finalizada) {
         console.log('⛔ Jogo não está ativo');
@@ -331,21 +331,12 @@ window.responder = async function(idx) {
         const btns = document.querySelectorAll('.opcao');
         if (btns[idx]) {
             opcaoSelecionada = parseInt(btns[idx].innerText);
-            console.log('📌 Opção selecionada:', opcaoSelecionada);
         }
-    } else {
-        console.log('⏰ Tempo esgotado!');
     }
-    
-    // ============================================================
-    // CORREÇÃO: Garante que o tempoRestantePergunta está atualizado
-    // ============================================================
-    console.log('⏱️ tempoRestantePergunta ANTES de processar:', partidaAtual.tempoRestantePergunta);
     
     const resultado = processarResposta(partidaAtual, opcaoSelecionada);
     if (!resultado) return;
     
-    console.log('📊 Resultado:', resultado);
     console.log('⭐ Pontos ganhos:', resultado.pontosGanhos);
     console.log('💰 Pontuação total:', partidaAtual.pontos);
     
