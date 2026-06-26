@@ -1551,8 +1551,16 @@ function configurarMenu() {
     });
 
     document.getElementById('btn-projecao')?.addEventListener('click', () => {
-        // Torcida simplificada
-        toast('📺 Modo Torcida em desenvolvimento');
+    // ========== MODO TORCIDA ==========
+    appState.setUserType('projecao');
+    document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+    document.getElementById('tela-torcida').classList.remove('hidden');
+    document.getElementById('online-stats').classList.remove('hidden');
+    toast('📺 Bem-vindo à Torcida!');
+    
+    // Iniciar atualização da torcida
+    iniciarTorcida();
+});
     });
 }
 
@@ -1594,6 +1602,129 @@ setTimeout(() => {
         }
     } catch(e) {}
 }, 3000);
+// ========== FUNÇÕES DA TORCIDA ==========
+let intervaloTorcida = null;
+
+function iniciarTorcida() {
+    // Popular select de fases
+    const select = document.getElementById('select-fase-torcida');
+    if (select) {
+        let options = '';
+        for (let i = 1; i <= 5; i++) {
+            options += `<option value="${i}">Fase ${i}</option>`;
+        }
+        select.innerHTML = options;
+        select.value = appState.fase || 1;
+    }
+    
+    // Atualizar ranking imediatamente
+    atualizarRankingTorcida();
+    
+    // Atualizar a cada 5 segundos
+    if (intervaloTorcida) clearInterval(intervaloTorcida);
+    intervaloTorcida = setInterval(() => {
+        atualizarRankingTorcida();
+    }, 5000);
+}
+
+async function atualizarRankingTorcida() {
+    const data = appState.data;
+    if (!data) return;
+    
+    const fase = parseInt(document.getElementById('select-fase-torcida')?.value) || data.fase;
+    const container = document.getElementById('ranking-torcida-container');
+    if (!container) return;
+    
+    try {
+        // Buscar resultados da fase
+        const snap = await resultadosRef(fase).once('value');
+        const resultados = snap.val() || {};
+        const participantes = (await participantesRef(fase).once('value')).val() || {};
+        
+        // Processar ranking
+        let lista = [];
+        for (const [id, partidas] of Object.entries(resultados)) {
+            if (partidas?.length) {
+                const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+                const nome = participantes[id]?.nome || 'Anônimo';
+                const turma = participantes[id]?.turma || '?';
+                lista.push({ id, nome, turma, pontos: melhor.pontos, acertos: melhor.acertos });
+            }
+        }
+        
+        lista.sort((a, b) => b.pontos - a.pontos);
+        
+        // Atualizar timer
+        atualizarTimerTorcida(data);
+        
+        // Gerar HTML
+        let html = `<table class="ranking-table"><thead><tr>
+            <th>Pos</th>
+            <th>Nome</th>
+            <th>Turma</th>
+            <th>Pontuação</th>
+            <th>Acertos</th>
+        </tr></thead><tbody>`;
+        
+        if (lista.length === 0) {
+            html += `<tr><td colspan="5" style="text-align:center;">⏳ Nenhum resultado ainda.</td></tr>`;
+        } else {
+            lista.slice(0, 20).forEach((j, idx) => {
+                html += `<tr>
+                    <td>${idx + 1}º</td>
+                    <td>${escapeHtml(j.nome)}</td>
+                    <td>${escapeHtml(j.turma)}</td>
+                    <td><strong>${j.pontos}</strong></td>
+                    <td>${j.acertos}/20</td>
+                </tr>`;
+            });
+        }
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+        
+        // Atualizar última atualização
+        document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
+        
+    } catch (e) {
+        console.warn('Erro ao atualizar ranking da torcida:', e);
+        container.innerHTML = '<p style="color:#e74c3c;">❌ Erro ao carregar ranking.</p>';
+    }
+}
+
+function atualizarTimerTorcida(data) {
+    const timerDisplay = document.getElementById('torcida-timer');
+    if (!timerDisplay) return;
+    
+    if (data.status === 'em_andamento') {
+        const restante = Math.max(0, data.fim - Date.now());
+        const min = Math.floor(restante / 60000);
+        const sec = Math.floor((restante % 60000) / 1000);
+        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+    } else {
+        timerDisplay.innerText = data.status === 'finalizado' ? 'FIM' : 'PAUSADO';
+    }
+}
+
+// ========== BOTÃO SAIR TORCIDA ==========
+document.getElementById('btn-sair-torcida')?.addEventListener('click', () => {
+    if (intervaloTorcida) {
+        clearInterval(intervaloTorcida);
+        intervaloTorcida = null;
+    }
+    location.reload();
+});
+
+// ========== BOTÃO SINCRONIZAR TORCIDA ==========
+document.getElementById('btn-sync-torcida')?.addEventListener('click', () => {
+    toast('🔄 Sincronizando...');
+    atualizarRankingTorcida();
+});
+
+// ========== SELECT DE FASE TORCIDA ==========
+document.getElementById('select-fase-torcida')?.addEventListener('change', () => {
+    atualizarRankingTorcida();
+});
 </script>
 
 </body>
