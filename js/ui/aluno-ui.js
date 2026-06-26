@@ -1,6 +1,6 @@
 // ============================================================
 // ARQUIVO: js/ui/aluno-ui.js
-// DESCRIÇÃO: Interface do Aluno - VERSÃO ESTÁVEL
+// DESCRIÇÃO: Interface do Aluno - PONTUAÇÃO CORRIGIDA
 // ============================================================
 
 import { appState } from '../models/state.js';
@@ -28,7 +28,7 @@ import { confettiManager } from '../utils/confetti.js';
 import { achievementManager } from '../utils/achievements.js';
 import { notificationManager } from '../utils/notifications.js';
 import { addOfflinePartida } from '../services/sync-service.js';
-import { TOTAL_PERGUNTAS, TEMPO_PERGUNTA, VAGAS_POR_FASE } from '../utils/constants.js';
+import { TOTAL_PERGUNTAS, TEMPO_PERGUNTA } from '../utils/constants.js';
 import { MODALIDADE_CONFIG } from '../config/firebase-config.js';
 
 // ========== VARIÁVEIS ==========
@@ -42,6 +42,8 @@ let timerFaseInterval = null;
 
 // ========== INICIALIZAR ==========
 export function initAlunoUI(alunoId, alunoNome, alunoTurma) {
+    console.log('✅ initAlunoUI chamado');
+    
     document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
     document.getElementById('tela-aluno').classList.remove('hidden');
     document.getElementById('online-stats').classList.remove('hidden');
@@ -227,10 +229,17 @@ function mostrarProximaPergunta() {
         if (btns[i]) {
             btns[i].innerText = o;
             btns[i].disabled = false;
+            btns[i].style.opacity = '1';
+            btns[i].style.pointerEvents = 'auto';
         }
     });
     
+    // ============================================================
+    // CORREÇÃO: Inicia o timer com o valor correto
+    // ============================================================
     tempoRestantePergunta = TEMPO_PERGUNTA;
+    partidaAtual.tempoRestantePergunta = TEMPO_PERGUNTA;
+    
     const barra = document.getElementById('progresso-tempo');
     if (barra) {
         barra.style.width = '100%';
@@ -240,8 +249,10 @@ function mostrarProximaPergunta() {
     iniciarTimerPergunta();
 }
 
-// ========== TIMER DA PERGUNTA ==========
+// ========== TIMER DA PERGUNTA (CORRIGIDO) ==========
 function iniciarTimerPergunta() {
+    console.log('⏱️ iniciarTimerPergunta chamado - tempo:', tempoRestantePergunta);
+    
     if (timerPergunta) {
         clearInterval(timerPergunta);
         timerPergunta = null;
@@ -257,6 +268,13 @@ function iniciarTimerPergunta() {
     function atualizarBarra(timestamp) {
         const decorrido = (timestamp - inicio) / 1000;
         tempoRestantePergunta = Math.max(0, TEMPO_PERGUNTA - decorrido);
+        
+        // ============================================================
+        // CORREÇÃO: Atualiza o tempoRestantePergunta da partida
+        // ============================================================
+        if (partidaAtual) {
+            partidaAtual.tempoRestantePergunta = tempoRestantePergunta;
+        }
         
         if (barra) {
             const percentual = (tempoRestantePergunta / TEMPO_PERGUNTA) * 100;
@@ -274,6 +292,7 @@ function iniciarTimerPergunta() {
         if (tempoRestantePergunta > 0) {
             animFrameId = requestAnimationFrame(atualizarBarra);
         } else {
+            console.log('⏰ Tempo esgotado! Chamando responder(-1)');
             window.responder(-1);
         }
     }
@@ -288,9 +307,15 @@ function iniciarTimerPergunta() {
     }, 100);
 }
 
-// ========== RESPONDER ==========
+// ========== RESPONDER (CORRIGIDO) ==========
 window.responder = async function(idx) {
-    if (!jogoAtivo || !partidaAtual || partidaAtual.finalizada) return;
+    console.log('🖱️ responder chamado com idx:', idx);
+    console.log('⏱️ tempoRestantePergunta antes:', partidaAtual?.tempoRestantePergunta);
+    
+    if (!jogoAtivo || !partidaAtual || partidaAtual.finalizada) {
+        console.log('⛔ Jogo não está ativo');
+        return;
+    }
     
     if (timerPergunta) {
         clearInterval(timerPergunta);
@@ -306,11 +331,23 @@ window.responder = async function(idx) {
         const btns = document.querySelectorAll('.opcao');
         if (btns[idx]) {
             opcaoSelecionada = parseInt(btns[idx].innerText);
+            console.log('📌 Opção selecionada:', opcaoSelecionada);
         }
+    } else {
+        console.log('⏰ Tempo esgotado!');
     }
+    
+    // ============================================================
+    // CORREÇÃO: Garante que o tempoRestantePergunta está atualizado
+    // ============================================================
+    console.log('⏱️ tempoRestantePergunta ANTES de processar:', partidaAtual.tempoRestantePergunta);
     
     const resultado = processarResposta(partidaAtual, opcaoSelecionada);
     if (!resultado) return;
+    
+    console.log('📊 Resultado:', resultado);
+    console.log('⭐ Pontos ganhos:', resultado.pontosGanhos);
+    console.log('💰 Pontuação total:', partidaAtual.pontos);
     
     if (resultado.acertou) {
         soundManager.playCorrect();
@@ -332,8 +369,10 @@ window.responder = async function(idx) {
     await salvarProgressoTemporario();
     
     if (resultado.finalizada) {
+        console.log('🏁 Partida finalizada!');
         setTimeout(() => finalizarPartida(), 300);
     } else {
+        console.log('➡️ Próxima pergunta');
         setTimeout(() => mostrarProximaPergunta(), 300);
     }
 };
