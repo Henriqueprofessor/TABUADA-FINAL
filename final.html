@@ -22,55 +22,58 @@
         }
         
         // ============================================================
-        // 2. VERIFICAÇÃO DO VERSION.JSON
+        // 2. FUNÇÃO DE VERIFICAÇÃO DE VERSÃO (USADA PELO BOTÃO)
         // ============================================================
-        async function verificarVersao() {
+        window.verificarVersao = async function(mostrarToast = true) {
             try {
                 const response = await fetch('version.json?v=' + Date.now());
                 if (!response.ok) {
-                    console.log('⚠️ version.json não encontrado.');
+                    if (mostrarToast) toast('⚠️ version.json não encontrado.');
                     return;
                 }
                 const data = await response.json();
                 const versaoSalva = localStorage.getItem('versao_jogo');
                 
-                console.log('📦 Versão atual do servidor:', data.version);
-                console.log('📦 Versão salva no cache:', versaoSalva || 'nenhuma');
+                console.log('📦 Versão do servidor:', data.version);
+                console.log('📦 Versão salva:', versaoSalva || 'nenhuma');
                 
                 if (versaoSalva && versaoSalva !== data.version) {
-                    console.log('🔄 NOVA VERSÃO DISPONÍVEL!');
-                    console.log('📝 Novidades:', data.message);
-                    
-                    localStorage.setItem('versao_jogo', data.version);
-                    
                     const confirmar = confirm(
-                        '🔄 Nova versão do jogo disponível!\n\n' +
-                        'Versão: ' + data.version + '\n' +
+                        '🔄 NOVA VERSÃO DISPONÍVEL!\n\n' +
+                        'Versão atual: ' + versaoSalva + '\n' +
+                        'Nova versão: ' + data.version + '\n' +
                         'Data: ' + data.updateDate + '\n\n' +
                         'Novidades:\n' + data.message + '\n\n' +
                         'Deseja recarregar para atualizar?'
                     );
                     
                     if (confirmar) {
+                        localStorage.setItem('versao_jogo', data.version);
                         window.location.reload();
                     }
                 } else if (!versaoSalva) {
                     localStorage.setItem('versao_jogo', data.version);
-                    console.log('✅ Versão salva pela primeira vez:', data.version);
+                    if (mostrarToast) toast('✅ Versão ' + data.version + ' salva localmente!');
                 } else {
-                    console.log('✅ Jogo está atualizado!');
+                    if (mostrarToast) toast('✅ Jogo está atualizado! (v' + data.version + ')');
                 }
+                
+                return data;
             } catch (e) {
-                console.log('⚠️ Não foi possível verificar versão:', e.message);
+                if (mostrarToast) toast('⚠️ Erro ao verificar versão.');
+                console.log('⚠️ Erro ao verificar versão:', e.message);
+                return null;
             }
-        }
+        };
         
-        setTimeout(verificarVersao, 2000);
+        // Verificação automática ao carregar
+        setTimeout(() => window.verificarVersao(false), 2000);
         
+        // Verificação ao focar a página
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
                 console.log('👁️ Página em foco - verificando atualizações...');
-                setTimeout(verificarVersao, 1000);
+                setTimeout(() => window.verificarVersao(false), 1000);
             }
         });
         
@@ -434,6 +437,21 @@
         .status-em-jogo { color: #2ecc71; font-weight: bold; }
         .status-aguardando { color: #f39c12; font-weight: bold; }
         .status-finalizado { color: #3498db; font-weight: bold; }
+        .btn-verificar-versao {
+            background: #9b59b6;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            margin: 4px;
+        }
+        .btn-verificar-versao:hover {
+            background: #8e44ad;
+            transform: scale(1.02);
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -451,7 +469,10 @@
                 <p>Fase atual: <strong id="fase-atual-titulo">--</strong> <span id="fase-progresso" class="fase-info"></span></p>
                 <div id="timer-fase" class="timer-display">00:00</div>
                 <div style="font-size: 12px; margin-top: 5px;">Última Sinc: <span id="last-sync-time">--</span></div>
-                <button id="btn-sincronizar-global" class="btn-warning" style="margin-top: 5px;">🔄 Sincronizar</button>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px;">
+                    <button id="btn-sincronizar-global" class="btn-warning">🔄 Sincronizar</button>
+                    <button id="btn-verificar-versao" class="btn-verificar-versao">🔍 Verificar Versão</button>
+                </div>
             </div>
             <div id="online-stats" class="online-badge hidden">Online: <span id="jogadores-online">0</span></div>
         </div>
@@ -641,6 +662,44 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // ---------- FUNÇÃO TOAST ----------
+    function toast(m) {
+        const t = document.getElementById('toast');
+        if (t) { t.innerText = m; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
+    }
+
+    // ---------- BOTÃO VERIFICAR VERSÃO ----------
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnVersao = document.getElementById('btn-verificar-versao');
+        if (btnVersao) {
+            btnVersao.addEventListener('click', function() {
+                this.textContent = '⏳ Verificando...';
+                this.disabled = true;
+                
+                if (typeof window.verificarVersao === 'function') {
+                    window.verificarVersao(true).then(() => {
+                        this.textContent = '🔍 Verificar Versão';
+                        this.disabled = false;
+                    }).catch(() => {
+                        this.textContent = '🔍 Verificar Versão';
+                        this.disabled = false;
+                    });
+                } else {
+                    toast('⚠️ Função de verificação não disponível.');
+                    this.textContent = '🔍 Verificar Versão';
+                    this.disabled = false;
+                }
+            });
+        }
+    });
+
+    // ============================================================
+    // ============================================================
+    // AQUI VAI TODO O RESTO DO SEU CÓDIGO JAVASCRIPT
+    // (TUDO QUE VOCÊ JÁ TINHA ANTES)
+    // ============================================================
+    // ============================================================
+
     // ---------- VARIÁVEIS GLOBAIS ----------
     let meuTipo = null, alunoId = null, alunoNome = null, alunoTurma = null;
     let estadoAtual = null, jogoAtivo = false;
@@ -687,7 +746,6 @@
                 let x = r + Math.floor(Math.random() * 11) - 5;
                 if (x >= 0 && !opts.includes(x)) opts.push(x);
             }
-            // ORDENA AS OPÇÕES DA MENOR PARA A MAIOR
             opts.sort((x, y) => x - y);
             pool.push({ a, b, opts });
         }
@@ -708,15 +766,12 @@
     }
 
     // ---------- FUNÇÕES AUXILIARES ----------
-    function toast(m) {
-        const t = document.getElementById('toast');
-        if (t) { t.innerText = m; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
-    }
     function updateLastSyncTime() {
         const span = document.getElementById('last-sync-time');
         if (span) span.innerText = new Date().toLocaleString('pt-BR');
         toast("🔄 Sincronizado!");
     }
+    
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
@@ -860,7 +915,6 @@
             return;
         }
 
-        // RANKING INDIVIDUAL
         const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
         const snapTemp = await db.ref(`copaV2/resultados_temp/${faseNum}`).once('value');
         const participantes = estadoAtual.participantes?.[faseNum] || {};
@@ -1007,7 +1061,6 @@
             }
         }
 
-        // ---- PROJEÇÃO (AMEIAÇA) ----
         let posProjetadaMap = new Map();
         if (estadoAtual.status !== 'finalizado') {
             let projecaoValida = false;
@@ -2238,7 +2291,6 @@
         document.getElementById('btn-sync-prof')?.addEventListener('click', () => updateLastSyncTime());
         document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
         document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
-            // Limpar dados do aluno
             if (alunoId) {
                 db.ref(`online/${alunoId}`).remove();
             }
@@ -2257,7 +2309,6 @@
         });
         document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
             updateLastSyncTime();
-            // Forçar atualização dos dados
             db.ref('copaV2').once('value', snap => {
                 estadoAtual = snap.val() || estadoAtual;
                 atualizarUI();
