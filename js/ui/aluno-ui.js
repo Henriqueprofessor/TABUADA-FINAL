@@ -76,18 +76,13 @@ export function initAlunoUI(alunoId, alunoNome, alunoTurma) {
     gamepadManager.setGamepadCallbacks({
         onButtonPress: (index) => {
             if (!jogoAtivo) return;
-            // Mapear botões do gamepad para opções
             const mapeamento = {
-                0: 0,  // A / X -> opção 0
-                1: 1,  // B / Circle -> opção 1
-                2: 2,  // X / Square -> opção 2
-                3: 3,  // Y / Triangle -> opção 3
-                4: 0,  // L1 -> opção 0
-                5: 3   // R1 -> opção 3
+                0: 0, 1: 1, 2: 2, 3: 3,
+                4: 0, 5: 3
             };
             const opcao = mapeamento[index];
             if (opcao !== undefined) {
-                responder(opcao);
+                window.responder(opcao);
             }
         }
     });
@@ -105,13 +100,11 @@ function atualizarUIAluno(data) {
     const encerrado = (data.status === 'em_andamento' && agora >= data.fim) || data.status === 'finalizado';
     const liberado = data.status === 'em_andamento' && !encerrado;
     
-    // Atualizar informações
     document.getElementById('aluno-fase-info').innerText = `${faseAtual}/5`;
     
     const modalidadeNome = MODALIDADE_CONFIG[data.modalidade]?.nome || 'Tabuada 2-5';
     document.getElementById('aluno-modalidade').innerText = modalidadeNome;
     
-    // Verificar classificação
     const msgDiv = document.getElementById('msg-status-aluno');
     const btnJogar = document.getElementById('btn-iniciar-partida');
     
@@ -137,10 +130,7 @@ function atualizarUIAluno(data) {
         btnJogar.classList.remove('hidden');
     }
     
-    // Atualizar melhor resultado
     atualizarMelhorResultado();
-    
-    // Atualizar timer
     atualizarTimerAluno(data);
 }
 
@@ -185,7 +175,6 @@ async function atualizarMelhorResultado() {
             const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
             document.getElementById('aluno-melhor-score').innerText = melhor.pontos || 0;
             
-            // Histórico
             let histHtml = '<ul>';
             partidas.slice().reverse().forEach(p => {
                 histHtml += `<li>🏆 Pontos: ${p.pontos} | Acertos: ${p.acertos} | ${p.tempo ? formatarTempo(p.tempo * 1000) : '-'}</li>`;
@@ -194,7 +183,6 @@ async function atualizarMelhorResultado() {
             document.getElementById('historico-aluno').innerHTML = histHtml;
         }
         
-        // Renderizar medalhas
         achievementManager.renderizarMedalhas(alunoId, 'medalhas-aluno');
         
     } catch (error) {
@@ -204,10 +192,8 @@ async function atualizarMelhorResultado() {
 
 // ========== CONFIGURAR EVENTOS ==========
 function configurarEventosAluno() {
-    // Botão Jogar
     document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
     
-    // Botão Sair
     document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
         if (jogoAtivo) {
             if (!confirm('⚠️ Você está em uma partida. Deseja sair mesmo assim?')) return;
@@ -246,13 +232,11 @@ async function iniciarNovaPartida() {
         return;
     }
     
-    // Verificar se já existe uma partida em andamento
     try {
         const snap = await getOnce(resultadosRef(data.fase));
         const resultados = snap.val() || {};
         const partidas = resultados[appState.alunoId] || [];
         
-        // Se já tem partidas e o tempo está acabando, perguntar se quer tentar melhorar
         if (partidas.length > 0 && (data.fim - Date.now()) < 30000) {
             if (!confirm('⏰ Pouco tempo restante. Deseja tentar melhorar sua pontuação?')) {
                 return;
@@ -262,20 +246,15 @@ async function iniciarNovaPartida() {
         console.warn('Erro ao verificar partidas existentes:', e);
     }
     
-    // Iniciar partida
     const perguntas = obterPerguntas(data.modalidade);
     partidaAtual = iniciarPartida(perguntas);
     jogoAtivo = true;
     
-    // Mostrar área do jogo
     document.getElementById('jogo-area').classList.remove('hidden');
     document.getElementById('aguardando-aluno').classList.add('hidden');
     document.getElementById('pontuacao-acumulada').innerText = '0';
     
-    // Tocar som de início
     soundManager.playGameStart();
-    
-    // Mostrar primeira pergunta
     mostrarProximaPergunta();
 }
 
@@ -292,11 +271,9 @@ function mostrarProximaPergunta() {
         return;
     }
     
-    // Atualizar display
     document.getElementById('pergunta').innerText = `${pergunta.a} x ${pergunta.b} = ?`;
     document.getElementById('pergunta-num').innerText = `${partidaAtual.indice + 1}/${TOTAL_PERGUNTAS}`;
     
-    // Atualizar opções
     const btns = document.querySelectorAll('.opcao');
     pergunta.opts.forEach((o, i) => {
         if (btns[i]) {
@@ -305,7 +282,6 @@ function mostrarProximaPergunta() {
         }
     });
     
-    // Iniciar timer
     tempoRestantePergunta = TEMPO_PERGUNTA;
     iniciarTimerPergunta();
 }
@@ -332,13 +308,11 @@ function iniciarTimerPergunta() {
         if (tempoRestantePergunta > 0) {
             animFrameId = requestAnimationFrame(atualizarBarra);
         } else {
-            // Tempo esgotado
-            responder(-1);
+            window.responder(-1);
         }
     }
     animFrameId = requestAnimationFrame(atualizarBarra);
     
-    // Timer de segurança
     timerPergunta = setInterval(() => {
         if (tempoRestantePergunta <= 0) {
             clearInterval(timerPergunta);
@@ -348,10 +322,15 @@ function iniciarTimerPergunta() {
 }
 
 // ========== RESPONDER PERGUNTA ==========
+// EXPORTA A FUNÇÃO PARA O ESCOPO GLOBAL
 window.responder = async function(idx) {
-    if (!jogoAtivo || !partidaAtual || partidaAtual.finalizada) return;
+    console.log('responder chamado com idx:', idx);
     
-    // Parar timer
+    if (!jogoAtivo || !partidaAtual || partidaAtual.finalizada) {
+        console.log('Jogo não está ativo');
+        return;
+    }
+    
     if (timerPergunta) {
         clearInterval(timerPergunta);
         timerPergunta = null;
@@ -361,32 +340,30 @@ window.responder = async function(idx) {
         animFrameId = null;
     }
     
-    // Obter resposta
     let opcaoSelecionada = null;
     if (idx >= 0) {
         const btns = document.querySelectorAll('.opcao');
         if (btns[idx]) {
             opcaoSelecionada = parseInt(btns[idx].innerText);
+            console.log('Opção selecionada:', opcaoSelecionada);
         }
     }
     
-    // Processar resposta
     const resultado = processarResposta(partidaAtual, opcaoSelecionada);
     if (!resultado) return;
     
-    // Feedback sonoro
+    console.log('Resultado:', resultado);
+    
     if (resultado.acertou) {
         soundManager.playCorrect();
     } else {
         soundManager.playWrong();
     }
     
-    // Confetes para acertos
     if (resultado.acertou && confettiManager.config.confetes) {
         confettiManager.fireHit();
     }
     
-    // Verificar notificações
     const notificacoes = verificarNotificacoes(partidaAtual, resultado);
     for (const notifId of notificacoes) {
         notificationManager.mostrar(notifId, {
@@ -395,13 +372,10 @@ window.responder = async function(idx) {
         });
     }
     
-    // Atualizar pontuação
     document.getElementById('pontuacao-acumulada').innerText = partidaAtual.pontos;
     
-    // Salvar progresso temporário
     await salvarProgressoTemporario();
     
-    // Verificar se acabou
     if (resultado.finalizada) {
         setTimeout(() => finalizarPartida(), 300);
     } else {
@@ -438,14 +412,11 @@ async function finalizarPartida() {
     jogoAtivo = false;
     partidaAtual.finalizada = true;
     
-    // Esconder área do jogo
     document.getElementById('jogo-area').classList.add('hidden');
     document.getElementById('aguardando-aluno').classList.remove('hidden');
     
-    // Tocar fanfarra
     soundManager.playFanfare();
     
-    // Salvar resultado
     const data = appState.data;
     const faseAtual = data?.fase || 1;
     const alunoId = appState.alunoId;
@@ -453,24 +424,20 @@ async function finalizarPartida() {
     const objetoPartida = criarObjetoPartida(partidaAtual);
     
     try {
-        // Verificar se está online
         if (isOnline()) {
             await salvarResultado(faseAtual, alunoId, objetoPartida);
             await removerResultadoTemp(faseAtual, alunoId);
             toast('✅ Partida finalizada com sucesso!');
         } else {
-            // Salvar offline
             addOfflinePartida(alunoId, faseAtual, objetoPartida);
             toast('📶 Sem internet. Partida salva localmente.');
         }
     } catch (e) {
         console.warn('Erro ao salvar partida:', e);
-        // Tentar salvar offline como fallback
         addOfflinePartida(alunoId, faseAtual, objetoPartida);
         toast('⚠️ Erro ao salvar. Partida salva localmente.');
     }
     
-    // Verificar recordes
     try {
         const snap = await getOnce(resultadosRef(faseAtual));
         const resultados = snap.val() || {};
@@ -493,7 +460,6 @@ async function finalizarPartida() {
         console.warn('Erro ao verificar recordes:', e);
     }
     
-    // Verificar conquistas
     const stats = {
         totalPartidas: (await getOnce(resultadosRef(faseAtual))).val()?.[alunoId]?.length || 0,
         melhorAcertos: partidaAtual.acertos,
@@ -504,67 +470,55 @@ async function finalizarPartida() {
     };
     achievementManager.verificarConquistas(alunoId, stats);
     
-    // Atualizar melhor resultado
     await atualizarMelhorResultado();
-    
-    // Exibir resultado
     exibirModalResultado();
 }
 
 // ========== EXIBIR MODAL DE RESULTADO ==========
-function exibirModalResultado() {
+async function exibirModalResultado() {
     if (!partidaAtual) return;
     
-    const posicao = 0; // Será atualizado pelo ranking
+    const pos = await buscarPosicaoAluno();
+    const posFinal = pos || 0;
     const pontos = partidaAtual.pontos;
     const acertos = partidaAtual.acertos;
     const tempoMedio = partidaAtual.tempoTotal / Math.max(1, partidaAtual.indice);
     
-    let posEmoji = '';
-    if (posicao === 1) posEmoji = '🥇';
-    else if (posicao === 2) posEmoji = '🥈';
-    else if (posicao === 3) posEmoji = '🥉';
-    else posEmoji = '🏆';
+    let emoji = '';
+    if (posFinal === 1) emoji = '🥇';
+    else if (posFinal === 2) emoji = '🥈';
+    else if (posFinal === 3) emoji = '🥉';
+    else emoji = '🏆';
     
-    // Buscar posição real
-    buscarPosicaoAluno().then(pos => {
-        const posFinal = pos || 0;
-        let emoji = '';
-        if (posFinal === 1) emoji = '🥇';
-        else if (posFinal === 2) emoji = '🥈';
-        else if (posFinal === 3) emoji = '🥉';
-        else emoji = '🏆';
-        
-        const htmlModal = `
-            <div class="modal-resultados" id="modal-pos-jogo">
-                <h2>🏁 RESULTADO DA PARTIDA</h2>
-                <div style="font-size: 48px; margin: 10px 0;">${emoji}</div>
-                <div style="font-size: 28px; font-weight: bold;">${posFinal}º lugar</div>
-                <hr style="border-color: #2c3e50; margin: 15px 0;">
-                <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
-                <div>✅ Acertos: ${acertos}/20</div>
-                <div>⏱️ Tempo médio: ${tempoMedio.toFixed(1)} s/pergunta</div>
-                <div style="margin-top: 20px;">
-                    <button class="fechar" id="btn-fechar-modal">Fechar</button>
-                    ${appState.data?.status === 'em_andamento' && Date.now() < (appState.data?.fim || 0) ? 
-                        '<button class="jogar-novamente" id="btn-jogar-novamente" style="background: #27ae60;">🔄 Tentar melhorar</button>' : 
-                        ''}
-                </div>
+    const htmlModal = `
+        <div class="modal-resultados" id="modal-pos-jogo">
+            <h2>🏁 RESULTADO DA PARTIDA</h2>
+            <div style="font-size: 48px; margin: 10px 0;">${emoji}</div>
+            <div style="font-size: 28px; font-weight: bold;">${posFinal}º lugar</div>
+            <hr style="border-color: #2c3e50; margin: 15px 0;">
+            <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
+            <div>✅ Acertos: ${acertos}/20</div>
+            <div>⏱️ Tempo médio: ${tempoMedio.toFixed(1)} s/pergunta</div>
+            <div style="margin-top: 20px;">
+                <button class="fechar" id="btn-fechar-modal">Fechar</button>
+                ${appState.data?.status === 'em_andamento' && Date.now() < (appState.data?.fim || 0) ? 
+                    '<button class="jogar-novamente" id="btn-jogar-novamente" style="background: #27ae60;">🔄 Tentar melhorar</button>' : 
+                    ''}
             </div>
-        `;
-        
-        const modalExistente = document.getElementById('modal-pos-jogo');
-        if (modalExistente) modalExistente.remove();
-        document.body.insertAdjacentHTML('beforeend', htmlModal);
-        
-        document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
-            document.getElementById('modal-pos-jogo')?.remove();
-        });
-        
-        document.getElementById('btn-jogar-novamente')?.addEventListener('click', () => {
-            document.getElementById('modal-pos-jogo')?.remove();
-            iniciarNovaPartida();
-        });
+        </div>
+    `;
+    
+    const modalExistente = document.getElementById('modal-pos-jogo');
+    if (modalExistente) modalExistente.remove();
+    document.body.insertAdjacentHTML('beforeend', htmlModal);
+    
+    document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
+        document.getElementById('modal-pos-jogo')?.remove();
+    });
+    
+    document.getElementById('btn-jogar-novamente')?.addEventListener('click', () => {
+        document.getElementById('modal-pos-jogo')?.remove();
+        iniciarNovaPartida();
     });
 }
 
@@ -643,8 +597,3 @@ async function exibirResultadoFinal() {
         console.warn('Erro ao exibir resultado final:', e);
     }
 }
-
-// ========== EXPORTAR FUNÇÕES GLOBAIS ==========
-window.responder = window.responder || function(idx) {
-    // Será sobrescrito pelo escopo local
-};
