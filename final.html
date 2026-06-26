@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo</title>
+    
+    <!-- FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -674,10 +681,10 @@
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
                 <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
                 <div class="opcoes-grid">
-                    <button class="opcao" onclick="window.responder(0)"></button>
-                    <button class="opcao" onclick="window.responder(1)"></button>
-                    <button class="opcao" onclick="window.responder(2)"></button>
-                    <button class="opcao" onclick="window.responder(3)"></button>
+                    <button class="opcao" onclick="window.responder(0)">-</button>
+                    <button class="opcao" onclick="window.responder(1)">-</button>
+                    <button class="opcao" onclick="window.responder(2)">-</button>
+                    <button class="opcao" onclick="window.responder(3)">-</button>
                 </div>
                 <div style="text-align: center;">Pergunta: <span id="pergunta-num">1</span> de 20</div>
             </div>
@@ -726,34 +733,861 @@
 <div id="toast" class="toast hidden"></div>
 
 <!-- ============================================================ -->
-<!-- FIREBASE - CARREGADO PRIMEIRO -->
+<!-- TODOS OS MÓDULOS CARREGADOS DIRETAMENTE (SEM IMPORTMAP) -->
 <!-- ============================================================ -->
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
-
-<!-- ============================================================ -->
-<!-- IMPORTAÇÃO DOS MÓDULOS -->
-<!-- ============================================================ -->
-<script type="importmap">
-{
-    "imports": {
-        "./js/": "./js/"
-    }
-}
-</script>
-
 <script type="module">
-import { init } from './js/main.js';
-init();
+// Firebase já está carregado via script tags
 
-window.responder = function(idx) {
-    const event = new CustomEvent('responder', { detail: { idx } });
-    document.dispatchEvent(event);
+// ========== CONFIGURAÇÕES ==========
+const firebaseConfig = {
+    apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBz0-o2HVhEE",
+    authDomain: "final-copa-tabuada.firebaseapp.com",
+    databaseURL: "https://final-copa-tabuada-default-rtdb.firebaseio.com",
+    projectId: "final-copa-tabuada",
+    storageBucket: "final-copa-tabuada.firebasestorage.app",
+    messagingSenderId: "488825824115",
+    appId: "1:488825824115:web:50e94f68253473aee91b06"
 };
 
+const TOTAL_FASES = 5;
+const TOTAL_PERGUNTAS = 20;
+const TEMPO_PERGUNTA = 10;
+
+const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
+
+const MODALIDADE_CONFIG = {
+    "2-5": { min: 2, max: 5, nome: "Tabuada 2️⃣➡️5️⃣" },
+    "6-9": { min: 6, max: 9, nome: "Tabuada 6️⃣➡️9️⃣" },
+    "0-10": { min: 0, max: 10, nome: "Tabuada 0️⃣➡️🔟 (Completa)" }
+};
+
+const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
+
+// ========== INICIALIZAR FIREBASE ==========
+console.log('🔄 Inicializando Firebase...');
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+console.log('✅ Firebase inicializado com sucesso!');
+
+// ========== REFERÊNCIAS FIREBASE ==========
+const copaRef = db.ref('copaV2');
+const onlineRef = db.ref('online');
+const configRef = db.ref('copaV2/configuracoes');
+
+const resultadosRef = (fase) => db.ref(`copaV2/resultados/${fase}`);
+const resultadosTempRef = (fase) => db.ref(`copaV2/resultados_temp/${fase}`);
+const participantesRef = (fase) => db.ref(`copaV2/participantes/${fase}`);
+const classificadosRef = (fase) => db.ref(`copaV2/classificados/${fase}`);
+
+// ========== FUNÇÕES AUXILIARES ==========
+function toast(msg) {
+    const t = document.getElementById('toast');
+    if (t) { t.innerText = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+// ========== ESTADO GLOBAL ==========
+const appState = {
+    data: null,
+    userType: null,
+    alunoId: null,
+    alunoNome: null,
+    alunoTurma: null,
+    faseSelecionadaProf: 1,
+    modoTorcida: 'individual',
+    intervalos: { individual: 4, equipes: 60 },
+    listeners: [],
+    isInitialized: false,
+
+    init() {
+        if (this.isInitialized) return;
+        this.isInitialized = true;
+        
+        copaRef.on('value', (snap) => {
+            this.data = snap.val() || this.getDefaultState();
+            this.notify();
+        });
+        
+        configRef.on('value', (snap) => {
+            const config = snap.val();
+            if (config) {
+                this.configuracoes = { ...this.configuracoes, ...config };
+            }
+        });
+    },
+
+    getDefaultState() {
+        return {
+            fase: 1,
+            status: 'aguardando',
+            tempoFase: 12,
+            fim: 0,
+            modalidade: '2-5',
+            resultados: {},
+            participantes: {},
+            classificados: {},
+            tempoRestantePausa: 0
+        };
+    },
+
+    notify() {
+        this.listeners.forEach(fn => { try { fn(this.data); } catch(e) {} });
+    },
+
+    subscribe(callback) {
+        this.listeners.push(callback);
+        if (this.data) callback(this.data);
+        return () => { this.listeners = this.listeners.filter(fn => fn !== callback); };
+    },
+
+    get fase() { return this.data?.fase || 1; },
+    get status() { return this.data?.status || 'aguardando'; },
+    get modalidade() { return this.data?.modalidade || '2-5'; },
+
+    isClassificado(fase, alunoId) {
+        if (fase <= 1) return true;
+        const classificados = this.data?.classificados?.[fase - 1] || [];
+        return classificados.includes(alunoId);
+    },
+
+    getModalidadeNome() {
+        return MODALIDADE_CONFIG[this.modalidade]?.nome || 'Tabuada 2-5';
+    },
+
+    setUserType(type) {
+        this.userType = type;
+        sessionStorage.setItem('userType', type);
+    },
+
+    setAlunoData(id, nome, turma) {
+        this.alunoId = id;
+        this.alunoNome = nome;
+        this.alunoTurma = turma;
+        sessionStorage.setItem('alunoId', id);
+        sessionStorage.setItem('alunoNome', nome);
+        sessionStorage.setItem('alunoTurma', turma);
+    },
+
+    loadFromSession() {
+        this.userType = sessionStorage.getItem('userType') || null;
+        this.alunoId = sessionStorage.getItem('alunoId') || null;
+        this.alunoNome = sessionStorage.getItem('alunoNome') || null;
+        this.alunoTurma = sessionStorage.getItem('alunoTurma') || null;
+    }
+};
+
+// ========== GERAR PERGUNTAS ==========
+const poolCache = {};
+
+function gerarPool(modalidade) {
+    const config = MODALIDADE_CONFIG[modalidade];
+    if (!config) return [];
+    const { min, max } = config;
+    const pool = [];
+    for (let i = 0; i < 100; i++) {
+        let a = Math.floor(Math.random() * (max - min + 1)) + min;
+        let b = Math.floor(Math.random() * (max - min + 1)) + min;
+        let r = a * b;
+        let opts = [r];
+        while (opts.length < 4) {
+            let x = r + Math.floor(Math.random() * 11) - 5;
+            if (x >= 0 && !opts.includes(x)) opts.push(x);
+        }
+        pool.push({ a, b, opts: opts.sort((x,y) => x-y) });
+    }
+    return pool;
+}
+
+function obterPerguntas(modalidade) {
+    if (!poolCache[modalidade]) {
+        poolCache[modalidade] = gerarPool(modalidade);
+    }
+    const pool = poolCache[modalidade];
+    const shuffled = [...pool];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, 20);
+}
+
+// ========== LÓGICA DO JOGO ==========
+function iniciarPartida(perguntas) {
+    return {
+        perguntas: perguntas || [],
+        indice: 0,
+        pontos: 0,
+        acertos: 0,
+        erros: 0,
+        tempoTotal: 0,
+        tempoRestantePergunta: TEMPO_PERGUNTA,
+        finalizada: false,
+        sequenciaAcertos: 0,
+        maiorSequencia: 0,
+        respostas: []
+    };
+}
+
+function processarResposta(partida, opcaoSelecionada) {
+    const p = partida.perguntas[partida.indice];
+    if (!p) return null;
+
+    const respostaCorreta = p.a * p.b;
+    const acertou = opcaoSelecionada === respostaCorreta;
+    const tempoGasto = TEMPO_PERGUNTA - partida.tempoRestantePergunta;
+    
+    let pontosGanhos = 0;
+    
+    if (acertou) {
+        partida.acertos++;
+        partida.sequenciaAcertos++;
+        if (partida.sequenciaAcertos > partida.maiorSequencia) {
+            partida.maiorSequencia = partida.sequenciaAcertos;
+        }
+        pontosGanhos = Math.round(100 * (Math.max(0, partida.tempoRestantePergunta) / TEMPO_PERGUNTA));
+        partida.pontos += pontosGanhos;
+    } else {
+        partida.erros++;
+        partida.sequenciaAcertos = 0;
+    }
+    
+    partida.tempoTotal += tempoGasto;
+    partida.respostas.push({
+        pergunta: `${p.a} x ${p.b}`,
+        resposta: opcaoSelecionada,
+        correta: respostaCorreta,
+        acertou,
+        tempo: tempoGasto,
+        pontos: pontosGanhos
+    });
+    
+    partida.indice++;
+    
+    const finalizada = partida.indice >= TOTAL_PERGUNTAS;
+    if (finalizada) {
+        partida.finalizada = true;
+    }
+    
+    return {
+        acertou,
+        respostaCorreta,
+        pontosGanhos,
+        tempoGasto,
+        progresso: partida.indice,
+        total: TOTAL_PERGUNTAS,
+        finalizada: finalizada,
+        sequenciaAtual: partida.sequenciaAcertos,
+        maiorSequencia: partida.maiorSequencia
+    };
+}
+
+function getProximaPergunta(partida) {
+    if (partida.finalizada || partida.indice >= TOTAL_PERGUNTAS) {
+        return null;
+    }
+    return partida.perguntas[partida.indice];
+}
+
+function criarObjetoPartida(partida) {
+    return {
+        pontos: partida.pontos,
+        acertos: partida.acertos,
+        erros: partida.erros,
+        tempo: partida.tempoTotal,
+        timestamp: Date.now()
+    };
+}
+
+// ========== VARIÁVEIS DO ALUNO ==========
+let partidaAtual = null;
+let timerPergunta = null;
+let animFrameId = null;
+let tempoRestantePergunta = TEMPO_PERGUNTA;
+let jogoAtivo = false;
+let unsubscribeEstado = null;
+let timerFaseInterval = null;
+
+// ========== TIMER FASE ==========
+function iniciarTimerFase() {
+    console.log('🔄 iniciarTimerFase chamado');
+    
+    if (timerFaseInterval) {
+        clearInterval(timerFaseInterval);
+        timerFaseInterval = null;
+    }
+    
+    atualizarTimerFase();
+    
+    timerFaseInterval = setInterval(() => {
+        atualizarTimerFase();
+    }, 1000);
+}
+
+function atualizarTimerFase() {
+    const data = appState.data;
+    if (!data) return;
+    
+    const timerDisplay = document.getElementById('timer-fase');
+    if (!timerDisplay) return;
+    
+    if (data.status === 'em_andamento') {
+        const restante = Math.max(0, data.fim - Date.now());
+        const min = Math.floor(restante / 60000);
+        const sec = Math.floor((restante % 60000) / 1000);
+        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+    } else if (data.status === 'pausado') {
+        const tempoPausado = data.tempoRestantePausa || 0;
+        const min = Math.floor(tempoPausado / 60000);
+        const sec = Math.floor((tempoPausado % 60000) / 1000);
+        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+    } else if (data.status === 'finalizado') {
+        timerDisplay.innerText = 'FIM';
+    } else {
+        timerDisplay.innerText = 'PAUSADO';
+    }
+}
+
+// ========== UI DO ALUNO ==========
+function initAlunoUI(alunoId, alunoNome, alunoTurma) {
+    console.log('✅ initAlunoUI chamado');
+    
+    document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+    document.getElementById('tela-aluno').classList.remove('hidden');
+    document.getElementById('online-stats').classList.remove('hidden');
+    
+    appState.setAlunoData(alunoId, alunoNome, alunoTurma);
+    
+    document.getElementById('aluno-nome-display').innerText = alunoNome;
+    document.getElementById('aluno-turma-display').innerText = alunoTurma;
+    
+    // Presença
+    const presenceRef = db.ref(`online/${alunoId}`);
+    presenceRef.set({ nome: alunoNome, turma: alunoTurma, tipo: 'aluno' });
+    presenceRef.onDisconnect().remove();
+    
+    if (unsubscribeEstado) unsubscribeEstado();
+    unsubscribeEstado = appState.subscribe((data) => {
+        if (appState.userType === 'aluno') {
+            atualizarUIAluno(data);
+        }
+    });
+    
+    configurarEventosAluno();
+    
+    iniciarTimerFase();
+}
+
+function atualizarUIAluno(data) {
+    if (!data) return;
+    
+    const faseAtual = data.fase;
+    const agora = Date.now();
+    const encerrado = (data.status === 'em_andamento' && agora >= data.fim) || data.status === 'finalizado';
+    const liberado = data.status === 'em_andamento' && !encerrado;
+    
+    document.getElementById('aluno-fase-info').innerText = `${faseAtual}/5`;
+    
+    const modalidadeNome = appState.getModalidadeNome();
+    document.getElementById('aluno-modalidade').innerText = modalidadeNome;
+    
+    const msgDiv = document.getElementById('msg-status-aluno');
+    const btnJogar = document.getElementById('btn-iniciar-partida');
+    
+    if (faseAtual > 1 && !appState.isClassificado(faseAtual, appState.alunoId)) {
+        msgDiv.innerText = '❌ Você NÃO foi classificado para esta fase.';
+        btnJogar.classList.add('hidden');
+        return;
+    }
+    
+    if (!liberado) {
+        msgDiv.innerText = data.status === 'pausado' ? '⏸️ Fase pausada.' :
+                          (data.status === 'finalizado' ? '🏆 Competição finalizada!' : '⏳ Aguardando liberação...');
+        btnJogar.classList.add('hidden');
+    } else if (encerrado) {
+        msgDiv.innerText = '⏰ TEMPO ESGOTADO!';
+        btnJogar.classList.add('hidden');
+    } else {
+        msgDiv.innerText = '✅ Fase liberada! Clique em JOGAR.';
+        btnJogar.classList.remove('hidden');
+    }
+    
+    atualizarTimerFase();
+    atualizarMelhorResultado();
+}
+
+async function atualizarMelhorResultado() {
+    const data = appState.data;
+    if (!data) return;
+    
+    try {
+        const snap = await resultadosRef(data.fase).once('value');
+        const resultados = snap.val() || {};
+        const partidas = resultados[appState.alunoId] || [];
+        
+        if (partidas.length > 0) {
+            const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+            document.getElementById('aluno-melhor-score').innerText = melhor.pontos || 0;
+        }
+    } catch (e) {
+        console.warn('Erro ao atualizar melhor resultado:', e);
+    }
+}
+
+function configurarEventosAluno() {
+    document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
+    
+    document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
+        if (jogoAtivo && !confirm('⚠️ Deseja sair mesmo assim?')) return;
+        
+        if (timerFaseInterval) {
+            clearInterval(timerFaseInterval);
+            timerFaseInterval = null;
+        }
+        
+        const presenceRef = db.ref(`online/${appState.alunoId}`);
+        presenceRef.remove();
+        
+        if (unsubscribeEstado) {
+            unsubscribeEstado();
+            unsubscribeEstado = null;
+        }
+        
+        sessionStorage.clear();
+        appState.userType = null;
+        appState.alunoId = null;
+        appState.alunoNome = null;
+        appState.alunoTurma = null;
+        
+        window.location.href = window.location.pathname + '?t=' + Date.now();
+    });
+}
+
+async function iniciarNovaPartida() {
+    console.log('🎮 iniciarNovaPartida chamado');
+    
+    if (jogoAtivo) return;
+    
+    const data = appState.data;
+    if (!data) { toast('⏳ Aguardando dados...'); return; }
+    if (data.status !== 'em_andamento') { toast('⏸️ Fase inativa!'); return; }
+    if (Date.now() >= data.fim) { toast('⏰ Tempo esgotado!'); return; }
+    if (data.fase > 1 && !appState.isClassificado(data.fase, appState.alunoId)) {
+        toast('❌ Não classificado!');
+        return;
+    }
+    
+    const perguntas = obterPerguntas(data.modalidade);
+    partidaAtual = iniciarPartida(perguntas);
+    jogoAtivo = true;
+    
+    document.getElementById('jogo-area').classList.remove('hidden');
+    document.getElementById('aguardando-aluno').classList.add('hidden');
+    document.getElementById('pontuacao-acumulada').innerText = '0';
+    
+    mostrarProximaPergunta();
+}
+
+function mostrarProximaPergunta() {
+    console.log('📝 mostrarProximaPergunta chamado');
+    
+    if (!partidaAtual || partidaAtual.finalizada) {
+        finalizarPartida();
+        return;
+    }
+    
+    const pergunta = getProximaPergunta(partidaAtual);
+    if (!pergunta) {
+        finalizarPartida();
+        return;
+    }
+    
+    document.getElementById('pergunta').innerText = `${pergunta.a} x ${pergunta.b} = ?`;
+    document.getElementById('pergunta-num').innerText = partidaAtual.indice + 1;
+    
+    const btns = document.querySelectorAll('.opcao');
+    pergunta.opts.forEach((o, i) => {
+        if (btns[i]) {
+            btns[i].innerText = o;
+            btns[i].disabled = false;
+        }
+    });
+    
+    tempoRestantePergunta = TEMPO_PERGUNTA;
+    const barra = document.getElementById('progresso-tempo');
+    if (barra) {
+        barra.style.width = '100%';
+        barra.style.background = '#27ae60';
+    }
+    
+    iniciarTimerPergunta();
+}
+
+function iniciarTimerPergunta() {
+    console.log('⏱️ iniciarTimerPergunta chamado');
+    
+    if (timerPergunta) {
+        clearInterval(timerPergunta);
+        timerPergunta = null;
+    }
+    if (animFrameId) {
+        cancelAnimationFrame(animFrameId);
+        animFrameId = null;
+    }
+    
+    const barra = document.getElementById('progresso-tempo');
+    let inicio = performance.now();
+    
+    function atualizarBarra(timestamp) {
+        const decorrido = (timestamp - inicio) / 1000;
+        tempoRestantePergunta = Math.max(0, TEMPO_PERGUNTA - decorrido);
+        
+        if (barra) {
+            const percentual = (tempoRestantePergunta / TEMPO_PERGUNTA) * 100;
+            barra.style.width = percentual + '%';
+            
+            if (percentual < 20) {
+                barra.style.background = '#e74c3c';
+            } else if (percentual < 50) {
+                barra.style.background = '#f39c12';
+            } else {
+                barra.style.background = '#27ae60';
+            }
+        }
+        
+        if (tempoRestantePergunta > 0) {
+            animFrameId = requestAnimationFrame(atualizarBarra);
+        } else {
+            console.log('⏰ Tempo esgotado!');
+            window.responder(-1);
+        }
+    }
+    
+    animFrameId = requestAnimationFrame(atualizarBarra);
+    
+    timerPergunta = setInterval(() => {
+        if (tempoRestantePergunta <= 0) {
+            clearInterval(timerPergunta);
+            timerPergunta = null;
+        }
+    }, 100);
+}
+
+window.responder = async function(idx) {
+    console.log('🖱️ responder chamado com idx:', idx);
+    
+    if (!jogoAtivo || !partidaAtual || partidaAtual.finalizada) {
+        console.log('⛔ Jogo não está ativo');
+        return;
+    }
+    
+    if (timerPergunta) {
+        clearInterval(timerPergunta);
+        timerPergunta = null;
+    }
+    if (animFrameId) {
+        cancelAnimationFrame(animFrameId);
+        animFrameId = null;
+    }
+    
+    let opcaoSelecionada = null;
+    if (idx >= 0) {
+        const btns = document.querySelectorAll('.opcao');
+        if (btns[idx]) {
+            opcaoSelecionada = parseInt(btns[idx].innerText);
+            console.log('📌 Opção selecionada:', opcaoSelecionada);
+        }
+    } else {
+        console.log('⏰ Tempo esgotado!');
+    }
+    
+    const resultado = processarResposta(partidaAtual, opcaoSelecionada);
+    if (!resultado) return;
+    
+    console.log('📊 Resultado:', resultado);
+    
+    document.getElementById('pontuacao-acumulada').innerText = partidaAtual.pontos;
+    
+    await salvarProgressoTemporario();
+    
+    if (resultado.finalizada) {
+        console.log('🏁 Partida finalizada!');
+        setTimeout(() => finalizarPartida(), 300);
+    } else {
+        console.log('➡️ Próxima pergunta');
+        setTimeout(() => mostrarProximaPergunta(), 300);
+    }
+};
+
+async function salvarProgressoTemporario() {
+    if (!partidaAtual || !appState.alunoId) return;
+    
+    const data = appState.data;
+    if (!data) return;
+    
+    try {
+        await resultadosTempRef(data.fase).child(appState.alunoId).set({
+            nome: appState.alunoNome,
+            turma: appState.alunoTurma,
+            pontos: partidaAtual.pontos,
+            acertos: partidaAtual.acertos,
+            tempo: partidaAtual.tempoTotal,
+            perguntas: partidaAtual.indice,
+            timestamp: Date.now()
+        });
+    } catch (e) {
+        console.warn('Erro ao salvar progresso:', e);
+    }
+}
+
+async function finalizarPartida() {
+    if (!jogoAtivo || !partidaAtual) return;
+    
+    jogoAtivo = false;
+    partidaAtual.finalizada = true;
+    
+    document.getElementById('jogo-area').classList.add('hidden');
+    document.getElementById('aguardando-aluno').classList.remove('hidden');
+    
+    const data = appState.data;
+    const faseAtual = data?.fase || 1;
+    const alunoId = appState.alunoId;
+    
+    const objetoPartida = criarObjetoPartida(partidaAtual);
+    
+    try {
+        const ref = resultadosRef(faseAtual).child(alunoId);
+        await ref.transaction((currentData) => {
+            const lista = currentData || [];
+            lista.push(objetoPartida);
+            return lista;
+        });
+        await resultadosTempRef(faseAtual).child(alunoId).remove();
+        toast('✅ Partida finalizada!');
+    } catch (e) {
+        console.warn('Erro ao salvar partida:', e);
+        toast('⚠️ Erro ao salvar.');
+    }
+    
+    await atualizarMelhorResultado();
+    exibirModalResultado();
+}
+
+async function exibirModalResultado() {
+    if (!partidaAtual) return;
+    
+    const pos = await buscarPosicaoAluno();
+    const posFinal = pos || 0;
+    const pontos = partidaAtual.pontos;
+    const acertos = partidaAtual.acertos;
+    const tempoMedio = partidaAtual.tempoTotal / Math.max(1, partidaAtual.indice);
+    
+    let emoji = '';
+    if (posFinal === 1) emoji = '🥇';
+    else if (posFinal === 2) emoji = '🥈';
+    else if (posFinal === 3) emoji = '🥉';
+    else emoji = '🏆';
+    
+    const htmlModal = `
+        <div class="modal-resultados" id="modal-pos-jogo">
+            <h2>🏁 RESULTADO</h2>
+            <div style="font-size:48px;margin:10px 0;">${emoji}</div>
+            <div style="font-size:28px;font-weight:bold;">${posFinal}º lugar</div>
+            <hr style="border-color:#2c3e50;margin:15px 0;">
+            <div style="font-size:24px;font-weight:bold;">⭐ ${pontos} pts</div>
+            <div>✅ Acertos: ${acertos}/20</div>
+            <div>⏱️ Tempo médio: ${tempoMedio.toFixed(1)}s</div>
+            <div style="margin-top:20px;">
+                <button class="fechar" id="btn-fechar-modal">Fechar</button>
+            </div>
+        </div>
+    `;
+    
+    const modalExistente = document.getElementById('modal-pos-jogo');
+    if (modalExistente) modalExistente.remove();
+    document.body.insertAdjacentHTML('beforeend', htmlModal);
+    
+    document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
+        document.getElementById('modal-pos-jogo')?.remove();
+    });
+}
+
+async function buscarPosicaoAluno() {
+    try {
+        const data = appState.data;
+        if (!data) return 0;
+        
+        const snap = await resultadosRef(data.fase).once('value');
+        const resultados = snap.val() || {};
+        
+        let lista = [];
+        for (const [id, partidas] of Object.entries(resultados)) {
+            if (partidas?.length) {
+                const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+                lista.push({ id, pontos: melhor.pontos });
+            }
+        }
+        
+        lista.sort((a, b) => b.pontos - a.pontos);
+        return lista.findIndex(p => p.id === appState.alunoId) + 1;
+    } catch (e) {
+        return 0;
+    }
+}
+
+// ========== PAINEL DO PROFESSOR ==========
+function initProfessorUI() {
+    document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+    document.getElementById('painel-professor').classList.remove('hidden');
+    document.getElementById('online-stats').classList.remove('hidden');
+    
+    // Configurar listeners
+    configurarEventosProfessor();
+    
+    // Carregar turmas
+    carregarTurmas();
+}
+
+async function carregarTurmas() {
+    const snap = await db.ref('copaV2/turmas').once('value');
+    let turmas = snap.val();
+    if (!turmas || !Array.isArray(turmas) || turmas.length === 0) {
+        await db.ref('copaV2/turmas').set(TURMAS_PADRAO);
+        turmas = TURMAS_PADRAO;
+    }
+    return turmas;
+}
+
+function configurarEventosProfessor() {
+    document.getElementById('btn-iniciar-fase').addEventListener('click', () => {
+        const duracao = parseInt(document.getElementById('input-tempo-fase')?.value) || 12;
+        const fim = Date.now() + duracao * 60000;
+        copaRef.update({ status: 'em_andamento', fim, tempoRestantePausa: null });
+        toast('▶️ Fase iniciada!');
+    });
+    
+    document.getElementById('btn-voltar-menu-prof').addEventListener('click', () => {
+        location.reload();
+    });
+}
+
+// ========== MENU PRINCIPAL ==========
+function configurarMenu() {
+    document.getElementById('btn-professor')?.addEventListener('click', async () => {
+        const senha = prompt('🔐 Digite a senha do Professor:');
+        if (senha === '......') {
+            appState.setUserType('professor');
+            initProfessorUI();
+            toast('👨‍🏫 Bem-vindo, Professor!');
+        } else if (senha !== null) {
+            toast('❌ Senha incorreta!');
+        }
+    });
+
+    document.getElementById('btn-aluno')?.addEventListener('click', async () => {
+        const data = appState.data;
+        if (!data) { toast('⏳ Aguardando dados...'); return; }
+        if (data.status !== 'em_andamento' || Date.now() >= data.fim) {
+            toast('⏳ Fase não iniciada ou terminada.');
+            return;
+        }
+        
+        const nome = prompt('👤 Digite seu nome completo:');
+        if (!nome || !nome.trim()) return;
+        
+        const turmas = await carregarTurmas();
+        if (!turmas || turmas.length === 0) {
+            toast('❌ Nenhuma turma cadastrada.');
+            return;
+        }
+        
+        // Modal de turma simplificado
+        const modalDiv = document.createElement('div');
+        modalDiv.className = 'modal-turma';
+        modalDiv.innerHTML = `
+            <h3>🏫 Selecione sua turma</h3>
+            <select id="select-turma-aluno">
+                ${turmas.map(t => `<option value="${t}">${t}</option>`).join('')}
+            </select>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:10px;">
+                <button id="btn-confirmar-turma" class="btn-success">✅ Confirmar</button>
+                <button id="btn-cancelar-turma" class="btn-danger">❌ Cancelar</button>
+            </div>
+        `;
+        document.body.appendChild(modalDiv);
+        
+        document.getElementById('btn-confirmar-turma')?.addEventListener('click', () => {
+            const select = document.getElementById('select-turma-aluno');
+            if (select) {
+                const turma = select.value;
+                modalDiv.remove();
+                const alunoId = btoa(nome.trim().toLowerCase() + '|' + turma).slice(0, 16);
+                
+                // Verificar classificação
+                if (data.fase > 1 && !appState.isClassificado(data.fase, alunoId)) {
+                    alert('❌ Você NÃO foi classificado para esta fase.');
+                    return;
+                }
+                
+                // Salvar participante
+                participantesRef(data.fase).child(alunoId).set({ nome: nome.trim(), turma });
+                
+                appState.setUserType('aluno');
+                initAlunoUI(alunoId, nome.trim(), turma);
+            }
+        });
+        
+        document.getElementById('btn-cancelar-turma')?.addEventListener('click', () => {
+            modalDiv.remove();
+        });
+    });
+
+    document.getElementById('btn-projecao')?.addEventListener('click', () => {
+        // Torcida simplificada
+        toast('📺 Modo Torcida em desenvolvimento');
+    });
+}
+
+// ========== INICIALIZAR ==========
+console.log('🏆 Copa Tabuada CEIB 2026 - Iniciando...');
+
+appState.init();
+appState.loadFromSession();
+
+// Verificar se já está logado
+if (appState.userType === 'aluno' && appState.alunoId) {
+    initAlunoUI(appState.alunoId, appState.alunoNome, appState.alunoTurma);
+} else {
+    configurarMenu();
+}
+
 console.log('🏆 Copa Tabuada CEIB 2026 - Carregado com sucesso!');
+
+// Expor responder globalmente
+window.responder = window.responder || function(idx) {
+    console.log('responder chamado globalmente com idx:', idx);
+};
+
+// Verificar partidas offline
+setTimeout(() => {
+    try {
+        const data = localStorage.getItem('offline_partidas');
+        if (data) {
+            const partidas = JSON.parse(data);
+            if (partidas.length > 0) {
+                console.log(`📱 ${partidas.length} partidas offline aguardando sincronização.`);
+            }
+        }
+    } catch(e) {}
+}, 3000);
 </script>
 
 </body>
