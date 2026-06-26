@@ -1,15 +1,13 @@
 // ============================================================
 // ARQUIVO: js/models/game.js
-// DESCRIÇÃO: Lógica do Jogo (Perguntas, Partidas, Pontuação)
+// DESCRIÇÃO: Lógica do Jogo - PONTUAÇÃO CORRIGIDA
 // ============================================================
 
 import { MODALIDADE_CONFIG, TOTAL_PERGUNTAS, TEMPO_PERGUNTA } from '../utils/constants.js';
 import { shuffleArray, randInt } from '../utils/helpers.js';
 
-// ========== CACHE DE PERGUNTAS ==========
 const poolCache = {};
 
-// ========== GERAR POOL DE PERGUNTAS ==========
 function gerarPool(modalidade) {
     const config = MODALIDADE_CONFIG[modalidade];
     if (!config) return [];
@@ -28,7 +26,6 @@ function gerarPool(modalidade) {
             if (x >= 0 && !opts.includes(x)) opts.push(x);
         }
         
-        // Embaralha as opções para distribuição aleatória da correta
         shuffleArray(opts);
         pool.push({ a, b, opts });
     }
@@ -36,7 +33,6 @@ function gerarPool(modalidade) {
     return pool;
 }
 
-// ========== OBTER PERGUNTAS PARA UMA PARTIDA ==========
 export function obterPerguntas(modalidade) {
     if (!poolCache[modalidade]) {
         poolCache[modalidade] = gerarPool(modalidade);
@@ -48,7 +44,6 @@ export function obterPerguntas(modalidade) {
     return shuffled.slice(0, TOTAL_PERGUNTAS);
 }
 
-// ========== INICIAR PARTIDA ==========
 export function iniciarPartida(perguntas) {
     return {
         perguntas: perguntas || [],
@@ -65,15 +60,22 @@ export function iniciarPartida(perguntas) {
     };
 }
 
-// ========== PROCESSAR RESPOSTA ==========
 export function processarResposta(partida, opcaoSelecionada) {
+    console.log('🔍 processarResposta - tempoRestante:', partida.tempoRestantePergunta);
+    
     const p = partida.perguntas[partida.indice];
     if (!p) return null;
 
     const respostaCorreta = p.a * p.b;
     const acertou = opcaoSelecionada === respostaCorreta;
-    const tempoGasto = TEMPO_PERGUNTA - partida.tempoRestantePergunta;
     
+    // ============================================================
+    // CÁLCULO DA PONTUAÇÃO - CORRIGIDO
+    // tempoRestantePergunta: 10 → 100 pontos (resposta imediata)
+    // tempoRestantePergunta: 5  → 50 pontos
+    // tempoRestantePergunta: 0  → 0 pontos
+    // ============================================================
+    const tempoGasto = TEMPO_PERGUNTA - partida.tempoRestantePergunta;
     let pontosGanhos = 0;
     
     if (acertou) {
@@ -82,12 +84,22 @@ export function processarResposta(partida, opcaoSelecionada) {
         if (partida.sequenciaAcertos > partida.maiorSequencia) {
             partida.maiorSequencia = partida.sequenciaAcertos;
         }
-        // Pontuação baseada no tempo restante
-        pontosGanhos = Math.round(100 * (partida.tempoRestantePergunta / TEMPO_PERGUNTA));
+        
+        // CORREÇÃO: usa o tempoRestantePergunta que é atualizado pelo timer
+        const percentual = Math.max(0, partida.tempoRestantePergunta / TEMPO_PERGUNTA);
+        pontosGanhos = Math.round(100 * percentual);
+        
+        // Garantir que se acertou com tempo > 0, ganhe pelo menos 1 ponto
+        if (pontosGanhos === 0 && partida.tempoRestantePergunta > 0) {
+            pontosGanhos = 1;
+        }
+        
         partida.pontos += pontosGanhos;
+        console.log(`✅ Acertou! Tempo restante: ${partida.tempoRestantePergunta}s → ${pontosGanhos} pontos`);
     } else {
         partida.erros++;
         partida.sequenciaAcertos = 0;
+        console.log(`❌ Errou! Resposta correta: ${respostaCorreta}`);
     }
     
     partida.tempoTotal += tempoGasto;
@@ -97,13 +109,14 @@ export function processarResposta(partida, opcaoSelecionada) {
         correta: respostaCorreta,
         acertou,
         tempo: tempoGasto,
-        pontos: pontosGanhos
+        pontos: pontosGanhos,
+        tempoRestante: partida.tempoRestantePergunta
     });
     
     partida.indice++;
     
-    // Verifica se a partida terminou
-    if (partida.indice >= TOTAL_PERGUNTAS) {
+    const finalizada = partida.indice >= TOTAL_PERGUNTAS;
+    if (finalizada) {
         partida.finalizada = true;
     }
     
@@ -114,13 +127,13 @@ export function processarResposta(partida, opcaoSelecionada) {
         tempoGasto,
         progresso: partida.indice,
         total: TOTAL_PERGUNTAS,
-        finalizada: partida.finalizada,
+        finalizada: finalizada,
         sequenciaAtual: partida.sequenciaAcertos,
-        maiorSequencia: partida.maiorSequencia
+        maiorSequencia: partida.maiorSequencia,
+        tempoRestante: partida.tempoRestantePergunta
     };
 }
 
-// ========== OBTER PRÓXIMA PERGUNTA ==========
 export function getProximaPergunta(partida) {
     if (partida.finalizada || partida.indice >= TOTAL_PERGUNTAS) {
         return null;
@@ -128,7 +141,6 @@ export function getProximaPergunta(partida) {
     return partida.perguntas[partida.indice];
 }
 
-// ========== CALCULAR ESTATÍSTICAS DA PARTIDA ==========
 export function calcularEstatisticas(partida) {
     const total = partida.perguntas.length;
     const respondidas = partida.respostas.length;
@@ -147,7 +159,6 @@ export function calcularEstatisticas(partida) {
     };
 }
 
-// ========== CRIAR OBJETO DE PARTIDA PARA SALVAR ==========
 export function criarObjetoPartida(partida) {
     const stats = calcularEstatisticas(partida);
     return {
@@ -163,7 +174,6 @@ export function criarObjetoPartida(partida) {
     };
 }
 
-// ========== VERIFICAR NOTIFICAÇÕES ==========
 export function verificarNotificacoes(partida, ultimoResultado) {
     if (!ultimoResultado) return [];
     
@@ -171,17 +181,14 @@ export function verificarNotificacoes(partida, ultimoResultado) {
     const seq = partida.sequenciaAcertos;
     const erros = partida.erros;
     
-    // Notificações de sequência de acertos
     if (seq === 5) notificacoes.push('seq5');
     else if (seq === 10) notificacoes.push('seq10');
     else if (seq === 15) notificacoes.push('seq15');
     else if (seq === 20) notificacoes.push('seq20');
     
-    // Notificações de erros (incentivo)
     if (erros === 3 && !ultimoResultado.acertou) notificacoes.push('erro3');
     else if (erros === 5 && !ultimoResultado.acertou) notificacoes.push('erro5');
     
-    // Notificações de velocidade
     if (ultimoResultado.acertou) {
         if (ultimoResultado.tempoGasto <= 1.0) notificacoes.push('relampago');
         else if (ultimoResultado.tempoGasto <= 1.5) notificacoes.push('rapido');
@@ -190,7 +197,6 @@ export function verificarNotificacoes(partida, ultimoResultado) {
     return notificacoes;
 }
 
-// ========== VERIFICAR RECORDES ==========
 export function verificarRecordes(partida, resultadosAnteriores) {
     if (!resultadosAnteriores || resultadosAnteriores.length === 0) {
         return { recordeFase: true, recordeGeral: true };
@@ -205,7 +211,6 @@ export function verificarRecordes(partida, resultadosAnteriores) {
     };
 }
 
-// ========== EXPORTAR PADRÃO ==========
 export default {
     obterPerguntas,
     iniciarPartida,
