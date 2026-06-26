@@ -1571,6 +1571,12 @@ if (appState.userType === 'aluno' && appState.alunoId) {
 
 console.log('🏆 Copa Tabuada CEIB 2026 - Carregado com sucesso!');
 
+// EXPORTA VARIÁVEIS GLOBAIS
+window.appState = appState;
+window.db = db;
+window.copaRef = copaRef;
+console.log('✅ Variáveis globais exportadas!');
+
 // Expor responder globalmente
 window.responder = window.responder || function(idx) {
     console.log('responder chamado globalmente com idx:', idx);
