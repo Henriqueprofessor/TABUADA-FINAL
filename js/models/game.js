@@ -52,7 +52,7 @@ export function iniciarPartida(perguntas) {
         acertos: 0,
         erros: 0,
         tempoTotal: 0,
-        tempoRestantePergunta: TEMPO_PERGUNTA,
+        tempoRestantePergunta: TEMPO_PERGUNTA, // Inicia com 10
         finalizada: false,
         sequenciaAcertos: 0,
         maiorSequencia: 0,
@@ -61,8 +61,6 @@ export function iniciarPartida(perguntas) {
 }
 
 export function processarResposta(partida, opcaoSelecionada) {
-    console.log('🔍 processarResposta - tempoRestante:', partida.tempoRestantePergunta);
-    
     const p = partida.perguntas[partida.indice];
     if (!p) return null;
 
@@ -70,12 +68,11 @@ export function processarResposta(partida, opcaoSelecionada) {
     const acertou = opcaoSelecionada === respostaCorreta;
     
     // ============================================================
-    // CÁLCULO DA PONTUAÇÃO - CORRIGIDO
-    // tempoRestantePergunta: 10 → 100 pontos (resposta imediata)
-    // tempoRestantePergunta: 5  → 50 pontos
-    // tempoRestantePergunta: 0  → 0 pontos
+    // CÁLCULO DA PONTUAÇÃO - USA O tempoRestantePergunta
     // ============================================================
-    const tempoGasto = TEMPO_PERGUNTA - partida.tempoRestantePergunta;
+    const tempoRestante = partida.tempoRestantePergunta || 0;
+    const tempoGasto = TEMPO_PERGUNTA - tempoRestante;
+    
     let pontosGanhos = 0;
     
     if (acertou) {
@@ -85,21 +82,24 @@ export function processarResposta(partida, opcaoSelecionada) {
             partida.maiorSequencia = partida.sequenciaAcertos;
         }
         
-        // CORREÇÃO: usa o tempoRestantePergunta que é atualizado pelo timer
-        const percentual = Math.max(0, partida.tempoRestantePergunta / TEMPO_PERGUNTA);
+        // ============================================================
+        // PONTUAÇÃO: Quanto maior o tempoRestante, mais pontos
+        // tempoRestante = 10 → 100 pontos
+        // tempoRestante = 5  → 50 pontos
+        // tempoRestante = 0  → 0 pontos
+        // ============================================================
+        const percentual = Math.max(0, tempoRestante / TEMPO_PERGUNTA);
         pontosGanhos = Math.round(100 * percentual);
         
         // Garantir que se acertou com tempo > 0, ganhe pelo menos 1 ponto
-        if (pontosGanhos === 0 && partida.tempoRestantePergunta > 0) {
+        if (pontosGanhos === 0 && tempoRestante > 0) {
             pontosGanhos = 1;
         }
         
         partida.pontos += pontosGanhos;
-        console.log(`✅ Acertou! Tempo restante: ${partida.tempoRestantePergunta}s → ${pontosGanhos} pontos`);
     } else {
         partida.erros++;
         partida.sequenciaAcertos = 0;
-        console.log(`❌ Errou! Resposta correta: ${respostaCorreta}`);
     }
     
     partida.tempoTotal += tempoGasto;
@@ -110,7 +110,7 @@ export function processarResposta(partida, opcaoSelecionada) {
         acertou,
         tempo: tempoGasto,
         pontos: pontosGanhos,
-        tempoRestante: partida.tempoRestantePergunta
+        tempoRestante: tempoRestante
     });
     
     partida.indice++;
@@ -130,7 +130,7 @@ export function processarResposta(partida, opcaoSelecionada) {
         finalizada: finalizada,
         sequenciaAtual: partida.sequenciaAcertos,
         maiorSequencia: partida.maiorSequencia,
-        tempoRestante: partida.tempoRestantePergunta
+        tempoRestante: tempoRestante
     };
 }
 
