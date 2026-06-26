@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo</title>
     
-    <!-- FIREBASE -->
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
@@ -13,34 +12,12 @@
     
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-            background: #0a0f1e;
-            color: #eee;
-            padding: 20px;
-        }
+        body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: #0a0f1e; color: #eee; padding: 20px; }
         .container { max-width: 1400px; margin: 0 auto; }
-        .card {
-            background: rgba(12,20,35,0.9);
-            backdrop-filter: blur(4px);
-            border-radius: 28px;
-            padding: 24px;
-            margin-bottom: 24px;
-            border: 1px solid rgba(0,255,255,0.2);
-        }
+        .card { background: rgba(12,20,35,0.9); backdrop-filter: blur(4px); border-radius: 28px; padding: 24px; margin-bottom: 24px; border: 1px solid rgba(0,255,255,0.2); }
         .hidden { display: none; }
         h1, h2, h3 { color: #ffd966; margin-bottom: 16px; }
-        button {
-            background: #1f3a4b;
-            color: #fff;
-            border: none;
-            border-radius: 40px;
-            padding: 10px 20px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-            margin: 4px;
-        }
+        button { background: #1f3a4b; color: #fff; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px; }
         button:hover { background: #2c5a6e; transform: scale(1.02); }
         button:disabled { background: #333; cursor: not-allowed; opacity: 0.5; }
         .btn-primary { background: #e67e22; }
@@ -48,284 +25,64 @@
         .btn-danger { background: #c0392b; }
         .btn-warning { background: #f39c12; }
         .btn-secondary { background: #34495e; }
-        .status-box {
-            background: #000000aa;
-            border-radius: 20px;
-            padding: 16px;
-            margin-top: 20px;
-            overflow-x: auto;
-        }
-        .flex-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-        .timer-display {
-            font-size: 32px;
-            font-weight: bold;
-            color: #ffd966;
-            background: #000;
-            padding: 10px 20px;
-            border-radius: 15px;
-            display: inline-block;
-        }
-        .online-badge {
-            background: #27ae60;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 10px;
-            font-size: 14px;
-        }
-        .ranking-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-            font-size: 13px;
-            word-break: break-word;
-            white-space: normal;
-        }
-        .ranking-table th, .ranking-table td {
-            border-bottom: 1px solid #2c3e50;
-            padding: 8px 6px;
-            text-align: left;
-            vertical-align: middle;
-        }
+        .status-box { background: #000000aa; border-radius: 20px; padding: 16px; margin-top: 20px; overflow-x: auto; }
+        .flex-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .timer-display { font-size: 32px; font-weight: bold; color: #ffd966; background: #000; padding: 10px 20px; border-radius: 15px; display: inline-block; }
+        .online-badge { background: #27ae60; color: white; padding: 4px 12px; border-radius: 10px; font-size: 14px; }
+        .ranking-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; word-break: break-word; white-space: normal; }
+        .ranking-table th, .ranking-table td { border-bottom: 1px solid #2c3e50; padding: 8px 6px; text-align: left; vertical-align: middle; }
         .classificado-sim { color: #2ecc71; font-weight: bold; }
         .classificado-nao { color: #e74c3c; font-weight: bold; }
         .posicao-subiu { color: #2ecc71; font-weight: bold; }
         .posicao-desceu { color: #e74c3c; font-weight: bold; }
-        .podium {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 30px;
-            margin: 30px 0;
-            flex-wrap: wrap;
-        }
-        .podium-card {
-            text-align: center;
-            padding: 20px;
-            background: #1f3a4b;
-            border-radius: 20px;
-            min-width: 150px;
-        }
+        .podium { display: flex; justify-content: center; align-items: flex-end; gap: 30px; margin: 30px 0; flex-wrap: wrap; }
+        .podium-card { text-align: center; padding: 20px; background: #1f3a4b; border-radius: 20px; min-width: 150px; }
         .podium-1 { background: linear-gradient(135deg, #ffd700, #ffb347); color: #000; }
         .podium-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #000; }
         .podium-3 { background: linear-gradient(135deg, #cd7f32, #b87333); color: #000; }
         .podium-4, .podium-5 { background: #2c5a6e; }
         .medalha { font-size: 40px; }
-        .barra-tempo {
-            width: 100%;
-            height: 12px;
-            background: #2c3e50;
-            border-radius: 6px;
-            overflow: hidden;
-            margin: 15px 0;
-        }
-        .progresso-tempo {
-            width: 100%;
-            height: 100%;
-            background: #27ae60;
-            transition: width 0.05s linear;
-        }
-        .opcoes-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin: 20px 0;
-        }
-        .opcao {
-            background: #1f3a4b;
-            color: white;
-            padding: 15px;
-            font-size: 20px;
-            border-radius: 40px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: 0.2s;
-        }
+        .barra-tempo { width: 100%; height: 12px; background: #2c3e50; border-radius: 6px; overflow: hidden; margin: 15px 0; }
+        .progresso-tempo { width: 100%; height: 100%; background: #27ae60; transition: width 0.05s linear; }
+        .opcoes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0; }
+        .opcao { background: #1f3a4b; color: white; padding: 15px; font-size: 20px; border-radius: 40px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
         .opcao:hover { background: #2c5a6e; border-color: #ffd966; }
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #e67e22;
-            padding: 12px 24px;
-            border-radius: 60px;
-            z-index: 3000;
-            font-weight: bold;
-        }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #e67e22; padding: 12px 24px; border-radius: 60px; z-index: 3000; font-weight: bold; }
         .fase-selector { background: #0a0f1e; padding: 8px; border-radius: 20px; margin: 10px 0; }
-        .aluno-item {
-            background: #1f3a4b;
-            margin: 8px 0;
-            padding: 10px;
-            border-radius: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        .aluno-item { background: #1f3a4b; margin: 8px 0; padding: 10px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .scroll-list { max-height: 300px; overflow-y: auto; margin-top: 10px; }
         hr { margin: 15px 0; border-color: #2c3e50; }
-        .tab-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        .tab-btn {
-            background: #1f3a4b;
-            padding: 8px 20px;
-            border-radius: 30px;
-            cursor: pointer;
-        }
+        .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { background: #1f3a4b; padding: 8px 20px; border-radius: 30px; cursor: pointer; }
         .tab-btn.active { background: #e67e22; }
-        .modalidade-badge {
-            background: #2c5a6e;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            display: inline-block;
-            margin-left: 15px;
-        }
-        .live-badge {
-            background: #e74c3c;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 11px;
-            margin-left: 10px;
-            animation: pulse 1s infinite;
-        }
+        .modalidade-badge { background: #2c5a6e; padding: 4px 12px; border-radius: 20px; font-size: 14px; display: inline-block; margin-left: 15px; }
+        .live-badge { background: #e74c3c; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 10px; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 0.6; } 100% { opacity: 1; } }
-        .link-classificatoria {
-            font-size: 14px;
-            background: #1f3a4b;
-            padding: 6px 12px;
-            border-radius: 30px;
-            text-decoration: none;
-            color: #ffd966;
-            transition: 0.2s;
-        }
+        .link-classificatoria { font-size: 14px; background: #1f3a4b; padding: 6px 12px; border-radius: 30px; text-decoration: none; color: #ffd966; transition: 0.2s; }
         .link-classificatoria:hover { background: #2c5a6e; color: white; }
-        .header-title {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        @media (max-width: 768px) {
-            .ranking-table th, .ranking-table td { font-size: 11px; padding: 4px 3px; }
-        }
+        .header-title { display: flex; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+        @media (max-width: 768px) { .ranking-table th, .ranking-table td { font-size: 11px; padding: 4px 3px; } }
         .resumo-card { background: #1f3a4b; border-radius: 15px; padding: 15px; margin-bottom: 15px; }
         .modo-buttons { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-        .btn-modo {
-            background: #1f3a4b;
-            padding: 6px 12px;
-            font-size: 12px;
-        }
+        .btn-modo { background: #1f3a4b; padding: 6px 12px; font-size: 12px; }
         .btn-modo.ativo { background: #e67e22; }
-        .fase-info {
-            font-size: 14px;
-            background: #1f3a4b;
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            margin-left: 15px;
-        }
+        .fase-info { font-size: 14px; background: #1f3a4b; display: inline-block; padding: 4px 12px; border-radius: 20px; margin-left: 15px; }
         .header-actions .fase-info { margin-left: auto; margin-right: 15px; }
-        .top-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        .pontuacao-atual {
-            font-size: 24px;
-            font-weight: bold;
-            background: #000000aa;
-            padding: 6px 18px;
-            border-radius: 40px;
-            display: inline-block;
-        }
-        .indicador-posicao {
-            font-size: 28px;
-            font-weight: bold;
-            background: #000000aa;
-            padding: 6px 18px;
-            border-radius: 40px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .modal-resultados {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #0f172a;
-            border-radius: 32px;
-            padding: 24px;
-            width: 90%;
-            max-width: 500px;
-            z-index: 10000;
-            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
-            border: 2px solid #ffd966;
-            text-align: center;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
+        .top-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 15px; flex-wrap: wrap; }
+        .pontuacao-atual { font-size: 24px; font-weight: bold; background: #000000aa; padding: 6px 18px; border-radius: 40px; display: inline-block; }
+        .indicador-posicao { font-size: 28px; font-weight: bold; background: #000000aa; padding: 6px 18px; border-radius: 40px; display: inline-flex; align-items: center; gap: 8px; }
+        .modal-resultados { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f172a; border-radius: 32px; padding: 24px; width: 90%; max-width: 500px; z-index: 10000; box-shadow: 0 20px 35px rgba(0,0,0,0.5); border: 2px solid #ffd966; text-align: center; max-height: 90vh; overflow-y: auto; }
         .modal-classificado { border-color: #2ecc71; background: #0a2a1a; }
         .modal-eliminado { border-color: #e74c3c; background: #2a0a0a; }
         .modal-resultados .fechar { margin-top: 20px; background: #e67e22; }
         .progresso-bar { width: 100%; height: 20px; background: #2c3e50; border-radius: 10px; overflow: hidden; margin: 15px 0; }
         .progresso-fill { height: 100%; background: #f39c12; width: 0%; transition: width 0.5s; }
         .dica { background: #1e293b; padding: 12px; border-radius: 20px; margin: 15px 0; font-size: 0.9rem; }
-        .modal-turma {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #0f172a;
-            border-radius: 32px;
-            padding: 24px;
-            width: 90%;
-            max-width: 400px;
-            z-index: 10001;
-            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
-            border: 2px solid #ffd966;
-            text-align: center;
-        }
-        .modal-turma select {
-            width: 100%;
-            padding: 12px;
-            margin: 15px 0;
-            border-radius: 20px;
-            background: #1f3a4b;
-            color: white;
-            font-size: 16px;
-        }
+        .modal-turma { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f172a; border-radius: 32px; padding: 24px; width: 90%; max-width: 400px; z-index: 10001; box-shadow: 0 20px 35px rgba(0,0,0,0.5); border: 2px solid #ffd966; text-align: center; }
+        .modal-turma select { width: 100%; padding: 12px; margin: 15px 0; border-radius: 20px; background: #1f3a4b; color: white; font-size: 16px; }
         .modal-turma button { margin-top: 10px; }
-        .controle-atualizacao {
-            background: #1f3a4b;
-            padding: 15px;
-            border-radius: 20px;
-            margin-top: 15px;
-        }
-        .controle-atualizacao input {
-            background: #2c3e50;
-            color: white;
-            border: none;
-            padding: 8px;
-            border-radius: 10px;
-            width: 80px;
-            text-align: center;
-        }
+        .controle-atualizacao { background: #1f3a4b; padding: 15px; border-radius: 20px; margin-top: 15px; }
+        .controle-atualizacao input { background: #2c3e50; color: white; border: none; padding: 8px; border-radius: 10px; width: 80px; text-align: center; }
         .info-intervalo { font-size: 12px; color: #ffd966; margin-top: 5px; }
         .online-list { max-height: 200px; overflow-y: auto; }
         .veloc-melhor { color: #2ecc71; }
@@ -334,82 +91,20 @@
         .status-em-jogo { color: #2ecc71; font-weight: bold; }
         .status-aguardando { color: #f39c12; font-weight: bold; }
         .status-finalizado { color: #3498db; font-weight: bold; }
-        
-        .config-section {
-            background: #1f3a4b;
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-        .config-section h4 {
-            color: #ffd966;
-            margin-bottom: 12px;
-            font-size: 16px;
-        }
-        .switch-item {
-            display: flex;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
+        .config-section { background: #1f3a4b; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+        .config-section h4 { color: #ffd966; margin-bottom: 12px; font-size: 16px; }
+        .switch-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .switch-item:last-child { border-bottom: none; }
-        .switch-item label {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            width: 100%;
-        }
-        .switch-item input[type="checkbox"] {
-            width: 44px;
-            height: 24px;
-            appearance: none;
-            background: #2c3e50;
-            border-radius: 12px;
-            position: relative;
-            cursor: pointer;
-            flex-shrink: 0;
-            transition: 0.3s;
-        }
-        .switch-item input[type="checkbox"]:checked {
-            background: #27ae60;
-        }
-        .switch-item input[type="checkbox"]::before {
-            content: '';
-            position: absolute;
-            width: 18px;
-            height: 18px;
-            background: white;
-            border-radius: 50%;
-            top: 3px;
-            left: 3px;
-            transition: 0.3s;
-        }
-        .switch-item input[type="checkbox"]:checked::before {
-            left: 23px;
-        }
-        .switch-item .switch-label {
-            font-weight: 500;
-            font-size: 14px;
-        }
-        .switch-item .switch-desc {
-            font-size: 12px;
-            opacity: 0.7;
-            display: block;
-            margin-top: 2px;
-        }
-        .config-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-            flex-wrap: wrap;
-        }
-        .gamepad-connected .opcao {
-            border-color: #2ecc71;
-        }
-        .gamepad-connected .opcao:focus {
-            outline: 3px solid #2ecc71;
-        }
+        .switch-item label { display: flex; align-items: center; gap: 12px; cursor: pointer; width: 100%; }
+        .switch-item input[type="checkbox"] { width: 44px; height: 24px; appearance: none; background: #2c3e50; border-radius: 12px; position: relative; cursor: pointer; flex-shrink: 0; transition: 0.3s; }
+        .switch-item input[type="checkbox"]:checked { background: #27ae60; }
+        .switch-item input[type="checkbox"]::before { content: ''; position: absolute; width: 18px; height: 18px; background: white; border-radius: 50%; top: 3px; left: 3px; transition: 0.3s; }
+        .switch-item input[type="checkbox"]:checked::before { left: 23px; }
+        .switch-item .switch-label { font-weight: 500; font-size: 14px; }
+        .switch-item .switch-desc { font-size: 12px; opacity: 0.7; display: block; margin-top: 2px; }
+        .config-actions { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+        .gamepad-connected .opcao { border-color: #2ecc71; }
+        .gamepad-connected .opcao:focus { outline: 3px solid #2ecc71; }
     </style>
 </head>
 <body>
@@ -732,13 +427,10 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<!-- ============================================================ -->
-<!-- TODOS OS MÓDULOS CARREGADOS DIRETAMENTE (SEM IMPORTMAP) -->
-<!-- ============================================================ -->
 <script type="module">
-// Firebase já está carregado via script tags
-
-// ========== CONFIGURAÇÕES ==========
+// ============================================================
+// CONFIGURAÇÕES
+// ============================================================
 const firebaseConfig = {
     apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBz0-o2HVhEE",
     authDomain: "final-copa-tabuada.firebaseapp.com",
@@ -753,8 +445,6 @@ const TOTAL_FASES = 5;
 const TOTAL_PERGUNTAS = 20;
 const TEMPO_PERGUNTA = 10;
 
-const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
-
 const MODALIDADE_CONFIG = {
     "2-5": { min: 2, max: 5, nome: "Tabuada 2️⃣➡️5️⃣" },
     "6-9": { min: 6, max: 9, nome: "Tabuada 6️⃣➡️9️⃣" },
@@ -763,13 +453,14 @@ const MODALIDADE_CONFIG = {
 
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 
-// ========== INICIALIZAR FIREBASE ==========
+// ============================================================
+// FIREBASE
+// ============================================================
 console.log('🔄 Inicializando Firebase...');
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 console.log('✅ Firebase inicializado com sucesso!');
 
-// ========== REFERÊNCIAS FIREBASE ==========
 const copaRef = db.ref('copaV2');
 const onlineRef = db.ref('online');
 const configRef = db.ref('copaV2/configuracoes');
@@ -779,7 +470,9 @@ const resultadosTempRef = (fase) => db.ref(`copaV2/resultados_temp/${fase}`);
 const participantesRef = (fase) => db.ref(`copaV2/participantes/${fase}`);
 const classificadosRef = (fase) => db.ref(`copaV2/classificados/${fase}`);
 
-// ========== FUNÇÕES AUXILIARES ==========
+// ============================================================
+// FUNÇÕES AUXILIARES
+// ============================================================
 function toast(msg) {
     const t = document.getElementById('toast');
     if (t) { t.innerText = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
@@ -795,33 +488,28 @@ function escapeHtml(str) {
     });
 }
 
-// ========== ESTADO GLOBAL ==========
+// ============================================================
+// ESTADO GLOBAL
+// ============================================================
 const appState = {
     data: null,
     userType: null,
     alunoId: null,
     alunoNome: null,
     alunoTurma: null,
-    faseSelecionadaProf: 1,
-    modoTorcida: 'individual',
-    intervalos: { individual: 4, equipes: 60 },
     listeners: [],
     isInitialized: false,
 
     init() {
         if (this.isInitialized) return;
         this.isInitialized = true;
-        
         copaRef.on('value', (snap) => {
             this.data = snap.val() || this.getDefaultState();
             this.notify();
         });
-        
         configRef.on('value', (snap) => {
             const config = snap.val();
-            if (config) {
-                this.configuracoes = { ...this.configuracoes, ...config };
-            }
+            if (config) this.configuracoes = { ...this.configuracoes, ...config };
         });
     },
 
@@ -852,6 +540,7 @@ const appState = {
     get fase() { return this.data?.fase || 1; },
     get status() { return this.data?.status || 'aguardando'; },
     get modalidade() { return this.data?.modalidade || '2-5'; },
+    get fim() { return this.data?.fim || 0; },
 
     isClassificado(fase, alunoId) {
         if (fase <= 1) return true;
@@ -885,7 +574,9 @@ const appState = {
     }
 };
 
-// ========== GERAR PERGUNTAS ==========
+// ============================================================
+// GERAR PERGUNTAS
+// ============================================================
 const poolCache = {};
 
 function gerarPool(modalidade) {
@@ -920,7 +611,9 @@ function obterPerguntas(modalidade) {
     return shuffled.slice(0, 20);
 }
 
-// ========== LÓGICA DO JOGO ==========
+// ============================================================
+// LÓGICA DO JOGO
+// ============================================================
 function iniciarPartida(perguntas) {
     return {
         perguntas: perguntas || [],
@@ -953,7 +646,10 @@ function processarResposta(partida, opcaoSelecionada) {
         if (partida.sequenciaAcertos > partida.maiorSequencia) {
             partida.maiorSequencia = partida.sequenciaAcertos;
         }
-        pontosGanhos = Math.round(100 * (Math.max(0, partida.tempoRestantePergunta) / TEMPO_PERGUNTA));
+        // CORREÇÃO: pontos baseado no tempo restante (de 0 a 100)
+        const percentual = Math.max(0, partida.tempoRestantePergunta / TEMPO_PERGUNTA);
+        pontosGanhos = Math.round(100 * percentual);
+        if (pontosGanhos === 0 && partida.tempoRestantePergunta > 0) pontosGanhos = 1;
         partida.pontos += pontosGanhos;
     } else {
         partida.erros++;
@@ -973,9 +669,7 @@ function processarResposta(partida, opcaoSelecionada) {
     partida.indice++;
     
     const finalizada = partida.indice >= TOTAL_PERGUNTAS;
-    if (finalizada) {
-        partida.finalizada = true;
-    }
+    if (finalizada) partida.finalizada = true;
     
     return {
         acertou,
@@ -991,9 +685,7 @@ function processarResposta(partida, opcaoSelecionada) {
 }
 
 function getProximaPergunta(partida) {
-    if (partida.finalizada || partida.indice >= TOTAL_PERGUNTAS) {
-        return null;
-    }
+    if (partida.finalizada || partida.indice >= TOTAL_PERGUNTAS) return null;
     return partida.perguntas[partida.indice];
 }
 
@@ -1007,7 +699,9 @@ function criarObjetoPartida(partida) {
     };
 }
 
-// ========== VARIÁVEIS DO ALUNO ==========
+// ============================================================
+// VARIÁVEIS DO ALUNO
+// ============================================================
 let partidaAtual = null;
 let timerPergunta = null;
 let animFrameId = null;
@@ -1016,30 +710,25 @@ let jogoAtivo = false;
 let unsubscribeEstado = null;
 let timerFaseInterval = null;
 
-// ========== TIMER FASE ==========
+// ============================================================
+// TIMER DA FASE (CORRIGIDO)
+// ============================================================
 function iniciarTimerFase() {
-    console.log('🔄 iniciarTimerFase chamado');
-    
     if (timerFaseInterval) {
         clearInterval(timerFaseInterval);
         timerFaseInterval = null;
     }
-    
     atualizarTimerFase();
-    
-    timerFaseInterval = setInterval(() => {
-        atualizarTimerFase();
-    }, 1000);
+    timerFaseInterval = setInterval(atualizarTimerFase, 1000);
 }
 
 function atualizarTimerFase() {
     const data = appState.data;
     if (!data) return;
-    
     const timerDisplay = document.getElementById('timer-fase');
     if (!timerDisplay) return;
-    
-    if (data.status === 'em_andamento') {
+
+    if (data.status === 'em_andamento' && data.fim > 0) {
         const restante = Math.max(0, data.fim - Date.now());
         const min = Math.floor(restante / 60000);
         const sec = Math.floor((restante % 60000) / 1000);
@@ -1056,33 +745,28 @@ function atualizarTimerFase() {
     }
 }
 
-// ========== UI DO ALUNO ==========
+// ============================================================
+// UI DO ALUNO
+// ============================================================
 function initAlunoUI(alunoId, alunoNome, alunoTurma) {
-    console.log('✅ initAlunoUI chamado');
-    
     document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
     document.getElementById('tela-aluno').classList.remove('hidden');
     document.getElementById('online-stats').classList.remove('hidden');
     
     appState.setAlunoData(alunoId, alunoNome, alunoTurma);
-    
     document.getElementById('aluno-nome-display').innerText = alunoNome;
     document.getElementById('aluno-turma-display').innerText = alunoTurma;
     
-    // Presença
     const presenceRef = db.ref(`online/${alunoId}`);
     presenceRef.set({ nome: alunoNome, turma: alunoTurma, tipo: 'aluno' });
     presenceRef.onDisconnect().remove();
     
     if (unsubscribeEstado) unsubscribeEstado();
     unsubscribeEstado = appState.subscribe((data) => {
-        if (appState.userType === 'aluno') {
-            atualizarUIAluno(data);
-        }
+        if (appState.userType === 'aluno') atualizarUIAluno(data);
     });
     
     configurarEventosAluno();
-    
     iniciarTimerFase();
 }
 
@@ -1095,9 +779,7 @@ function atualizarUIAluno(data) {
     const liberado = data.status === 'em_andamento' && !encerrado;
     
     document.getElementById('aluno-fase-info').innerText = `${faseAtual}/5`;
-    
-    const modalidadeNome = appState.getModalidadeNome();
-    document.getElementById('aluno-modalidade').innerText = modalidadeNome;
+    document.getElementById('aluno-modalidade').innerText = appState.getModalidadeNome();
     
     const msgDiv = document.getElementById('msg-status-aluno');
     const btnJogar = document.getElementById('btn-iniciar-partida');
@@ -1127,19 +809,15 @@ function atualizarUIAluno(data) {
 async function atualizarMelhorResultado() {
     const data = appState.data;
     if (!data) return;
-    
     try {
         const snap = await resultadosRef(data.fase).once('value');
         const resultados = snap.val() || {};
         const partidas = resultados[appState.alunoId] || [];
-        
         if (partidas.length > 0) {
             const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
             document.getElementById('aluno-melhor-score').innerText = melhor.pontos || 0;
         }
-    } catch (e) {
-        console.warn('Erro ao atualizar melhor resultado:', e);
-    }
+    } catch (e) {}
 }
 
 function configurarEventosAluno() {
@@ -1147,35 +825,20 @@ function configurarEventosAluno() {
     
     document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
         if (jogoAtivo && !confirm('⚠️ Deseja sair mesmo assim?')) return;
-        
-        if (timerFaseInterval) {
-            clearInterval(timerFaseInterval);
-            timerFaseInterval = null;
-        }
-        
-        const presenceRef = db.ref(`online/${appState.alunoId}`);
-        presenceRef.remove();
-        
-        if (unsubscribeEstado) {
-            unsubscribeEstado();
-            unsubscribeEstado = null;
-        }
-        
+        if (timerFaseInterval) { clearInterval(timerFaseInterval); timerFaseInterval = null; }
+        db.ref(`online/${appState.alunoId}`).remove();
+        if (unsubscribeEstado) { unsubscribeEstado(); unsubscribeEstado = null; }
         sessionStorage.clear();
         appState.userType = null;
         appState.alunoId = null;
         appState.alunoNome = null;
         appState.alunoTurma = null;
-        
         window.location.href = window.location.pathname + '?t=' + Date.now();
     });
 }
 
 async function iniciarNovaPartida() {
-    console.log('🎮 iniciarNovaPartida chamado');
-    
     if (jogoAtivo) return;
-    
     const data = appState.data;
     if (!data) { toast('⏳ Aguardando dados...'); return; }
     if (data.status !== 'em_andamento') { toast('⏸️ Fase inativa!'); return; }
@@ -1197,51 +860,28 @@ async function iniciarNovaPartida() {
 }
 
 function mostrarProximaPergunta() {
-    console.log('📝 mostrarProximaPergunta chamado');
-    
-    if (!partidaAtual || partidaAtual.finalizada) {
-        finalizarPartida();
-        return;
-    }
-    
+    if (!partidaAtual || partidaAtual.finalizada) { finalizarPartida(); return; }
     const pergunta = getProximaPergunta(partidaAtual);
-    if (!pergunta) {
-        finalizarPartida();
-        return;
-    }
+    if (!pergunta) { finalizarPartida(); return; }
     
     document.getElementById('pergunta').innerText = `${pergunta.a} x ${pergunta.b} = ?`;
     document.getElementById('pergunta-num').innerText = partidaAtual.indice + 1;
     
     const btns = document.querySelectorAll('.opcao');
     pergunta.opts.forEach((o, i) => {
-        if (btns[i]) {
-            btns[i].innerText = o;
-            btns[i].disabled = false;
-        }
+        if (btns[i]) { btns[i].innerText = o; btns[i].disabled = false; }
     });
     
     tempoRestantePergunta = TEMPO_PERGUNTA;
     const barra = document.getElementById('progresso-tempo');
-    if (barra) {
-        barra.style.width = '100%';
-        barra.style.background = '#27ae60';
-    }
+    if (barra) { barra.style.width = '100%'; barra.style.background = '#27ae60'; }
     
     iniciarTimerPergunta();
 }
 
 function iniciarTimerPergunta() {
-    console.log('⏱️ iniciarTimerPergunta chamado');
-    
-    if (timerPergunta) {
-        clearInterval(timerPergunta);
-        timerPergunta = null;
-    }
-    if (animFrameId) {
-        cancelAnimationFrame(animFrameId);
-        animFrameId = null;
-    }
+    if (timerPergunta) { clearInterval(timerPergunta); timerPergunta = null; }
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
     
     const barra = document.getElementById('progresso-tempo');
     let inicio = performance.now();
@@ -1249,90 +889,54 @@ function iniciarTimerPergunta() {
     function atualizarBarra(timestamp) {
         const decorrido = (timestamp - inicio) / 1000;
         tempoRestantePergunta = Math.max(0, TEMPO_PERGUNTA - decorrido);
-        
         if (barra) {
             const percentual = (tempoRestantePergunta / TEMPO_PERGUNTA) * 100;
             barra.style.width = percentual + '%';
-            
-            if (percentual < 20) {
-                barra.style.background = '#e74c3c';
-            } else if (percentual < 50) {
-                barra.style.background = '#f39c12';
-            } else {
-                barra.style.background = '#27ae60';
-            }
+            if (percentual < 20) barra.style.background = '#e74c3c';
+            else if (percentual < 50) barra.style.background = '#f39c12';
+            else barra.style.background = '#27ae60';
         }
-        
         if (tempoRestantePergunta > 0) {
             animFrameId = requestAnimationFrame(atualizarBarra);
         } else {
-            console.log('⏰ Tempo esgotado!');
             window.responder(-1);
         }
     }
-    
     animFrameId = requestAnimationFrame(atualizarBarra);
-    
     timerPergunta = setInterval(() => {
-        if (tempoRestantePergunta <= 0) {
-            clearInterval(timerPergunta);
-            timerPergunta = null;
-        }
+        if (tempoRestantePergunta <= 0) { clearInterval(timerPergunta); timerPergunta = null; }
     }, 100);
 }
 
 window.responder = async function(idx) {
-    console.log('🖱️ responder chamado com idx:', idx);
+    if (!jogoAtivo || !partidaAtual || partidaAtual.finalizada) return;
     
-    if (!jogoAtivo || !partidaAtual || partidaAtual.finalizada) {
-        console.log('⛔ Jogo não está ativo');
-        return;
-    }
-    
-    if (timerPergunta) {
-        clearInterval(timerPergunta);
-        timerPergunta = null;
-    }
-    if (animFrameId) {
-        cancelAnimationFrame(animFrameId);
-        animFrameId = null;
-    }
+    if (timerPergunta) { clearInterval(timerPergunta); timerPergunta = null; }
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
     
     let opcaoSelecionada = null;
     if (idx >= 0) {
         const btns = document.querySelectorAll('.opcao');
-        if (btns[idx]) {
-            opcaoSelecionada = parseInt(btns[idx].innerText);
-            console.log('📌 Opção selecionada:', opcaoSelecionada);
-        }
-    } else {
-        console.log('⏰ Tempo esgotado!');
+        if (btns[idx]) opcaoSelecionada = parseInt(btns[idx].innerText);
     }
     
     const resultado = processarResposta(partidaAtual, opcaoSelecionada);
     if (!resultado) return;
     
-    console.log('📊 Resultado:', resultado);
-    
     document.getElementById('pontuacao-acumulada').innerText = partidaAtual.pontos;
-    
     await salvarProgressoTemporario();
     
     if (resultado.finalizada) {
-        console.log('🏁 Partida finalizada!');
         setTimeout(() => finalizarPartida(), 300);
     } else {
-        console.log('➡️ Próxima pergunta');
         setTimeout(() => mostrarProximaPergunta(), 300);
     }
 };
 
 async function salvarProgressoTemporario() {
     if (!partidaAtual || !appState.alunoId) return;
-    
     const data = appState.data;
     if (!data) return;
-    
     try {
         await resultadosTempRef(data.fase).child(appState.alunoId).set({
             nome: appState.alunoNome,
@@ -1343,14 +947,11 @@ async function salvarProgressoTemporario() {
             perguntas: partidaAtual.indice,
             timestamp: Date.now()
         });
-    } catch (e) {
-        console.warn('Erro ao salvar progresso:', e);
-    }
+    } catch (e) {}
 }
 
 async function finalizarPartida() {
     if (!jogoAtivo || !partidaAtual) return;
-    
     jogoAtivo = false;
     partidaAtual.finalizada = true;
     
@@ -1360,7 +961,6 @@ async function finalizarPartida() {
     const data = appState.data;
     const faseAtual = data?.fase || 1;
     const alunoId = appState.alunoId;
-    
     const objetoPartida = criarObjetoPartida(partidaAtual);
     
     try {
@@ -1373,7 +973,6 @@ async function finalizarPartida() {
         await resultadosTempRef(faseAtual).child(alunoId).remove();
         toast('✅ Partida finalizada!');
     } catch (e) {
-        console.warn('Erro ao salvar partida:', e);
         toast('⚠️ Erro ao salvar.');
     }
     
@@ -1383,18 +982,13 @@ async function finalizarPartida() {
 
 async function exibirModalResultado() {
     if (!partidaAtual) return;
-    
     const pos = await buscarPosicaoAluno();
     const posFinal = pos || 0;
     const pontos = partidaAtual.pontos;
     const acertos = partidaAtual.acertos;
     const tempoMedio = partidaAtual.tempoTotal / Math.max(1, partidaAtual.indice);
     
-    let emoji = '';
-    if (posFinal === 1) emoji = '🥇';
-    else if (posFinal === 2) emoji = '🥈';
-    else if (posFinal === 3) emoji = '🥉';
-    else emoji = '🏆';
+    let emoji = posFinal === 1 ? '🥇' : posFinal === 2 ? '🥈' : posFinal === 3 ? '🥉' : '🏆';
     
     const htmlModal = `
         <div class="modal-resultados" id="modal-pos-jogo">
@@ -1414,7 +1008,6 @@ async function exibirModalResultado() {
     const modalExistente = document.getElementById('modal-pos-jogo');
     if (modalExistente) modalExistente.remove();
     document.body.insertAdjacentHTML('beforeend', htmlModal);
-    
     document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
         document.getElementById('modal-pos-jogo')?.remove();
     });
@@ -1424,10 +1017,8 @@ async function buscarPosicaoAluno() {
     try {
         const data = appState.data;
         if (!data) return 0;
-        
         const snap = await resultadosRef(data.fase).once('value');
         const resultados = snap.val() || {};
-        
         let lista = [];
         for (const [id, partidas] of Object.entries(resultados)) {
             if (partidas?.length) {
@@ -1435,20 +1026,18 @@ async function buscarPosicaoAluno() {
                 lista.push({ id, pontos: melhor.pontos });
             }
         }
-        
         lista.sort((a, b) => b.pontos - a.pontos);
         return lista.findIndex(p => p.id === appState.alunoId) + 1;
-    } catch (e) {
-        return 0;
-    }
+    } catch (e) { return 0; }
 }
 
-// ========== PAINEL DO PROFESSOR ==========
+// ============================================================
+// PAINEL DO PROFESSOR
+// ============================================================
 function initProfessorUI() {
     document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
     document.getElementById('painel-professor').classList.remove('hidden');
     document.getElementById('online-stats').classList.remove('hidden');
-    
     configurarEventosProfessor();
     carregarTurmas();
 }
@@ -1469,6 +1058,8 @@ function configurarEventosProfessor() {
         const fim = Date.now() + duracao * 60000;
         copaRef.update({ status: 'em_andamento', fim, tempoRestantePausa: null });
         toast('▶️ Fase iniciada!');
+        // Atualizar timer imediatamente
+        setTimeout(atualizarTimerFase, 100);
     });
     
     document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => {
@@ -1476,7 +1067,9 @@ function configurarEventosProfessor() {
     });
 }
 
-// ========== MENU PRINCIPAL ==========
+// ============================================================
+// MENU PRINCIPAL
+// ============================================================
 function configurarMenu() {
     document.getElementById('btn-professor')?.addEventListener('click', async () => {
         const senha = prompt('🔐 Digite a senha do Professor:');
@@ -1496,15 +1089,10 @@ function configurarMenu() {
             toast('⏳ Fase não iniciada ou terminada.');
             return;
         }
-        
         const nome = prompt('👤 Digite seu nome completo:');
         if (!nome || !nome.trim()) return;
-        
         const turmas = await carregarTurmas();
-        if (!turmas || turmas.length === 0) {
-            toast('❌ Nenhuma turma cadastrada.');
-            return;
-        }
+        if (!turmas || turmas.length === 0) { toast('❌ Nenhuma turma cadastrada.'); return; }
         
         const modalDiv = document.createElement('div');
         modalDiv.className = 'modal-turma';
@@ -1526,14 +1114,11 @@ function configurarMenu() {
                 const turma = select.value;
                 modalDiv.remove();
                 const alunoId = btoa(nome.trim().toLowerCase() + '|' + turma).slice(0, 16);
-                
                 if (data.fase > 1 && !appState.isClassificado(data.fase, alunoId)) {
                     alert('❌ Você NÃO foi classificado para esta fase.');
                     return;
                 }
-                
                 participantesRef(data.fase).child(alunoId).set({ nome: nome.trim(), turma });
-                
                 appState.setUserType('aluno');
                 initAlunoUI(alunoId, nome.trim(), turma);
             }
@@ -1555,37 +1140,27 @@ function configurarMenu() {
 }
 
 // ============================================================
-// ========== MODO TORCIDA ==========
+// MODO TORCIDA
 // ============================================================
-
 let intervaloTorcida = null;
 
 function iniciarTorcida() {
-    console.log('📺 Iniciando Torcida...');
-    
     const select = document.getElementById('select-fase-torcida');
     if (select) {
         let options = '';
-        for (let i = 1; i <= 5; i++) {
-            options += `<option value="${i}">Fase ${i}</option>`;
-        }
+        for (let i = 1; i <= 5; i++) options += `<option value="${i}">Fase ${i}</option>`;
         select.innerHTML = options;
         select.value = appState.fase || 1;
     }
-    
     document.getElementById('torcida-modalidade').innerText = appState.getModalidadeNome();
     atualizarRankingTorcida();
-    
     if (intervaloTorcida) clearInterval(intervaloTorcida);
-    intervaloTorcida = setInterval(() => {
-        atualizarRankingTorcida();
-    }, 5000);
+    intervaloTorcida = setInterval(atualizarRankingTorcida, 5000);
 }
 
 async function atualizarRankingTorcida() {
     const data = appState.data;
     if (!data) return;
-    
     const fase = parseInt(document.getElementById('select-fase-torcida')?.value) || data.fase;
     const container = document.getElementById('ranking-torcida-container');
     if (!container) return;
@@ -1594,7 +1169,6 @@ async function atualizarRankingTorcida() {
         const snap = await resultadosRef(fase).once('value');
         const resultados = snap.val() || {};
         const participantes = (await participantesRef(fase).once('value')).val() || {};
-        
         let lista = [];
         for (const [id, partidas] of Object.entries(resultados)) {
             if (partidas?.length) {
@@ -1604,72 +1178,45 @@ async function atualizarRankingTorcida() {
                 lista.push({ id, nome, turma, pontos: melhor.pontos, acertos: melhor.acertos });
             }
         }
-        
         lista.sort((a, b) => b.pontos - a.pontos);
-        atualizarTimerTorcida(data);
+        
+        // Atualizar timer da torcida
+        const timerDisplay = document.getElementById('torcida-timer');
+        if (timerDisplay && data.status === 'em_andamento' && data.fim > 0) {
+            const restante = Math.max(0, data.fim - Date.now());
+            const min = Math.floor(restante / 60000);
+            const sec = Math.floor((restante % 60000) / 1000);
+            timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+        }
         
         document.getElementById('torcida-fase-info').innerText = `${fase}/5`;
         document.getElementById('fase-torcida-info').innerText = fase === data.fase ? '(Fase atual)' : '(Fase anterior)';
         
         let html = `<table class="ranking-table"><thead><tr>
-            <th>Pos</th>
-            <th>Nome</th>
-            <th>Turma</th>
-            <th>Pontuação</th>
-            <th>Acertos</th>
+            <th>Pos</th><th>Nome</th><th>Turma</th><th>Pontuação</th><th>Acertos</th>
         </tr></thead><tbody>`;
-        
         if (lista.length === 0) {
-            html += `<tr><td colspan="5" style="text-align:center; padding:20px;">⏳ Nenhum resultado registrado ainda.</td></tr>`;
+            html += `<tr><td colspan="5" style="text-align:center;padding:20px;">⏳ Nenhum resultado registrado ainda.</td></tr>`;
         } else {
             lista.slice(0, 30).forEach((j, idx) => {
                 const medalha = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}º`;
-                html += `<tr>
-                    <td><strong>${medalha}</strong></td>
+                html += `<tr><td><strong>${medalha}</strong></td>
                     <td>${escapeHtml(j.nome)}</td>
                     <td>${escapeHtml(j.turma)}</td>
                     <td><strong>${j.pontos}</strong></td>
-                    <td>${j.acertos}/20</td>
-                </tr>`;
+                    <td>${j.acertos}/20</td></tr>`;
             });
         }
-        
         html += '</tbody></table>';
         container.innerHTML = html;
         document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
-        
     } catch (e) {
-        console.warn('Erro ao atualizar ranking da torcida:', e);
-        container.innerHTML = '<p style="color:#e74c3c;">❌ Erro ao carregar ranking. Tente novamente.</p>';
+        container.innerHTML = '<p style="color:#e74c3c;">❌ Erro ao carregar ranking.</p>';
     }
 }
-
-function atualizarTimerTorcida(data) {
-    const timerDisplay = document.getElementById('torcida-timer');
-    if (!timerDisplay) return;
-    
-    if (data.status === 'em_andamento') {
-        const restante = Math.max(0, data.fim - Date.now());
-        const min = Math.floor(restante / 60000);
-        const sec = Math.floor((restante % 60000) / 1000);
-        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
-    } else if (data.status === 'pausado') {
-        const tempoPausado = data.tempoRestantePausa || 0;
-        const min = Math.floor(tempoPausado / 60000);
-        const sec = Math.floor((tempoPausado % 60000) / 1000);
-        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
-    } else {
-        timerDisplay.innerText = data.status === 'finalizado' ? '🏁 FIM' : '⏸️ PAUSADO';
-    }
-}
-
-// ========== EVENTOS DA TORCIDA ==========
 
 document.getElementById('btn-sair-torcida')?.addEventListener('click', () => {
-    if (intervaloTorcida) {
-        clearInterval(intervaloTorcida);
-        intervaloTorcida = null;
-    }
+    if (intervaloTorcida) { clearInterval(intervaloTorcida); intervaloTorcida = null; }
     location.reload();
 });
 
@@ -1678,9 +1225,7 @@ document.getElementById('btn-sync-torcida')?.addEventListener('click', () => {
     atualizarRankingTorcida();
 });
 
-document.getElementById('select-fase-torcida')?.addEventListener('change', () => {
-    atualizarRankingTorcida();
-});
+document.getElementById('select-fase-torcida')?.addEventListener('change', atualizarRankingTorcida);
 
 document.getElementById('btn-modo-individual')?.addEventListener('click', () => {
     document.getElementById('btn-modo-individual').classList.add('ativo');
@@ -1696,27 +1241,25 @@ document.getElementById('btn-modo-equipes')?.addEventListener('click', () => {
     toast('👥 Ranking por equipes em breve!');
 });
 
-console.log('✅ Módulo da Torcida carregado!');
 // ============================================================
-// ========== FIM MODO TORCIDA ==========
+// INICIALIZAR
 // ============================================================
-
-// ========== INICIALIZAR ==========
 console.log('🏆 Copa Tabuada CEIB 2026 - Iniciando...');
-
 appState.init();
 appState.loadFromSession();
 
-// Verificar se já está logado
 if (appState.userType === 'aluno' && appState.alunoId) {
     initAlunoUI(appState.alunoId, appState.alunoNome, appState.alunoTurma);
 } else {
     configurarMenu();
 }
 
+// Atualizar timer da fase a cada segundo (para o menu principal)
+setInterval(atualizarTimerFase, 1000);
+
 console.log('🏆 Copa Tabuada CEIB 2026 - Carregado com sucesso!');
 
-// ========== EXPORTA VARIÁVEIS GLOBAIS ==========
+// EXPORTA VARIÁVEIS GLOBAIS
 window.appState = appState;
 window.db = db;
 window.copaRef = copaRef;
@@ -1724,19 +1267,6 @@ window.responder = window.responder || function(idx) {
     console.log('responder chamado globalmente com idx:', idx);
 };
 console.log('✅ Variáveis globais exportadas!');
-
-// Verificar partidas offline
-setTimeout(() => {
-    try {
-        const data = localStorage.getItem('offline_partidas');
-        if (data) {
-            const partidas = JSON.parse(data);
-            if (partidas.length > 0) {
-                console.log(`📱 ${partidas.length} partidas offline aguardando sincronização.`);
-            }
-        }
-    } catch(e) {}
-}, 3000);
 
 </script>
 
