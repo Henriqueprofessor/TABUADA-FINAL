@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo</title>
+    
+    <!-- ============================================================ -->
+    <!-- FIREBASE - CARREGADO PRIMEIRO PARA ESTAR DISPONÍVEL -->
+    <!-- ============================================================ -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+    
+    <!-- ============================================================ -->
+    <!-- CANVAS CONFETTI (para efeitos visuais) -->
+    <!-- ============================================================ -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -328,7 +341,6 @@
         .status-aguardando { color: #f39c12; font-weight: bold; }
         .status-finalizado { color: #3498db; font-weight: bold; }
         
-        /* Configurações - Switches */
         .config-section {
             background: #1f3a4b;
             border-radius: 16px;
@@ -398,7 +410,6 @@
             margin-top: 16px;
             flex-wrap: wrap;
         }
-        
         .gamepad-connected .opcao {
             border-color: #2ecc71;
         }
@@ -451,7 +462,6 @@
             <div class="tab-btn" data-tab="configuracoes">⚙️ Configurações</div>
         </div>
         
-        <!-- TAB: Controle -->
         <div id="tab-controle" class="tab-content">
             <div class="flex-grid">
                 <div>
@@ -472,7 +482,7 @@
                         <button id="btn-iniciar-fase" class="btn-success">▶️ Iniciar Fase</button>
                         <button id="btn-continuar-parar-fase" class="btn-danger">⏹️ Parar Fase</button>
                         <button id="btn-avancar-fase" class="btn-primary" style="margin-top: 10px; width: 100%;">➡️ Finalizar Fase e Classificar</button>
-                        <button id="btn-reset-fase" class="btn-warning" style="margin-top: 10px; width: 100%;">🔄 Resetar Fase (apagar dados atuais)</button>
+                        <button id="btn-reset-fase" class="btn-warning" style="margin-top: 10px; width: 100%;">🔄 Resetar Fase</button>
                         <button id="btn-reset-total" class="btn-danger" style="margin-top: 10px; width: 100%;">⚠️ Resetar Competição</button>
                     </div>
                 </div>
@@ -500,13 +510,11 @@
             <div id="podium-container" class="status-box hidden"></div>
         </div>
         
-        <!-- TAB: Ranking Geral -->
         <div id="tab-ranking-geral" class="tab-content hidden">
             <h3>📊 Classificação Geral - Todos os Participantes</h3>
             <div id="ranking-geral-container" class="status-box">Processando ranking geral...</div>
         </div>
         
-        <!-- TAB: Ranking por Fase -->
         <div id="tab-ranking-fase" class="tab-content hidden">
             <h3>Ranking por Fase (Atualização automática)</h3>
             <div class="fase-selector">
@@ -517,7 +525,6 @@
             <div id="ranking-parcial" class="status-box">Aguardando dados...</div>
         </div>
         
-        <!-- TAB: Ranking por Turmas -->
         <div id="tab-ranking-turmas" class="tab-content hidden">
             <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
             <div style="margin-bottom: 15px;">
@@ -526,26 +533,22 @@
             <div id="ranking-turmas-container" class="status-box">Carregando...</div>
         </div>
         
-        <!-- TAB: Gerenciar Alunos -->
         <div id="tab-gerenciar-alunos" class="tab-content hidden">
             <h3>📝 Gerenciar Alunos da Fase Atual</h3>
             <div id="lista-alunos-gerenciavel" class="status-box scroll-list">Carregando...</div>
             <button id="btn-atualizar-lista-alunos" class="btn-secondary">🔄 Recarregar</button>
         </div>
         
-        <!-- TAB: Gerenciar Turmas -->
         <div id="tab-gerenciar-turmas" class="tab-content hidden">
             <h3>🏷️ Gerenciar Turmas Disponíveis</h3>
             <button id="btn-adicionar-turma" class="btn-success">➕ Adicionar Nova Turma</button>
             <div id="lista-turmas-gerenciavel" class="status-box scroll-list" style="margin-top: 15px;">Carregando...</div>
         </div>
         
-        <!-- TAB: Configurações -->
         <div id="tab-configuracoes" class="tab-content hidden">
             <h3>⚙️ Configurações do Jogo</h3>
-            <p style="opacity:0.7; margin-bottom:16px;">Habilite ou desabilite as funcionalidades do jogo. As configurações são salvas automaticamente.</p>
+            <p style="opacity:0.7; margin-bottom:16px;">Habilite ou desabilite as funcionalidades do jogo.</p>
             
-            <!-- Efeitos Visuais -->
             <div class="config-section">
                 <h4>🎨 Efeitos Visuais</h4>
                 <div class="switch-item">
@@ -577,7 +580,6 @@
                 </div>
             </div>
             
-            <!-- Áudio -->
             <div class="config-section">
                 <h4>🔊 Áudio</h4>
                 <div class="switch-item">
@@ -585,7 +587,7 @@
                         <input type="checkbox" id="cfg-sons" checked>
                         <div>
                             <span class="switch-label">🔔 Sons do Jogo</span>
-                            <span class="switch-desc">Ativa todos os efeitos sonoros (ativo/desativo geral)</span>
+                            <span class="switch-desc">Ativa todos os efeitos sonoros</span>
                         </div>
                     </label>
                 </div>
@@ -609,7 +611,6 @@
                 </div>
             </div>
             
-            <!-- Gamificação -->
             <div class="config-section">
                 <h4>🏅 Gamificação</h4>
                 <div class="switch-item">
@@ -617,7 +618,7 @@
                         <input type="checkbox" id="cfg-bonus" checked>
                         <div>
                             <span class="switch-label">⭐ Sistema de Bônus</span>
-                            <span class="switch-desc">Adiciona pontos extras por velocidade e consistência nas partidas</span>
+                            <span class="switch-desc">Adiciona pontos extras por velocidade e consistência</span>
                         </div>
                     </label>
                 </div>
@@ -632,7 +633,6 @@
                 </div>
             </div>
             
-            <!-- Acessibilidade -->
             <div class="config-section">
                 <h4>🎮 Acessibilidade</h4>
                 <div class="switch-item">
@@ -640,13 +640,12 @@
                         <input type="checkbox" id="cfg-gamepad" checked>
                         <div>
                             <span class="switch-label">🕹️ Suporte a Gamepad</span>
-                            <span class="switch-desc">Permite jogar com controle/joystick (acessibilidade)</span>
+                            <span class="switch-desc">Permite jogar com controle/joystick</span>
                         </div>
                     </label>
                 </div>
             </div>
             
-            <!-- Offline -->
             <div class="config-section">
                 <h4>📶 Offline</h4>
                 <div class="switch-item">
@@ -654,7 +653,7 @@
                         <input type="checkbox" id="cfg-sync-offline" checked>
                         <div>
                             <span class="switch-label">💾 Sincronização Offline</span>
-                            <span class="switch-desc">Salva partidas localmente quando sem internet e sincroniza automaticamente</span>
+                            <span class="switch-desc">Salva partidas localmente quando sem internet</span>
                         </div>
                     </label>
                 </div>
@@ -740,6 +739,60 @@
 <div id="toast" class="toast hidden"></div>
 
 <!-- ============================================================ -->
+<!-- REGISTRAR SERVICE WORKER -->
+<!-- ============================================================ -->
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/TABUADA-FINAL/service-worker.js')
+            .then(registration => {
+                console.log('✅ Service Worker registrado com sucesso!');
+            })
+            .catch(error => {
+                console.error('❌ Falha ao registrar Service Worker:', error);
+            });
+    });
+}
+
+// Verificar partidas offline
+function verificarPartidasOffline() {
+    try {
+        const data = localStorage.getItem('offline_partidas');
+        if (data) {
+            const partidas = JSON.parse(data);
+            if (partidas.length > 0) {
+                console.log(`📱 ${partidas.length} partidas offline aguardando sincronização.`);
+            }
+        }
+    } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(verificarPartidasOffline, 3000);
+});
+
+// Detectar mudanças de conexão
+window.addEventListener('online', () => {
+    console.log('🌐 Conexão restabelecida!');
+    const toast = document.getElementById('toast');
+    if (toast) {
+        toast.innerText = '🌐 Conexão restabelecida! Sincronizando...';
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+});
+
+window.addEventListener('offline', () => {
+    console.log('📶 Conexão perdida. Modo offline ativado.');
+    const toast = document.getElementById('toast');
+    if (toast) {
+        toast.innerText = '📶 Sem internet. As partidas serão salvas localmente.';
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+});
+</script>
+
+<!-- ============================================================ -->
 <!-- IMPORTAÇÃO DOS MÓDULOS DO JOGO -->
 <!-- ============================================================ -->
 <script type="importmap">
@@ -751,19 +804,10 @@
 </script>
 
 <script type="module">
-// ============================================================
-// PONTO DE ENTRADA PRINCIPAL
-// ============================================================
-
 import { init } from './js/main.js';
-
-// Inicializar o jogo
 init();
 
-// Expor funções globais para o HTML (onclick)
 window.responder = function(idx) {
-    // A função responder é gerenciada pelo módulo aluno-ui.js
-    // Esta é apenas uma ponte para o escopo global
     const event = new CustomEvent('responder', { detail: { idx } });
     document.dispatchEvent(event);
 };
