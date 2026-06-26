@@ -1,6 +1,6 @@
 // ============================================================
 // ARQUIVO: js/models/game.js
-// DESCRIÇÃO: Lógica do Jogo - CORRIGIDO
+// DESCRIÇÃO: Lógica do Jogo - VERSÃO ESTÁVEL
 // ============================================================
 
 import { MODALIDADE_CONFIG, TOTAL_PERGUNTAS, TEMPO_PERGUNTA } from '../utils/constants.js';
