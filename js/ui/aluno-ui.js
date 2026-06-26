@@ -1,19 +1,16 @@
 // ============================================================
 // ARQUIVO: js/ui/aluno-ui.js
-// DESCRIÇÃO: Interface do Aluno - Jogo e Visualização
+// DESCRIÇÃO: Interface do Aluno - CORRIGIDO
 // ============================================================
 
 import { appState } from '../models/state.js';
 import {
-    adicionarParticipante,
     setPresence,
     removePresence,
     salvarResultado,
     salvarResultadoTemp,
     removerResultadoTemp,
     getOnce,
-    gerarIdAluno,
-    participantesRef,
     resultadosRef
 } from '../services/firebase-service.js';
 import {
@@ -25,43 +22,37 @@ import {
     verificarNotificacoes,
     verificarRecordes
 } from '../models/game.js';
-import { renderRankingIndividual } from '../ranking/ranking.js';
-import { toast, escapeHtml, formatarTempo, isOnline } from '../utils/helpers.js';
+import { toast, isOnline } from '../utils/helpers.js';
 import { soundManager } from '../utils/sounds.js';
 import { confettiManager } from '../utils/confetti.js';
 import { achievementManager } from '../utils/achievements.js';
 import { notificationManager } from '../utils/notifications.js';
-import { gamepadManager } from '../utils/gamepad.js';
-import { syncService, addOfflinePartida } from '../services/sync-service.js';
-import { VAGAS_POR_FASE, TOTAL_PERGUNTAS, TEMPO_PERGUNTA } from '../utils/constants.js';
+import { addOfflinePartida } from '../services/sync-service.js';
+import { TOTAL_PERGUNTAS, TEMPO_PERGUNTA, VAGAS_POR_FASE } from '../utils/constants.js';
 import { MODALIDADE_CONFIG } from '../config/firebase-config.js';
 
-// ========== VARIÁVEIS DO JOGO ==========
+// ========== VARIÁVEIS ==========
 let partidaAtual = null;
 let timerPergunta = null;
 let animFrameId = null;
 let tempoRestantePergunta = TEMPO_PERGUNTA;
 let jogoAtivo = false;
 let unsubscribeEstado = null;
+let timerFaseInterval = null;
 
-// ========== INICIALIZAR UI DO ALUNO ==========
+// ========== INICIALIZAR ==========
 export function initAlunoUI(alunoId, alunoNome, alunoTurma) {
-    // Esconder outras telas
     document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
     document.getElementById('tela-aluno').classList.remove('hidden');
     document.getElementById('online-stats').classList.remove('hidden');
     
-    // Salvar dados do aluno
     appState.setAlunoData(alunoId, alunoNome, alunoTurma);
     
-    // Atualizar display
     document.getElementById('aluno-nome-display').innerText = alunoNome;
     document.getElementById('aluno-turma-display').innerText = alunoTurma;
     
-    // Configurar presença
     setPresence(alunoId, { nome: alunoNome, turma: alunoTurma, tipo: 'aluno' });
     
-    // Registrar observador do estado
     if (unsubscribeEstado) unsubscribeEstado();
     unsubscribeEstado = appState.subscribe((data) => {
         if (appState.userType === 'aluno') {
@@ -69,29 +60,44 @@ export function initAlunoUI(alunoId, alunoNome, alunoTurma) {
         }
     });
     
-    // Configurar eventos
     configurarEventosAluno();
-    
-    // Configurar gamepad
-    gamepadManager.setGamepadCallbacks({
-        onButtonPress: (index) => {
-            if (!jogoAtivo) return;
-            const mapeamento = {
-                0: 0, 1: 1, 2: 2, 3: 3,
-                4: 0, 5: 3
-            };
-            const opcao = mapeamento[index];
-            if (opcao !== undefined) {
-                window.responder(opcao);
-            }
-        }
-    });
-    
-    // Carregar conquistas
     achievementManager.renderizarMedalhas(alunoId, 'medalhas-aluno');
+    
+    // ========== INICIAR TIMER DA FASE ==========
+    iniciarTimerFase();
 }
 
-// ========== ATUALIZAR UI DO ALUNO ==========
+// ========== TIMER DA FASE (CORRIGIDO) ==========
+function iniciarTimerFase() {
+    if (timerFaseInterval) {
+        clearInterval(timerFaseInterval);
+        timerFaseInterval = null;
+    }
+    
+    timerFaseInterval = setInterval(() => {
+        const data = appState.data;
+        if (!data) return;
+        
+        const timerDisplay = document.getElementById('timer-fase');
+        if (!timerDisplay) return;
+        
+        if (data.status === 'em_andamento') {
+            const restante = Math.max(0, data.fim - Date.now());
+            const min = Math.floor(restante / 60000);
+            const sec = Math.floor((restante % 60000) / 1000);
+            timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+        } else if (data.status === 'pausado') {
+            const tempoPausado = data.tempoRestantePausa || 0;
+            const min = Math.floor(tempoPausado / 60000);
+            const sec = Math.floor((tempoPausado % 60000) / 1000);
+            timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+        } else {
+            timerDisplay.innerText = data.status === 'finalizado' ? 'FIM' : 'PAUSADO';
+        }
+    }, 1000);
+}
+
+// ========== ATUALIZAR UI ==========
 function atualizarUIAluno(data) {
     if (!data) return;
     
@@ -121,97 +127,52 @@ function atualizarUIAluno(data) {
     } else if (encerrado) {
         msgDiv.innerText = '⏰ TEMPO ESGOTADO!';
         btnJogar.classList.add('hidden');
-        if (!sessionStorage.getItem('modalExibido_' + faseAtual)) {
-            sessionStorage.setItem('modalExibido_' + faseAtual, 'true');
-            exibirResultadoFinal();
-        }
     } else {
         msgDiv.innerText = '✅ Fase liberada! Clique em JOGAR.';
         btnJogar.classList.remove('hidden');
     }
     
     atualizarMelhorResultado();
-    atualizarTimerAluno(data);
 }
 
-// ========== ATUALIZAR TIMER DO ALUNO ==========
-function atualizarTimerAluno(data) {
-    const timerDisplay = document.getElementById('timer-fase');
-    if (!timerDisplay) return;
-    
-    if (data.status === 'em_andamento') {
-        const restante = Math.max(0, data.fim - Date.now());
-        if (restante <= 0) {
-            timerDisplay.innerText = 'ENCERRADO';
-        } else {
-            const min = Math.floor(restante / 60000);
-            const sec = Math.floor((restante % 60000) / 1000);
-            timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
-        }
-    } else if (data.status === 'pausado') {
-        const tempoPausado = data.tempoRestantePausa || 0;
-        const min = Math.floor(tempoPausado / 60000);
-        const sec = Math.floor((tempoPausado % 60000) / 1000);
-        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
-    } else {
-        timerDisplay.innerText = data.status === 'finalizado' ? 'FIM' : 'PAUSADO';
-    }
-}
-
-// ========== ATUALIZAR MELHOR RESULTADO ==========
+// ========== MELHOR RESULTADO ==========
 async function atualizarMelhorResultado() {
     const data = appState.data;
     if (!data) return;
     
-    const faseAtual = data.fase;
-    const alunoId = appState.alunoId;
-    
     try {
-        const snap = await getOnce(resultadosRef(faseAtual));
+        const snap = await getOnce(resultadosRef(data.fase));
         const resultados = snap.val() || {};
-        const partidas = resultados[alunoId] || [];
+        const partidas = resultados[appState.alunoId] || [];
         
         if (partidas.length > 0) {
             const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
             document.getElementById('aluno-melhor-score').innerText = melhor.pontos || 0;
-            
-            let histHtml = '<ul>';
-            partidas.slice().reverse().forEach(p => {
-                histHtml += `<li>🏆 Pontos: ${p.pontos} | Acertos: ${p.acertos} | ${p.tempo ? formatarTempo(p.tempo * 1000) : '-'}</li>`;
-            });
-            histHtml += '</ul>';
-            document.getElementById('historico-aluno').innerHTML = histHtml;
         }
-        
-        achievementManager.renderizarMedalhas(alunoId, 'medalhas-aluno');
-        
-    } catch (error) {
-        console.warn('Erro ao atualizar melhor resultado:', error);
+    } catch (e) {
+        console.warn('Erro ao atualizar melhor resultado:', e);
     }
 }
 
-// ========== CONFIGURAR EVENTOS ==========
+// ========== EVENTOS ==========
 function configurarEventosAluno() {
     document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
     
     document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
-        if (jogoAtivo) {
-            if (!confirm('⚠️ Você está em uma partida. Deseja sair mesmo assim?')) return;
+        if (jogoAtivo && !confirm('⚠️ Deseja sair mesmo assim?')) return;
+        
+        if (timerFaseInterval) {
+            clearInterval(timerFaseInterval);
+            timerFaseInterval = null;
         }
         
         removePresence(appState.alunoId);
-        
         if (unsubscribeEstado) {
             unsubscribeEstado();
             unsubscribeEstado = null;
         }
         
-        sessionStorage.removeItem('userType');
-        sessionStorage.removeItem('alunoId');
-        sessionStorage.removeItem('alunoNome');
-        sessionStorage.removeItem('alunoTurma');
-        sessionStorage.removeItem('ultimaFase');
-        
+        sessionStorage.clear();
         appState.userType = null;
         appState.alunoId = null;
         appState.alunoNome = null;
@@ -221,43 +182,17 @@ function configurarEventosAluno() {
     });
 }
 
-// ========== INICIAR NOVA PARTIDA ==========
+// ========== INICIAR JOGO ==========
 async function iniciarNovaPartida() {
     if (jogoAtivo) return;
     
     const data = appState.data;
-    if (!data) {
-        toast('⏳ Aguardando dados do jogo...');
-        return;
-    }
-    
-    if (data.status !== 'em_andamento') {
-        toast('⏸️ Fase inativa!');
-        return;
-    }
-    
-    if (Date.now() >= data.fim) {
-        toast('⏰ Tempo esgotado!');
-        return;
-    }
-    
+    if (!data) { toast('⏳ Aguardando dados...'); return; }
+    if (data.status !== 'em_andamento') { toast('⏸️ Fase inativa!'); return; }
+    if (Date.now() >= data.fim) { toast('⏰ Tempo esgotado!'); return; }
     if (data.fase > 1 && !appState.isClassificado(data.fase, appState.alunoId)) {
-        toast('❌ Não classificado para esta fase!');
+        toast('❌ Não classificado!');
         return;
-    }
-    
-    try {
-        const snap = await getOnce(resultadosRef(data.fase));
-        const resultados = snap.val() || {};
-        const partidas = resultados[appState.alunoId] || [];
-        
-        if (partidas.length > 0 && (data.fim - Date.now()) < 30000) {
-            if (!confirm('⏰ Pouco tempo restante. Deseja tentar melhorar sua pontuação?')) {
-                return;
-            }
-        }
-    } catch (e) {
-        console.warn('Erro ao verificar partidas existentes:', e);
     }
     
     const perguntas = obterPerguntas(data.modalidade);
@@ -272,31 +207,21 @@ async function iniciarNovaPartida() {
     mostrarProximaPergunta();
 }
 
-// ========== MOSTRAR PRÓXIMA PERGUNTA - CORRIGIDO ==========
+// ========== MOSTRAR PERGUNTA ==========
 function mostrarProximaPergunta() {
-    console.log('mostrarProximaPergunta chamado');
-    
     if (!partidaAtual || partidaAtual.finalizada) {
-        console.log('Partida finalizada, chamando finalizarPartida');
         finalizarPartida();
         return;
     }
     
     const pergunta = getProximaPergunta(partidaAtual);
     if (!pergunta) {
-        console.log('Sem pergunta, chamando finalizarPartida');
         finalizarPartida();
         return;
     }
     
-    console.log('Mostrando pergunta:', pergunta.a, 'x', pergunta.b);
-    
-    // Atualizar pergunta
     document.getElementById('pergunta').innerText = `${pergunta.a} x ${pergunta.b} = ?`;
-    
-    // CORRIGIDO: Mostrar apenas o número da pergunta
-    const numeroPergunta = partidaAtual.indice + 1;
-    document.getElementById('pergunta-num').innerText = numeroPergunta;
+    document.getElementById('pergunta-num').innerText = partidaAtual.indice + 1;
     
     const btns = document.querySelectorAll('.opcao');
     pergunta.opts.forEach((o, i) => {
@@ -308,18 +233,18 @@ function mostrarProximaPergunta() {
         }
     });
     
-    // Resetar timer
     tempoRestantePergunta = TEMPO_PERGUNTA;
     const barra = document.getElementById('progresso-tempo');
-    if (barra) barra.style.width = '100%';
+    if (barra) {
+        barra.style.width = '100%';
+        barra.style.background = '#27ae60';
+    }
     
     iniciarTimerPergunta();
 }
 
-// ========== INICIAR TIMER DA PERGUNTA - CORRIGIDO ==========
+// ========== TIMER DA PERGUNTA ==========
 function iniciarTimerPergunta() {
-    console.log('iniciarTimerPergunta chamado');
-    
     if (timerPergunta) {
         clearInterval(timerPergunta);
         timerPergunta = null;
@@ -340,27 +265,24 @@ function iniciarTimerPergunta() {
             const percentual = (tempoRestantePergunta / TEMPO_PERGUNTA) * 100;
             barra.style.width = percentual + '%';
             
-            // Muda a cor da barra conforme o tempo
             if (percentual < 20) {
-                barra.style.background = '#e74c3c'; // Vermelho
+                barra.style.background = '#e74c3c';
             } else if (percentual < 50) {
-                barra.style.background = '#f39c12'; // Laranja
+                barra.style.background = '#f39c12';
             } else {
-                barra.style.background = '#27ae60'; // Verde
+                barra.style.background = '#27ae60';
             }
         }
         
         if (tempoRestantePergunta > 0) {
             animFrameId = requestAnimationFrame(atualizarBarra);
         } else {
-            console.log('Tempo esgotado! Chamando responder(-1)');
             window.responder(-1);
         }
     }
     
     animFrameId = requestAnimationFrame(atualizarBarra);
     
-    // Timer de segurança
     timerPergunta = setInterval(() => {
         if (tempoRestantePergunta <= 0) {
             clearInterval(timerPergunta);
@@ -369,18 +291,15 @@ function iniciarTimerPergunta() {
     }, 100);
 }
 
-// ========== RESPONDER PERGUNTA - CORRIGIDO ==========
+// ========== RESPONDER (CORRIGIDO - BOTÕES FUNCIONAM) ==========
 window.responder = async function(idx) {
     console.log('responder chamado com idx:', idx);
-    console.log('jogoAtivo:', jogoAtivo);
-    console.log('partidaAtual:', partidaAtual);
     
     if (!jogoAtivo || !partidaAtual || partidaAtual.finalizada) {
-        console.log('Jogo não está ativo ou partida finalizada');
+        console.log('Jogo não está ativo');
         return;
     }
     
-    // Parar o timer
     if (timerPergunta) {
         clearInterval(timerPergunta);
         timerPergunta = null;
@@ -401,29 +320,18 @@ window.responder = async function(idx) {
         console.log('Tempo esgotado!');
     }
     
-    // Processar resposta
     const resultado = processarResposta(partidaAtual, opcaoSelecionada);
-    if (!resultado) {
-        console.log('Resultado é null');
-        return;
-    }
+    if (!resultado) return;
     
     console.log('Resultado:', resultado);
-    console.log('Acertou?', resultado.acertou);
-    console.log('Pontos ganhos:', resultado.pontosGanhos);
-    console.log('Progresso:', resultado.progresso, '/', resultado.total);
     
-    // Feedback
     if (resultado.acertou) {
         soundManager.playCorrect();
-        if (confettiManager.config.confetes) {
-            confettiManager.fireHit();
-        }
+        if (confettiManager.config.confetes) confettiManager.fireHit();
     } else {
         soundManager.playWrong();
     }
     
-    // Notificações
     const notificacoes = verificarNotificacoes(partidaAtual, resultado);
     for (const notifId of notificacoes) {
         notificationManager.mostrar(notifId, {
@@ -432,23 +340,18 @@ window.responder = async function(idx) {
         });
     }
     
-    // Atualizar pontuação
     document.getElementById('pontuacao-acumulada').innerText = partidaAtual.pontos;
     
-    // Salvar progresso
     await salvarProgressoTemporario();
     
-    // Verificar se finalizou
     if (resultado.finalizada) {
-        console.log('Partida finalizada!');
         setTimeout(() => finalizarPartida(), 300);
     } else {
-        console.log('Avançando para próxima pergunta');
         setTimeout(() => mostrarProximaPergunta(), 300);
     }
 };
 
-// ========== SALVAR PROGRESSO TEMPORÁRIO ==========
+// ========== SALVAR PROGRESSO ==========
 async function salvarProgressoTemporario() {
     if (!partidaAtual || !appState.alunoId) return;
     
@@ -466,7 +369,7 @@ async function salvarProgressoTemporario() {
             timestamp: Date.now()
         });
     } catch (e) {
-        console.warn('Erro ao salvar progresso temporário:', e);
+        console.warn('Erro ao salvar progresso:', e);
     }
 }
 
@@ -492,54 +395,21 @@ async function finalizarPartida() {
         if (isOnline()) {
             await salvarResultado(faseAtual, alunoId, objetoPartida);
             await removerResultadoTemp(faseAtual, alunoId);
-            toast('✅ Partida finalizada com sucesso!');
+            toast('✅ Partida finalizada!');
         } else {
             addOfflinePartida(alunoId, faseAtual, objetoPartida);
-            toast('📶 Sem internet. Partida salva localmente.');
+            toast('📶 Salvo localmente.');
         }
     } catch (e) {
-        console.warn('Erro ao salvar partida:', e);
         addOfflinePartida(alunoId, faseAtual, objetoPartida);
-        toast('⚠️ Erro ao salvar. Partida salva localmente.');
+        toast('⚠️ Salvo localmente.');
     }
-    
-    try {
-        const snap = await getOnce(resultadosRef(faseAtual));
-        const resultados = snap.val() || {};
-        const partidas = resultados[alunoId] || [];
-        const recordes = verificarRecordes(partidaAtual, partidas);
-        
-        if (recordes.recordeFase) {
-            notificationManager.mostrar('recordeFase', { pontos: partidaAtual.pontos });
-            if (confettiManager.config.confetes) {
-                confettiManager.fireRecord();
-            }
-        }
-        if (recordes.recordeGeral) {
-            notificationManager.mostrar('recordeGeral', { pontos: partidaAtual.pontos });
-            if (confettiManager.config.confetes) {
-                confettiManager.fireCelebration();
-            }
-        }
-    } catch (e) {
-        console.warn('Erro ao verificar recordes:', e);
-    }
-    
-    const stats = {
-        totalPartidas: (await getOnce(resultadosRef(faseAtual))).val()?.[alunoId]?.length || 0,
-        melhorAcertos: partidaAtual.acertos,
-        classificado: appState.isClassificado(faseAtual, alunoId),
-        faseMaxima: faseAtual,
-        melhorTempoTotal: partidaAtual.tempoTotal,
-        campeao: faseAtual === 5 && partidaAtual.acertos === TOTAL_PERGUNTAS
-    };
-    achievementManager.verificarConquistas(alunoId, stats);
     
     await atualizarMelhorResultado();
     exibirModalResultado();
 }
 
-// ========== EXIBIR MODAL DE RESULTADO ==========
+// ========== MODAL RESULTADO ==========
 async function exibirModalResultado() {
     if (!partidaAtual) return;
     
@@ -557,18 +427,17 @@ async function exibirModalResultado() {
     
     const htmlModal = `
         <div class="modal-resultados" id="modal-pos-jogo">
-            <h2>🏁 RESULTADO DA PARTIDA</h2>
-            <div style="font-size: 48px; margin: 10px 0;">${emoji}</div>
-            <div style="font-size: 28px; font-weight: bold;">${posFinal}º lugar</div>
-            <hr style="border-color: #2c3e50; margin: 15px 0;">
-            <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
+            <h2>🏁 RESULTADO</h2>
+            <div style="font-size:48px;margin:10px 0;">${emoji}</div>
+            <div style="font-size:28px;font-weight:bold;">${posFinal}º lugar</div>
+            <hr style="border-color:#2c3e50;margin:15px 0;">
+            <div style="font-size:24px;font-weight:bold;">⭐ ${pontos} pts</div>
             <div>✅ Acertos: ${acertos}/20</div>
-            <div>⏱️ Tempo médio: ${tempoMedio.toFixed(1)} s/pergunta</div>
-            <div style="margin-top: 20px;">
+            <div>⏱️ Tempo médio: ${tempoMedio.toFixed(1)}s</div>
+            <div style="margin-top:20px;">
                 <button class="fechar" id="btn-fechar-modal">Fechar</button>
                 ${appState.data?.status === 'em_andamento' && Date.now() < (appState.data?.fim || 0) ? 
-                    '<button class="jogar-novamente" id="btn-jogar-novamente" style="background: #27ae60;">🔄 Tentar melhorar</button>' : 
-                    ''}
+                    '<button class="jogar-novamente" id="btn-jogar-novamente" style="background:#27ae60;">🔄 Tentar melhorar</button>' : ''}
             </div>
         </div>
     `;
@@ -587,14 +456,13 @@ async function exibirModalResultado() {
     });
 }
 
-// ========== BUSCAR POSIÇÃO DO ALUNO ==========
+// ========== BUSCAR POSIÇÃO ==========
 async function buscarPosicaoAluno() {
     try {
         const data = appState.data;
         if (!data) return 0;
         
-        const faseAtual = data.fase;
-        const snap = await getOnce(resultadosRef(faseAtual));
+        const snap = await getOnce(resultadosRef(data.fase));
         const resultados = snap.val() || {};
         
         let lista = [];
@@ -606,59 +474,8 @@ async function buscarPosicaoAluno() {
         }
         
         lista.sort((a, b) => b.pontos - a.pontos);
-        const pos = lista.findIndex(p => p.id === appState.alunoId) + 1;
-        return pos;
+        return lista.findIndex(p => p.id === appState.alunoId) + 1;
     } catch (e) {
-        console.warn('Erro ao buscar posição:', e);
         return 0;
-    }
-}
-
-// ========== EXIBIR RESULTADO FINAL DA FASE ==========
-async function exibirResultadoFinal() {
-    const data = appState.data;
-    if (!data) return;
-    
-    const faseAtual = data.fase;
-    const vagas = VAGAS_POR_FASE[faseAtual] || 30;
-    
-    try {
-        const snap = await getOnce(resultadosRef(faseAtual));
-        const resultados = snap.val() || {};
-        
-        let lista = [];
-        for (const [id, partidas] of Object.entries(resultados)) {
-            if (partidas?.length) {
-                const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
-                lista.push({ id, pontos: melhor.pontos });
-            }
-        }
-        lista.sort((a, b) => b.pontos - a.pontos);
-        
-        const pos = lista.findIndex(p => p.id === appState.alunoId) + 1;
-        const classificado = pos > 0 && pos <= vagas;
-        
-        let modalHtml = `
-            <div class="modal-resultados ${classificado ? 'modal-classificado' : 'modal-eliminado'}" id="modal-fim-tempo">
-                <h2>${classificado ? '✅ PARABÉNS! VOCÊ CLASSIFICOU!' : '❌ VOCÊ FOI ELIMINADO'}</h2>
-                <div style="font-size: 48px; margin: 15px 0;">${classificado ? '🏆' : '😢'}</div>
-                <div>Sua posição final: <strong>${pos}º lugar</strong></div>
-                <div>${classificado ? `Classificado para a Fase ${faseAtual + 1}` : 'Continue treinando para a próxima competição!'}</div>
-                <div class="dica">${classificado ? 'Prepare-se para a próxima fase!' : 'Continue treinando e tente novamente na próxima competição.'}</div>
-                <button class="fechar" id="btn-fechar-modal-fim">Voltar ao Menu</button>
-            </div>
-        `;
-        
-        const modalExistente = document.getElementById('modal-fim-tempo');
-        if (modalExistente) modalExistente.remove();
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        
-        document.getElementById('btn-fechar-modal-fim')?.addEventListener('click', () => {
-            document.getElementById('modal-fim-tempo')?.remove();
-            location.reload();
-        });
-        
-    } catch (e) {
-        console.warn('Erro ao exibir resultado final:', e);
     }
 }
