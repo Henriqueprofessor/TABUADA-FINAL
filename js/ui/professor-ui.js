@@ -1,6 +1,6 @@
 // ============================================================
 // ARQUIVO: js/ui/professor-ui.js
-// DESCRIÇÃO: Interface do Professor com todos os controles
+// DESCRIÇÃO: Painel do Professor - COM CONTROLE OFFLINE
 // ============================================================
 
 import { appState } from '../models/state.js';
@@ -13,7 +13,8 @@ import {
     removerTurma,
     salvarIntervaloIndividual,
     salvarIntervaloEquipes,
-    listenToOnline
+    listenToOnline,
+    getOnce
 } from '../services/firebase-service.js';
 import { renderRankingIndividual, renderRankingTurmas, renderRankingGeral } from '../ranking/ranking.js';
 import { toast, updateLastSyncTime, escapeHtml } from '../utils/helpers.js';
@@ -26,65 +27,180 @@ import { syncService } from '../services/sync-service.js';
 import { CONFIG_PADRAO } from '../config/firebase-config.js';
 
 export function initProfessorUI() {
-    // Esconder outras telas, mostrar painel professor
     document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
     document.getElementById('painel-professor').classList.remove('hidden');
     document.getElementById('online-stats').classList.remove('hidden');
     
-    // Registrar observador do estado
     appState.subscribe((data) => {
         if (appState.userType === 'professor') {
             atualizarUIProfessor(data);
         }
     });
     
-    // Configurar eventos dos botões
     configurarEventosProfessor();
     
-    // Carregar turmas
     carregarTurmas().then(turmas => {
         renderListaTurmas(turmas);
     });
     
-    // Iniciar listener de online
     listenToOnline((data) => {
         atualizarOnlineStats(data);
     });
     
-    // Configurar switches de configurações
     configurarSwitchesConfiguracoes();
-    
-    // Carregar configurações
     carregarConfiguracoes();
 }
 
-// ========== ATUALIZAR UI DO PROFESSOR ==========
+// ============================================================
+// CARREGAR CONFIGURAÇÕES (INCLUINDO OFFLINE)
+// ============================================================
+async function carregarConfiguracoes() {
+    const config = appState.configuracoes || CONFIG_PADRAO;
+    
+    // Efeitos Visuais
+    setSwitch('cfg-confetes', config.confetes);
+    setSwitch('cfg-notificacoes', config.notificacoes);
+    setSwitch('cfg-brilho', config.brilho);
+    
+    // Áudio
+    setSwitch('cfg-sons', config.sons);
+    setSwitch('cfg-sons-celebracao', config.sonsCelebracao);
+    setSwitch('cfg-sons-erro', config.sonsErro);
+    
+    // Gamificação
+    setSwitch('cfg-bonus', config.bonus);
+    setSwitch('cfg-conquistas', config.conquistas);
+    
+    // Acessibilidade
+    setSwitch('cfg-gamepad', config.gamepad);
+    
+    // ============================================================
+    // OFFLINE - CARREGAR CONFIGURAÇÃO
+    // ============================================================
+    try {
+        const snap = await db.ref('copaV2/configuracoes/syncOffline').once('value');
+        const ativo = snap.val() !== null ? snap.val() : true;
+        setSwitch('cfg-sync-offline', ativo);
+        
+        // Aplicar a configuração ao syncService
+        if (syncService) {
+            syncService.updateConfig({ syncOffline: ativo });
+        }
+    } catch (e) {
+        console.warn('Erro ao carregar configuração offline:', e);
+    }
+}
+
+function setSwitch(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.checked = value;
+}
+
+// ============================================================
+// CONFIGURAR SWITCHES
+// ============================================================
+function configurarSwitchesConfiguracoes() {
+    // ============================================================
+    // SWITCH OFFLINE - CONECTADO AO syncService
+    // ============================================================
+    document.getElementById('cfg-sync-offline')?.addEventListener('change', async function() {
+        const ativo = this.checked;
+        try {
+            // Salvar no Firebase
+            await db.ref('copaV2/configuracoes/syncOffline').set(ativo);
+            
+            // Aplicar ao syncService
+            if (syncService) {
+                syncService.updateConfig({ syncOffline: ativo });
+            }
+            
+            toast(ativo ? '✅ Sincronização offline ativada!' : '⏸️ Sincronização offline desativada.');
+        } catch (e) {
+            console.warn('Erro ao salvar configuração offline:', e);
+            toast('❌ Erro ao salvar configuração.');
+            // Reverter o switch
+            this.checked = !ativo;
+        }
+    });
+    
+    // ============================================================
+    // SWITCH CONFETE
+    // ============================================================
+    document.getElementById('cfg-confetes')?.addEventListener('change', function() {
+        if (confettiManager) {
+            confettiManager.updateConfig({ confetes: this.checked });
+        }
+        salvarConfiguracao('confetes', this.checked);
+    });
+    
+    // ============================================================
+    // SWITCH NOTIFICAÇÕES
+    // ============================================================
+    document.getElementById('cfg-notificacoes')?.addEventListener('change', function() {
+        if (notificationManager) {
+            notificationManager.updateConfig({ notificacoes: this.checked });
+        }
+        salvarConfiguracao('notificacoes', this.checked);
+    });
+    
+    // ============================================================
+    // SWITCH SONS
+    // ============================================================
+    document.getElementById('cfg-sons')?.addEventListener('change', function() {
+        if (soundManager) {
+            soundManager.updateConfig({ sons: this.checked });
+        }
+        salvarConfiguracao('sons', this.checked);
+    });
+    
+    // ============================================================
+    // SWITCH CONQUISTAS
+    // ============================================================
+    document.getElementById('cfg-conquistas')?.addEventListener('change', function() {
+        if (achievementManager) {
+            achievementManager.updateConfig({ conquistas: this.checked });
+        }
+        salvarConfiguracao('conquistas', this.checked);
+    });
+    
+    // ============================================================
+    // SWITCH GAMEPAD
+    // ============================================================
+    document.getElementById('cfg-gamepad')?.addEventListener('change', function() {
+        if (gamepadManager) {
+            gamepadManager.updateConfig({ gamepad: this.checked });
+        }
+        salvarConfiguracao('gamepad', this.checked);
+    });
+}
+
+async function salvarConfiguracao(key, value) {
+    try {
+        await db.ref(`copaV2/configuracoes/${key}`).set(value);
+    } catch (e) {
+        console.warn('Erro ao salvar configuração:', e);
+    }
+}
+
+// ============================================================
+// ATUALIZAR UI
+// ============================================================
 function atualizarUIProfessor(data) {
     if (!data) return;
     
-    // Atualizar informações da fase
     document.getElementById('fase-atual-titulo').innerText = data.fase;
-    document.getElementById('fase-progresso').innerText = `${data.fase}/${5}`;
+    document.getElementById('fase-progresso').innerText = `${data.fase}/5`;
     document.getElementById('prof-fase-info').innerText = `${data.fase}/5`;
     
-    // Atualizar modalidade
     const modalidadeNome = appState.getModalidadeNome();
     document.getElementById('modalidade-titulo').innerText = modalidadeNome;
     
-    // Atualizar timer
     atualizarTimerProfessor(data);
-    
-    // Atualizar botões
     atualizarBotoesProfessor(data);
-    
-    // Atualizar rankings (se as abas estiverem visíveis)
     atualizarRankingsProfessor();
-    
-    // Atualizar lista de alunos
     renderListaAlunosGerenciar();
 }
 
-// ========== ATUALIZAR TIMER ==========
 function atualizarTimerProfessor(data) {
     const timerDisplay = document.getElementById('timer-fase');
     if (!timerDisplay) return;
@@ -108,7 +224,6 @@ function atualizarTimerProfessor(data) {
     }
 }
 
-// ========== ATUALIZAR BOTÕES ==========
 function atualizarBotoesProfessor(data) {
     const btnPararContinuar = document.getElementById('btn-continuar-parar-fase');
     if (!btnPararContinuar) return;
@@ -129,29 +244,24 @@ function atualizarBotoesProfessor(data) {
     }
 }
 
-// ========== ATUALIZAR RANKINGS ==========
 function atualizarRankingsProfessor() {
-    // Ranking geral
     const tabRankingGeral = document.getElementById('tab-ranking-geral');
     if (tabRankingGeral && !tabRankingGeral.classList.contains('hidden')) {
         renderRankingGeral('ranking-geral-container');
     }
     
-    // Ranking por fase
     const tabRankingFase = document.getElementById('tab-ranking-fase');
     if (tabRankingFase && !tabRankingFase.classList.contains('hidden')) {
         const faseSelecionada = document.getElementById('select-fase-ranking')?.value || appState.fase;
         renderRankingIndividual(parseInt(faseSelecionada), 'ranking-parcial', true);
     }
     
-    // Ranking por turmas
     const tabRankingTurmas = document.getElementById('tab-ranking-turmas');
     if (tabRankingTurmas && !tabRankingTurmas.classList.contains('hidden')) {
         renderRankingTurmas('ranking-turmas-container');
     }
 }
 
-// ========== ATUALIZAR ONLINE STATS ==========
 function atualizarOnlineStats(data) {
     let totalAlunos = 0;
     let totalTorcida = 0;
@@ -167,7 +277,6 @@ function atualizarOnlineStats(data) {
     document.getElementById('jogadores-online').innerText = totalOnline;
     document.getElementById('prof-online-count').innerText = totalOnline;
     
-    // Lista de participantes
     const listaDiv = document.getElementById('lista-participantes');
     if (!listaDiv) return;
     
@@ -204,7 +313,9 @@ function atualizarOnlineStats(data) {
     listaDiv.innerHTML = html;
 }
 
-// ========== CONFIGURAR EVENTOS ==========
+// ============================================================
+// CONFIGURAR EVENTOS
+// ============================================================
 function configurarEventosProfessor() {
     // Abas
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -217,7 +328,6 @@ function configurarEventosProfessor() {
             const tabContent = document.getElementById(`tab-${tab}`);
             if (tabContent) tabContent.classList.remove('hidden');
             
-            // Atualizar conteúdo da aba
             if (tab === 'ranking-geral') {
                 renderRankingGeral('ranking-geral-container');
             } else if (tab === 'ranking-fase') {
@@ -236,7 +346,6 @@ function configurarEventosProfessor() {
         });
     });
     
-    // Controle da Fase
     document.getElementById('btn-iniciar-fase')?.addEventListener('click', () => {
         const duracao = parseInt(document.getElementById('input-tempo-fase')?.value) || 12;
         const fim = Date.now() + duracao * 60000;
@@ -262,7 +371,6 @@ function configurarEventosProfessor() {
         }
     });
     
-    // Modalidade
     document.getElementById('btn-aplicar-modalidade')?.addEventListener('click', async () => {
         const novaModalidade = document.getElementById('select-modalidade')?.value;
         if (!novaModalidade) return;
@@ -282,20 +390,16 @@ function configurarEventosProfessor() {
         }
     });
     
-    // Tempo
     document.getElementById('btn-salvar-tempo')?.addEventListener('click', () => {
         const t = parseInt(document.getElementById('input-tempo-fase')?.value);
         if (t > 0) updateCopa({ tempoFase: t });
     });
     
-    // Sincronização
     document.getElementById('btn-sync-prof')?.addEventListener('click', updateLastSyncTime);
     document.getElementById('btn-sincronizar-global')?.addEventListener('click', updateLastSyncTime);
     
-    // Voltar
     document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
     
-    // Gerenciar turmas
     document.getElementById('btn-adicionar-turma')?.addEventListener('click', async () => {
         const novaTurma = prompt('Digite o nome da nova turma:');
         if (novaTurma && novaTurma.trim()) {
@@ -305,10 +409,8 @@ function configurarEventosProfessor() {
         }
     });
     
-    // Atualizar lista de alunos
     document.getElementById('btn-atualizar-lista-alunos')?.addEventListener('click', renderListaAlunosGerenciar);
     
-    // Ranking por fase - select
     document.getElementById('select-fase-ranking')?.addEventListener('change', (e) => {
         const fase = parseInt(e.target.value);
         if (!isNaN(fase)) {
@@ -316,7 +418,6 @@ function configurarEventosProfessor() {
         }
     });
     
-    // Intervalos
     document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
         const val = parseInt(document.getElementById('intervalo-individual')?.value);
         if (val >= 1) {
@@ -333,12 +434,10 @@ function configurarEventosProfessor() {
         }
     });
     
-    // Atualizar ranking turmas
     document.getElementById('btn-atualizar-ranking-turmas')?.addEventListener('click', () => {
         renderRankingTurmas('ranking-turmas-container');
     });
     
-    // Auto atualização ranking
     document.getElementById('btn-toggle-auto-ranking')?.addEventListener('click', () => {
         const btn = document.getElementById('btn-toggle-auto-ranking');
         const ativo = btn.innerText.includes('Pausar');
@@ -346,153 +445,60 @@ function configurarEventosProfessor() {
         toast(ativo ? 'Auto atualização pausada' : 'Auto atualização retomada');
     });
     
-    // Salvar configurações
     document.getElementById('btn-salvar-config')?.addEventListener('click', salvarConfiguracoesGerais);
     document.getElementById('btn-restaurar-padrao')?.addEventListener('click', restaurarConfiguracoesPadrao);
 }
 
-// ========== CONFIGURAR SWITCHES DE CONFIGURAÇÕES ==========
-function configurarSwitchesConfiguracoes() {
-    // Os switches serão populados quando as configurações forem carregadas
-}
-
-// ========== CARREGAR CONFIGURAÇÕES ==========
-function carregarConfiguracoes() {
-    const config = appState.configuracoes || CONFIG_PADRAO;
-    
-    // Efeitos Visuais
-    setSwitch('cfg-confetes', config.confetes);
-    setSwitch('cfg-notificacoes', config.notificacoes);
-    setSwitch('cfg-brilho', config.brilho);
-    
-    // Áudio
-    setSwitch('cfg-sons', config.sons);
-    setSwitch('cfg-sons-celebracao', config.sonsCelebracao);
-    setSwitch('cfg-sons-erro', config.sonsErro);
-    
-    // Gamificação
-    setSwitch('cfg-bonus', config.bonus);
-    setSwitch('cfg-conquistas', config.conquistas);
-    
-    // Acessibilidade
-    setSwitch('cfg-gamepad', config.gamepad);
-    
-    // Offline
-    setSwitch('cfg-sync-offline', config.syncOffline);
-}
-
-function setSwitch(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.checked = value;
-}
-
-// ========== SALVAR CONFIGURAÇÕES GERAIS ==========
-async function salvarConfiguracoesGerais() {
-    const config = {
-        // Efeitos Visuais
-        confetes: document.getElementById('cfg-confetes')?.checked || false,
-        notificacoes: document.getElementById('cfg-notificacoes')?.checked || false,
-        brilho: document.getElementById('cfg-brilho')?.checked || false,
-        
-        // Áudio
-        sons: document.getElementById('cfg-sons')?.checked || false,
-        sonsCelebracao: document.getElementById('cfg-sons-celebracao')?.checked || false,
-        sonsErro: document.getElementById('cfg-sons-erro')?.checked || false,
-        
-        // Gamificação
-        bonus: document.getElementById('cfg-bonus')?.checked || false,
-        conquistas: document.getElementById('cfg-conquistas')?.checked || false,
-        
-        // Acessibilidade
-        gamepad: document.getElementById('cfg-gamepad')?.checked || false,
-        
-        // Offline
-        syncOffline: document.getElementById('cfg-sync-offline')?.checked || false
-    };
-    
-    await salvarConfiguracoes(config);
-    toast('✅ Configurações salvas com sucesso!');
-}
-
-// ========== RESTAURAR CONFIGURAÇÕES PADRÃO ==========
-async function restaurarConfiguracoesPadrao() {
-    if (!confirm('⚠️ Restaurar todas as configurações para o padrão?')) return;
-    
-    await salvarConfiguracoes(CONFIG_PADRAO);
-    carregarConfiguracoes();
-    toast('✅ Configurações restauradas para o padrão!');
-}
-
-// ========== PAUSAR FASE ==========
+// ============================================================
+// FUNÇÕES DO PROFESSOR
+// ============================================================
 async function pausarFase() {
     const data = appState.data;
     if (!data || data.status !== 'em_andamento') return;
-    
     const agora = Date.now();
     const tempoRestante = Math.max(0, data.fim - agora);
     await updateCopa({ status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
     toast('⏸️ Fase pausada.');
 }
 
-// ========== CONTINUAR FASE ==========
 async function continuarFase() {
     const data = appState.data;
     if (!data || data.status !== 'pausado') return;
-    
     const tempoRestante = data.tempoRestantePausa || 0;
-    if (tempoRestante <= 0) {
-        toast('⚠️ Tempo esgotado.');
-        return;
-    }
-    
+    if (tempoRestante <= 0) { toast('⚠️ Tempo esgotado.'); return; }
     const novoFim = Date.now() + tempoRestante;
     await updateCopa({ status: 'em_andamento', fim: novoFim, tempoRestantePausa: null });
     toast('▶️ Fase retomada!');
 }
 
-// ========== RESETAR FASE ==========
 async function resetarFase() {
     const faseAtual = appState.fase;
     const { resultadosRef, participantesRef, classificadosRef, resultadosTempRef, removeNode } = await import('../services/firebase-service.js');
-    
     await removeNode(resultadosRef(faseAtual));
     await removeNode(participantesRef(faseAtual));
     await removeNode(resultadosTempRef(faseAtual));
     await removeNode(classificadosRef(faseAtual));
     await updateCopa({ status: 'aguardando', fim: 0, tempoRestantePausa: null });
-    
     toast(`✅ Fase ${faseAtual} resetada!`);
 }
 
-// ========== AVANÇAR FASE ==========
 async function avancarFase() {
     const faseAtual = appState.fase;
     const data = appState.data;
-    
-    if (faseAtual > 5) {
-        toast('🏆 Competição já finalizada!');
-        return;
-    }
-    
+    if (faseAtual > 5) { toast('🏆 Competição já finalizada!'); return; }
     const resultados = data?.resultados?.[faseAtual] || {};
     let lista = [];
-    
     for (const [id, partidas] of Object.entries(resultados)) {
         if (partidas?.length) {
             const melhor = [...partidas].sort((a, b) => b.pontos - a.pontos)[0];
             lista.push({ id, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo });
         }
     }
-    
     lista.sort((a, b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
-    
     const vagas = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 }[faseAtual] || 30;
     const classificadosIds = lista.slice(0, vagas).map(l => l.id);
-    
     const { classificadosRef, participantesRef, set, removeNode, resultadosTempRef } = await import('../services/firebase-service.js');
-    
     await set(classificadosRef(faseAtual), classificadosIds);
-    
     const participantesAtual = data?.participantes?.[faseAtual] || {};
     const participantesProxima = {};
     for (const id of classificadosIds) {
@@ -507,24 +513,19 @@ async function avancarFase() {
             }
         }
     }
-    
     if (Object.keys(participantesProxima).length > 0) {
         await set(participantesRef(faseAtual + 1), participantesProxima);
     }
-    
     await removeNode(resultadosTempRef(faseAtual));
-    
     if (faseAtual === 5) {
         toast('🏆 COMPETIÇÃO FINALIZADA!');
         await updateCopa({ status: 'finalizado', fim: 0, tempoRestantePausa: null });
         return;
     }
-    
     await updateCopa({ fase: faseAtual + 1, status: 'aguardando', fim: 0, tempoRestantePausa: null });
-    toast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados para a fase ${faseAtual + 1}.`);
+    toast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados.`);
 }
 
-// ========== RESETAR COMPETIÇÃO ==========
 async function resetarCompeticao() {
     const modalidade = appState.modalidade || '2-5';
     await setCopa({
@@ -541,21 +542,17 @@ async function resetarCompeticao() {
     setTimeout(() => location.reload(), 1000);
 }
 
-// ========== RENDERIZAR LISTA DE ALUNOS ==========
+// ============================================================
+// LISTA DE ALUNOS
+// ============================================================
 function renderListaAlunosGerenciar() {
     const container = document.getElementById('lista-alunos-gerenciavel');
     if (!container) return;
-    
     const data = appState.data;
     const faseAtual = data?.fase || 1;
     const participantes = data?.participantes?.[faseAtual] || {};
     const ids = Object.keys(participantes);
-    
-    if (ids.length === 0) {
-        container.innerHTML = '<p>📭 Nenhum aluno cadastrado.</p>';
-        return;
-    }
-    
+    if (ids.length === 0) { container.innerHTML = '<p>📭 Nenhum aluno cadastrado.</p>'; return; }
     let html = '';
     for (const id of ids) {
         const aluno = participantes[id];
@@ -572,10 +569,7 @@ function renderListaAlunosGerenciar() {
             </div>
         `;
     }
-    
     container.innerHTML = html;
-    
-    // Eventos de editar e excluir
     container.querySelectorAll('.btn-editar-aluno').forEach(btn => {
         btn.addEventListener('click', async () => {
             const id = btn.getAttribute('data-id');
@@ -584,20 +578,17 @@ function renderListaAlunosGerenciar() {
                 const novaTurma = prompt('Nova turma:', btn.getAttribute('data-turma'));
                 if (novaTurma) {
                     const { update } = await import('../services/firebase-service.js');
-                    const { participantesRef } = await import('../services/firebase-service.js');
                     await update(participantesRef(faseAtual), { [id]: { nome: novoNome, turma: novaTurma } });
                     renderListaAlunosGerenciar();
                 }
             }
         });
     });
-    
     container.querySelectorAll('.btn-excluir-aluno').forEach(btn => {
         btn.addEventListener('click', async () => {
             const id = btn.getAttribute('data-id');
             if (confirm(`Excluir aluno?`)) {
                 const { removeNode } = await import('../services/firebase-service.js');
-                const { participantesRef, resultadosRef, resultadosTempRef } = await import('../services/firebase-service.js');
                 await removeNode(participantesRef(faseAtual) + '/' + id);
                 await removeNode(resultadosRef(faseAtual) + '/' + id);
                 await removeNode(resultadosTempRef(faseAtual) + '/' + id);
@@ -607,16 +598,16 @@ function renderListaAlunosGerenciar() {
     });
 }
 
-// ========== RENDERIZAR LISTA DE TURMAS ==========
+// ============================================================
+// LISTA DE TURMAS
+// ============================================================
 function renderListaTurmas(turmas) {
     const container = document.getElementById('lista-turmas-gerenciavel');
     if (!container) return;
-    
     if (!turmas || turmas.length === 0) {
-        container.innerHTML = '<p>📭 Nenhuma turma cadastrada. Adicione usando o botão acima.</p>';
+        container.innerHTML = '<p>📭 Nenhuma turma cadastrada.</p>';
         return;
     }
-    
     let html = '<ul style="list-style: none; padding: 0;">';
     turmas.forEach(turma => {
         html += `
@@ -631,8 +622,6 @@ function renderListaTurmas(turmas) {
     });
     html += '</ul>';
     container.innerHTML = html;
-    
-    // Eventos
     container.querySelectorAll('.btn-editar-turma').forEach(btn => {
         btn.addEventListener('click', async () => {
             const turmaAntiga = btn.getAttribute('data-turma');
@@ -643,14 +632,13 @@ function renderListaTurmas(turmas) {
                 if (index !== -1) {
                     turmas[index] = novaTurma;
                     const { set } = await import('../services/firebase-service.js');
-                    await set(ref(db, 'copaV2/turmas'), turmas);
+                    await set(db.ref('copaV2/turmas'), turmas);
                     toast(`Turma alterada de ${turmaAntiga} para ${novaTurma}`);
                     renderListaTurmas(turmas);
                 }
             }
         });
     });
-    
     container.querySelectorAll('.btn-excluir-turma').forEach(btn => {
         btn.addEventListener('click', async () => {
             const turma = btn.getAttribute('data-turma');
@@ -663,15 +651,37 @@ function renderListaTurmas(turmas) {
     });
 }
 
-// ========== POPULAR SELECT DE FASES ==========
 function popularSelectFases() {
     const select = document.getElementById('select-fase-ranking');
     if (!select) return;
-    
     let options = '';
     for (let i = 1; i <= 5; i++) {
         options += `<option value="${i}">Fase ${i}</option>`;
     }
     select.innerHTML = options;
     select.value = appState.faseSelecionadaProf || appState.fase;
+}
+
+async function salvarConfiguracoesGerais() {
+    const config = {
+        confetes: document.getElementById('cfg-confetes')?.checked || false,
+        notificacoes: document.getElementById('cfg-notificacoes')?.checked || false,
+        brilho: document.getElementById('cfg-brilho')?.checked || false,
+        sons: document.getElementById('cfg-sons')?.checked || false,
+        sonsCelebracao: document.getElementById('cfg-sons-celebracao')?.checked || false,
+        sonsErro: document.getElementById('cfg-sons-erro')?.checked || false,
+        bonus: document.getElementById('cfg-bonus')?.checked || false,
+        conquistas: document.getElementById('cfg-conquistas')?.checked || false,
+        gamepad: document.getElementById('cfg-gamepad')?.checked || false,
+        syncOffline: document.getElementById('cfg-sync-offline')?.checked || false
+    };
+    await salvarConfiguracoes(config);
+    toast('✅ Configurações salvas!');
+}
+
+async function restaurarConfiguracoesPadrao() {
+    if (!confirm('⚠️ Restaurar configurações padrão?')) return;
+    await salvarConfiguracoes(CONFIG_PADRAO);
+    carregarConfiguracoes();
+    toast('✅ Configurações restauradas!');
 }
