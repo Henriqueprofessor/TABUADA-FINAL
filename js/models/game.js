@@ -1,13 +1,15 @@
 // ============================================================
 // ARQUIVO: js/models/game.js
-// DESCRIÇÃO: Lógica do Jogo - VERSÃO ESTÁVEL
+// DESCRIÇÃO: Lógica do Jogo (Perguntas, Partidas, Pontuação)
 // ============================================================
 
 import { MODALIDADE_CONFIG, TOTAL_PERGUNTAS, TEMPO_PERGUNTA } from '../utils/constants.js';
 import { shuffleArray, randInt } from '../utils/helpers.js';
 
+// ========== CACHE DE PERGUNTAS ==========
 const poolCache = {};
 
+// ========== GERAR POOL DE PERGUNTAS ==========
 function gerarPool(modalidade) {
     const config = MODALIDADE_CONFIG[modalidade];
     if (!config) return [];
@@ -26,6 +28,7 @@ function gerarPool(modalidade) {
             if (x >= 0 && !opts.includes(x)) opts.push(x);
         }
         
+        // Embaralha as opções para distribuição aleatória da correta
         shuffleArray(opts);
         pool.push({ a, b, opts });
     }
@@ -33,6 +36,7 @@ function gerarPool(modalidade) {
     return pool;
 }
 
+// ========== OBTER PERGUNTAS PARA UMA PARTIDA ==========
 export function obterPerguntas(modalidade) {
     if (!poolCache[modalidade]) {
         poolCache[modalidade] = gerarPool(modalidade);
@@ -44,6 +48,7 @@ export function obterPerguntas(modalidade) {
     return shuffled.slice(0, TOTAL_PERGUNTAS);
 }
 
+// ========== INICIAR PARTIDA ==========
 export function iniciarPartida(perguntas) {
     return {
         perguntas: perguntas || [],
@@ -60,6 +65,7 @@ export function iniciarPartida(perguntas) {
     };
 }
 
+// ========== PROCESSAR RESPOSTA ==========
 export function processarResposta(partida, opcaoSelecionada) {
     const p = partida.perguntas[partida.indice];
     if (!p) return null;
@@ -76,7 +82,8 @@ export function processarResposta(partida, opcaoSelecionada) {
         if (partida.sequenciaAcertos > partida.maiorSequencia) {
             partida.maiorSequencia = partida.sequenciaAcertos;
         }
-        pontosGanhos = Math.round(100 * (Math.max(0, partida.tempoRestantePergunta) / TEMPO_PERGUNTA));
+        // Pontuação baseada no tempo restante
+        pontosGanhos = Math.round(100 * (partida.tempoRestantePergunta / TEMPO_PERGUNTA));
         partida.pontos += pontosGanhos;
     } else {
         partida.erros++;
@@ -95,8 +102,8 @@ export function processarResposta(partida, opcaoSelecionada) {
     
     partida.indice++;
     
-    const finalizada = partida.indice >= TOTAL_PERGUNTAS;
-    if (finalizada) {
+    // Verifica se a partida terminou
+    if (partida.indice >= TOTAL_PERGUNTAS) {
         partida.finalizada = true;
     }
     
@@ -107,12 +114,13 @@ export function processarResposta(partida, opcaoSelecionada) {
         tempoGasto,
         progresso: partida.indice,
         total: TOTAL_PERGUNTAS,
-        finalizada: finalizada,
+        finalizada: partida.finalizada,
         sequenciaAtual: partida.sequenciaAcertos,
         maiorSequencia: partida.maiorSequencia
     };
 }
 
+// ========== OBTER PRÓXIMA PERGUNTA ==========
 export function getProximaPergunta(partida) {
     if (partida.finalizada || partida.indice >= TOTAL_PERGUNTAS) {
         return null;
@@ -120,6 +128,7 @@ export function getProximaPergunta(partida) {
     return partida.perguntas[partida.indice];
 }
 
+// ========== CALCULAR ESTATÍSTICAS DA PARTIDA ==========
 export function calcularEstatisticas(partida) {
     const total = partida.perguntas.length;
     const respondidas = partida.respostas.length;
@@ -138,6 +147,7 @@ export function calcularEstatisticas(partida) {
     };
 }
 
+// ========== CRIAR OBJETO DE PARTIDA PARA SALVAR ==========
 export function criarObjetoPartida(partida) {
     const stats = calcularEstatisticas(partida);
     return {
@@ -153,6 +163,7 @@ export function criarObjetoPartida(partida) {
     };
 }
 
+// ========== VERIFICAR NOTIFICAÇÕES ==========
 export function verificarNotificacoes(partida, ultimoResultado) {
     if (!ultimoResultado) return [];
     
@@ -160,14 +171,17 @@ export function verificarNotificacoes(partida, ultimoResultado) {
     const seq = partida.sequenciaAcertos;
     const erros = partida.erros;
     
+    // Notificações de sequência de acertos
     if (seq === 5) notificacoes.push('seq5');
     else if (seq === 10) notificacoes.push('seq10');
     else if (seq === 15) notificacoes.push('seq15');
     else if (seq === 20) notificacoes.push('seq20');
     
+    // Notificações de erros (incentivo)
     if (erros === 3 && !ultimoResultado.acertou) notificacoes.push('erro3');
     else if (erros === 5 && !ultimoResultado.acertou) notificacoes.push('erro5');
     
+    // Notificações de velocidade
     if (ultimoResultado.acertou) {
         if (ultimoResultado.tempoGasto <= 1.0) notificacoes.push('relampago');
         else if (ultimoResultado.tempoGasto <= 1.5) notificacoes.push('rapido');
@@ -176,6 +190,7 @@ export function verificarNotificacoes(partida, ultimoResultado) {
     return notificacoes;
 }
 
+// ========== VERIFICAR RECORDES ==========
 export function verificarRecordes(partida, resultadosAnteriores) {
     if (!resultadosAnteriores || resultadosAnteriores.length === 0) {
         return { recordeFase: true, recordeGeral: true };
@@ -190,6 +205,7 @@ export function verificarRecordes(partida, resultadosAnteriores) {
     };
 }
 
+// ========== EXPORTAR PADRÃO ==========
 export default {
     obterPerguntas,
     iniciarPartida,
