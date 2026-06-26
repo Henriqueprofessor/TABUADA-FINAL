@@ -723,7 +723,7 @@
         </div>
         <div style="margin: 15px 0;">
             <p>Modalidade: <strong id="torcida-modalidade">--</strong> | <span id="torcida-fase-info" class="fase-info"></span> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;">--:--</strong></p>
-            <p><small>Individual: atualização a cada <span id="torcida-individual-intervalo">4</span>s | Equipes: atualização a cada <span id="torcida-equipes-intervalo">60</span>s | Última atualização: <span id="torcida-last-update">--</span></small></p>
+            <p><small>Individual: atualização a cada <span id="torcida-individual-intervalo">5</span>s | Última atualização: <span id="torcida-last-update">--</span></small></p>
         </div>
         <div id="ranking-torcida-container" class="status-box">Carregando ranking ao vivo...</div>
         <div id="podium-torcida-container" class="status-box hidden"></div>
@@ -1449,10 +1449,7 @@ function initProfessorUI() {
     document.getElementById('painel-professor').classList.remove('hidden');
     document.getElementById('online-stats').classList.remove('hidden');
     
-    // Configurar listeners
     configurarEventosProfessor();
-    
-    // Carregar turmas
     carregarTurmas();
 }
 
@@ -1467,14 +1464,14 @@ async function carregarTurmas() {
 }
 
 function configurarEventosProfessor() {
-    document.getElementById('btn-iniciar-fase').addEventListener('click', () => {
+    document.getElementById('btn-iniciar-fase')?.addEventListener('click', () => {
         const duracao = parseInt(document.getElementById('input-tempo-fase')?.value) || 12;
         const fim = Date.now() + duracao * 60000;
         copaRef.update({ status: 'em_andamento', fim, tempoRestantePausa: null });
         toast('▶️ Fase iniciada!');
     });
     
-    document.getElementById('btn-voltar-menu-prof').addEventListener('click', () => {
+    document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => {
         location.reload();
     });
 }
@@ -1509,7 +1506,6 @@ function configurarMenu() {
             return;
         }
         
-        // Modal de turma simplificado
         const modalDiv = document.createElement('div');
         modalDiv.className = 'modal-turma';
         modalDiv.innerHTML = `
@@ -1531,13 +1527,11 @@ function configurarMenu() {
                 modalDiv.remove();
                 const alunoId = btoa(nome.trim().toLowerCase() + '|' + turma).slice(0, 16);
                 
-                // Verificar classificação
                 if (data.fase > 1 && !appState.isClassificado(data.fase, alunoId)) {
                     alert('❌ Você NÃO foi classificado para esta fase.');
                     return;
                 }
                 
-                // Salvar participante
                 participantesRef(data.fase).child(alunoId).set({ nome: nome.trim(), turma });
                 
                 appState.setUserType('aluno');
@@ -1551,18 +1545,161 @@ function configurarMenu() {
     });
 
     document.getElementById('btn-projecao')?.addEventListener('click', () => {
-    // ========== MODO TORCIDA ==========
-    appState.setUserType('projecao');
-    document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-    document.getElementById('tela-torcida').classList.remove('hidden');
-    document.getElementById('online-stats').classList.remove('hidden');
-    toast('📺 Bem-vindo à Torcida!');
-    
-    // Iniciar atualização da torcida
-    iniciarTorcida();
-});
+        appState.setUserType('projecao');
+        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.getElementById('tela-torcida').classList.remove('hidden');
+        document.getElementById('online-stats').classList.remove('hidden');
+        toast('📺 Bem-vindo à Torcida!');
+        iniciarTorcida();
     });
 }
+
+// ============================================================
+// ========== MODO TORCIDA ==========
+// ============================================================
+
+let intervaloTorcida = null;
+
+function iniciarTorcida() {
+    console.log('📺 Iniciando Torcida...');
+    
+    const select = document.getElementById('select-fase-torcida');
+    if (select) {
+        let options = '';
+        for (let i = 1; i <= 5; i++) {
+            options += `<option value="${i}">Fase ${i}</option>`;
+        }
+        select.innerHTML = options;
+        select.value = appState.fase || 1;
+    }
+    
+    document.getElementById('torcida-modalidade').innerText = appState.getModalidadeNome();
+    atualizarRankingTorcida();
+    
+    if (intervaloTorcida) clearInterval(intervaloTorcida);
+    intervaloTorcida = setInterval(() => {
+        atualizarRankingTorcida();
+    }, 5000);
+}
+
+async function atualizarRankingTorcida() {
+    const data = appState.data;
+    if (!data) return;
+    
+    const fase = parseInt(document.getElementById('select-fase-torcida')?.value) || data.fase;
+    const container = document.getElementById('ranking-torcida-container');
+    if (!container) return;
+    
+    try {
+        const snap = await resultadosRef(fase).once('value');
+        const resultados = snap.val() || {};
+        const participantes = (await participantesRef(fase).once('value')).val() || {};
+        
+        let lista = [];
+        for (const [id, partidas] of Object.entries(resultados)) {
+            if (partidas?.length) {
+                const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+                const nome = participantes[id]?.nome || 'Anônimo';
+                const turma = participantes[id]?.turma || '?';
+                lista.push({ id, nome, turma, pontos: melhor.pontos, acertos: melhor.acertos });
+            }
+        }
+        
+        lista.sort((a, b) => b.pontos - a.pontos);
+        atualizarTimerTorcida(data);
+        
+        document.getElementById('torcida-fase-info').innerText = `${fase}/5`;
+        document.getElementById('fase-torcida-info').innerText = fase === data.fase ? '(Fase atual)' : '(Fase anterior)';
+        
+        let html = `<table class="ranking-table"><thead><tr>
+            <th>Pos</th>
+            <th>Nome</th>
+            <th>Turma</th>
+            <th>Pontuação</th>
+            <th>Acertos</th>
+        </tr></thead><tbody>`;
+        
+        if (lista.length === 0) {
+            html += `<tr><td colspan="5" style="text-align:center; padding:20px;">⏳ Nenhum resultado registrado ainda.</td></tr>`;
+        } else {
+            lista.slice(0, 30).forEach((j, idx) => {
+                const medalha = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}º`;
+                html += `<tr>
+                    <td><strong>${medalha}</strong></td>
+                    <td>${escapeHtml(j.nome)}</td>
+                    <td>${escapeHtml(j.turma)}</td>
+                    <td><strong>${j.pontos}</strong></td>
+                    <td>${j.acertos}/20</td>
+                </tr>`;
+            });
+        }
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+        document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
+        
+    } catch (e) {
+        console.warn('Erro ao atualizar ranking da torcida:', e);
+        container.innerHTML = '<p style="color:#e74c3c;">❌ Erro ao carregar ranking. Tente novamente.</p>';
+    }
+}
+
+function atualizarTimerTorcida(data) {
+    const timerDisplay = document.getElementById('torcida-timer');
+    if (!timerDisplay) return;
+    
+    if (data.status === 'em_andamento') {
+        const restante = Math.max(0, data.fim - Date.now());
+        const min = Math.floor(restante / 60000);
+        const sec = Math.floor((restante % 60000) / 1000);
+        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+    } else if (data.status === 'pausado') {
+        const tempoPausado = data.tempoRestantePausa || 0;
+        const min = Math.floor(tempoPausado / 60000);
+        const sec = Math.floor((tempoPausado % 60000) / 1000);
+        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+    } else {
+        timerDisplay.innerText = data.status === 'finalizado' ? '🏁 FIM' : '⏸️ PAUSADO';
+    }
+}
+
+// ========== EVENTOS DA TORCIDA ==========
+
+document.getElementById('btn-sair-torcida')?.addEventListener('click', () => {
+    if (intervaloTorcida) {
+        clearInterval(intervaloTorcida);
+        intervaloTorcida = null;
+    }
+    location.reload();
+});
+
+document.getElementById('btn-sync-torcida')?.addEventListener('click', () => {
+    toast('🔄 Sincronizando...');
+    atualizarRankingTorcida();
+});
+
+document.getElementById('select-fase-torcida')?.addEventListener('change', () => {
+    atualizarRankingTorcida();
+});
+
+document.getElementById('btn-modo-individual')?.addEventListener('click', () => {
+    document.getElementById('btn-modo-individual').classList.add('ativo');
+    document.getElementById('btn-modo-equipes').classList.remove('ativo');
+    document.querySelector('.fase-selector').style.display = 'block';
+    atualizarRankingTorcida();
+});
+
+document.getElementById('btn-modo-equipes')?.addEventListener('click', () => {
+    document.getElementById('btn-modo-equipes').classList.add('ativo');
+    document.getElementById('btn-modo-individual').classList.remove('ativo');
+    document.querySelector('.fase-selector').style.display = 'none';
+    toast('👥 Ranking por equipes em breve!');
+});
+
+console.log('✅ Módulo da Torcida carregado!');
+// ============================================================
+// ========== FIM MODO TORCIDA ==========
+// ============================================================
 
 // ========== INICIALIZAR ==========
 console.log('🏆 Copa Tabuada CEIB 2026 - Iniciando...');
@@ -1579,16 +1716,14 @@ if (appState.userType === 'aluno' && appState.alunoId) {
 
 console.log('🏆 Copa Tabuada CEIB 2026 - Carregado com sucesso!');
 
-// EXPORTA VARIÁVEIS GLOBAIS
+// ========== EXPORTA VARIÁVEIS GLOBAIS ==========
 window.appState = appState;
 window.db = db;
 window.copaRef = copaRef;
-console.log('✅ Variáveis globais exportadas!');
-
-// Expor responder globalmente
 window.responder = window.responder || function(idx) {
     console.log('responder chamado globalmente com idx:', idx);
 };
+console.log('✅ Variáveis globais exportadas!');
 
 // Verificar partidas offline
 setTimeout(() => {
@@ -1602,129 +1737,7 @@ setTimeout(() => {
         }
     } catch(e) {}
 }, 3000);
-// ========== FUNÇÕES DA TORCIDA ==========
-let intervaloTorcida = null;
 
-function iniciarTorcida() {
-    // Popular select de fases
-    const select = document.getElementById('select-fase-torcida');
-    if (select) {
-        let options = '';
-        for (let i = 1; i <= 5; i++) {
-            options += `<option value="${i}">Fase ${i}</option>`;
-        }
-        select.innerHTML = options;
-        select.value = appState.fase || 1;
-    }
-    
-    // Atualizar ranking imediatamente
-    atualizarRankingTorcida();
-    
-    // Atualizar a cada 5 segundos
-    if (intervaloTorcida) clearInterval(intervaloTorcida);
-    intervaloTorcida = setInterval(() => {
-        atualizarRankingTorcida();
-    }, 5000);
-}
-
-async function atualizarRankingTorcida() {
-    const data = appState.data;
-    if (!data) return;
-    
-    const fase = parseInt(document.getElementById('select-fase-torcida')?.value) || data.fase;
-    const container = document.getElementById('ranking-torcida-container');
-    if (!container) return;
-    
-    try {
-        // Buscar resultados da fase
-        const snap = await resultadosRef(fase).once('value');
-        const resultados = snap.val() || {};
-        const participantes = (await participantesRef(fase).once('value')).val() || {};
-        
-        // Processar ranking
-        let lista = [];
-        for (const [id, partidas] of Object.entries(resultados)) {
-            if (partidas?.length) {
-                const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
-                const nome = participantes[id]?.nome || 'Anônimo';
-                const turma = participantes[id]?.turma || '?';
-                lista.push({ id, nome, turma, pontos: melhor.pontos, acertos: melhor.acertos });
-            }
-        }
-        
-        lista.sort((a, b) => b.pontos - a.pontos);
-        
-        // Atualizar timer
-        atualizarTimerTorcida(data);
-        
-        // Gerar HTML
-        let html = `<table class="ranking-table"><thead><tr>
-            <th>Pos</th>
-            <th>Nome</th>
-            <th>Turma</th>
-            <th>Pontuação</th>
-            <th>Acertos</th>
-        </tr></thead><tbody>`;
-        
-        if (lista.length === 0) {
-            html += `<tr><td colspan="5" style="text-align:center;">⏳ Nenhum resultado ainda.</td></tr>`;
-        } else {
-            lista.slice(0, 20).forEach((j, idx) => {
-                html += `<tr>
-                    <td>${idx + 1}º</td>
-                    <td>${escapeHtml(j.nome)}</td>
-                    <td>${escapeHtml(j.turma)}</td>
-                    <td><strong>${j.pontos}</strong></td>
-                    <td>${j.acertos}/20</td>
-                </tr>`;
-            });
-        }
-        
-        html += '</tbody></table>';
-        container.innerHTML = html;
-        
-        // Atualizar última atualização
-        document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
-        
-    } catch (e) {
-        console.warn('Erro ao atualizar ranking da torcida:', e);
-        container.innerHTML = '<p style="color:#e74c3c;">❌ Erro ao carregar ranking.</p>';
-    }
-}
-
-function atualizarTimerTorcida(data) {
-    const timerDisplay = document.getElementById('torcida-timer');
-    if (!timerDisplay) return;
-    
-    if (data.status === 'em_andamento') {
-        const restante = Math.max(0, data.fim - Date.now());
-        const min = Math.floor(restante / 60000);
-        const sec = Math.floor((restante % 60000) / 1000);
-        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
-    } else {
-        timerDisplay.innerText = data.status === 'finalizado' ? 'FIM' : 'PAUSADO';
-    }
-}
-
-// ========== BOTÃO SAIR TORCIDA ==========
-document.getElementById('btn-sair-torcida')?.addEventListener('click', () => {
-    if (intervaloTorcida) {
-        clearInterval(intervaloTorcida);
-        intervaloTorcida = null;
-    }
-    location.reload();
-});
-
-// ========== BOTÃO SINCRONIZAR TORCIDA ==========
-document.getElementById('btn-sync-torcida')?.addEventListener('click', () => {
-    toast('🔄 Sincronizando...');
-    atualizarRankingTorcida();
-});
-
-// ========== SELECT DE FASE TORCIDA ==========
-document.getElementById('select-fase-torcida')?.addEventListener('change', () => {
-    atualizarRankingTorcida();
-});
 </script>
 
 </body>
