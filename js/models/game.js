@@ -61,22 +61,12 @@ export function iniciarPartida(perguntas) {
 }
 
 export function processarResposta(partida, opcaoSelecionada) {
-    console.log('processarResposta - indice:', partida.indice);
-    console.log('processarResposta - opcaoSelecionada:', opcaoSelecionada);
-    
     const p = partida.perguntas[partida.indice];
-    if (!p) {
-        console.log('processarResposta - pergunta não encontrada');
-        return null;
-    }
+    if (!p) return null;
 
     const respostaCorreta = p.a * p.b;
     const acertou = opcaoSelecionada === respostaCorreta;
     const tempoGasto = TEMPO_PERGUNTA - partida.tempoRestantePergunta;
-    
-    console.log('processarResposta - respostaCorreta:', respostaCorreta);
-    console.log('processarResposta - acertou:', acertou);
-    console.log('processarResposta - tempoGasto:', tempoGasto);
     
     let pontosGanhos = 0;
     
@@ -88,7 +78,6 @@ export function processarResposta(partida, opcaoSelecionada) {
         }
         pontosGanhos = Math.round(100 * (Math.max(0, partida.tempoRestantePergunta) / TEMPO_PERGUNTA));
         partida.pontos += pontosGanhos;
-        console.log('processarResposta - pontos ganhos:', pontosGanhos);
     } else {
         partida.erros++;
         partida.sequenciaAcertos = 0;
@@ -105,12 +94,10 @@ export function processarResposta(partida, opcaoSelecionada) {
     });
     
     partida.indice++;
-    console.log('processarResposta - novo indice:', partida.indice);
     
     const finalizada = partida.indice >= TOTAL_PERGUNTAS;
     if (finalizada) {
         partida.finalizada = true;
-        console.log('processarResposta - PARTIDA FINALIZADA!');
     }
     
     return {
