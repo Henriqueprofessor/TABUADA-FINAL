@@ -1,14 +1,10 @@
 // ============================================================
 // ARQUIVO: js/config/firebase-config.js
-// DESCRIÇÃO: Configuração do Firebase - Versão CDN
+// DESCRIÇÃO: Configuração do Firebase - VERSÃO CORRIGIDA
 // ============================================================
 
-// Usando a versão compat do Firebase (já carregada no HTML)
-const firebaseApp = firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-
 // ============================================================
-// CONFIGURAÇÕES DO FIREBASE
+// CONFIGURAÇÕES DO FIREBASE (DECLARADO PRIMEIRO)
 // ============================================================
 
 export const firebaseConfig = {
@@ -22,28 +18,31 @@ export const firebaseConfig = {
 };
 
 // ============================================================
+// VERIFICAR SE O FIREBASE FOI CARREGADO
+// ============================================================
+
+// Verificar se o Firebase está disponível (carregado pelo HTML)
+if (typeof firebase === 'undefined') {
+    console.error('❌ Firebase NÃO foi carregado!');
+    console.error('Verifique se os scripts do Firebase estão no HTML.');
+} else {
+    console.log('✅ Firebase carregado com sucesso! Versão:', firebase.SDK_VERSION);
+}
+
+// ============================================================
 // CONFIGURAÇÕES PADRÃO DO JOGO
 // ============================================================
 
 export const CONFIG_PADRAO = {
-    // Efeitos Visuais
     confetes: true,
     notificacoes: true,
     brilho: true,
-    
-    // Áudio
     sons: true,
     sonsCelebracao: true,
     sonsErro: true,
-    
-    // Gamificação
     bonus: true,
     conquistas: true,
-    
-    // Acessibilidade
     gamepad: true,
-    
-    // Offline
     syncOffline: true
 };
 
