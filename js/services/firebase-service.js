@@ -1,6 +1,6 @@
 // ============================================================
 // ARQUIVO: js/services/firebase-service.js
-// DESCRIÇÃO: Serviço Firebase - VERSÃO CORRIGIDA (SEM isOnline)
+// DESCRIÇÃO: Serviço Firebase - VERSÃO CORRIGIDA
 // ============================================================
 
 import { firebaseConfig } from '../config/firebase-config.js';
@@ -9,8 +9,26 @@ import { firebaseConfig } from '../config/firebase-config.js';
 // INICIALIZAR FIREBASE
 // ============================================================
 
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+console.log('🔄 Inicializando Firebase...');
+
+// Verificar se o Firebase está disponível
+if (typeof firebase === 'undefined') {
+    console.error('❌ Firebase não está disponível!');
+    throw new Error('Firebase não carregado. Verifique os scripts no HTML.');
+}
+
+// Inicializar
+let app;
+let db;
+
+try {
+    app = firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    console.log('✅ Firebase inicializado com sucesso!');
+} catch (error) {
+    console.error('❌ Erro ao inicializar Firebase:', error);
+    throw error;
+}
 
 // ============================================================
 // REFERÊNCIAS
