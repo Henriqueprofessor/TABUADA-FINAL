@@ -194,35 +194,29 @@ async function atualizarMelhorResultado() {
 function configurarEventosAluno() {
     document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
     
-    // ========== BOTÃO SAIR - CORRIGIDO ==========
     document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
         if (jogoAtivo) {
             if (!confirm('⚠️ Você está em uma partida. Deseja sair mesmo assim?')) return;
         }
         
-        // Remover presença
         removePresence(appState.alunoId);
         
-        // Cancelar inscrição do estado
         if (unsubscribeEstado) {
             unsubscribeEstado();
             unsubscribeEstado = null;
         }
         
-        // LIMPAR OS DADOS DA SESSÃO
         sessionStorage.removeItem('userType');
         sessionStorage.removeItem('alunoId');
         sessionStorage.removeItem('alunoNome');
         sessionStorage.removeItem('alunoTurma');
         sessionStorage.removeItem('ultimaFase');
         
-        // Resetar o estado do app
         appState.userType = null;
         appState.alunoId = null;
         appState.alunoNome = null;
         appState.alunoTurma = null;
         
-        // Recarregar a página para voltar ao menu inicial
         window.location.href = window.location.pathname + '?t=' + Date.now();
     });
 }
@@ -278,36 +272,54 @@ async function iniciarNovaPartida() {
     mostrarProximaPergunta();
 }
 
-// ========== MOSTRAR PRÓXIMA PERGUNTA ==========
+// ========== MOSTRAR PRÓXIMA PERGUNTA - CORRIGIDO ==========
 function mostrarProximaPergunta() {
+    console.log('mostrarProximaPergunta chamado');
+    
     if (!partidaAtual || partidaAtual.finalizada) {
+        console.log('Partida finalizada, chamando finalizarPartida');
         finalizarPartida();
         return;
     }
     
     const pergunta = getProximaPergunta(partidaAtual);
     if (!pergunta) {
+        console.log('Sem pergunta, chamando finalizarPartida');
         finalizarPartida();
         return;
     }
     
+    console.log('Mostrando pergunta:', pergunta.a, 'x', pergunta.b);
+    
+    // Atualizar pergunta
     document.getElementById('pergunta').innerText = `${pergunta.a} x ${pergunta.b} = ?`;
-    document.getElementById('pergunta-num').innerText = `${partidaAtual.indice + 1}/${TOTAL_PERGUNTAS}`;
+    
+    // CORRIGIDO: Mostrar apenas o número da pergunta
+    const numeroPergunta = partidaAtual.indice + 1;
+    document.getElementById('pergunta-num').innerText = numeroPergunta;
     
     const btns = document.querySelectorAll('.opcao');
     pergunta.opts.forEach((o, i) => {
         if (btns[i]) {
             btns[i].innerText = o;
             btns[i].disabled = false;
+            btns[i].style.opacity = '1';
+            btns[i].style.pointerEvents = 'auto';
         }
     });
     
+    // Resetar timer
     tempoRestantePergunta = TEMPO_PERGUNTA;
+    const barra = document.getElementById('progresso-tempo');
+    if (barra) barra.style.width = '100%';
+    
     iniciarTimerPergunta();
 }
 
-// ========== INICIAR TIMER DA PERGUNTA ==========
+// ========== INICIAR TIMER DA PERGUNTA - CORRIGIDO ==========
 function iniciarTimerPergunta() {
+    console.log('iniciarTimerPergunta chamado');
+    
     if (timerPergunta) {
         clearInterval(timerPergunta);
         timerPergunta = null;
@@ -323,16 +335,32 @@ function iniciarTimerPergunta() {
     function atualizarBarra(timestamp) {
         const decorrido = (timestamp - inicio) / 1000;
         tempoRestantePergunta = Math.max(0, TEMPO_PERGUNTA - decorrido);
-        if (barra) barra.style.width = (tempoRestantePergunta / TEMPO_PERGUNTA * 100) + '%';
+        
+        if (barra) {
+            const percentual = (tempoRestantePergunta / TEMPO_PERGUNTA) * 100;
+            barra.style.width = percentual + '%';
+            
+            // Muda a cor da barra conforme o tempo
+            if (percentual < 20) {
+                barra.style.background = '#e74c3c'; // Vermelho
+            } else if (percentual < 50) {
+                barra.style.background = '#f39c12'; // Laranja
+            } else {
+                barra.style.background = '#27ae60'; // Verde
+            }
+        }
         
         if (tempoRestantePergunta > 0) {
             animFrameId = requestAnimationFrame(atualizarBarra);
         } else {
+            console.log('Tempo esgotado! Chamando responder(-1)');
             window.responder(-1);
         }
     }
+    
     animFrameId = requestAnimationFrame(atualizarBarra);
     
+    // Timer de segurança
     timerPergunta = setInterval(() => {
         if (tempoRestantePergunta <= 0) {
             clearInterval(timerPergunta);
@@ -341,15 +369,18 @@ function iniciarTimerPergunta() {
     }, 100);
 }
 
-// ========== RESPONDER PERGUNTA ==========
+// ========== RESPONDER PERGUNTA - CORRIGIDO ==========
 window.responder = async function(idx) {
     console.log('responder chamado com idx:', idx);
+    console.log('jogoAtivo:', jogoAtivo);
+    console.log('partidaAtual:', partidaAtual);
     
     if (!jogoAtivo || !partidaAtual || partidaAtual.finalizada) {
-        console.log('Jogo não está ativo');
+        console.log('Jogo não está ativo ou partida finalizada');
         return;
     }
     
+    // Parar o timer
     if (timerPergunta) {
         clearInterval(timerPergunta);
         timerPergunta = null;
@@ -366,23 +397,33 @@ window.responder = async function(idx) {
             opcaoSelecionada = parseInt(btns[idx].innerText);
             console.log('Opção selecionada:', opcaoSelecionada);
         }
+    } else {
+        console.log('Tempo esgotado!');
     }
     
+    // Processar resposta
     const resultado = processarResposta(partidaAtual, opcaoSelecionada);
-    if (!resultado) return;
+    if (!resultado) {
+        console.log('Resultado é null');
+        return;
+    }
     
     console.log('Resultado:', resultado);
+    console.log('Acertou?', resultado.acertou);
+    console.log('Pontos ganhos:', resultado.pontosGanhos);
+    console.log('Progresso:', resultado.progresso, '/', resultado.total);
     
+    // Feedback
     if (resultado.acertou) {
         soundManager.playCorrect();
+        if (confettiManager.config.confetes) {
+            confettiManager.fireHit();
+        }
     } else {
         soundManager.playWrong();
     }
     
-    if (resultado.acertou && confettiManager.config.confetes) {
-        confettiManager.fireHit();
-    }
-    
+    // Notificações
     const notificacoes = verificarNotificacoes(partidaAtual, resultado);
     for (const notifId of notificacoes) {
         notificationManager.mostrar(notifId, {
@@ -391,13 +432,18 @@ window.responder = async function(idx) {
         });
     }
     
+    // Atualizar pontuação
     document.getElementById('pontuacao-acumulada').innerText = partidaAtual.pontos;
     
+    // Salvar progresso
     await salvarProgressoTemporario();
     
+    // Verificar se finalizou
     if (resultado.finalizada) {
+        console.log('Partida finalizada!');
         setTimeout(() => finalizarPartida(), 300);
     } else {
+        console.log('Avançando para próxima pergunta');
         setTimeout(() => mostrarProximaPergunta(), 300);
     }
 };
