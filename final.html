@@ -22,7 +22,7 @@
         }
         
         // ============================================================
-        // 2. FUNÇÃO DE VERIFICAÇÃO DE VERSÃO (USADA PELO BOTÃO)
+        // 2. FUNÇÃO DE VERIFICAÇÃO DE VERSÃO
         // ============================================================
         window.verificarVersao = async function(mostrarToast = true) {
             try {
@@ -66,10 +66,8 @@
             }
         };
         
-        // Verificação automática ao carregar
         setTimeout(() => window.verificarVersao(false), 2000);
         
-        // Verificação ao focar a página
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
                 console.log('👁️ Página em foco - verificando atualizações...');
@@ -336,6 +334,17 @@
             align-items: center;
             gap: 8px;
         }
+        .velocidade-media {
+            font-size: 20px;
+            font-weight: bold;
+            background: #000000aa;
+            padding: 6px 18px;
+            border-radius: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #2ecc71;
+        }
         .modal-resultados {
             position: fixed;
             top: 50%;
@@ -579,7 +588,7 @@
         </div>
     </div>
 
-    <!-- TELA DO ALUNO -->
+    <!-- TELA DO ALUNO - COM VELOCIDADE MÉDIA E POSIÇÃO EM TEMPO REAL -->
     <div id="tela-aluno" class="card hidden">
         <div class="header-actions">
             <h2 id="aluno-nome-display">Aluno</h2>
@@ -595,6 +604,9 @@
                     </div>
                     <div class="indicador-posicao">
                         <span id="posicao-numero">--</span><span>º</span>
+                    </div>
+                    <div class="velocidade-media">
+                        ⚡ <span id="velocidade-media">0.00</span>s
                     </div>
                 </div>
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
@@ -675,7 +687,6 @@
             btnVersao.addEventListener('click', function() {
                 this.textContent = '⏳ Verificando...';
                 this.disabled = true;
-                
                 if (typeof window.verificarVersao === 'function') {
                     window.verificarVersao(true).then(() => {
                         this.textContent = '🔍 Verificar Versão';
@@ -692,13 +703,6 @@
             });
         }
     });
-
-    // ============================================================
-    // ============================================================
-    // AQUI VAI TODO O RESTO DO SEU CÓDIGO JAVASCRIPT
-    // (TUDO QUE VOCÊ JÁ TINHA ANTES)
-    // ============================================================
-    // ============================================================
 
     // ---------- VARIÁVEIS GLOBAIS ----------
     let meuTipo = null, alunoId = null, alunoNome = null, alunoTurma = null;
@@ -789,6 +793,100 @@
             if (timer) clearTimeout(timer);
             timer = setTimeout(() => { fn.apply(this, args); timer = null; }, delay);
         };
+    }
+
+    // ============================================================
+    // FUNÇÃO PARA ATUALIZAR VELOCIDADE MÉDIA E POSIÇÃO DO ALUNO
+    // ============================================================
+    async function atualizarInfoAluno() {
+        if (!alunoId || !estadoAtual) return;
+        
+        const faseAtual = estadoAtual.fase;
+        
+        try {
+            // 1. Buscar resultados da fase
+            const snap = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
+            const resultados = snap.val() || {};
+            
+            // 2. Calcular posição do aluno
+            let lista = [];
+            for (const [id, partidas] of Object.entries(resultados)) {
+                if (partidas && partidas.length > 0) {
+                    const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+                    lista.push({ id, pontos: melhor.pontos });
+                }
+            }
+            lista.sort((a, b) => b.pontos - a.pontos);
+            const posicao = lista.findIndex(p => p.id === alunoId) + 1;
+            
+            // 3. Atualizar posição na tela
+            const posSpan = document.getElementById('posicao-numero');
+            if (posSpan) {
+                posSpan.innerText = posicao > 0 ? posicao : '--';
+                if (posicao === 1) {
+                    posSpan.style.color = '#ffd700';
+                } else if (posicao === 2) {
+                    posSpan.style.color = '#c0c0c0';
+                } else if (posicao === 3) {
+                    posSpan.style.color = '#cd7f32';
+                } else {
+                    posSpan.style.color = '#ffffff';
+                }
+            }
+            
+            // 4. Buscar partidas do aluno
+            const partidasAluno = resultados[alunoId] || [];
+            if (partidasAluno.length > 0) {
+                const melhor = partidasAluno.sort((a, b) => b.pontos - a.pontos)[0];
+                
+                let velocidadeMedia = 0;
+                if (melhor.acertos > 0 && melhor.tempo > 0) {
+                    velocidadeMedia = melhor.tempo / melhor.acertos;
+                }
+                
+                const velSpan = document.getElementById('velocidade-media');
+                if (velSpan) {
+                    if (velocidadeMedia > 0) {
+                        velSpan.innerText = velocidadeMedia.toFixed(2) + 's';
+                        if (velocidadeMedia < 1.5) {
+                            velSpan.style.color = '#2ecc71';
+                        } else if (velocidadeMedia < 2.5) {
+                            velSpan.style.color = '#f39c12';
+                        } else {
+                            velSpan.style.color = '#e74c3c';
+                        }
+                    } else {
+                        velSpan.innerText = '--';
+                        velSpan.style.color = '#ffffff';
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Erro ao atualizar info do aluno:', e);
+        }
+    }
+
+    // ============================================================
+    // FUNÇÃO PARA ATUALIZAR POSIÇÃO E VELOCIDADE EM TEMPO REAL
+    // ============================================================
+    let intervaloTempoReal = null;
+
+    function iniciarAtualizacaoTempoReal() {
+        if (intervaloTempoReal) {
+            clearInterval(intervaloTempoReal);
+        }
+        intervaloTempoReal = setInterval(() => {
+            if (meuTipo === 'aluno' && jogoAtivo) {
+                atualizarInfoAluno();
+            }
+        }, 2000);
+    }
+
+    function pararAtualizacaoTempoReal() {
+        if (intervaloTempoReal) {
+            clearInterval(intervaloTempoReal);
+            intervaloTempoReal = null;
+        }
     }
 
     // ---------- CENTRALIZAÇÃO DE CLASSIFICAÇÃO ----------
@@ -1804,6 +1902,11 @@
             const podiumAluno = document.getElementById('podium-aluno-container');
             if (podiumAluno) podiumAluno.classList.add('hidden');
         }
+        
+        // ============================================================
+        // INICIAR ATUALIZAÇÃO EM TEMPO REAL (VELOCIDADE E POSIÇÃO)
+        // ============================================================
+        iniciarAtualizacaoTempoReal();
     }
 
     function atualizarExibicaoFase() {
@@ -2291,6 +2394,8 @@
         document.getElementById('btn-sync-prof')?.addEventListener('click', () => updateLastSyncTime());
         document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
         document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
+            // Parar atualização em tempo real
+            pararAtualizacaoTempoReal();
             if (alunoId) {
                 db.ref(`online/${alunoId}`).remove();
             }
