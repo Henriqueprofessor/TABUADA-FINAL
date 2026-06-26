@@ -1,6 +1,6 @@
 // ============================================================
 // ARQUIVO: js/ui/aluno-ui.js
-// DESCRIÇÃO: Interface do Aluno - VERSÃO FINAL CORRIGIDA
+// DESCRIÇÃO: Interface do Aluno - VERSÃO ESTÁVEL
 // ============================================================
 
 import { appState } from '../models/state.js';
@@ -63,49 +63,37 @@ export function initAlunoUI(alunoId, alunoNome, alunoTurma) {
     configurarEventosAluno();
     achievementManager.renderizarMedalhas(alunoId, 'medalhas-aluno');
     
-    // ========== INICIAR TIMER DA FASE ==========
     iniciarTimerFase();
 }
 
-// ========== TIMER DA FASE (CORRIGIDO) ==========
+// ========== TIMER DA FASE ==========
 function iniciarTimerFase() {
-    // Limpar timer anterior
     if (timerFaseInterval) {
         clearInterval(timerFaseInterval);
         timerFaseInterval = null;
     }
     
-    // Atualizar imediatamente
-    atualizarTimerFase();
-    
-    // Iniciar intervalo
     timerFaseInterval = setInterval(() => {
-        atualizarTimerFase();
+        const data = appState.data;
+        if (!data) return;
+        
+        const timerDisplay = document.getElementById('timer-fase');
+        if (!timerDisplay) return;
+        
+        if (data.status === 'em_andamento') {
+            const restante = Math.max(0, data.fim - Date.now());
+            const min = Math.floor(restante / 60000);
+            const sec = Math.floor((restante % 60000) / 1000);
+            timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+        } else if (data.status === 'pausado') {
+            const tempoPausado = data.tempoRestantePausa || 0;
+            const min = Math.floor(tempoPausado / 60000);
+            const sec = Math.floor((tempoPausado % 60000) / 1000);
+            timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+        } else {
+            timerDisplay.innerText = data.status === 'finalizado' ? 'FIM' : 'PAUSADO';
+        }
     }, 1000);
-}
-
-function atualizarTimerFase() {
-    const data = appState.data;
-    if (!data) return;
-    
-    const timerDisplay = document.getElementById('timer-fase');
-    if (!timerDisplay) return;
-    
-    if (data.status === 'em_andamento') {
-        const restante = Math.max(0, data.fim - Date.now());
-        const min = Math.floor(restante / 60000);
-        const sec = Math.floor((restante % 60000) / 1000);
-        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
-    } else if (data.status === 'pausado') {
-        const tempoPausado = data.tempoRestantePausa || 0;
-        const min = Math.floor(tempoPausado / 60000);
-        const sec = Math.floor((tempoPausado % 60000) / 1000);
-        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
-    } else if (data.status === 'finalizado') {
-        timerDisplay.innerText = 'FIM';
-    } else {
-        timerDisplay.innerText = 'PAUSADO';
-    }
 }
 
 // ========== ATUALIZAR UI ==========
@@ -142,9 +130,6 @@ function atualizarUIAluno(data) {
         msgDiv.innerText = '✅ Fase liberada! Clique em JOGAR.';
         btnJogar.classList.remove('hidden');
     }
-    
-    // Atualizar timer da fase imediatamente
-    atualizarTimerFase();
     
     atualizarMelhorResultado();
 }
@@ -242,8 +227,6 @@ function mostrarProximaPergunta() {
         if (btns[i]) {
             btns[i].innerText = o;
             btns[i].disabled = false;
-            btns[i].style.opacity = '1';
-            btns[i].style.pointerEvents = 'auto';
         }
     });
     
@@ -305,14 +288,9 @@ function iniciarTimerPergunta() {
     }, 100);
 }
 
-// ========== RESPONDER (CORRIGIDO) ==========
+// ========== RESPONDER ==========
 window.responder = async function(idx) {
-    console.log('responder chamado com idx:', idx);
-    
-    if (!jogoAtivo || !partidaAtual || partidaAtual.finalizada) {
-        console.log('Jogo não está ativo');
-        return;
-    }
+    if (!jogoAtivo || !partidaAtual || partidaAtual.finalizada) return;
     
     if (timerPergunta) {
         clearInterval(timerPergunta);
@@ -328,16 +306,11 @@ window.responder = async function(idx) {
         const btns = document.querySelectorAll('.opcao');
         if (btns[idx]) {
             opcaoSelecionada = parseInt(btns[idx].innerText);
-            console.log('Opção selecionada:', opcaoSelecionada);
         }
-    } else {
-        console.log('Tempo esgotado!');
     }
     
     const resultado = processarResposta(partidaAtual, opcaoSelecionada);
     if (!resultado) return;
-    
-    console.log('Resultado:', resultado);
     
     if (resultado.acertou) {
         soundManager.playCorrect();
