@@ -4,6 +4,81 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo</title>
+    
+    <!-- ============================================================ -->
+    <!-- CONTROLE DE VERSÃO - FORÇA CARREGAR A ÚLTIMA VERSÃO -->
+    <!-- ============================================================ -->
+    <script>
+    (function() {
+        // ============================================================
+        // 1. TIMESTAMP AUTOMÁTICO NA URL (EVITA CACHE)
+        // ============================================================
+        if (!window.location.search.includes('v=')) {
+            const timestamp = Date.now();
+            const separator = window.location.search ? '&' : '?';
+            const newUrl = window.location.href + separator + 'v=' + timestamp;
+            window.location.replace(newUrl);
+            return;
+        }
+        
+        // ============================================================
+        // 2. VERIFICAÇÃO DO VERSION.JSON
+        // ============================================================
+        async function verificarVersao() {
+            try {
+                const response = await fetch('version.json?v=' + Date.now());
+                if (!response.ok) {
+                    console.log('⚠️ version.json não encontrado.');
+                    return;
+                }
+                const data = await response.json();
+                const versaoSalva = localStorage.getItem('versao_jogo');
+                
+                console.log('📦 Versão atual do servidor:', data.version);
+                console.log('📦 Versão salva no cache:', versaoSalva || 'nenhuma');
+                
+                if (versaoSalva && versaoSalva !== data.version) {
+                    console.log('🔄 NOVA VERSÃO DISPONÍVEL!');
+                    console.log('📝 Novidades:', data.message);
+                    
+                    localStorage.setItem('versao_jogo', data.version);
+                    
+                    const confirmar = confirm(
+                        '🔄 Nova versão do jogo disponível!\n\n' +
+                        'Versão: ' + data.version + '\n' +
+                        'Data: ' + data.updateDate + '\n\n' +
+                        'Novidades:\n' + data.message + '\n\n' +
+                        'Deseja recarregar para atualizar?'
+                    );
+                    
+                    if (confirmar) {
+                        window.location.reload();
+                    }
+                } else if (!versaoSalva) {
+                    localStorage.setItem('versao_jogo', data.version);
+                    console.log('✅ Versão salva pela primeira vez:', data.version);
+                } else {
+                    console.log('✅ Jogo está atualizado!');
+                }
+            } catch (e) {
+                console.log('⚠️ Não foi possível verificar versão:', e.message);
+            }
+        }
+        
+        setTimeout(verificarVersao, 2000);
+        
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                console.log('👁️ Página em foco - verificando atualizações...');
+                setTimeout(verificarVersao, 1000);
+            }
+        });
+        
+        console.log('✅ Controle de versão ativado!');
+    })();
+    </script>
+    <!-- ============================================================ -->
+    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -133,7 +208,11 @@
             padding: 15px;
             font-size: 20px;
             border-radius: 40px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.2s;
         }
+        .opcao:hover { background: #2c5a6e; border-color: #ffd966; }
         .toast {
             position: fixed;
             bottom: 20px;
@@ -372,7 +451,7 @@
                 <p>Fase atual: <strong id="fase-atual-titulo">--</strong> <span id="fase-progresso" class="fase-info"></span></p>
                 <div id="timer-fase" class="timer-display">00:00</div>
                 <div style="font-size: 12px; margin-top: 5px;">Última Sinc: <span id="last-sync-time">--</span></div>
-                <button id="btn-sincronizar-global" class="btn-small" style="margin-top: 5px;">🔄 Sincronizar</button>
+                <button id="btn-sincronizar-global" class="btn-warning" style="margin-top: 5px;">🔄 Sincronizar</button>
             </div>
             <div id="online-stats" class="online-badge hidden">Online: <span id="jogadores-online">0</span></div>
         </div>
@@ -500,10 +579,10 @@
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
                 <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
                 <div class="opcoes-grid">
-                    <button class="opcao" onclick="responder(0)"></button>
-                    <button class="opcao" onclick="responder(1)"></button>
-                    <button class="opcao" onclick="responder(2)"></button>
-                    <button class="opcao" onclick="responder(3)"></button>
+                    <button class="opcao" onclick="window.responder(0)"></button>
+                    <button class="opcao" onclick="window.responder(1)"></button>
+                    <button class="opcao" onclick="window.responder(2)"></button>
+                    <button class="opcao" onclick="window.responder(3)"></button>
                 </div>
                 <div style="text-align: center;">Pergunta: <span id="pergunta-num">1</span>/20</div>
             </div>
@@ -608,7 +687,9 @@
                 let x = r + Math.floor(Math.random() * 11) - 5;
                 if (x >= 0 && !opts.includes(x)) opts.push(x);
             }
-            pool.push({ a, b, opts: opts.sort((x,y) => x-y) });
+            // ORDENA AS OPÇÕES DA MENOR PARA A MAIOR
+            opts.sort((x, y) => x - y);
+            pool.push({ a, b, opts });
         }
         return pool;
     }
@@ -634,7 +715,7 @@
     function updateLastSyncTime() {
         const span = document.getElementById('last-sync-time');
         if (span) span.innerText = new Date().toLocaleString('pt-BR');
-        toast("Sincronizado!");
+        toast("🔄 Sincronizado!");
     }
     function escapeHtml(str) {
         if (!str) return '';
@@ -926,7 +1007,7 @@
             }
         }
 
-        // ---- PROJEÇÃO (AMEIAÇA) - OTIMIZAÇÃO 7 ----
+        // ---- PROJEÇÃO (AMEIAÇA) ----
         let posProjetadaMap = new Map();
         if (estadoAtual.status !== 'finalizado') {
             let projecaoValida = false;
@@ -954,7 +1035,6 @@
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirClassificacao;
 
-        // Cabeçalho da tabela (sem a coluna Status)
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th>
             <th>Nome</th>
@@ -1021,7 +1101,6 @@
             }
             if ((j.perguntas || 0) === 0) ameacaHtml = "—";
 
-            // Progresso (sem a coluna Status)
             let progressoHtml = "";
             if (j.status === 'em_jogo') {
                 progressoHtml = `${j.progresso}/20`;
@@ -1065,7 +1144,7 @@
         cacheRanking[cacheKey] = { html, timestamp: Date.now() };
     }
 
-    // RANKING POR TURMAS (mantido separado)
+    // RANKING POR TURMAS
     async function renderRankingTurmas(containerId) {
         if (!estadoAtual) return;
         let turmasMap = new Map();
@@ -1807,7 +1886,7 @@
             if (tempoRestantePergunta > 0) {
                 animFrameId = requestAnimationFrame(atualizarBarra);
             } else {
-                responder(-1);
+                window.responder(-1);
             }
         }
         animFrameId = requestAnimationFrame(atualizarBarra);
@@ -2158,7 +2237,14 @@
 
         document.getElementById('btn-sync-prof')?.addEventListener('click', () => updateLastSyncTime());
         document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
-        document.getElementById('btn-sair-aluno')?.addEventListener('click', () => location.reload());
+        document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
+            // Limpar dados do aluno
+            if (alunoId) {
+                db.ref(`online/${alunoId}`).remove();
+            }
+            sessionStorage.removeItem('ultimaFase');
+            location.reload();
+        });
         document.getElementById('btn-sync-torcida')?.addEventListener('click', () => {
             updateLastSyncTime();
             if (modoTorcida === 'individual') atualizarTorcidaIndividual();
@@ -2169,7 +2255,15 @@
             const novaTurma = prompt("Digite o nome da nova turma:");
             if (novaTurma && novaTurma.trim()) adicionarTurma(novaTurma.trim());
         });
-        document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => updateLastSyncTime());
+        document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
+            updateLastSyncTime();
+            // Forçar atualização dos dados
+            db.ref('copaV2').once('value', snap => {
+                estadoAtual = snap.val() || estadoAtual;
+                atualizarUI();
+                toast("✅ Dados sincronizados!");
+            });
+        });
         document.getElementById('btn-toggle-auto-ranking')?.addEventListener('click', () => {
             atualizacaoRankingAuto = !atualizacaoRankingAuto;
             document.getElementById('btn-toggle-auto-ranking').innerText = atualizacaoRankingAuto ? "⏸️ Pausar Atualização" : "▶️ Retomar Atualização";
