@@ -1,6 +1,6 @@
 {
-    "version": "2.4.0",
+    "version": "2.5.0",
     "url": "https://henriqueprofessor.github.io/TABUADA-FINAL/final.html",
     "updateDate": "2026-06-26",
-    "message": "📝 NOVIDADES:\n• Ranking com colunas completas\n• Pontuação corrigida por tempo\n• Controle offline no painel do professor\n• Sistema de versão automático\n• Sem Service Worker (cache removido)"
+    "message": "📝 NOVIDADES:\n• Sistema de versão automático\n• Opções de resposta ordenadas\n• Sincronização melhorada\n• Correções de bugs"
 }
