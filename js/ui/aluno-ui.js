@@ -194,16 +194,36 @@ async function atualizarMelhorResultado() {
 function configurarEventosAluno() {
     document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
     
+    // ========== BOTÃO SAIR - CORRIGIDO ==========
     document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
         if (jogoAtivo) {
             if (!confirm('⚠️ Você está em uma partida. Deseja sair mesmo assim?')) return;
         }
+        
+        // Remover presença
         removePresence(appState.alunoId);
+        
+        // Cancelar inscrição do estado
         if (unsubscribeEstado) {
             unsubscribeEstado();
             unsubscribeEstado = null;
         }
-        location.reload();
+        
+        // LIMPAR OS DADOS DA SESSÃO
+        sessionStorage.removeItem('userType');
+        sessionStorage.removeItem('alunoId');
+        sessionStorage.removeItem('alunoNome');
+        sessionStorage.removeItem('alunoTurma');
+        sessionStorage.removeItem('ultimaFase');
+        
+        // Resetar o estado do app
+        appState.userType = null;
+        appState.alunoId = null;
+        appState.alunoNome = null;
+        appState.alunoTurma = null;
+        
+        // Recarregar a página para voltar ao menu inicial
+        window.location.href = window.location.pathname + '?t=' + Date.now();
     });
 }
 
@@ -322,7 +342,6 @@ function iniciarTimerPergunta() {
 }
 
 // ========== RESPONDER PERGUNTA ==========
-// EXPORTA A FUNÇÃO PARA O ESCOPO GLOBAL
 window.responder = async function(idx) {
     console.log('responder chamado com idx:', idx);
     
