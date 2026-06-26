@@ -44,8 +44,30 @@
         .medalha { font-size: 40px; }
         .barra-tempo { width: 100%; height: 12px; background: #2c3e50; border-radius: 6px; overflow: hidden; margin: 15px 0; }
         .progresso-tempo { width: 100%; height: 100%; background: #27ae60; transition: width 0.05s linear; }
-        .opcoes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0; }
-        .opcao { background: #1f3a4b; color: white; padding: 15px; font-size: 20px; border-radius: 40px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .opcoes-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+            margin: 20px 0; 
+            width: 100%;
+        }
+        .opcao { 
+            background: #1f3a4b; 
+            color: white; 
+            padding: 20px; 
+            font-size: 24px; 
+            border-radius: 40px; 
+            cursor: pointer; 
+            border: 2px solid transparent; 
+            transition: 0.2s; 
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .opcao:hover { background: #2c5a6e; border-color: #ffd966; }
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #e67e22; padding: 12px 24px; border-radius: 60px; z-index: 3000; font-weight: bold; }
         .fase-selector { background: #0a0f1e; padding: 8px; border-radius: 20px; margin: 10px 0; }
@@ -105,6 +127,19 @@
         .config-actions { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
         .gamepad-connected .opcao { border-color: #2ecc71; }
         .gamepad-connected .opcao:focus { outline: 3px solid #2ecc71; }
+        #pergunta {
+            font-size: 48px;
+            text-align: center;
+            margin: 20px 0;
+            color: #ffd966;
+            font-weight: bold;
+        }
+        .pergunta-container {
+            background: #00000055;
+            border-radius: 20px;
+            padding: 20px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -121,7 +156,7 @@
                 <p>Fase atual: <strong id="fase-atual-titulo">--</strong> <span id="fase-progresso" class="fase-info"></span></p>
                 <div id="timer-fase" class="timer-display">00:00</div>
                 <div style="font-size: 12px; margin-top: 5px;">Última Sinc: <span id="last-sync-time">--</span></div>
-                <button id="btn-sincronizar-global" class="btn-small" style="margin-top: 5px;">🔄 Sincronizar</button>
+                <button id="btn-sincronizar-global" class="btn-warning" style="margin-top: 5px;">🔄 Sincronizar</button>
             </div>
             <div id="online-stats" class="online-badge hidden">Online: <span id="jogadores-online">0</span></div>
         </div>
@@ -374,7 +409,9 @@
                     </div>
                 </div>
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
-                <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
+                <div class="pergunta-container">
+                    <div id="pergunta">0 x 0 = ?</div>
+                </div>
                 <div class="opcoes-grid">
                     <button class="opcao" onclick="window.responder(0)">-</button>
                     <button class="opcao" onclick="window.responder(1)">-</button>
@@ -488,6 +525,14 @@ function escapeHtml(str) {
     });
 }
 
+function updateLastSyncTime() {
+    const span = document.getElementById('last-sync-time');
+    if (span) {
+        span.innerText = new Date().toLocaleString('pt-BR');
+    }
+    toast('🔄 Sincronizado!');
+}
+
 // ============================================================
 // ESTADO GLOBAL
 // ============================================================
@@ -575,7 +620,7 @@ const appState = {
 };
 
 // ============================================================
-// GERAR PERGUNTAS
+// GERAR PERGUNTAS - CORRIGIDO: RESPOSTAS EM ORDEM CRESCENTE
 // ============================================================
 const poolCache = {};
 
@@ -593,7 +638,9 @@ function gerarPool(modalidade) {
             let x = r + Math.floor(Math.random() * 11) - 5;
             if (x >= 0 && !opts.includes(x)) opts.push(x);
         }
-        pool.push({ a, b, opts: opts.sort((x,y) => x-y) });
+        // ORDENA AS RESPOSTAS DA MENOR PARA A MAIOR
+        opts.sort((x, y) => x - y);
+        pool.push({ a, b, opts });
     }
     return pool;
 }
@@ -612,7 +659,7 @@ function obterPerguntas(modalidade) {
 }
 
 // ============================================================
-// LÓGICA DO JOGO - PONTUAÇÃO CORRIGIDA
+// LÓGICA DO JOGO
 // ============================================================
 function iniciarPartida(perguntas) {
     return {
@@ -646,16 +693,8 @@ function processarResposta(partida, opcaoSelecionada) {
         if (partida.sequenciaAcertos > partida.maiorSequencia) {
             partida.maiorSequencia = partida.sequenciaAcertos;
         }
-        
-        // ============================================================
-        // CORREÇÃO DA PONTUAÇÃO: Quanto mais rápido, mais pontos!
-        // tempoRestantePergunta = 10 → 100 pontos (resposta imediata)
-        // tempoRestantePergunta = 5  → 50 pontos
-        // tempoRestantePergunta = 0  → 0 pontos
-        // ============================================================
         const percentual = Math.max(0, partida.tempoRestantePergunta / TEMPO_PERGUNTA);
         pontosGanhos = Math.round(100 * percentual);
-        // Garantir que se acertou com tempo > 0, ganhe pelo menos 1 ponto
         if (pontosGanhos === 0 && partida.tempoRestantePergunta > 0) pontosGanhos = 1;
         partida.pontos += pontosGanhos;
     } else {
@@ -707,7 +746,7 @@ function criarObjetoPartida(partida) {
 }
 
 // ============================================================
-// RANKING POR EQUIPES (CORRIGIDO)
+// RANKING POR EQUIPES
 // ============================================================
 async function renderRankingTurmas(containerId) {
     const container = document.getElementById(containerId);
@@ -1155,7 +1194,6 @@ function initProfessorUI() {
     configurarEventosProfessor();
     carregarTurmas();
     
-    // Atualizar ranking por turmas quando a aba for aberta
     const tabRankingTurmas = document.querySelector('[data-tab="ranking-turmas"]');
     if (tabRankingTurmas) {
         tabRankingTurmas.addEventListener('click', () => {
@@ -1187,10 +1225,56 @@ function configurarEventosProfessor() {
         location.reload();
     });
     
-    // Botão para ranking por turmas
     document.getElementById('btn-atualizar-ranking-turmas')?.addEventListener('click', () => {
         renderRankingTurmas('ranking-turmas-container');
         toast('🔄 Ranking por turmas atualizado!');
+    });
+    
+    // ============================================================
+    // RESETAR FASE - CORRIGIDO
+    // ============================================================
+    document.getElementById('btn-reset-fase')?.addEventListener('click', async () => {
+        const faseAtual = appState.fase;
+        if (!confirm(`⚠️ Tem certeza que deseja resetar a Fase ${faseAtual}? Todos os dados serão apagados.`)) return;
+        
+        try {
+            await resultadosRef(faseAtual).remove();
+            await resultadosTempRef(faseAtual).remove();
+            await participantesRef(faseAtual).remove();
+            await classificadosRef(faseAtual).remove();
+            await copaRef.update({ status: 'aguardando', fim: 0, tempoRestantePausa: null });
+            toast(`✅ Fase ${faseAtual} resetada com sucesso!`);
+            setTimeout(() => location.reload(), 1500);
+        } catch (e) {
+            toast('❌ Erro ao resetar fase.');
+            console.error(e);
+        }
+    });
+    
+    // ============================================================
+    // RESETAR COMPETIÇÃO - CORRIGIDO
+    // ============================================================
+    document.getElementById('btn-reset-total')?.addEventListener('click', async () => {
+        if (!confirm('⚠️ Tem certeza que deseja resetar TODA a competição? Todos os dados serão apagados.')) return;
+        
+        try {
+            const modalidade = appState.modalidade || '2-5';
+            await copaRef.set({
+                fase: 1,
+                status: 'aguardando',
+                tempoFase: 12,
+                fim: 0,
+                modalidade: modalidade,
+                resultados: {},
+                participantes: {},
+                classificados: {}
+            });
+            toast('✅ Competição resetada com sucesso!');
+            setTimeout(() => location.reload(), 1500);
+        } catch (e) {
+            toast('❌ Erro ao resetar competição.');
+            console.error(e);
+        }
     });
 }
 
@@ -1263,6 +1347,19 @@ function configurarMenu() {
         document.getElementById('online-stats').classList.remove('hidden');
         toast('📺 Bem-vindo à Torcida!');
         iniciarTorcida();
+    });
+    
+    // ============================================================
+    // BOTÃO SINCRONIZAR GLOBAL - CORRIGIDO
+    // ============================================================
+    document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
+        updateLastSyncTime();
+        // Forçar atualização dos dados
+        copaRef.once('value', (snap) => {
+            appState.data = snap.val() || appState.getDefaultState();
+            appState.notify();
+            toast('✅ Dados sincronizados!');
+        });
     });
 }
 
@@ -1364,7 +1461,6 @@ document.getElementById('btn-modo-equipes')?.addEventListener('click', () => {
     document.getElementById('btn-modo-equipes').classList.add('ativo');
     document.getElementById('btn-modo-individual').classList.remove('ativo');
     document.querySelector('.fase-selector').style.display = 'none';
-    // Atualizar para o ranking por equipes
     renderRankingTurmas('ranking-torcida-container');
     document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
 });
