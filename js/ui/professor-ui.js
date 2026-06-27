@@ -88,30 +88,39 @@ function adicionarBlocoValorPartida() {
     console.log('🔍 Procurando onde inserir o bloco "Valor da Partida"...');
     
     // ============================================================
-    // TENTAR INSERIR NA ABA DE CONFIGURAÇÕES
+    // PROCURAR O CONTAINER PRINCIPAL DO PAINEL
     // ============================================================
-    let tabConfig = document.getElementById('tab-configuracoes');
+    let container = document.getElementById('painel-professor');
     
-    // Se não encontrar, tentar inserir no final do painel
-    if (!tabConfig) {
-        console.warn('⚠️ Aba de configurações não encontrada. Inserindo no final do painel...');
-        
-        // Criar uma nova seção no painel
-        const painel = document.getElementById('painel-professor');
-        if (!painel) {
-            console.error('❌ Painel do professor não encontrado!');
-            return;
+    // Se não encontrar, tentar outros IDs comuns
+    if (!container) {
+        container = document.getElementById('professor-painel') || 
+                    document.getElementById('painel') || 
+                    document.getElementById('app') ||
+                    document.body;
+        console.warn('⚠️ Painel do professor não encontrado, usando body como fallback');
+    }
+    
+    // ============================================================
+    // PROCURAR ONDE INSERIR (antes do rodapé ou no final)
+    // ============================================================
+    let targetElement = container;
+    let footer = null;
+    
+    // Tentar inserir antes do rodapé
+    footer = container.querySelector('footer, .footer, .rodape, [class*="footer"], [class*="rodape"]');
+    if (footer) {
+        targetElement = footer;
+        console.log('✅ Rodapé encontrado, inserindo antes dele');
+    } else {
+        // Tentar inserir depois do "Controle da Fase"
+        const controleFase = container.querySelector('[class*="controle"], #controle, .controle-fase');
+        if (controleFase && controleFase.parentNode) {
+            targetElement = controleFase.parentNode;
+            console.log('✅ "Controle da Fase" encontrado, inserindo depois dele');
+        } else {
+            console.log('⚠️ Nenhum ponto de referência encontrado, inserindo no final');
         }
-        
-        // Criar uma nova aba
-        const novaAba = document.createElement('div');
-        novaAba.id = 'tab-configuracoes';
-        novaAba.className = 'tab-content';
-        novaAba.style.cssText = 'padding: 20px;';
-        painel.appendChild(novaAba);
-        tabConfig = novaAba;
-        
-        console.log('✅ Nova aba de configurações criada!');
     }
     
     // ============================================================
@@ -123,7 +132,7 @@ function adicionarBlocoValorPartida() {
         background: #1e293b;
         padding: 24px;
         border-radius: 16px;
-        margin-bottom: 24px;
+        margin: 20px;
         border: 1px solid #334155;
         box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
         max-width: 800px;
@@ -184,36 +193,51 @@ function adicionarBlocoValorPartida() {
         </div>
     `;
     
-    // Inserir no início da aba de configurações
-    tabConfig.insertBefore(bloco, tabConfig.firstChild);
+    // ============================================================
+    // INSERIR O BLOCO
+    // ============================================================
+    if (footer) {
+        // Inserir antes do rodapé
+        targetElement.parentNode.insertBefore(bloco, targetElement);
+    } else if (targetElement === container) {
+        // Inserir no final do container
+        container.appendChild(bloco);
+    } else {
+        // Inserir depois do elemento alvo
+        targetElement.parentNode.insertBefore(bloco, targetElement.nextSibling);
+    }
+    
+    console.log('✅ Bloco "Valor da Partida" adicionado com sucesso!');
     
     // ============================================================
     // CONFIGURAR EVENTOS DO BLOCO
     // ============================================================
-    const btnAtualizar = document.getElementById('btn-atualizar-valor-partida');
-    const inputValor = document.getElementById('input-valor-partida');
-    
-    if (btnAtualizar) {
-        btnAtualizar.addEventListener('click', window.atualizarValorPartida);
-        console.log('✅ Evento do botão "Atualizar" configurado');
-    }
-    
-    if (inputValor) {
-        inputValor.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                window.atualizarValorPartida();
-            }
-        });
-        console.log('✅ Evento do input "Enter" configurado');
-    }
-    
-    // Atualizar o valor exibido
-    const valorAtual = getValorPartida();
-    const exibicao = document.getElementById('valor-partida-atual');
-    if (exibicao) exibicao.textContent = valorAtual;
-    if (inputValor) inputValor.value = valorAtual;
-    
-    console.log('✅ Bloco "Valor da Partida" adicionado com sucesso!');
+    setTimeout(() => {
+        const btnAtualizar = document.getElementById('btn-atualizar-valor-partida');
+        const inputValor = document.getElementById('input-valor-partida');
+        
+        if (btnAtualizar) {
+            btnAtualizar.addEventListener('click', window.atualizarValorPartida);
+            console.log('✅ Evento do botão "Atualizar" configurado');
+        } else {
+            console.warn('⚠️ Botão "btn-atualizar-valor-partida" não encontrado');
+        }
+        
+        if (inputValor) {
+            inputValor.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    window.atualizarValorPartida();
+                }
+            });
+            console.log('✅ Evento do input "Enter" configurado');
+        }
+        
+        // Atualizar o valor exibido
+        const valorAtual = getValorPartida();
+        const exibicao = document.getElementById('valor-partida-atual');
+        if (exibicao) exibicao.textContent = valorAtual;
+        if (inputValor) inputValor.value = valorAtual;
+    }, 100);
 }
 
 // ============================================================
