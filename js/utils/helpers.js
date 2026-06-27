@@ -3,7 +3,7 @@
 // DESCRIÇÃO: Funções auxiliares gerais do jogo
 // ============================================================
 
-// ========== TOAST (NOTIFICAÇÃO TEMPORÁRIA) ==========
+// ========== TOAST ==========
 export function toast(message, duracao = 3000) {
     const t = document.getElementById('toast');
     if (t) {
@@ -131,20 +131,18 @@ export function updateLastSyncTime() {
     if (span) {
         span.innerText = formatarData(Date.now());
     }
-    toast('Sincronizado!');
+    toast('🔄 Sincronizado!');
 }
 
-// ========== VERIFICAR SE É PROFESSOR ==========
+// ========== VERIFICAR TIPO DE USUÁRIO ==========
 export function isProfessor() {
     return sessionStorage.getItem('userType') === 'professor';
 }
 
-// ========== VERIFICAR SE É ALUNO ==========
 export function isAluno() {
     return sessionStorage.getItem('userType') === 'aluno';
 }
 
-// ========== VERIFICAR SE É TORCIDA ==========
 export function isTorcida() {
-    return sessionStorage.getItem('userType') === 'torcida';
+    return sessionStorage.getItem('userType') === 'projecao';
 }
