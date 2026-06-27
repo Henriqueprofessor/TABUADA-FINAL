@@ -1,23 +1,20 @@
 // ============================================================
 // ARQUIVO: js/services/firebase-service.js
-// DESCRIÇÃO: Serviço Firebase - VERSÃO CORRIGIDA
+// DESCRIÇÃO: Serviço Firebase - Comunicação com o Realtime Database
 // ============================================================
 
-import { firebaseConfig } from '../config/firebase-config.js';
+import { firebaseConfig, FIREBASE_KEYS } from '../config/firebase-config.js';
+import { TURMAS_PADRAO } from '../utils/constants.js';
 
 // ============================================================
 // INICIALIZAR FIREBASE
 // ============================================================
 
-console.log('🔄 Inicializando Firebase...');
-
-// Verificar se o Firebase está disponível
 if (typeof firebase === 'undefined') {
     console.error('❌ Firebase não está disponível!');
     throw new Error('Firebase não carregado. Verifique os scripts no HTML.');
 }
 
-// Inicializar
 let app;
 let db;
 
@@ -35,27 +32,27 @@ try {
 // ============================================================
 
 export const database = db;
-export const copaRef = db.ref('copaV2');
-export const onlineRef = db.ref('online');
-export const configRef = db.ref('copaV2/configuracoes');
+export const copaRef = db.ref(FIREBASE_KEYS.COPA);
+export const onlineRef = db.ref(FIREBASE_KEYS.ONLINE);
+export const configRef = db.ref(FIREBASE_KEYS.CONFIGURACOES);
 
-export const resultadosRef = (fase) => db.ref(`copaV2/resultados/${fase}`);
-export const resultadosTempRef = (fase) => db.ref(`copaV2/resultados_temp/${fase}`);
-export const participantesRef = (fase) => db.ref(`copaV2/participantes/${fase}`);
-export const classificadosRef = (fase) => db.ref(`copaV2/classificados/${fase}`);
+export const resultadosRef = (fase) => db.ref(`${FIREBASE_KEYS.RESULTADOS}/${fase}`);
+export const resultadosTempRef = (fase) => db.ref(`${FIREBASE_KEYS.RESULTADOS_TEMP}/${fase}`);
+export const participantesRef = (fase) => db.ref(`${FIREBASE_KEYS.PARTICIPANTES}/${fase}`);
+export const classificadosRef = (fase) => db.ref(`${FIREBASE_KEYS.CLASSIFICADOS}/${fase}`);
 
-export const resultadoAlunoRef = (fase, alunoId) => db.ref(`copaV2/resultados/${fase}/${alunoId}`);
-export const resultadoTempAlunoRef = (fase, alunoId) => db.ref(`copaV2/resultados_temp/${fase}/${alunoId}`);
-export const participanteAlunoRef = (fase, alunoId) => db.ref(`copaV2/participantes/${fase}/${alunoId}`);
+export const resultadoAlunoRef = (fase, alunoId) => db.ref(`${FIREBASE_KEYS.RESULTADOS}/${fase}/${alunoId}`);
+export const resultadoTempAlunoRef = (fase, alunoId) => db.ref(`${FIREBASE_KEYS.RESULTADOS_TEMP}/${fase}/${alunoId}`);
+export const participanteAlunoRef = (fase, alunoId) => db.ref(`${FIREBASE_KEYS.PARTICIPANTES}/${fase}/${alunoId}`);
 
 // ============================================================
-// MÉTODOS
+// MÉTODOS GERAIS
 // ============================================================
 
 export const updateCopa = (data) => copaRef.update(data);
 export const setCopa = (data) => copaRef.set(data);
 export const removeNode = (path) => db.ref(path).remove();
-export const getOnce = (path) => db.ref(path).once('value');
+export const getOnce = (ref) => ref.once('value');
 
 // ============================================================
 // LISTENERS
@@ -94,13 +91,13 @@ export const listenToConfiguracoes = (callback) => {
 // ============================================================
 
 export const setPresence = (id, data) => {
-    const presenceRef = db.ref(`online/${id}`);
+    const presenceRef = db.ref(`${FIREBASE_KEYS.ONLINE}/${id}`);
     presenceRef.set(data);
     presenceRef.onDisconnect().remove();
 };
 
 export const removePresence = (id) => {
-    db.ref(`online/${id}`).remove();
+    db.ref(`${FIREBASE_KEYS.ONLINE}/${id}`).remove();
 };
 
 // ============================================================
@@ -159,7 +156,7 @@ export const salvarConfiguracoes = (config) => {
 };
 
 export const salvarConfiguracao = (key, value) => {
-    return db.ref(`copaV2/configuracoes/${key}`).set(value);
+    return db.ref(`${FIREBASE_KEYS.CONFIGURACOES}/${key}`).set(value);
 };
 
 // ============================================================
@@ -167,11 +164,10 @@ export const salvarConfiguracao = (key, value) => {
 // ============================================================
 
 export const carregarTurmas = async () => {
-    const snap = await db.ref('copaV2/turmas').once('value');
+    const snap = await db.ref(FIREBASE_KEYS.TURMAS).once('value');
     let turmas = snap.val();
     if (!turmas || !Array.isArray(turmas) || turmas.length === 0) {
-        const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
-        await db.ref('copaV2/turmas').set(TURMAS_PADRAO);
+        await db.ref(FIREBASE_KEYS.TURMAS).set(TURMAS_PADRAO);
         return TURMAS_PADRAO;
     }
     return turmas;
@@ -181,7 +177,7 @@ export const adicionarTurma = async (novaTurma) => {
     const turmas = await carregarTurmas();
     if (!turmas.includes(novaTurma)) {
         turmas.push(novaTurma);
-        await db.ref('copaV2/turmas').set(turmas);
+        await db.ref(FIREBASE_KEYS.TURMAS).set(turmas);
         return true;
     }
     return false;
@@ -190,7 +186,7 @@ export const adicionarTurma = async (novaTurma) => {
 export const removerTurma = async (turma) => {
     let turmas = await carregarTurmas();
     turmas = turmas.filter(t => t !== turma);
-    await db.ref('copaV2/turmas').set(turmas);
+    await db.ref(FIREBASE_KEYS.TURMAS).set(turmas);
 };
 
 // ============================================================
@@ -198,7 +194,7 @@ export const removerTurma = async (turma) => {
 // ============================================================
 
 export const carregarIntervalos = async () => {
-    const snap = await db.ref('copaV2/configuracoes/intervalos').once('value');
+    const snap = await db.ref(FIREBASE_KEYS.INTERVALOS).once('value');
     const config = snap.val();
     if (config) {
         return {
@@ -206,16 +202,36 @@ export const carregarIntervalos = async () => {
             equipes: config.equipes || 60
         };
     }
-    await db.ref('copaV2/configuracoes/intervalos').set({ individual: 4, equipes: 60 });
+    await db.ref(FIREBASE_KEYS.INTERVALOS).set({ individual: 4, equipes: 60 });
     return { individual: 4, equipes: 60 };
 };
 
 export const salvarIntervaloIndividual = (segundos) => {
-    return db.ref('copaV2/configuracoes/intervalos/individual').set(segundos);
+    return db.ref(`${FIREBASE_KEYS.INTERVALOS}/individual`).set(segundos);
 };
 
 export const salvarIntervaloEquipes = (segundos) => {
-    return db.ref('copaV2/configuracoes/intervalos/equipes').set(segundos);
+    return db.ref(`${FIREBASE_KEYS.INTERVALOS}/equipes`).set(segundos);
+};
+
+// ============================================================
+// VALOR DA PARTIDA
+// ============================================================
+
+export const carregarValorPartidaDB = async () => {
+    const snap = await db.ref(FIREBASE_KEYS.VALOR_PARTIDA).once('value');
+    let valor = snap.val();
+    if (valor === null || valor === undefined) {
+        valor = 2000;
+        await db.ref(FIREBASE_KEYS.VALOR_PARTIDA).set(valor);
+    }
+    return valor;
+};
+
+export const salvarValorPartidaDB = async (valor) => {
+    if (!valor || valor < 1) throw new Error('Valor inválido');
+    await db.ref(FIREBASE_KEYS.VALOR_PARTIDA).set(valor);
+    return valor;
 };
 
 // ============================================================
@@ -225,9 +241,5 @@ export const salvarIntervaloEquipes = (segundos) => {
 export const gerarIdAluno = (nome, turma) => {
     return btoa(nome.toLowerCase() + '|' + turma).slice(0, 16);
 };
-
-// ============================================================
-// EXPORTAR
-// ============================================================
 
 export default db;
