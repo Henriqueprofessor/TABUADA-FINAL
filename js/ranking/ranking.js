@@ -1,33 +1,28 @@
 // ============================================================
 // ARQUIVO: js/ranking/ranking.js
-// DESCRIÇÃO: Ranking com todas as colunas (Fut. Pos., Delta Líder, Velocidades, etc)
+// DESCRIÇÃO: Cálculo e renderização de rankings
 // ============================================================
 
-import { 
-    resultadosRef, 
-    resultadosTempRef, 
+import {
+    resultadosRef,
+    resultadosTempRef,
     participantesRef,
     classificadosRef,
     getOnce
 } from '../services/firebase-service.js';
-import { VAGAS_POR_FASE, TOTAL_FASES } from '../utils/constants.js';
+import { VAGAS_POR_FASE, TOTAL_FASES, VALOR_PARTIDA_KEY } from '../utils/constants.js';
 import { escapeHtml } from '../utils/helpers.js';
-import { calcularBonusFase, obterPontuacaoComBonus } from '../config/bonus-config.js';
+import { VALOR_PARTIDA_PADRAO } from '../utils/constants.js';
 
-// ========== CACHE ==========
-const cache = new Map();
-
-// ========== CONFIGURAÇÃO ==========
-// VALOR_PARTIDA: quantidade de pontos que uma partida completa vale
-// Este valor pode ser alterado no painel do professor
 // ============================================================
-let VALOR_PARTIDA = 2000; // Valor padrão
+// VALOR DA PARTIDA
+// ============================================================
 
-// ========== FUNÇÃO PARA ALTERAR O VALOR DA PARTIDA ==========
+let VALOR_PARTIDA = VALOR_PARTIDA_PADRAO;
+
 export function setValorPartida(novoValor) {
     if (novoValor && novoValor > 0) {
         VALOR_PARTIDA = novoValor;
-        // Limpar cache para forçar recálculo
         limparCacheRanking();
         console.log(`✅ Valor da partida atualizado para: ${VALOR_PARTIDA} pontos`);
     }
@@ -38,66 +33,54 @@ export function getValorPartida() {
 }
 
 // ============================================================
-// FUNÇÃO: PROJEÇÃO DE PONTOS POR PARTIDA
+// CACHE
 // ============================================================
-// Converte a velocidade média em pontos projetados para a PRÓXIMA partida
-// Quanto menor o tempo, mais pontos (distribuição proporcional)
+
+const cache = new Map();
+
+export function limparCacheRanking() {
+    cache.clear();
+}
+
 // ============================================================
+// PROJEÇÃO DE PONTOS
+// ============================================================
+
 function projetarPontosPorPartida(velocidadeMedia) {
     if (!velocidadeMedia || velocidadeMedia <= 0) return 0;
-    
-    // Quanto menor o tempo, maior a pontuação
-    // Exemplo: 
-    //   - 1.00s → ganha 100% do valor da partida (2000 pts)
-    //   - 2.00s → ganha 50% do valor da partida (1000 pts)
-    //   - 0.50s → ganha 200% do valor da partida (4000 pts)
     const fator = 1.0 / velocidadeMedia;
     return Math.round(VALOR_PARTIDA * fator);
 }
 
-// ============================================================
-// FUNÇÃO: CALCULAR POSIÇÃO FUTURA DE CADA JOGADOR
-// ============================================================
 function calcularPosicoesFuturas(lista) {
-    // 1. Ordenar por pontuação (já está ordenado, mas garantimos)
     const ranking = [...lista].sort((a, b) => b.pontos - a.pontos);
-    
-    // 2. Atribuir posição atual
+
     ranking.forEach((j, idx) => {
         j.posAtual = idx + 1;
     });
-    
-    // 3. Calcular pontos futuros para cada jogador
+
     ranking.forEach((j) => {
-        // Usar a velocidade atual (melhor partida)
         let velMedia = j.velocidadeAtual;
-        
-        // Se não tiver velocidade atual, tentar calcular a partir dos dados
         if (!velMedia || velMedia <= 0) {
             if (j.acertos > 0 && j.tempo > 0) {
                 velMedia = j.tempo / j.acertos;
             }
         }
-        
-        // Projetar pontos da PRÓXIMA partida
         const pontosProjetados = projetarPontosPorPartida(velMedia);
         j.pontosFuturos = j.pontos + pontosProjetados;
         j.velocidadeMediaUsada = velMedia;
         j.pontosProjetados = pontosProjetados;
     });
-    
-    // 4. Calcular a posição futura de cada jogador
+
     ranking.forEach((j) => {
         let posFutura = 1;
         for (const adv of ranking) {
-            // Comparar com a pontuação ATUAL de cada adversário
             if (adv.pontos > j.pontosFuturos) {
                 posFutura++;
             }
         }
         j.posFutura = posFutura;
-        
-        // Determinar se vai subir, manter ou é o líder
+
         if (j.posAtual === 1) {
             j.tipoFuturo = 'lider';
         } else if (j.posFutura < j.posAtual) {
@@ -108,17 +91,21 @@ function calcularPosicoesFuturas(lista) {
             j.tipoFuturo = 'desce';
         }
     });
-    
+
     return ranking;
 }
 
-// ========== RENDERIZAR RANKING INDIVIDUAL ==========
+// ============================================================
+// RENDERIZAR RANKING INDIVIDUAL
+// ============================================================
+
 export async function renderRankingIndividual(fase, containerId, exibirClassificacao = false) {
     const cacheKey = `ind_${fase}_${exibirClassificacao}`;
-    
+
     if (cache.has(cacheKey) && Date.now() - cache.get(cacheKey).timestamp < 2000) {
         const cached = cache.get(cacheKey);
-        document.getElementById(containerId).innerHTML = cached.html;
+        const container = document.getElementById(containerId);
+        if (container) container.innerHTML = cached.html;
         return;
     }
 
@@ -133,11 +120,10 @@ export async function renderRankingIndividual(fase, containerId, exibirClassific
         const temporarios = snapTemp.val() || {};
         const participantes = snapParticipantes.val() || {};
 
-        // ========== CALCULAR RECORDE DE VELOCIDADE POR ALUNO ==========
+        // Calcular recorde de velocidade
         const recordeVelocMap = new Map();
         const todasFases = {};
 
-        // Buscar todas as fases para calcular o recorde de velocidade
         for (let f = 1; f <= TOTAL_FASES; f++) {
             const snap = await getOnce(resultadosRef(f));
             todasFases[f] = snap.val() || {};
@@ -158,7 +144,6 @@ export async function renderRankingIndividual(fase, containerId, exibirClassific
             }
         }
 
-        // ========== MAPEAR DADOS ==========
         const mapa = new Map();
 
         // Processar temporários
@@ -185,14 +170,14 @@ export async function renderRankingIndividual(fase, containerId, exibirClassific
         // Processar resultados finais
         for (const [id, partidas] of Object.entries(resultados)) {
             if (!partidas || partidas.length === 0) continue;
-            
+
             const melhor = [...partidas].sort((a, b) => b.pontos - a.pontos)[0];
             const participante = participantes[id] || {};
             const ultimaPartida = partidas[partidas.length - 1];
-            
+
             const existente = mapa.get(id);
             const velocidadeAtual = (melhor.acertos > 0 && melhor.tempo > 0) ? (melhor.tempo / melhor.acertos) : null;
-            
+
             if (!existente) {
                 mapa.set(id, {
                     id,
@@ -227,7 +212,6 @@ export async function renderRankingIndividual(fase, containerId, exibirClassific
             }
         }
 
-        // ========== ORDENAR ==========
         let lista = Array.from(mapa.values());
         lista.sort((a, b) => {
             if (b.pontos !== a.pontos) return b.pontos - a.pontos;
@@ -235,33 +219,35 @@ export async function renderRankingIndividual(fase, containerId, exibirClassific
             return a.tempo - b.tempo;
         });
 
-        // ========== CALCULAR POSIÇÕES FUTURAS ==========
         lista = calcularPosicoesFuturas(lista);
 
-        // ========== GERAR HTML ==========
-        const html = construirTabelaRankingCompleta(lista, fase, exibirClassificacao);
-        document.getElementById(containerId).innerHTML = html;
-        
+        const html = construirTabelaRanking(lista, fase, exibirClassificacao);
+        const container = document.getElementById(containerId);
+        if (container) container.innerHTML = html;
+
         cache.set(cacheKey, { html, timestamp: Date.now() });
 
     } catch (error) {
         console.error('Erro ao renderizar ranking:', error);
-        document.getElementById(containerId).innerHTML = `
-            <p style="color: #e74c3c;">❌ Erro ao carregar ranking. Tente novamente.</p>
-        `;
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = '<p style="color: #e74c3c;">❌ Erro ao carregar ranking. Tente novamente.</p>';
+        }
     }
 }
 
-// ========== CONSTRUIR TABELA DE RANKING COMPLETA ==========
-function construirTabelaRankingCompleta(lista, fase, exibirClassificacao) {
+// ============================================================
+// CONSTRUIR TABELA DE RANKING
+// ============================================================
+
+function construirTabelaRanking(lista, fase, exibirClassificacao) {
     if (lista.length === 0) {
-        return '<p>⏳ Nenhum resultado registrado ainda. Aguarde os primeiros jogadores...</p>';
+        return '<p>⏳ Nenhum resultado registrado ainda.</p>';
     }
 
     const vagas = VAGAS_POR_FASE[fase] || 30;
     const maxPontos = lista[0]?.pontos || 0;
 
-    // ========== CABEÇALHO COM TODAS AS COLUNAS ==========
     let html = `<table class="ranking-table"><thead><tr>
         <th>Pos</th>
         <th>Nome</th>
@@ -277,23 +263,20 @@ function construirTabelaRankingCompleta(lista, fase, exibirClassificacao) {
         <th>Turma</th>
     </tr></thead><tbody>`;
 
-    // ========== CORPO DA TABELA ==========
     for (let idx = 0; idx < lista.length; idx++) {
         const j = lista[idx];
         const posAtual = idx + 1;
         const posAnterior = j.ultimaPosicao || null;
-        
+
         let classePos = '';
         if (posAnterior !== null && posAnterior > 0) {
             if (posAtual < posAnterior) classePos = 'posicao-subiu';
             else if (posAtual > posAnterior) classePos = 'posicao-desceu';
         }
 
-        // ========== DELTA LÍDER ==========
         const deltaLider = maxPontos - j.pontos;
         const deltaText = deltaLider === 0 ? '🏆 Líder' : `+${deltaLider}`;
 
-        // ========== VELOCIDADES ==========
         let velocidadeAtualStr = '-';
         let velocidadeAtualNum = null;
         if (j.velocidadeAtual !== null && j.velocidadeAtual > 0) {
@@ -310,75 +293,54 @@ function construirTabelaRankingCompleta(lista, fase, exibirClassificacao) {
             recordeStr = recordeNum.toFixed(2) + 's';
         }
 
-        // ========== Δ VELOCIDADE ==========
         let deltaVelocidadeHtml = '';
         if (velocidadeAtualNum !== null && recordeNum !== null && recordeNum > 0) {
             const diff = velocidadeAtualNum - recordeNum;
             const diffAbs = Math.abs(diff);
             const diffStr = diffAbs.toFixed(2);
             let icon = '', classe = '';
-            if (diff < -0.01) { 
-                icon = '🟢'; 
-                classe = 'veloc-melhor'; 
-            } else if (diff > 0.01) { 
-                icon = '🔴'; 
-                classe = 'veloc-pior'; 
-            } else { 
-                icon = '⚪'; 
-                classe = 'veloc-igual'; 
-            }
+            if (diff < -0.01) { icon = '🟢'; classe = 'veloc-melhor'; }
+            else if (diff > 0.01) { icon = '🔴'; classe = 'veloc-pior'; }
+            else { icon = '⚪'; classe = 'veloc-igual'; }
             deltaVelocidadeHtml = `<span class="${classe}">${icon} ${diffStr}s</span>`;
         } else {
             deltaVelocidadeHtml = '—';
         }
 
-        // ========== FUT. POS. (antiga Ameaça) ==========
         let futPosHtml = '';
         if (j.tipoFuturo === 'lider') {
             futPosHtml = '—';
         } else {
-            // Apenas o número da posição com indicador visual
-            let icone = '';
-            let classe = '';
-            if (j.tipoFuturo === 'sobe') {
-                icone = '🟢';
-                classe = 'fut-sobe';
-            } else if (j.tipoFuturo === 'mantem') {
-                icone = '⚪';
-                classe = 'fut-mantem';
-            } else {
-                icone = '🔴';
-                classe = 'fut-desce';
-            }
+            let icone = '', classe = '';
+            if (j.tipoFuturo === 'sobe') { icone = '🟢'; classe = 'fut-sobe'; }
+            else if (j.tipoFuturo === 'mantem') { icone = '⚪'; classe = 'fut-mantem'; }
+            else { icone = '🔴'; classe = 'fut-desce'; }
             futPosHtml = `<span class="${classe}">${j.posFutura}° ${icone}</span>`;
         }
 
-        // ========== PROGRESSO ==========
         let progressoHtml = '';
         if (j.status === 'em_jogo') {
             progressoHtml = `${j.progresso}/20`;
         } else if (j.status === 'finalizado') {
-            progressoHtml = `✅ Finalizado`;
+            progressoHtml = '✅ Finalizado';
         } else {
             progressoHtml = '—';
         }
 
-        // ========== CLASSIFICAÇÃO ==========
         let colunaClassificacao = '';
         if (exibirClassificacao) {
             const classificado = posAtual <= vagas;
             if (fase === 5) {
-                colunaClassificacao = classificado 
-                    ? `<td class="classificado-sim">🏆 Finalista</td>` 
+                colunaClassificacao = classificado
+                    ? `<td class="classificado-sim">🏆 Finalista</td>`
                     : `<td class="classificado-nao">❌ Eliminado</td>`;
             } else {
-                colunaClassificacao = classificado 
-                    ? `<td class="classificado-sim">✅ Classificado</td>` 
+                colunaClassificacao = classificado
+                    ? `<td class="classificado-sim">✅ Classificado</td>`
                     : `<td class="classificado-nao">❌ Eliminado</td>`;
             }
         }
 
-        // ========== LINHA ==========
         html += `<tr>
             <td class="${classePos}">${posAtual}º</td>
             <td>${escapeHtml(j.nome)}</td>
@@ -399,26 +361,29 @@ function construirTabelaRankingCompleta(lista, fase, exibirClassificacao) {
     return html;
 }
 
-// ========== RENDERIZAR RANKING POR TURMAS ==========
+// ============================================================
+// RENDERIZAR RANKING POR TURMAS
+// ============================================================
+
 export async function renderRankingTurmas(containerId) {
     try {
         const turmasMap = new Map();
-        
+
         for (let fase = 1; fase <= TOTAL_FASES; fase++) {
             const snapResultados = await getOnce(resultadosRef(fase));
             const snapParticipantes = await getOnce(participantesRef(fase));
-            
+
             const resultados = snapResultados.val() || {};
             const participantes = snapParticipantes.val() || {};
-            
+
             for (const [id, partidas] of Object.entries(resultados)) {
                 if (!partidas || partidas.length === 0) continue;
-                
+
                 const melhor = [...partidas].sort((a, b) => b.pontos - a.pontos)[0];
                 const participante = participantes[id] || {};
                 const turma = participante.turma || '?';
                 const nome = participante.nome || 'Anônimo';
-                
+
                 if (!turmasMap.has(turma)) {
                     turmasMap.set(turma, {
                         alunos: new Map(),
@@ -429,7 +394,7 @@ export async function renderRankingTurmas(containerId) {
                         totalPartidas: 0
                     });
                 }
-                
+
                 const turmaData = turmasMap.get(turma);
                 if (!turmaData.alunos.has(id) || melhor.pontos > turmaData.alunos.get(id).pontos) {
                     turmaData.alunos.set(id, { pontos: melhor.pontos, nome });
@@ -442,7 +407,7 @@ export async function renderRankingTurmas(containerId) {
             let soma = 0;
             let melhorPontos = 0;
             let melhorNome = '';
-            
+
             for (const [id, info] of data.alunos.entries()) {
                 soma += info.pontos;
                 if (info.pontos > melhorPontos) {
@@ -450,7 +415,7 @@ export async function renderRankingTurmas(containerId) {
                     melhorNome = info.nome;
                 }
             }
-            
+
             data.somaPontos = soma;
             data.totalAlunos = data.alunos.size;
             data.melhorAlunoPontos = melhorPontos;
@@ -465,7 +430,7 @@ export async function renderRankingTurmas(containerId) {
             melhorPontos: data.melhorAlunoPontos,
             totalPartidas: data.totalPartidas
         }));
-        
+
         ranking.sort((a, b) => b.media - a.media);
 
         let html = `<table class="ranking-table"><thead><tr>
@@ -493,38 +458,41 @@ export async function renderRankingTurmas(containerId) {
         }
 
         html += '</tbody></table>';
-        document.getElementById(containerId).innerHTML = html;
+        const container = document.getElementById(containerId);
+        if (container) container.innerHTML = html;
 
     } catch (error) {
         console.error('Erro ao renderizar ranking por turmas:', error);
-        document.getElementById(containerId).innerHTML = `
-            <p style="color: #e74c3c;">❌ Erro ao carregar ranking por turmas.</p>
-        `;
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = '<p style="color: #e74c3c;">❌ Erro ao carregar ranking por turmas.</p>';
+        }
     }
 }
 
-// ========== RENDERIZAR RANKING GERAL ==========
+// ============================================================
+// RENDERIZAR RANKING GERAL
+// ============================================================
+
 export async function renderRankingGeral(containerId) {
     try {
         const todosAlunos = new Map();
-        
+
         for (let fase = 1; fase <= TOTAL_FASES; fase++) {
             const snapResultados = await getOnce(resultadosRef(fase));
             const snapParticipantes = await getOnce(participantesRef(fase));
-            const snapClassificados = await getOnce(classificadosRef(fase));
-            
+
             const resultados = snapResultados.val() || {};
             const participantes = snapParticipantes.val() || {};
-            const classificados = snapClassificados.val() || [];
-            
+
             for (const [id, partidas] of Object.entries(resultados)) {
                 if (!partidas || partidas.length === 0) continue;
-                
+
                 const melhor = [...partidas].sort((a, b) => b.pontos - a.pontos)[0];
                 const participante = participantes[id] || {};
                 const nome = participante.nome || 'Anônimo';
                 const turma = participante.turma || '?';
-                
+
                 if (!todosAlunos.has(id)) {
                     todosAlunos.set(id, {
                         id,
@@ -550,7 +518,7 @@ export async function renderRankingGeral(containerId) {
                     }
                     existente.totalPartidas += partidas.length;
                 }
-                
+
                 const jogador = todosAlunos.get(id);
                 for (const partida of partidas) {
                     if (partida.acertos > 0 && partida.tempo > 0) {
@@ -574,9 +542,9 @@ export async function renderRankingGeral(containerId) {
         let ranking = Array.from(todosAlunos.values());
         ranking.sort((a, b) => {
             if (a.ultimaFase !== b.ultimaFase) return b.ultimaFase - a.ultimaFase;
-            return b.melhorPontuacao - a.melhorPontuacao || 
-                   b.melhorAcertos - a.melhorAcertos || 
-                   a.melhorTempo - b.melhorTempo;
+            return b.melhorPontuacao - a.melhorPontuacao ||
+                b.melhorAcertos - a.melhorAcertos ||
+                a.melhorTempo - b.melhorTempo;
         });
 
         let html = `<table class="ranking-table"><thead><tr>
@@ -600,11 +568,11 @@ export async function renderRankingGeral(containerId) {
                 } else if (r.ultimaFase === 5) {
                     status = '🏆 Finalista';
                 } else {
-                    status += ` (Classificado)`;
+                    status += ' (Classificado)';
                 }
-                
-                const vel = r.melhorVelocidade !== null 
-                    ? r.melhorVelocidade.toFixed(2) + 's' 
+
+                const vel = r.melhorVelocidade !== null
+                    ? r.melhorVelocidade.toFixed(2) + 's'
                     : '-';
 
                 html += `<tr>
@@ -621,17 +589,14 @@ export async function renderRankingGeral(containerId) {
         }
 
         html += '</tbody></table>';
-        document.getElementById(containerId).innerHTML = html;
+        const container = document.getElementById(containerId);
+        if (container) container.innerHTML = html;
 
     } catch (error) {
         console.error('Erro ao renderizar ranking geral:', error);
-        document.getElementById(containerId).innerHTML = `
-            <p style="color: #e74c3c;">❌ Erro ao carregar ranking geral.</p>
-        `;
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = '<p style="color: #e74c3c;">❌ Erro ao carregar ranking geral.</p>';
+        }
     }
-}
-
-// ========== LIMPAR CACHE ==========
-export function limparCacheRanking() {
-    cache.clear();
 }
