@@ -1,6 +1,6 @@
 // ============================================================
 // ARQUIVO: js/ranking/ranking.js
-// DESCRIÇÃO: Ranking com todas as colunas (Ameaça, Delta Líder, Velocidades, etc)
+// DESCRIÇÃO: Ranking com todas as colunas (Fut. Pos., Delta Líder, Velocidades, etc)
 // ============================================================
 
 import { 
@@ -16,6 +16,75 @@ import { calcularBonusFase, obterPontuacaoComBonus } from '../config/bonus-confi
 
 // ========== CACHE ==========
 const cache = new Map();
+
+// ============================================================
+// FUNÇÃO: PROJEÇÃO DE PONTOS POR PARTIDA
+// ============================================================
+// Converte a velocidade média em pontos projetados para a PRÓXIMA partida
+// Quanto menor o tempo, mais pontos (ex: 1.00s → 1000 pts, 2.00s → 500 pts)
+// ============================================================
+function projetarPontosPorPartida(velocidadeMedia) {
+    if (!velocidadeMedia || velocidadeMedia <= 0) return 0;
+    // Fator de conversão: quanto menor o tempo, mais pontos
+    // Ajuste este valor conforme a regra do seu jogo
+    return Math.round(1000 / velocidadeMedia);
+}
+
+// ============================================================
+// FUNÇÃO: CALCULAR POSIÇÃO FUTURA DE CADA JOGADOR
+// ============================================================
+function calcularPosicoesFuturas(lista) {
+    // 1. Ordenar por pontuação (já está ordenado, mas garantimos)
+    const ranking = [...lista].sort((a, b) => b.pontos - a.pontos);
+    
+    // 2. Atribuir posição atual
+    ranking.forEach((j, idx) => {
+        j.posAtual = idx + 1;
+    });
+    
+    // 3. Calcular pontos futuros para cada jogador
+    ranking.forEach((j) => {
+        // Usar a velocidade atual (melhor partida)
+        let velMedia = j.velocidadeAtual;
+        
+        // Se não tiver velocidade atual, tentar calcular a partir dos dados
+        if (!velMedia || velMedia <= 0) {
+            if (j.acertos > 0 && j.tempo > 0) {
+                velMedia = j.tempo / j.acertos;
+            }
+        }
+        
+        // Projetar pontos da PRÓXIMA partida
+        const pontosProjetados = projetarPontosPorPartida(velMedia);
+        j.pontosFuturos = j.pontos + pontosProjetados;
+        j.velocidadeMediaUsada = velMedia;
+    });
+    
+    // 4. Calcular a posição futura de cada jogador
+    ranking.forEach((j) => {
+        let posFutura = 1;
+        for (const adv of ranking) {
+            // Comparar com a pontuação ATUAL de cada adversário
+            if (adv.pontos > j.pontosFuturos) {
+                posFutura++;
+            }
+        }
+        j.posFutura = posFutura;
+        
+        // Determinar se vai subir, manter ou é o líder
+        if (j.posAtual === 1) {
+            j.tipoFuturo = 'lider';
+        } else if (j.posFutura < j.posAtual) {
+            j.tipoFuturo = 'sobe';
+        } else if (j.posFutura === j.posAtual) {
+            j.tipoFuturo = 'mantem';
+        } else {
+            j.tipoFuturo = 'desce';
+        }
+    });
+    
+    return ranking;
+}
 
 // ========== RENDERIZAR RANKING INDIVIDUAL ==========
 export async function renderRankingIndividual(fase, containerId, exibirClassificacao = false) {
@@ -65,7 +134,6 @@ export async function renderRankingIndividual(fase, containerId, exibirClassific
 
         // ========== MAPEAR DADOS ==========
         const mapa = new Map();
-        const statusMap = new Map();
 
         // Processar temporários
         for (const [id, data] of Object.entries(temporarios)) {
@@ -141,6 +209,9 @@ export async function renderRankingIndividual(fase, containerId, exibirClassific
             return a.tempo - b.tempo;
         });
 
+        // ========== CALCULAR POSIÇÕES FUTURAS ==========
+        lista = calcularPosicoesFuturas(lista);
+
         // ========== GERAR HTML ==========
         const html = construirTabelaRankingCompleta(lista, fase, exibirClassificacao);
         document.getElementById(containerId).innerHTML = html;
@@ -168,7 +239,7 @@ function construirTabelaRankingCompleta(lista, fase, exibirClassificacao) {
     let html = `<table class="ranking-table"><thead><tr>
         <th>Pos</th>
         <th>Nome</th>
-        <th>Ameaça</th>
+        <th>Fut. Pos.</th>
         <th>Pontuação</th>
         <th>Delta Líder</th>
         <th>Veloc. Média</th>
@@ -235,8 +306,25 @@ function construirTabelaRankingCompleta(lista, fase, exibirClassificacao) {
             deltaVelocidadeHtml = '—';
         }
 
-        // ========== AMEAÇA ==========
-        let ameacaHtml = '—';
+        // ========== FUT. POS. (antiga Ameaça) ==========
+        let futPosHtml = '';
+        if (j.tipoFuturo === 'lider') {
+            futPosHtml = '—';
+        } else {
+            let icone = '';
+            let classe = '';
+            if (j.tipoFuturo === 'sobe') {
+                icone = ' 🟢';
+                classe = 'fut-sobe';
+            } else if (j.tipoFuturo === 'mantem') {
+                icone = ' ⚪';
+                classe = 'fut-mantem';
+            } else {
+                icone = ' 🔴';
+                classe = 'fut-desce';
+            }
+            futPosHtml = `<span class="${classe}">${j.posFutura}°${icone}</span>`;
+        }
 
         // ========== PROGRESSO ==========
         let progressoHtml = '';
@@ -267,7 +355,7 @@ function construirTabelaRankingCompleta(lista, fase, exibirClassificacao) {
         html += `<tr>
             <td class="${classePos}">${posAtual}º</td>
             <td>${escapeHtml(j.nome)}</td>
-            <td>${ameacaHtml}</td>
+            <td>${futPosHtml}</td>
             <td><strong>${j.pontos}</strong></td>
             <td>${deltaText}</td>
             <td>${velocidadeAtualStr}</td>
