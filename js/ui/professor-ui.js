@@ -66,6 +66,156 @@ export function initProfessorUI() {
     // CARREGAR VALOR DA PARTIDA AO INICIAR
     // ============================================================
     carregarValorPartida();
+    
+    // ============================================================
+    // CRIAR O BLOCO "VALOR DA PARTIDA" NO HTML VIA JAVASCRIPT
+    // ============================================================
+    criarBlocoValorPartida();
+}
+
+// ============================================================
+// FUNÇÃO: CRIAR BLOCO "VALOR DA PARTIDA" NO HTML
+// ============================================================
+function criarBlocoValorPartida() {
+    // Verificar se o bloco já existe
+    if (document.getElementById('bloco-valor-partida')) {
+        return;
+    }
+    
+    // Procurar a aba de configurações
+    const tabConfig = document.getElementById('tab-configuracoes');
+    if (!tabConfig) {
+        console.warn('⚠️ Aba de configurações não encontrada. Criando...');
+        // Se não existir, criar a aba
+        criarAbaConfiguracoes();
+        return;
+    }
+    
+    // Criar o bloco HTML
+    const bloco = document.createElement('div');
+    bloco.id = 'bloco-valor-partida';
+    bloco.className = 'config-card';
+    bloco.style.cssText = `
+        background: #1e293b;
+        padding: 24px;
+        border-radius: 16px;
+        margin-bottom: 24px;
+        border: 1px solid #334155;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+    `;
+    
+    bloco.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 28px;">💰</span>
+            <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Valor da Partida</h4>
+            <span style="background: #3b82f6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+        </div>
+        
+        <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+            Define quantos pontos uma partida completa vale. 
+            Este valor é usado para <strong>projetar a posição futura</strong> dos jogadores no ranking,
+            baseado na sua velocidade média de acertos.
+        </p>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+            <label for="input-valor-partida" style="color: #94a3b8; font-weight: 500; font-size: 14px;">
+                Pontos por partida:
+            </label>
+            
+            <input 
+                type="number" 
+                id="input-valor-partida" 
+                value="2000" 
+                min="1" 
+                max="10000" 
+                step="100"
+                style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 16px; border-radius: 10px; font-size: 16px; width: 180px; font-weight: 600; transition: border 0.3s, box-shadow 0.3s;"
+                onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2)'"
+                onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'"
+            />
+            
+            <button 
+                id="btn-atualizar-valor-partida" 
+                style="background: #3b82f6; color: white; border: none; padding: 10px 28px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.3s, transform 0.15s; display: flex; align-items: center; gap: 8px;"
+                onmouseover="this.style.background='#2563eb'"
+                onmouseout="this.style.background='#3b82f6'"
+                onmousedown="this.style.transform='scale(0.97)'"
+                onmouseup="this.style.transform='scale(1)'"
+            >
+                <span>🔄</span> Atualizar
+            </button>
+            
+            <span style="color: #64748b; font-size: 13px; margin-left: 4px; display: flex; align-items: center; gap: 4px;">
+                Valor atual: 
+                <strong id="valor-partida-atual" style="color: #4ade80; font-size: 15px;">2000</strong> 
+                pontos
+            </span>
+        </div>
+        
+        <div id="feedback-valor-partida" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none; transition: all 0.3s;"></div>
+        
+        <div style="margin-top: 12px; padding: 12px 16px; background: #0f172a; border-radius: 8px; border-left: 3px solid #facc15;">
+            <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+                💡 <strong>Exemplo:</strong> Com 2000 pontos por partida, um jogador com 
+                <strong>1.00s</strong> de média projeta <strong>2000 pts</strong> na próxima partida, 
+                enquanto um com <strong>2.00s</strong> projeta <strong>1000 pts</strong>.
+            </p>
+        </div>
+    `;
+    
+    // Inserir no início da aba de configurações
+    tabConfig.insertBefore(bloco, tabConfig.firstChild);
+    
+    // Configurar eventos do bloco
+    document.getElementById('btn-atualizar-valor-partida')?.addEventListener('click', window.atualizarValorPartida);
+    document.getElementById('input-valor-partida')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            window.atualizarValorPartida();
+        }
+    });
+    
+    console.log('✅ Bloco "Valor da Partida" criado com sucesso!');
+}
+
+// ============================================================
+// FUNÇÃO: CRIAR ABA DE CONFIGURAÇÕES SE NÃO EXISTIR
+// ============================================================
+function criarAbaConfiguracoes() {
+    // Verificar se o container de abas existe
+    const tabContainer = document.querySelector('.tab-content-wrapper');
+    if (!tabContainer) {
+        console.error('❌ Container de abas não encontrado!');
+        return;
+    }
+    
+    // Criar a aba de configurações
+    const tabConfig = document.createElement('div');
+    tabConfig.id = 'tab-configuracoes';
+    tabConfig.className = 'tab-content hidden';
+    tabConfig.innerHTML = `<h3 style="color: #f1f5f9; margin-bottom: 20px;">⚙️ Configurações</h3>`;
+    
+    tabContainer.appendChild(tabConfig);
+    
+    // Adicionar o botão no menu de abas
+    const tabNav = document.querySelector('.tab-nav');
+    if (tabNav) {
+        const btn = document.createElement('button');
+        btn.className = 'tab-btn';
+        btn.setAttribute('data-tab', 'configuracoes');
+        btn.textContent = '⚙️ Configurações';
+        tabNav.appendChild(btn);
+        
+        // Configurar evento do novo botão
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            tabConfig.classList.remove('hidden');
+        });
+    }
+    
+    // Agora criar o bloco dentro da nova aba
+    criarBlocoValorPartida();
 }
 
 // ============================================================
@@ -128,6 +278,19 @@ async function salvarValorPartida(novoValor) {
         const exibicao = document.getElementById('valor-partida-atual');
         if (exibicao) exibicao.textContent = novoValor;
         
+        // Feedback visual
+        const feedback = document.getElementById('feedback-valor-partida');
+        if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#14532d';
+            feedback.style.color = '#4ade80';
+            feedback.style.border = '1px solid #4ade80';
+            feedback.textContent = `✅ Valor da partida atualizado para ${novoValor} pontos!`;
+            setTimeout(() => {
+                feedback.style.display = 'none';
+            }, 5000);
+        }
+        
         // Recarregar os rankings
         recarregarRankings();
         
@@ -136,6 +299,16 @@ async function salvarValorPartida(novoValor) {
         
     } catch (e) {
         console.error('Erro ao salvar valor da partida:', e);
+        
+        const feedback = document.getElementById('feedback-valor-partida');
+        if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#7f1d1d';
+            feedback.style.color = '#f87171';
+            feedback.style.border = '1px solid #f87171';
+            feedback.textContent = `❌ Erro ao salvar: ${e.message}`;
+        }
+        
         toast('❌ Erro ao salvar valor da partida.');
         return false;
     }
@@ -582,20 +755,6 @@ function configurarEventosProfessor() {
     
     document.getElementById('btn-salvar-config')?.addEventListener('click', salvarConfiguracoesGerais);
     document.getElementById('btn-restaurar-padrao')?.addEventListener('click', restaurarConfiguracoesPadrao);
-    
-    // ============================================================
-    // EVENTO: BOTÃO ATUALIZAR VALOR DA PARTIDA
-    // ============================================================
-    document.getElementById('btn-atualizar-valor-partida')?.addEventListener('click', window.atualizarValorPartida);
-    
-    // ============================================================
-    // EVENTO: TECLA ENTER NO INPUT DO VALOR DA PARTIDA
-    // ============================================================
-    document.getElementById('input-valor-partida')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            window.atualizarValorPartida();
-        }
-    });
 }
 
 // ============================================================
