@@ -5,12 +5,13 @@
 
 import { listenToCopa, listenToConfiguracoes, carregarIntervalos } from '../services/firebase-service.js';
 import { CONFIG_PADRAO } from '../config/firebase-config.js';
+import { VAGAS_POR_FASE, MODALIDADE_CONFIG } from '../utils/constants.js';
 
 class AppState {
     constructor() {
-        this.data = null;                 // estado completo do nó copaV2
-        this.configuracoes = { ...CONFIG_PADRAO }; // configurações do jogo
-        this.userType = null;             // 'professor' | 'aluno' | 'projecao'
+        this.data = null;
+        this.configuracoes = { ...CONFIG_PADRAO };
+        this.userType = null;
         this.alunoId = null;
         this.alunoNome = null;
         this.alunoTurma = null;
@@ -19,6 +20,7 @@ class AppState {
         this.intervalos = { individual: 4, equipes: 60 };
         this.listeners = [];
         this.isInitialized = false;
+        this.tempoEsgotadoProcessado = false;
     }
 
     // ========== INICIALIZAR ==========
@@ -26,23 +28,26 @@ class AppState {
         if (this.isInitialized) return;
         this.isInitialized = true;
 
-        // Escuta mudanças na copa
         listenToCopa((data) => {
             this.data = data || this.getDefaultState();
+            if (!this.data.resultados) this.data.resultados = {};
+            if (!this.data.participantes) this.data.participantes = {};
+            if (!this.data.classificados) this.data.classificados = {};
+            if (!this.data.modalidade) this.data.modalidade = '2-5';
+            if (this.data.status === 'pausado' && !this.data.tempoRestantePausa) {
+                this.data.tempoRestantePausa = 0;
+            }
             this.notify();
         });
 
-        // Escuta mudanças nas configurações
         listenToConfiguracoes((config) => {
             if (config) {
                 this.configuracoes = { ...this.configuracoes, ...config };
-                // Atualiza configurações dos módulos
                 this.atualizarConfiguracoesModulos();
                 this.notify();
             }
         });
 
-        // Carrega intervalos
         carregarIntervalos().then(intervalos => {
             this.intervalos = intervalos;
         });
@@ -77,9 +82,7 @@ class AppState {
     // ========== REGISTRAR OBSERVADOR ==========
     subscribe(callback) {
         this.listeners.push(callback);
-        // Se já tiver dados, chama imediatamente
         if (this.data) callback(this.data);
-        // Retorna função para cancelar inscrição
         return () => {
             this.listeners = this.listeners.filter(fn => fn !== callback);
         };
@@ -88,9 +91,6 @@ class AppState {
     // ========== ATUALIZAR CONFIGURAÇÕES DOS MÓDULOS ==========
     atualizarConfiguracoesModulos() {
         const config = this.configuracoes;
-
-        // Atualiza configurações de cada módulo
-        // (serão importados dinamicamente)
         if (window.soundManager) {
             window.soundManager.updateConfig({
                 sons: config.sons,
@@ -98,80 +98,36 @@ class AppState {
                 sonsErro: config.sonsErro
             });
         }
-
         if (window.confettiManager) {
-            window.confettiManager.updateConfig({
-                confetes: config.confetes
-            });
+            window.confettiManager.updateConfig({ confetes: config.confetes });
         }
-
         if (window.achievementManager) {
-            window.achievementManager.updateConfig({
-                conquistas: config.conquistas
-            });
+            window.achievementManager.updateConfig({ conquistas: config.conquistas });
         }
-
         if (window.notificationManager) {
-            window.notificationManager.updateConfig({
-                notificacoes: config.notificacoes
-            });
+            window.notificationManager.updateConfig({ notificacoes: config.notificacoes });
         }
-
         if (window.gamepadManager) {
-            window.gamepadManager.updateConfig({
-                gamepad: config.gamepad
-            });
+            window.gamepadManager.updateConfig({ gamepad: config.gamepad });
         }
-
         if (window.syncService) {
-            window.syncService.updateConfig({
-                syncOffline: config.syncOffline
-            });
+            window.syncService.updateConfig({ syncOffline: config.syncOffline });
         }
-
         if (window.BonusCalculator) {
-            window.BonusCalculator.updateConfig({
-                ativo: config.bonus
-            });
+            window.BonusCalculator.updateConfig({ ativo: config.bonus });
         }
     }
 
     // ========== GETTERS ==========
-    get fase() {
-        return this.data?.fase || 1;
-    }
-
-    get status() {
-        return this.data?.status || 'aguardando';
-    }
-
-    get modalidade() {
-        return this.data?.modalidade || '2-5';
-    }
-
-    get participantes() {
-        return this.data?.participantes || {};
-    }
-
-    get resultados() {
-        return this.data?.resultados || {};
-    }
-
-    get classificados() {
-        return this.data?.classificados || {};
-    }
-
-    get tempoFase() {
-        return this.data?.tempoFase || 12;
-    }
-
-    get fim() {
-        return this.data?.fim || 0;
-    }
-
-    get tempoRestantePausa() {
-        return this.data?.tempoRestantePausa || 0;
-    }
+    get fase() { return this.data?.fase || 1; }
+    get status() { return this.data?.status || 'aguardando'; }
+    get modalidade() { return this.data?.modalidade || '2-5'; }
+    get participantes() { return this.data?.participantes || {}; }
+    get resultados() { return this.data?.resultados || {}; }
+    get classificados() { return this.data?.classificados || {}; }
+    get tempoFase() { return this.data?.tempoFase || 12; }
+    get fim() { return this.data?.fim || 0; }
+    get tempoRestantePausa() { return this.data?.tempoRestantePausa || 0; }
 
     // ========== MÉTODOS DE UTILIDADE ==========
     isClassificado(fase, alunoId) {
@@ -181,17 +137,11 @@ class AppState {
     }
 
     getVagasFase(fase) {
-        const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
         return VAGAS_POR_FASE[fase] || 30;
     }
 
     getModalidadeNome() {
-        const MODALIDADE_CONFIG = {
-            "2-5": { nome: "Tabuada 2️⃣➡️5️⃣" },
-            "6-9": { nome: "Tabuada 6️⃣➡️9️⃣" },
-            "0-10": { nome: "Tabuada 0️⃣➡️🔟 (Completa)" }
-        };
-        return MODALIDADE_CONFIG[this.modalidade]?.nome || "Tabuada 2-5";
+        return MODALIDADE_CONFIG[this.modalidade]?.nome || 'Tabuada 2-5';
     }
 
     // ========== ATUALIZAR ESTADO ==========
@@ -231,5 +181,4 @@ class AppState {
     }
 }
 
-// ========== EXPORTAR INSTÂNCIA ÚNICA ==========
 export const appState = new AppState();
