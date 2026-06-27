@@ -16,7 +16,14 @@ import {
     listenToOnline,
     getOnce
 } from '../services/firebase-service.js';
-import { renderRankingIndividual, renderRankingTurmas, renderRankingGeral } from '../ranking/ranking.js';
+import { 
+    renderRankingIndividual, 
+    renderRankingTurmas, 
+    renderRankingGeral,
+    setValorPartida,
+    getValorPartida,
+    limparCacheRanking
+} from '../ranking/ranking.js';
 import { toast, updateLastSyncTime, escapeHtml } from '../utils/helpers.js';
 import { soundManager } from '../utils/sounds.js';
 import { confettiManager } from '../utils/confetti.js';
@@ -25,6 +32,11 @@ import { notificationManager } from '../utils/notifications.js';
 import { gamepadManager } from '../utils/gamepad.js';
 import { syncService } from '../services/sync-service.js';
 import { CONFIG_PADRAO } from '../config/firebase-config.js';
+
+// ============================================================
+// CONSTANTE: CHAVE PARA SALVAR O VALOR DA PARTIDA NO FIREBASE
+// ============================================================
+const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
 
 export function initProfessorUI() {
     document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
@@ -49,7 +61,125 @@ export function initProfessorUI() {
     
     configurarSwitchesConfiguracoes();
     carregarConfiguracoes();
+    
+    // ============================================================
+    // CARREGAR VALOR DA PARTIDA AO INICIAR
+    // ============================================================
+    carregarValorPartida();
 }
+
+// ============================================================
+// FUNÇÕES PARA GERENCIAR O VALOR DA PARTIDA
+// ============================================================
+
+/**
+ * Carrega o valor da partida do Firebase e atualiza a UI
+ */
+async function carregarValorPartida() {
+    try {
+        const snap = await db.ref(VALOR_PARTIDA_KEY).once('value');
+        let valor = snap.val();
+        
+        // Se não existir, salvar o valor padrão (2000)
+        if (valor === null || valor === undefined) {
+            valor = 2000;
+            await db.ref(VALOR_PARTIDA_KEY).set(valor);
+        }
+        
+        // Atualizar no módulo de ranking
+        setValorPartida(valor);
+        
+        // Atualizar a UI
+        const input = document.getElementById('input-valor-partida');
+        const exibicao = document.getElementById('valor-partida-atual');
+        
+        if (input) input.value = valor;
+        if (exibicao) exibicao.textContent = valor;
+        
+        console.log(`✅ Valor da partida carregado: ${valor} pontos`);
+        
+    } catch (e) {
+        console.warn('Erro ao carregar valor da partida:', e);
+        // Usar valor padrão
+        setValorPartida(2000);
+    }
+}
+
+/**
+ * Salva o valor da partida no Firebase e atualiza o módulo de ranking
+ */
+async function salvarValorPartida(novoValor) {
+    if (!novoValor || novoValor < 1) {
+        toast('❌ Digite um valor válido maior que 0.');
+        return false;
+    }
+    
+    try {
+        // Salvar no Firebase
+        await db.ref(VALOR_PARTIDA_KEY).set(novoValor);
+        
+        // Atualizar no módulo de ranking
+        setValorPartida(novoValor);
+        
+        // Limpar cache para forçar recálculo
+        limparCacheRanking();
+        
+        // Atualizar a UI
+        const exibicao = document.getElementById('valor-partida-atual');
+        if (exibicao) exibicao.textContent = novoValor;
+        
+        // Recarregar os rankings
+        recarregarRankings();
+        
+        toast(`✅ Valor da partida atualizado para ${novoValor} pontos!`);
+        return true;
+        
+    } catch (e) {
+        console.error('Erro ao salvar valor da partida:', e);
+        toast('❌ Erro ao salvar valor da partida.');
+        return false;
+    }
+}
+
+/**
+ * Recarrega todos os rankings visíveis
+ */
+function recarregarRankings() {
+    const faseAtual = appState.fase || 1;
+    
+    // Recarregar ranking da fase (se visível)
+    const tabFase = document.getElementById('tab-ranking-fase');
+    if (tabFase && !tabFase.classList.contains('hidden')) {
+        const faseSelecionada = document.getElementById('select-fase-ranking')?.value || faseAtual;
+        renderRankingIndividual(parseInt(faseSelecionada), 'ranking-parcial', true);
+    }
+    
+    // Recarregar ranking geral (se visível)
+    const tabGeral = document.getElementById('tab-ranking-geral');
+    if (tabGeral && !tabGeral.classList.contains('hidden')) {
+        renderRankingGeral('ranking-geral-container');
+    }
+    
+    // Recarregar ranking por turmas (se visível)
+    const tabTurmas = document.getElementById('tab-ranking-turmas');
+    if (tabTurmas && !tabTurmas.classList.contains('hidden')) {
+        renderRankingTurmas('ranking-turmas-container');
+    }
+}
+
+// ============================================================
+// FUNÇÃO: VALOR DA PARTIDA - EXPORTADA PARA USO GLOBAL
+// ============================================================
+window.atualizarValorPartida = async function() {
+    const input = document.getElementById('input-valor-partida');
+    if (!input) {
+        console.error('❌ Campo "input-valor-partida" não encontrado!');
+        return;
+    }
+    
+    const novoValor = parseInt(input.value);
+    await salvarValorPartida(novoValor);
+};
 
 // ============================================================
 // CARREGAR CONFIGURAÇÕES (INCLUINDO OFFLINE)
@@ -89,6 +219,11 @@ async function carregarConfiguracoes() {
     } catch (e) {
         console.warn('Erro ao carregar configuração offline:', e);
     }
+    
+    // ============================================================
+    // CARREGAR VALOR DA PARTIDA
+    // ============================================================
+    await carregarValorPartida();
 }
 
 function setSwitch(id, value) {
@@ -447,6 +582,20 @@ function configurarEventosProfessor() {
     
     document.getElementById('btn-salvar-config')?.addEventListener('click', salvarConfiguracoesGerais);
     document.getElementById('btn-restaurar-padrao')?.addEventListener('click', restaurarConfiguracoesPadrao);
+    
+    // ============================================================
+    // EVENTO: BOTÃO ATUALIZAR VALOR DA PARTIDA
+    // ============================================================
+    document.getElementById('btn-atualizar-valor-partida')?.addEventListener('click', window.atualizarValorPartida);
+    
+    // ============================================================
+    // EVENTO: TECLA ENTER NO INPUT DO VALOR DA PARTIDA
+    // ============================================================
+    document.getElementById('input-valor-partida')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            window.atualizarValorPartida();
+        }
+    });
 }
 
 // ============================================================
