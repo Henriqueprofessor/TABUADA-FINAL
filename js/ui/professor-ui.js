@@ -207,4 +207,590 @@ function recarregarRankings() {
     const tabFase = document.getElementById('tab-ranking-fase');
     if (tabFase && !tabFase.classList.contains('hidden')) {
         const faseSelecionada = document.getElementById('select-fase-ranking')?.value || faseAtual;
-        renderRankingIndividual(parseInt(faseSelecionada),
+        renderRankingIndividual(parseInt(faseSelecionada), 'ranking-parcial', true);
+    }
+    const tabGeral = document.getElementById('tab-ranking-geral');
+    if (tabGeral && !tabGeral.classList.contains('hidden')) {
+        renderRankingGeral('ranking-geral-container');
+    }
+    const tabTurmas = document.getElementById('tab-ranking-turmas');
+    if (tabTurmas && !tabTurmas.classList.contains('hidden')) {
+        renderRankingTurmas('ranking-turmas-container');
+    }
+}
+
+// ============================================================
+// CARREGAR CONFIGURAÇÕES
+// ============================================================
+async function carregarConfiguracoes() {
+    const config = appState.configuracoes || CONFIG_PADRAO;
+
+    setSwitch('cfg-confetes', config.confetes);
+    setSwitch('cfg-notificacoes', config.notificacoes);
+    setSwitch('cfg-brilho', config.brilho);
+    setSwitch('cfg-sons', config.sons);
+    setSwitch('cfg-sons-celebracao', config.sonsCelebracao);
+    setSwitch('cfg-sons-erro', config.sonsErro);
+    setSwitch('cfg-bonus', config.bonus);
+    setSwitch('cfg-conquistas', config.conquistas);
+    setSwitch('cfg-gamepad', config.gamepad);
+
+    try {
+        const snap = await getOnce(db.ref('copaV2/configuracoes/syncOffline'));
+        const ativo = snap.val() !== null ? snap.val() : true;
+        setSwitch('cfg-sync-offline', ativo);
+        if (syncService) {
+            syncService.updateConfig({ syncOffline: ativo });
+        }
+    } catch (e) {
+        console.warn('Erro ao carregar configuração offline:', e);
+    }
+}
+
+function setSwitch(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.checked = value;
+}
+
+// ============================================================
+// CONFIGURAR SWITCHES
+// ============================================================
+function configurarSwitchesConfiguracoes() {
+    document.getElementById('cfg-sync-offline')?.addEventListener('change', async function() {
+        const ativo = this.checked;
+        try {
+            await db.ref('copaV2/configuracoes/syncOffline').set(ativo);
+            if (syncService) {
+                syncService.updateConfig({ syncOffline: ativo });
+            }
+            toast(ativo ? '✅ Sincronização offline ativada!' : '⏸️ Sincronização offline desativada.');
+        } catch (e) {
+            toast('❌ Erro ao salvar configuração.');
+            this.checked = !ativo;
+        }
+    });
+
+    document.getElementById('cfg-confetes')?.addEventListener('change', function() {
+        if (confettiManager) confettiManager.updateConfig({ confetes: this.checked });
+        salvarConfiguracao('confetes', this.checked);
+    });
+
+    document.getElementById('cfg-notificacoes')?.addEventListener('change', function() {
+        if (notificationManager) notificationManager.updateConfig({ notificacoes: this.checked });
+        salvarConfiguracao('notificacoes', this.checked);
+    });
+
+    document.getElementById('cfg-sons')?.addEventListener('change', function() {
+        if (soundManager) soundManager.updateConfig({ sons: this.checked });
+        salvarConfiguracao('sons', this.checked);
+    });
+
+    document.getElementById('cfg-conquistas')?.addEventListener('change', function() {
+        if (achievementManager) achievementManager.updateConfig({ conquistas: this.checked });
+        salvarConfiguracao('conquistas', this.checked);
+    });
+
+    document.getElementById('cfg-gamepad')?.addEventListener('change', function() {
+        if (gamepadManager) gamepadManager.updateConfig({ gamepad: this.checked });
+        salvarConfiguracao('gamepad', this.checked);
+    });
+}
+
+async function salvarConfiguracao(key, value) {
+    try {
+        await db.ref(`copaV2/configuracoes/${key}`).set(value);
+    } catch (e) {
+        console.warn('Erro ao salvar configuração:', e);
+    }
+}
+
+// ============================================================
+// ATUALIZAR UI DO PROFESSOR
+// ============================================================
+function atualizarUIProfessor(data) {
+    if (!data) return;
+
+    document.getElementById('fase-atual-titulo').innerText = data.fase;
+    document.getElementById('fase-progresso').innerText = `${data.fase}/5`;
+    document.getElementById('prof-fase-info').innerText = `${data.fase}/5`;
+
+    const modalidadeNome = MODALIDADE_CONFIG[data.modalidade]?.nome || 'Tabuada 2-5';
+    document.getElementById('modalidade-titulo').innerText = modalidadeNome;
+
+    atualizarTimerProfessor(data);
+    atualizarBotoesProfessor(data);
+    atualizarRankingsProfessor();
+    renderListaAlunosGerenciar();
+}
+
+function atualizarTimerProfessor(data) {
+    const timerDisplay = document.getElementById('timer-fase');
+    if (!timerDisplay) return;
+
+    if (data.status === 'em_andamento') {
+        const restante = Math.max(0, data.fim - Date.now());
+        if (restante <= 0) {
+            timerDisplay.innerText = 'ENCERRADO';
+        } else {
+            const min = Math.floor(restante / 60000);
+            const sec = Math.floor((restante % 60000) / 1000);
+            timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+        }
+    } else if (data.status === 'pausado') {
+        const tempoPausado = data.tempoRestantePausa || 0;
+        const min = Math.floor(tempoPausado / 60000);
+        const sec = Math.floor((tempoPausado % 60000) / 1000);
+        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+    } else {
+        timerDisplay.innerText = data.status === 'finalizado' ? 'FIM' : 'PAUSADO';
+    }
+}
+
+function atualizarBotoesProfessor(data) {
+    const btnPararContinuar = document.getElementById('btn-continuar-parar-fase');
+    if (!btnPararContinuar) return;
+
+    if (data.status === 'em_andamento') {
+        btnPararContinuar.innerText = '⏹️ Parar Fase';
+        btnPararContinuar.className = 'btn-danger';
+        btnPararContinuar.disabled = false;
+        btnPararContinuar.onclick = () => pausarFase();
+    } else if (data.status === 'pausado') {
+        btnPararContinuar.innerText = '▶️ Continuar Fase';
+        btnPararContinuar.className = 'btn-success';
+        btnPararContinuar.disabled = false;
+        btnPararContinuar.onclick = () => continuarFase();
+    } else {
+        btnPararContinuar.disabled = true;
+        btnPararContinuar.innerText = '⏹️ Parar Fase';
+    }
+}
+
+function atualizarRankingsProfessor() {
+    const tabRankingGeral = document.getElementById('tab-ranking-geral');
+    if (tabRankingGeral && !tabRankingGeral.classList.contains('hidden')) {
+        renderRankingGeral('ranking-geral-container');
+    }
+
+    const tabRankingFase = document.getElementById('tab-ranking-fase');
+    if (tabRankingFase && !tabRankingFase.classList.contains('hidden')) {
+        const faseSelecionada = document.getElementById('select-fase-ranking')?.value || appState.fase;
+        renderRankingIndividual(parseInt(faseSelecionada), 'ranking-parcial', true);
+    }
+
+    const tabRankingTurmas = document.getElementById('tab-ranking-turmas');
+    if (tabRankingTurmas && !tabRankingTurmas.classList.contains('hidden')) {
+        renderRankingTurmas('ranking-turmas-container');
+    }
+}
+
+function atualizarOnlineStats(data) {
+    let totalAlunos = 0;
+    let totalTorcida = 0;
+
+    if (data) {
+        Object.values(data).forEach(val => {
+            if (val && val.tipo === 'torcida') totalTorcida++;
+            else totalAlunos++;
+        });
+    }
+
+    const totalOnline = totalAlunos + totalTorcida;
+    document.getElementById('jogadores-online').innerText = totalOnline;
+    document.getElementById('prof-online-count').innerText = totalOnline;
+
+    const listaDiv = document.getElementById('lista-participantes');
+    if (!listaDiv) return;
+
+    let html = '<div class="online-list"><strong>👥 Jogadores:</strong><ul style="list-style:none; margin:5px 0 10px 0;">';
+
+    if (data) {
+        let temAlunos = false;
+        Object.entries(data).forEach(([id, val]) => {
+            if (!val || val.tipo === 'torcida') return;
+            temAlunos = true;
+            html += `<li>🟢 ${escapeHtml(val.nome)} (${escapeHtml(val.turma)})</li>`;
+        });
+        if (!temAlunos) html += '<li>Nenhum jogador online</li>';
+    } else {
+        html += '<li>Nenhum jogador online</li>';
+    }
+
+    html += '</ul><strong>📺 Espectadores:</strong><ul style="list-style:none; margin:5px 0 0 0;">';
+
+    if (data) {
+        let temTorcida = false;
+        Object.entries(data).forEach(([id, val]) => {
+            if (val && val.tipo === 'torcida') {
+                temTorcida = true;
+                html += `<li>👀 Espectador conectado</li>`;
+            }
+        });
+        if (!temTorcida) html += '<li>Nenhum espectador online</li>';
+    } else {
+        html += '<li>Nenhum espectador online</li>';
+    }
+
+    html += '</ul></div>';
+    listaDiv.innerHTML = html;
+}
+
+// ============================================================
+// FUNÇÕES DE CONTROLE DA FASE
+// ============================================================
+async function pausarFase() {
+    const data = appState.data;
+    if (!data || data.status !== 'em_andamento') return;
+    const agora = Date.now();
+    const tempoRestante = Math.max(0, data.fim - agora);
+    await updateCopa({ status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
+    toast('⏸️ Fase pausada.');
+}
+
+async function continuarFase() {
+    const data = appState.data;
+    if (!data || data.status !== 'pausado') return;
+    const tempoRestante = data.tempoRestantePausa || 0;
+    if (tempoRestante <= 0) { toast('⚠️ Tempo esgotado.'); return; }
+    const novoFim = Date.now() + tempoRestante;
+    await updateCopa({ status: 'em_andamento', fim: novoFim, tempoRestantePausa: null });
+    toast('▶️ Fase retomada!');
+}
+
+async function resetarFase() {
+    const faseAtual = appState.fase;
+    if (!confirm(`⚠️ Resetar a Fase ${faseAtual}?`)) return;
+    await removeNode(resultadosRef(faseAtual));
+    await removeNode(participantesRef(faseAtual));
+    await removeNode(resultadosTempRef(faseAtual));
+    await removeNode(classificadosRef(faseAtual));
+    await updateCopa({ status: 'aguardando', fim: 0, tempoRestantePausa: null });
+    toast(`✅ Fase ${faseAtual} resetada!`);
+}
+
+async function avancarFase() {
+    const faseAtual = appState.fase;
+    const data = appState.data;
+    if (faseAtual > 5) { toast('🏆 Competição já finalizada!'); return; }
+
+    const resultados = data?.resultados?.[faseAtual] || {};
+    let lista = [];
+    for (const [id, partidas] of Object.entries(resultados)) {
+        if (partidas?.length) {
+            const melhor = [...partidas].sort((a, b) => b.pontos - a.pontos)[0];
+            lista.push({ id, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo });
+        }
+    }
+    lista.sort((a, b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
+
+    const vagas = VAGAS_POR_FASE[faseAtual] || 30;
+    const classificadosIds = lista.slice(0, vagas).map(l => l.id);
+
+    await classificadosRef(faseAtual).set(classificadosIds);
+
+    const participantesAtual = data?.participantes?.[faseAtual] || {};
+    const participantesProxima = {};
+    for (const id of classificadosIds) {
+        if (participantesAtual[id]) {
+            participantesProxima[id] = participantesAtual[id];
+        } else {
+            for (let f = faseAtual - 1; f >= 1; f--) {
+                if (data?.participantes?.[f]?.[id]) {
+                    participantesProxima[id] = data.participantes[f][id];
+                    break;
+                }
+            }
+        }
+    }
+    if (Object.keys(participantesProxima).length > 0) {
+        await participantesRef(faseAtual + 1).set(participantesProxima);
+    }
+
+    await removeNode(resultadosTempRef(faseAtual));
+
+    if (faseAtual === 5) {
+        toast('🏆 COMPETIÇÃO FINALIZADA!');
+        await updateCopa({ status: 'finalizado', fim: 0, tempoRestantePausa: null });
+        return;
+    }
+
+    await updateCopa({ fase: faseAtual + 1, status: 'aguardando', fim: 0, tempoRestantePausa: null });
+    toast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados.`);
+}
+
+async function resetarCompeticao() {
+    const modalidade = appState.modalidade || '2-5';
+    await setCopa({
+        fase: 1,
+        status: 'aguardando',
+        tempoFase: 12,
+        fim: 0,
+        modalidade: modalidade,
+        resultados: {},
+        participantes: {},
+        classificados: {}
+    });
+    toast('✅ Competição resetada!');
+    setTimeout(() => location.reload(), 1000);
+}
+
+// ============================================================
+// LISTA DE ALUNOS
+// ============================================================
+function renderListaAlunosGerenciar() {
+    const container = document.getElementById('lista-alunos-gerenciavel');
+    if (!container) return;
+
+    const data = appState.data;
+    const faseAtual = data?.fase || 1;
+    const participantes = data?.participantes?.[faseAtual] || {};
+    const ids = Object.keys(participantes);
+
+    if (ids.length === 0) {
+        container.innerHTML = '<p>📭 Nenhum aluno cadastrado.</p>';
+        return;
+    }
+
+    let html = '';
+    for (const id of ids) {
+        const aluno = participantes[id];
+        html += `
+            <div class="aluno-item">
+                <div class="aluno-info">
+                    <strong>${escapeHtml(aluno.nome)}</strong> (${escapeHtml(aluno.turma)})
+                    <br><small>ID: ${id.substring(0, 8)}...</small>
+                </div>
+                <div class="aluno-actions">
+                    <button class="btn-editar-aluno btn-warning" data-id="${id}" data-nome="${aluno.nome}" data-turma="${aluno.turma}">✏️ Editar</button>
+                    <button class="btn-excluir-aluno btn-danger" data-id="${id}">🗑️ Excluir</button>
+                </div>
+            </div>
+        `;
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll('.btn-editar-aluno').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-id');
+            const novoNome = prompt('Novo nome:', btn.getAttribute('data-nome'));
+            if (novoNome) {
+                const novaTurma = prompt('Nova turma:', btn.getAttribute('data-turma'));
+                if (novaTurma) {
+                    await participantesRef(faseAtual).child(id).set({ nome: novoNome, turma: novaTurma });
+                    renderListaAlunosGerenciar();
+                }
+            }
+        });
+    });
+
+    container.querySelectorAll('.btn-excluir-aluno').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-id');
+            if (confirm('Excluir aluno?')) {
+                await participantesRef(faseAtual).child(id).remove();
+                await resultadosRef(faseAtual).child(id).remove();
+                await resultadosTempRef(faseAtual).child(id).remove();
+                renderListaAlunosGerenciar();
+            }
+        });
+    });
+}
+
+// ============================================================
+// LISTA DE TURMAS
+// ============================================================
+function renderListaTurmas(turmas) {
+    const container = document.getElementById('lista-turmas-gerenciavel');
+    if (!container) return;
+
+    if (!turmas || turmas.length === 0) {
+        container.innerHTML = '<p>📭 Nenhuma turma cadastrada.</p>';
+        return;
+    }
+
+    let html = '<ul style="list-style: none; padding: 0;">';
+    turmas.forEach(turma => {
+        html += `
+            <li style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #2c3e50;">
+                <span>🏷️ ${escapeHtml(turma)}</span>
+                <div>
+                    <button class="btn-editar-turma btn-warning" data-turma="${turma}" style="padding: 4px 12px; margin: 0 4px;">✏️ Editar</button>
+                    <button class="btn-excluir-turma btn-danger" data-turma="${turma}" style="padding: 4px 12px; margin: 0 4px;">🗑️ Excluir</button>
+                </div>
+            </li>
+        `;
+    });
+    html += '</ul>';
+    container.innerHTML = html;
+
+    container.querySelectorAll('.btn-editar-turma').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const turmaAntiga = btn.getAttribute('data-turma');
+            const novaTurma = prompt('Digite o novo nome da turma:', turmaAntiga);
+            if (novaTurma && novaTurma !== turmaAntiga) {
+                let turmas = await carregarTurmas();
+                const index = turmas.indexOf(turmaAntiga);
+                if (index !== -1) {
+                    turmas[index] = novaTurma;
+                    await db.ref('copaV2/turmas').set(turmas);
+                    toast(`Turma alterada de ${turmaAntiga} para ${novaTurma}`);
+                    renderListaTurmas(turmas);
+                }
+            }
+        });
+    });
+
+    container.querySelectorAll('.btn-excluir-turma').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const turma = btn.getAttribute('data-turma');
+            if (confirm(`Remover turma "${turma}"?`)) {
+                await removerTurma(turma);
+                const turmas = await carregarTurmas();
+                renderListaTurmas(turmas);
+            }
+        });
+    });
+}
+
+// ============================================================
+// CONFIGURAR EVENTOS DO PROFESSOR
+// ============================================================
+function configurarEventosProfessor() {
+    // Abas
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const tab = btn.getAttribute('data-tab');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            const tabContent = document.getElementById(`tab-${tab}`);
+            if (tabContent) tabContent.classList.remove('hidden');
+
+            if (tab === 'ranking-geral') {
+                renderRankingGeral('ranking-geral-container');
+            } else if (tab === 'ranking-fase') {
+                const faseSelecionada = document.getElementById('select-fase-ranking')?.value || appState.fase;
+                renderRankingIndividual(parseInt(faseSelecionada), 'ranking-parcial', true);
+                popularSelectFases();
+            } else if (tab === 'ranking-turmas') {
+                renderRankingTurmas('ranking-turmas-container');
+            } else if (tab === 'gerenciar-alunos') {
+                renderListaAlunosGerenciar();
+            } else if (tab === 'gerenciar-turmas') {
+                carregarTurmas().then(turmas => renderListaTurmas(turmas));
+            }
+        });
+    });
+
+    // Botões de controle
+    document.getElementById('btn-iniciar-fase')?.addEventListener('click', () => {
+        const duracao = parseInt(document.getElementById('input-tempo-fase')?.value) || 12;
+        const fim = Date.now() + duracao * 60000;
+        updateCopa({ status: 'em_andamento', fim, tempoRestantePausa: null });
+        toast('▶️ Fase iniciada!');
+    });
+
+    document.getElementById('btn-avancar-fase')?.addEventListener('click', async () => {
+        if (confirm('⚠️ Finalizar fase e classificar alunos?')) {
+            await avancarFase();
+        }
+    });
+
+    document.getElementById('btn-reset-fase')?.addEventListener('click', async () => {
+        if (confirm(`⚠️ Resetar a Fase ${appState.fase}?`)) {
+            await resetarFase();
+        }
+    });
+
+    document.getElementById('btn-reset-total')?.addEventListener('click', () => {
+        if (confirm('⚠️ Resetar toda a competição?')) {
+            resetarCompeticao();
+        }
+    });
+
+    document.getElementById('btn-aplicar-modalidade')?.addEventListener('click', async () => {
+        const novaModalidade = document.getElementById('select-modalidade')?.value;
+        if (!novaModalidade) return;
+        if (confirm(`⚠️ Mudar para ${MODALIDADE_CONFIG[novaModalidade]?.nome} irá REINICIAR toda a competição. Continuar?`)) {
+            await setCopa({
+                fase: 1,
+                status: 'aguardando',
+                tempoFase: 12,
+                fim: 0,
+                modalidade: novaModalidade,
+                resultados: {},
+                participantes: {},
+                classificados: {}
+            });
+            toast('✅ Modalidade alterada. Competição reiniciada.');
+            setTimeout(() => location.reload(), 1500);
+        }
+    });
+
+    document.getElementById('btn-salvar-tempo')?.addEventListener('click', () => {
+        const t = parseInt(document.getElementById('input-tempo-fase')?.value);
+        if (t > 0) updateCopa({ tempoFase: t });
+    });
+
+    document.getElementById('btn-sync-prof')?.addEventListener('click', updateLastSyncTime);
+    document.getElementById('btn-sincronizar-global')?.addEventListener('click', updateLastSyncTime);
+
+    document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
+
+    document.getElementById('btn-adicionar-turma')?.addEventListener('click', async () => {
+        const novaTurma = prompt('Digite o nome da nova turma:');
+        if (novaTurma && novaTurma.trim()) {
+            await adicionarTurma(novaTurma.trim());
+            const turmas = await carregarTurmas();
+            renderListaTurmas(turmas);
+        }
+    });
+
+    document.getElementById('btn-atualizar-lista-alunos')?.addEventListener('click', renderListaAlunosGerenciar);
+
+    document.getElementById('select-fase-ranking')?.addEventListener('change', (e) => {
+        const fase = parseInt(e.target.value);
+        if (!isNaN(fase)) {
+            renderRankingIndividual(fase, 'ranking-parcial', true);
+        }
+    });
+
+    document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
+        const val = parseInt(document.getElementById('intervalo-individual')?.value);
+        if (val >= 1) {
+            salvarIntervaloIndividual(val);
+            toast(`Intervalo individual alterado para ${val} segundos`);
+        }
+    });
+
+    document.getElementById('btn-atualizar-intervalo-equipes')?.addEventListener('click', () => {
+        const val = parseInt(document.getElementById('intervalo-equipes')?.value);
+        if (val >= 1) {
+            salvarIntervaloEquipes(val);
+            toast(`Intervalo por equipes alterado para ${val} segundos`);
+        }
+    });
+
+    document.getElementById('btn-atualizar-ranking-turmas')?.addEventListener('click', () => {
+        renderRankingTurmas('ranking-turmas-container');
+    });
+
+    document.getElementById('btn-toggle-auto-ranking')?.addEventListener('click', () => {
+        const btn = document.getElementById('btn-toggle-auto-ranking');
+        const ativo = btn.innerText.includes('Pausar');
+        btn.innerText = ativo ? '▶️ Retomar Atualização' : '⏸️ Pausar Atualização';
+        toast(ativo ? 'Auto atualização pausada' : 'Auto atualização retomada');
+    });
+}
+
+function popularSelectFases() {
+    const select = document.getElementById('select-fase-ranking');
+    if (!select) return;
+    let options = '';
+    for (let i = 1; i <= 5; i++) {
+        options += `<option value="${i}">Fase ${i}</option>`;
+    }
+    select.innerHTML = options;
+    select.value = appState.faseSelecionadaProf || appState.fase;
+}
