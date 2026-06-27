@@ -34,14 +34,6 @@ import { syncService } from '../services/sync-service.js';
 import { CONFIG_PADRAO } from '../config/firebase-config.js';
 
 // ============================================================
-// VARIÁVEIS GLOBAIS
-// ============================================================
-let timerFase = null;
-let tempoEsgotadoProcessado = false;
-const TOTAL_FASES = 5;
-const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
-
-// ============================================================
 // CONSTANTE: CHAVE PARA SALVAR O VALOR DA PARTIDA NO FIREBASE
 // ============================================================
 const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
@@ -74,362 +66,263 @@ export function initProfessorUI() {
     // CARREGAR VALOR DA PARTIDA AO INICIAR
     // ============================================================
     carregarValorPartida();
-}
-
-// ============================================================
-// FUNÇÃO AUXILIAR: ATUALIZAR DISPLAY DO TIMER
-// ============================================================
-function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer) {
-    const segundos = Math.floor(milissegundos / 1000);
-    const min = Math.floor(segundos / 60);
-    const sec = segundos % 60;
-    const timeStr = `${min}:${sec.toString().padStart(2, '0')}`;
     
-    if (timerDisplay) timerDisplay.innerText = timeStr;
-    if (torcidaTimer) torcidaTimer.innerText = timeStr;
-}
-
-// ============================================================
-// ATUALIZAR UI - COM TIMER CORRIGIDO
-// ============================================================
-function atualizarUI() {
-    if (!estadoAtual) return;
-    const modalidadeNome = MODALIDADE_CONFIG[estadoAtual.modalidade]?.nome || "Tabuada 2-5";
-    document.getElementById('modalidade-titulo').innerText = modalidadeNome;
-    if (document.getElementById('torcida-modalidade')) document.getElementById('torcida-modalidade').innerText = modalidadeNome;
-    document.getElementById('fase-atual-titulo').innerText = estadoAtual.fase;
-    atualizarExibicaoFase();
-
     // ============================================================
-    // TIMER DA FASE - CORRIGIDO
+    // ADICIONAR O BLOCO "VALOR DA PARTIDA" NA PÁGINA
+    // Usando um timeout maior e inserindo no início do painel
     // ============================================================
-    if (timerFase) {
-        clearInterval(timerFase);
-        timerFase = null;
-    }
-
-    const timerDisplay = document.getElementById('timer-fase');
-    const torcidaTimer = document.getElementById('torcida-timer');
-
-    if (estadoAtual.status === 'em_andamento') {
-        const agora = Date.now();
-        let restante = Math.max(0, estadoAtual.fim - agora);
-        
-        // Atualizar imediatamente
-        atualizarDisplayTimer(restante, timerDisplay, torcidaTimer);
-        
-        // Iniciar intervalo
-        timerFase = setInterval(() => {
-            const agora2 = Date.now();
-            let restante2 = Math.max(0, estadoAtual.fim - agora2);
-            
-            if (restante2 <= 0) {
-                // ⏰ TEMPO ESGOTADO - PARAR O TIMER
-                clearInterval(timerFase);
-                timerFase = null;
-                
-                // Congelar em 00:00
-                atualizarDisplayTimer(0, timerDisplay, torcidaTimer);
-                
-                // Verificar se já foi processado
-                if (!tempoEsgotadoProcessado) {
-                    tempoEsgotadoProcessado = true;
-                    toast("⏰ TEMPO ESGOTADO! Fase finalizada.");
-                    avancarFase();
-                }
-                return;
-            }
-            
-            atualizarDisplayTimer(restante2, timerDisplay, torcidaTimer);
-        }, 1000);
-        
-    } else if (estadoAtual.status === 'pausado') {
-        const tempoPausado = estadoAtual.tempoRestantePausa || 0;
-        atualizarDisplayTimer(tempoPausado, timerDisplay, torcidaTimer);
-    } else {
-        const texto = estadoAtual.status === 'finalizado' ? 'FIM' : 'PAUSADO';
-        if (timerDisplay) timerDisplay.innerText = texto;
-        if (torcidaTimer) torcidaTimer.innerText = texto;
-    }
-
-    // ============================================================
-    // RESTO DA UI
-    // ============================================================
-    const btnPararContinuar = document.getElementById('btn-continuar-parar-fase');
-    if (btnPararContinuar) {
-        if (estadoAtual.status === 'em_andamento') {
-            btnPararContinuar.innerText = "⏹️ Parar Fase";
-            btnPararContinuar.classList.remove('btn-success');
-            btnPararContinuar.classList.add('btn-danger');
-            btnPararContinuar.disabled = false;
-            btnPararContinuar.onclick = () => pausarFase();
-        } else if (estadoAtual.status === 'pausado') {
-            btnPararContinuar.innerText = "▶️ Continuar Fase";
-            btnPararContinuar.classList.remove('btn-danger');
-            btnPararContinuar.classList.add('btn-success');
-            btnPararContinuar.disabled = false;
-            btnPararContinuar.onclick = () => continuarFase();
-        } else {
-            btnPararContinuar.disabled = true;
-            btnPararContinuar.innerText = "⏹️ Parar Fase";
-        }
-    }
+    setTimeout(() => {
+        adicionarBlocoValorPartida();
+    }, 1000);
 }
 
 // ============================================================
-// PAUSAR FASE
+// FUNÇÃO: ADICIONAR BLOCO "VALOR DA PARTIDA" NA PÁGINA
 // ============================================================
-async function pausarFase() {
-    if (!estadoAtual || estadoAtual.status !== 'em_andamento') return;
-    
-    // PARAR O TIMER
-    if (timerFase) {
-        clearInterval(timerFase);
-        timerFase = null;
-    }
-    
-    const agora = Date.now();
-    const tempoRestante = Math.max(0, estadoAtual.fim - agora);
-    await updateCopa({ status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
-    toast("⏸️ Fase pausada.");
-}
-
-// ============================================================
-// CONTINUAR FASE
-// ============================================================
-async function continuarFase() {
-    if (!estadoAtual || estadoAtual.status !== 'pausado') return;
-    const tempoRestante = estadoAtual.tempoRestantePausa || 0;
-    if (tempoRestante <= 0) { toast("⚠️ Tempo esgotado."); return; }
-    const novoFim = Date.now() + tempoRestante;
-    await updateCopa({ status: 'em_andamento', fim: novoFim, tempoRestantePausa: null });
-    toast("▶️ Fase retomada!");
-}
-
-// ============================================================
-// AVANÇAR FASE
-// ============================================================
-async function avancarFase() {
-    // PARAR O TIMER
-    if (timerFase) {
-        clearInterval(timerFase);
-        timerFase = null;
-    }
-    
-    const faseAtual = estadoAtual.fase;
-    if (faseAtual > TOTAL_FASES) { toast("Competição já finalizada!"); return; }
-    const res = estadoAtual.resultados?.[faseAtual] || {};
-    let lista = [];
-    for (let id in res) {
-        const partidas = res[id];
-        if (partidas?.length) {
-            const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
-            lista.push({ id, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo });
-        }
-    }
-    lista.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
-    const vagas = VAGAS_POR_FASE[faseAtual];
-    const classificadosIds = lista.slice(0, vagas).map(l => l.id);
-    
-    const { classificadosRef, participantesRef, set, removeNode, resultadosTempRef } = await import('../services/firebase-service.js');
-    await set(classificadosRef(faseAtual), classificadosIds);
-    
-    const participantesAtual = estadoAtual.participantes?.[faseAtual] || {};
-    const participantesProxima = {};
-    for (let id of classificadosIds) {
-        if (participantesAtual[id]) participantesProxima[id] = participantesAtual[id];
-        else {
-            for (let f = faseAtual-1; f >= 1; f--) {
-                if (estadoAtual.participantes?.[f]?.[id]) {
-                    participantesProxima[id] = estadoAtual.participantes[f][id];
-                    break;
-                }
-            }
-        }
-    }
-    if (Object.keys(participantesProxima).length > 0) await set(participantesRef(faseAtual+1), participantesProxima);
-    await removeNode(resultadosTempRef(faseAtual));
-
-    // Resetar flag de tempo esgotado
-    tempoEsgotadoProcessado = false;
-
-    if (faseAtual === TOTAL_FASES) {
-        toast("🏆 COMPETIÇÃO FINALIZADA!");
-        await updateCopa({ status: 'finalizado', fim: 0, tempoRestantePausa: null });
+function adicionarBlocoValorPartida() {
+    // Verificar se o bloco já existe
+    if (document.getElementById('bloco-valor-partida')) {
+        console.log('✅ Bloco "Valor da Partida" já existe.');
         return;
     }
-    await updateCopa({ fase: faseAtual + 1, status: 'aguardando', fim: 0, tempoRestantePausa: null });
-    toast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados para a fase ${faseAtual+1}.`);
-}
-
-// ============================================================
-// RESETAR FASE
-// ============================================================
-async function resetarFase() {
-    const faseAtual = estadoAtual.fase;
-    if (!confirm(`⚠️ Resetar a Fase ${faseAtual}?`)) return;
     
-    // PARAR O TIMER
-    if (timerFase) {
-        clearInterval(timerFase);
-        timerFase = null;
+    console.log('🔍 Inserindo bloco "Valor da Partida"...');
+    
+    // ============================================================
+    // CRIAR O BLOCO HTML
+    // ============================================================
+    const bloco = document.createElement('div');
+    bloco.id = 'bloco-valor-partida';
+    bloco.style.cssText = `
+        background: #1e293b;
+        padding: 24px;
+        border-radius: 16px;
+        margin: 20px;
+        border: 1px solid #334155;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+        max-width: 800px;
+        z-index: 9999;
+        position: relative;
+    `;
+    
+    bloco.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 28px;">💰</span>
+            <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Valor da Partida</h4>
+            <span style="background: #3b82f6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+        </div>
+        
+        <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+            Define quantos pontos uma partida completa vale. 
+            Este valor é usado para <strong>projetar a posição futura</strong> dos jogadores no ranking,
+            baseado na sua velocidade média de acertos.
+        </p>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+            <label for="input-valor-partida" style="color: #94a3b8; font-weight: 500; font-size: 14px;">
+                Pontos por partida:
+            </label>
+            
+            <input 
+                type="number" 
+                id="input-valor-partida" 
+                value="2000" 
+                min="1" 
+                max="10000" 
+                step="100"
+                style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 16px; border-radius: 10px; font-size: 16px; width: 180px; font-weight: 600;"
+            />
+            
+            <button 
+                id="btn-atualizar-valor-partida" 
+                style="background: #3b82f6; color: white; border: none; padding: 10px 28px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.3s; display: flex; align-items: center; gap: 8px;"
+                onmouseover="this.style.background='#2563eb'"
+                onmouseout="this.style.background='#3b82f6'"
+            >
+                <span>🔄</span> Atualizar
+            </button>
+            
+            <span style="color: #64748b; font-size: 13px; display: flex; align-items: center; gap: 4px;">
+                Valor atual: 
+                <strong id="valor-partida-atual" style="color: #4ade80; font-size: 15px;">2000</strong> 
+                pontos
+            </span>
+        </div>
+        
+        <div id="feedback-valor-partida" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+        
+        <div style="margin-top: 12px; padding: 12px 16px; background: #0f172a; border-radius: 8px; border-left: 3px solid #facc15;">
+            <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+                💡 <strong>Exemplo:</strong> Com 2000 pontos por partida, um jogador com 
+                <strong>1.00s</strong> de média projeta <strong>2000 pts</strong> na próxima partida, 
+                enquanto um com <strong>2.00s</strong> projeta <strong>1000 pts</strong>.
+            </p>
+        </div>
+    `;
+    
+    // ============================================================
+    // INSERIR O BLOCO NO INÍCIO DO PAINEL
+    // ============================================================
+    let painel = document.getElementById('painel-professor');
+    
+    if (painel) {
+        // Inserir no início do painel, depois do cabeçalho
+        const primeiroFilho = painel.firstChild;
+        painel.insertBefore(bloco, primeiroFilho);
+        console.log('✅ Bloco inserido no início do painel-professor');
+    } else {
+        // Se não encontrar o painel, inserir no body
+        document.body.insertBefore(bloco, document.body.firstChild);
+        console.log('⚠️ Painel não encontrado, bloco inserido no body');
     }
     
-    const { resultadosRef, participantesRef, classificadosRef, resultadosTempRef, removeNode } = await import('../services/firebase-service.js');
-    await removeNode(resultadosRef(faseAtual));
-    await removeNode(participantesRef(faseAtual));
-    await removeNode(resultadosTempRef(faseAtual));
-    await removeNode(classificadosRef(faseAtual));
-    await updateCopa({ status: 'aguardando', fim: 0, tempoRestantePausa: null });
-    tempoEsgotadoProcessado = false;
-    toast(`✅ Fase ${faseAtual} resetada!`);
-}
-
-// ============================================================
-// VERIFICAR TEMPO ESGOTADO
-// ============================================================
-async function verificarTempoEsgotado() {
-    if (!estadoAtual) return;
-    if (estadoAtual.status === 'em_andamento' && Date.now() >= estadoAtual.fim) {
-        if (!tempoEsgotadoProcessado) {
-            tempoEsgotadoProcessado = true;
-            
-            // PARAR O TIMER
-            if (timerFase) {
-                clearInterval(timerFase);
-                timerFase = null;
-            }
-            
-            // CONGELAR DISPLAY EM 00:00
-            const timerDisplay = document.getElementById('timer-fase');
-            const torcidaTimer = document.getElementById('torcida-timer');
-            if (timerDisplay) timerDisplay.innerText = '00:00';
-            if (torcidaTimer) torcidaTimer.innerText = '00:00';
-            
-            toast("⏰ TEMPO ESGOTADO! Fase finalizada.");
-            await avancarFase();
+    // ============================================================
+    // CONFIGURAR EVENTOS DO BLOCO
+    // ============================================================
+    setTimeout(() => {
+        const btnAtualizar = document.getElementById('btn-atualizar-valor-partida');
+        const inputValor = document.getElementById('input-valor-partida');
+        
+        if (btnAtualizar) {
+            btnAtualizar.addEventListener('click', window.atualizarValorPartida);
+            console.log('✅ Evento do botão "Atualizar" configurado');
         }
-        return true;
-    }
-    return false;
-}
-
-// ============================================================
-// CARREGAR CONFIGURAÇÕES (INCLUINDO OFFLINE)
-// ============================================================
-async function carregarConfiguracoes() {
-    const config = appState.configuracoes || CONFIG_PADRAO;
-    
-    setSwitch('cfg-confetes', config.confetes);
-    setSwitch('cfg-notificacoes', config.notificacoes);
-    setSwitch('cfg-brilho', config.brilho);
-    setSwitch('cfg-sons', config.sons);
-    setSwitch('cfg-sons-celebracao', config.sonsCelebracao);
-    setSwitch('cfg-sons-erro', config.sonsErro);
-    setSwitch('cfg-bonus', config.bonus);
-    setSwitch('cfg-conquistas', config.conquistas);
-    setSwitch('cfg-gamepad', config.gamepad);
-    
-    try {
-        const snap = await db.ref('copaV2/configuracoes/syncOffline').once('value');
-        const ativo = snap.val() !== null ? snap.val() : true;
-        setSwitch('cfg-sync-offline', ativo);
-        if (syncService) {
-            syncService.updateConfig({ syncOffline: ativo });
+        
+        if (inputValor) {
+            inputValor.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    window.atualizarValorPartida();
+                }
+            });
+            console.log('✅ Evento do input "Enter" configurado');
         }
-    } catch (e) {
-        console.warn('Erro ao carregar configuração offline:', e);
-    }
-    
-    await carregarValorPartida();
+        
+        // Atualizar o valor exibido
+        const valorAtual = getValorPartida();
+        const exibicao = document.getElementById('valor-partida-atual');
+        if (exibicao) exibicao.textContent = valorAtual;
+        if (inputValor) inputValor.value = valorAtual;
+        
+        console.log('✅ Bloco "Valor da Partida" adicionado com sucesso!');
+    }, 200);
 }
 
 // ============================================================
-// VALOR DA PARTIDA
+// FUNÇÕES PARA GERENCIAR O VALOR DA PARTIDA
 // ============================================================
+
+/**
+ * Carrega o valor da partida do Firebase e atualiza a UI
+ */
 async function carregarValorPartida() {
     try {
         const snap = await db.ref(VALOR_PARTIDA_KEY).once('value');
         let valor = snap.val();
+        
+        // Se não existir, salvar o valor padrão (2000)
         if (valor === null || valor === undefined) {
             valor = 2000;
             await db.ref(VALOR_PARTIDA_KEY).set(valor);
         }
+        
+        // Atualizar no módulo de ranking
         setValorPartida(valor);
+        
+        // Atualizar a UI
         const input = document.getElementById('input-valor-partida');
         const exibicao = document.getElementById('valor-partida-atual');
+        
         if (input) input.value = valor;
         if (exibicao) exibicao.textContent = valor;
+        
         console.log(`✅ Valor da partida carregado: ${valor} pontos`);
+        
     } catch (e) {
         console.warn('Erro ao carregar valor da partida:', e);
+        // Usar valor padrão
         setValorPartida(2000);
     }
 }
 
+/**
+ * Salva o valor da partida no Firebase e atualiza o módulo de ranking
+ */
 async function salvarValorPartida(novoValor) {
     if (!novoValor || novoValor < 1) {
         toast('❌ Digite um valor válido maior que 0.');
         return false;
     }
+    
     try {
+        // Salvar no Firebase
         await db.ref(VALOR_PARTIDA_KEY).set(novoValor);
+        
+        // Atualizar no módulo de ranking
         setValorPartida(novoValor);
+        
+        // Limpar cache para forçar recálculo
         limparCacheRanking();
+        
+        // Atualizar a UI
         const exibicao = document.getElementById('valor-partida-atual');
         if (exibicao) exibicao.textContent = novoValor;
+        
+        // Feedback visual
         const feedback = document.getElementById('feedback-valor-partida');
         if (feedback) {
             feedback.style.display = 'block';
-            feedback.className = 'feedback-sucesso';
+            feedback.style.background = '#14532d';
+            feedback.style.color = '#4ade80';
+            feedback.style.border = '1px solid #4ade80';
             feedback.textContent = `✅ Valor da partida atualizado para ${novoValor} pontos!`;
-            setTimeout(() => { feedback.style.display = 'none'; }, 5000);
+            setTimeout(() => {
+                feedback.style.display = 'none';
+            }, 5000);
         }
+        
+        // Recarregar os rankings
         recarregarRankings();
+        
         toast(`✅ Valor da partida atualizado para ${novoValor} pontos!`);
         return true;
+        
     } catch (e) {
         console.error('Erro ao salvar valor da partida:', e);
+        
         const feedback = document.getElementById('feedback-valor-partida');
         if (feedback) {
             feedback.style.display = 'block';
-            feedback.className = 'feedback-erro';
+            feedback.style.background = '#7f1d1d';
+            feedback.style.color = '#f87171';
+            feedback.style.border = '1px solid #f87171';
             feedback.textContent = `❌ Erro ao salvar: ${e.message}`;
         }
+        
         toast('❌ Erro ao salvar valor da partida.');
         return false;
     }
 }
 
-window.atualizarValorPartida = async function() {
-    const input = document.getElementById('input-valor-partida');
-    if (!input) {
-        toast('❌ Campo não encontrado.');
-        return;
-    }
-    const novoValor = parseInt(input.value);
-    await salvarValorPartida(novoValor);
-};
-
-// ============================================================
-// FUNÇÕES AUXILIARES
-// ============================================================
-function setSwitch(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.checked = value;
-}
-
+/**
+ * Recarrega todos os rankings visíveis
+ */
 function recarregarRankings() {
     const faseAtual = appState.fase || 1;
+    
+    // Recarregar ranking da fase (se visível)
     const tabFase = document.getElementById('tab-ranking-fase');
     if (tabFase && !tabFase.classList.contains('hidden')) {
         const faseSelecionada = document.getElementById('select-fase-ranking')?.value || faseAtual;
         renderRankingIndividual(parseInt(faseSelecionada), 'ranking-parcial', true);
     }
+    
+    // Recarregar ranking geral (se visível)
     const tabGeral = document.getElementById('tab-ranking-geral');
     if (tabGeral && !tabGeral.classList.contains('hidden')) {
         renderRankingGeral('ranking-geral-container');
     }
+    
+    // Recarregar ranking por turmas (se visível)
     const tabTurmas = document.getElementById('tab-ranking-turmas');
     if (tabTurmas && !tabTurmas.classList.contains('hidden')) {
         renderRankingTurmas('ranking-turmas-container');
@@ -437,24 +330,100 @@ function recarregarRankings() {
 }
 
 // ============================================================
+// FUNÇÃO: VALOR DA PARTIDA - EXPORTADA PARA USO GLOBAL
+// ============================================================
+window.atualizarValorPartida = async function() {
+    const input = document.getElementById('input-valor-partida');
+    if (!input) {
+        console.error('❌ Campo "input-valor-partida" não encontrado!');
+        toast('❌ Erro: campo não encontrado. Recarregue a página.');
+        return;
+    }
+    
+    const novoValor = parseInt(input.value);
+    await salvarValorPartida(novoValor);
+};
+
+// ============================================================
+// CARREGAR CONFIGURAÇÕES (INCLUINDO OFFLINE)
+// ============================================================
+async function carregarConfiguracoes() {
+    const config = appState.configuracoes || CONFIG_PADRAO;
+    
+    // Efeitos Visuais
+    setSwitch('cfg-confetes', config.confetes);
+    setSwitch('cfg-notificacoes', config.notificacoes);
+    setSwitch('cfg-brilho', config.brilho);
+    
+    // Áudio
+    setSwitch('cfg-sons', config.sons);
+    setSwitch('cfg-sons-celebracao', config.sonsCelebracao);
+    setSwitch('cfg-sons-erro', config.sonsErro);
+    
+    // Gamificação
+    setSwitch('cfg-bonus', config.bonus);
+    setSwitch('cfg-conquistas', config.conquistas);
+    
+    // Acessibilidade
+    setSwitch('cfg-gamepad', config.gamepad);
+    
+    // ============================================================
+    // OFFLINE - CARREGAR CONFIGURAÇÃO
+    // ============================================================
+    try {
+        const snap = await db.ref('copaV2/configuracoes/syncOffline').once('value');
+        const ativo = snap.val() !== null ? snap.val() : true;
+        setSwitch('cfg-sync-offline', ativo);
+        
+        // Aplicar a configuração ao syncService
+        if (syncService) {
+            syncService.updateConfig({ syncOffline: ativo });
+        }
+    } catch (e) {
+        console.warn('Erro ao carregar configuração offline:', e);
+    }
+    
+    // ============================================================
+    // CARREGAR VALOR DA PARTIDA
+    // ============================================================
+    await carregarValorPartida();
+}
+
+function setSwitch(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.checked = value;
+}
+
+// ============================================================
 // CONFIGURAR SWITCHES
 // ============================================================
 function configurarSwitchesConfiguracoes() {
+    // ============================================================
+    // SWITCH OFFLINE - CONECTADO AO syncService
+    // ============================================================
     document.getElementById('cfg-sync-offline')?.addEventListener('change', async function() {
         const ativo = this.checked;
         try {
+            // Salvar no Firebase
             await db.ref('copaV2/configuracoes/syncOffline').set(ativo);
+            
+            // Aplicar ao syncService
             if (syncService) {
                 syncService.updateConfig({ syncOffline: ativo });
             }
+            
             toast(ativo ? '✅ Sincronização offline ativada!' : '⏸️ Sincronização offline desativada.');
         } catch (e) {
             console.warn('Erro ao salvar configuração offline:', e);
             toast('❌ Erro ao salvar configuração.');
+            // Reverter o switch
             this.checked = !ativo;
         }
     });
     
+    // ============================================================
+    // SWITCH CONFETE
+    // ============================================================
     document.getElementById('cfg-confetes')?.addEventListener('change', function() {
         if (confettiManager) {
             confettiManager.updateConfig({ confetes: this.checked });
@@ -462,6 +431,9 @@ function configurarSwitchesConfiguracoes() {
         salvarConfiguracao('confetes', this.checked);
     });
     
+    // ============================================================
+    // SWITCH NOTIFICAÇÕES
+    // ============================================================
     document.getElementById('cfg-notificacoes')?.addEventListener('change', function() {
         if (notificationManager) {
             notificationManager.updateConfig({ notificacoes: this.checked });
@@ -469,6 +441,9 @@ function configurarSwitchesConfiguracoes() {
         salvarConfiguracao('notificacoes', this.checked);
     });
     
+    // ============================================================
+    // SWITCH SONS
+    // ============================================================
     document.getElementById('cfg-sons')?.addEventListener('change', function() {
         if (soundManager) {
             soundManager.updateConfig({ sons: this.checked });
@@ -476,6 +451,9 @@ function configurarSwitchesConfiguracoes() {
         salvarConfiguracao('sons', this.checked);
     });
     
+    // ============================================================
+    // SWITCH CONQUISTAS
+    // ============================================================
     document.getElementById('cfg-conquistas')?.addEventListener('change', function() {
         if (achievementManager) {
             achievementManager.updateConfig({ conquistas: this.checked });
@@ -483,6 +461,9 @@ function configurarSwitchesConfiguracoes() {
         salvarConfiguracao('conquistas', this.checked);
     });
     
+    // ============================================================
+    // SWITCH GAMEPAD
+    // ============================================================
     document.getElementById('cfg-gamepad')?.addEventListener('change', function() {
         if (gamepadManager) {
             gamepadManager.updateConfig({ gamepad: this.checked });
@@ -500,17 +481,151 @@ async function salvarConfiguracao(key, value) {
 }
 
 // ============================================================
+// ATUALIZAR UI
+// ============================================================
+function atualizarUIProfessor(data) {
+    if (!data) return;
+    
+    document.getElementById('fase-atual-titulo').innerText = data.fase;
+    document.getElementById('fase-progresso').innerText = `${data.fase}/5`;
+    document.getElementById('prof-fase-info').innerText = `${data.fase}/5`;
+    
+    const modalidadeNome = appState.getModalidadeNome();
+    document.getElementById('modalidade-titulo').innerText = modalidadeNome;
+    
+    atualizarTimerProfessor(data);
+    atualizarBotoesProfessor(data);
+    atualizarRankingsProfessor();
+    renderListaAlunosGerenciar();
+}
+
+function atualizarTimerProfessor(data) {
+    const timerDisplay = document.getElementById('timer-fase');
+    if (!timerDisplay) return;
+    
+    if (data.status === 'em_andamento') {
+        const restante = Math.max(0, data.fim - Date.now());
+        if (restante <= 0) {
+            timerDisplay.innerText = 'ENCERRADO';
+        } else {
+            const min = Math.floor(restante / 60000);
+            const sec = Math.floor((restante % 60000) / 1000);
+            timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+        }
+    } else if (data.status === 'pausado') {
+        const tempoPausado = data.tempoRestantePausa || 0;
+        const min = Math.floor(tempoPausado / 60000);
+        const sec = Math.floor((tempoPausado % 60000) / 1000);
+        timerDisplay.innerText = `${min}:${sec.toString().padStart(2, '0')}`;
+    } else {
+        timerDisplay.innerText = data.status === 'finalizado' ? 'FIM' : 'PAUSADO';
+    }
+}
+
+function atualizarBotoesProfessor(data) {
+    const btnPararContinuar = document.getElementById('btn-continuar-parar-fase');
+    if (!btnPararContinuar) return;
+    
+    if (data.status === 'em_andamento') {
+        btnPararContinuar.innerText = '⏹️ Parar Fase';
+        btnPararContinuar.className = 'btn-danger';
+        btnPararContinuar.disabled = false;
+        btnPararContinuar.onclick = () => pausarFase();
+    } else if (data.status === 'pausado') {
+        btnPararContinuar.innerText = '▶️ Continuar Fase';
+        btnPararContinuar.className = 'btn-success';
+        btnPararContinuar.disabled = false;
+        btnPararContinuar.onclick = () => continuarFase();
+    } else {
+        btnPararContinuar.disabled = true;
+        btnPararContinuar.innerText = '⏹️ Parar Fase';
+    }
+}
+
+function atualizarRankingsProfessor() {
+    const tabRankingGeral = document.getElementById('tab-ranking-geral');
+    if (tabRankingGeral && !tabRankingGeral.classList.contains('hidden')) {
+        renderRankingGeral('ranking-geral-container');
+    }
+    
+    const tabRankingFase = document.getElementById('tab-ranking-fase');
+    if (tabRankingFase && !tabRankingFase.classList.contains('hidden')) {
+        const faseSelecionada = document.getElementById('select-fase-ranking')?.value || appState.fase;
+        renderRankingIndividual(parseInt(faseSelecionada), 'ranking-parcial', true);
+    }
+    
+    const tabRankingTurmas = document.getElementById('tab-ranking-turmas');
+    if (tabRankingTurmas && !tabRankingTurmas.classList.contains('hidden')) {
+        renderRankingTurmas('ranking-turmas-container');
+    }
+}
+
+function atualizarOnlineStats(data) {
+    let totalAlunos = 0;
+    let totalTorcida = 0;
+    
+    if (data) {
+        Object.values(data).forEach(val => {
+            if (val && val.tipo === 'torcida') totalTorcida++;
+            else totalAlunos++;
+        });
+    }
+    
+    const totalOnline = totalAlunos + totalTorcida;
+    document.getElementById('jogadores-online').innerText = totalOnline;
+    document.getElementById('prof-online-count').innerText = totalOnline;
+    
+    const listaDiv = document.getElementById('lista-participantes');
+    if (!listaDiv) return;
+    
+    let html = '<div class="online-list"><strong>👥 Jogadores:</strong><ul style="list-style:none; margin:5px 0 10px 0;">';
+    
+    if (data) {
+        let temAlunos = false;
+        Object.entries(data).forEach(([id, val]) => {
+            if (!val || val.tipo === 'torcida') return;
+            temAlunos = true;
+            html += `<li>🟢 ${escapeHtml(val.nome)} (${escapeHtml(val.turma)})</li>`;
+        });
+        if (!temAlunos) html += '<li>Nenhum jogador online</li>';
+    } else {
+        html += '<li>Nenhum jogador online</li>';
+    }
+    
+    html += '</ul><strong>📺 Espectadores:</strong><ul style="list-style:none; margin:5px 0 0 0;">';
+    
+    if (data) {
+        let temTorcida = false;
+        Object.entries(data).forEach(([id, val]) => {
+            if (val && val.tipo === 'torcida') {
+                temTorcida = true;
+                html += `<li>👀 Espectador conectado</li>`;
+            }
+        });
+        if (!temTorcida) html += '<li>Nenhum espectador online</li>';
+    } else {
+        html += '<li>Nenhum espectador online</li>';
+    }
+    
+    html += '</ul></div>';
+    listaDiv.innerHTML = html;
+}
+
+// ============================================================
 // CONFIGURAR EVENTOS
 // ============================================================
 function configurarEventosProfessor() {
+    // Abas
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            
             const tab = btn.getAttribute('data-tab');
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             const tabContent = document.getElementById(`tab-${tab}`);
             if (tabContent) tabContent.classList.remove('hidden');
+            
             if (tab === 'ranking-geral') {
                 renderRankingGeral('ranking-geral-container');
             } else if (tab === 'ranking-fase') {
@@ -533,7 +648,6 @@ function configurarEventosProfessor() {
         const duracao = parseInt(document.getElementById('input-tempo-fase')?.value) || 12;
         const fim = Date.now() + duracao * 60000;
         updateCopa({ status: 'em_andamento', fim, tempoRestantePausa: null });
-        tempoEsgotadoProcessado = false;
         toast('▶️ Fase iniciada!');
     });
     
@@ -544,7 +658,9 @@ function configurarEventosProfessor() {
     });
     
     document.getElementById('btn-reset-fase')?.addEventListener('click', async () => {
-        await resetarFase();
+        if (confirm(`⚠️ Resetar a Fase ${appState.fase}?`)) {
+            await resetarFase();
+        }
     });
     
     document.getElementById('btn-reset-total')?.addEventListener('click', () => {
@@ -578,6 +694,8 @@ function configurarEventosProfessor() {
     });
     
     document.getElementById('btn-sync-prof')?.addEventListener('click', updateLastSyncTime);
+    document.getElementById('btn-sincronizar-global')?.addEventListener('click', updateLastSyncTime);
+    
     document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
     
     document.getElementById('btn-adicionar-turma')?.addEventListener('click', async () => {
@@ -623,11 +741,6 @@ function configurarEventosProfessor() {
         const ativo = btn.innerText.includes('Pausar');
         btn.innerText = ativo ? '▶️ Retomar Atualização' : '⏸️ Pausar Atualização';
         toast(ativo ? 'Auto atualização pausada' : 'Auto atualização retomada');
-        if (ativo) {
-            // Se estava ativo e foi pausado, para a atualização
-        } else {
-            // Se estava pausado e foi retomado
-        }
     });
     
     document.getElementById('btn-salvar-config')?.addEventListener('click', salvarConfiguracoesGerais);
@@ -635,7 +748,100 @@ function configurarEventosProfessor() {
 }
 
 // ============================================================
-// RENDERIZAR LISTA DE ALUNOS E TURMAS (VERSÕES SIMPLIFICADAS)
+// FUNÇÕES DO PROFESSOR
+// ============================================================
+async function pausarFase() {
+    const data = appState.data;
+    if (!data || data.status !== 'em_andamento') return;
+    const agora = Date.now();
+    const tempoRestante = Math.max(0, data.fim - agora);
+    await updateCopa({ status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
+    toast('⏸️ Fase pausada.');
+}
+
+async function continuarFase() {
+    const data = appState.data;
+    if (!data || data.status !== 'pausado') return;
+    const tempoRestante = data.tempoRestantePausa || 0;
+    if (tempoRestante <= 0) { toast('⚠️ Tempo esgotado.'); return; }
+    const novoFim = Date.now() + tempoRestante;
+    await updateCopa({ status: 'em_andamento', fim: novoFim, tempoRestantePausa: null });
+    toast('▶️ Fase retomada!');
+}
+
+async function resetarFase() {
+    const faseAtual = appState.fase;
+    const { resultadosRef, participantesRef, classificadosRef, resultadosTempRef, removeNode } = await import('../services/firebase-service.js');
+    await removeNode(resultadosRef(faseAtual));
+    await removeNode(participantesRef(faseAtual));
+    await removeNode(resultadosTempRef(faseAtual));
+    await removeNode(classificadosRef(faseAtual));
+    await updateCopa({ status: 'aguardando', fim: 0, tempoRestantePausa: null });
+    toast(`✅ Fase ${faseAtual} resetada!`);
+}
+
+async function avancarFase() {
+    const faseAtual = appState.fase;
+    const data = appState.data;
+    if (faseAtual > 5) { toast('🏆 Competição já finalizada!'); return; }
+    const resultados = data?.resultados?.[faseAtual] || {};
+    let lista = [];
+    for (const [id, partidas] of Object.entries(resultados)) {
+        if (partidas?.length) {
+            const melhor = [...partidas].sort((a, b) => b.pontos - a.pontos)[0];
+            lista.push({ id, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo });
+        }
+    }
+    lista.sort((a, b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
+    const vagas = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 }[faseAtual] || 30;
+    const classificadosIds = lista.slice(0, vagas).map(l => l.id);
+    const { classificadosRef, participantesRef, set, removeNode, resultadosTempRef } = await import('../services/firebase-service.js');
+    await set(classificadosRef(faseAtual), classificadosIds);
+    const participantesAtual = data?.participantes?.[faseAtual] || {};
+    const participantesProxima = {};
+    for (const id of classificadosIds) {
+        if (participantesAtual[id]) {
+            participantesProxima[id] = participantesAtual[id];
+        } else {
+            for (let f = faseAtual - 1; f >= 1; f--) {
+                if (data?.participantes?.[f]?.[id]) {
+                    participantesProxima[id] = data.participantes[f][id];
+                    break;
+                }
+            }
+        }
+    }
+    if (Object.keys(participantesProxima).length > 0) {
+        await set(participantesRef(faseAtual + 1), participantesProxima);
+    }
+    await removeNode(resultadosTempRef(faseAtual));
+    if (faseAtual === 5) {
+        toast('🏆 COMPETIÇÃO FINALIZADA!');
+        await updateCopa({ status: 'finalizado', fim: 0, tempoRestantePausa: null });
+        return;
+    }
+    await updateCopa({ fase: faseAtual + 1, status: 'aguardando', fim: 0, tempoRestantePausa: null });
+    toast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados.`);
+}
+
+async function resetarCompeticao() {
+    const modalidade = appState.modalidade || '2-5';
+    await setCopa({
+        fase: 1,
+        status: 'aguardando',
+        tempoFase: 12,
+        fim: 0,
+        modalidade: modalidade,
+        resultados: {},
+        participantes: {},
+        classificados: {}
+    });
+    toast('✅ Competição resetada!');
+    setTimeout(() => location.reload(), 1000);
+}
+
+// ============================================================
+// LISTA DE ALUNOS
 // ============================================================
 function renderListaAlunosGerenciar() {
     const container = document.getElementById('lista-alunos-gerenciavel');
@@ -690,7 +896,10 @@ function renderListaAlunosGerenciar() {
     });
 }
 
-async function renderListaTurmas(turmas) {
+// ============================================================
+// LISTA DE TURMAS
+// ============================================================
+function renderListaTurmas(turmas) {
     const container = document.getElementById('lista-turmas-gerenciavel');
     if (!container) return;
     if (!turmas || turmas.length === 0) {
@@ -773,94 +982,4 @@ async function restaurarConfiguracoesPadrao() {
     await salvarConfiguracoes(CONFIG_PADRAO);
     carregarConfiguracoes();
     toast('✅ Configurações restauradas!');
-}
-
-// ============================================================
-// RESETAR COMPETIÇÃO
-// ============================================================
-async function resetarCompeticao() {
-    const modalidade = appState.modalidade || '2-5';
-    await setCopa({
-        fase: 1,
-        status: 'aguardando',
-        tempoFase: 12,
-        fim: 0,
-        modalidade: modalidade,
-        resultados: {},
-        participantes: {},
-        classificados: {}
-    });
-    toast('✅ Competição resetada!');
-    setTimeout(() => location.reload(), 1000);
-}
-
-// ============================================================
-// ATUALIZAR ONLINE STATS
-// ============================================================
-function atualizarOnlineStats(data) {
-    let totalAlunos = 0;
-    let totalTorcida = 0;
-    
-    if (data) {
-        Object.values(data).forEach(val => {
-            if (val && val.tipo === 'torcida') totalTorcida++;
-            else totalAlunos++;
-        });
-    }
-    
-    const totalOnline = totalAlunos + totalTorcida;
-    document.getElementById('jogadores-online').innerText = totalOnline;
-    document.getElementById('prof-online-count').innerText = totalOnline;
-    
-    const listaDiv = document.getElementById('lista-participantes');
-    if (!listaDiv) return;
-    
-    let html = '<div class="online-list"><strong>👥 Jogadores:</strong><ul style="list-style:none; margin:5px 0 10px 0;">';
-    
-    if (data) {
-        let temAlunos = false;
-        Object.entries(data).forEach(([id, val]) => {
-            if (!val || val.tipo === 'torcida') return;
-            temAlunos = true;
-            html += `<li>🟢 ${escapeHtml(val.nome)} (${escapeHtml(val.turma)})</li>`;
-        });
-        if (!temAlunos) html += '<li>Nenhum jogador online</li>';
-    } else {
-        html += '<li>Nenhum jogador online</li>';
-    }
-    
-    html += '</ul><strong>📺 Espectadores:</strong><ul style="list-style:none; margin:5px 0 0 0;">';
-    
-    if (data) {
-        let temTorcida = false;
-        Object.entries(data).forEach(([id, val]) => {
-            if (val && val.tipo === 'torcida') {
-                temTorcida = true;
-                html += `<li>👀 Espectador conectado</li>`;
-            }
-        });
-        if (!temTorcida) html += '<li>Nenhum espectador online</li>';
-    } else {
-        html += '<li>Nenhum espectador online</li>';
-    }
-    
-    html += '</ul></div>';
-    listaDiv.innerHTML = html;
-}
-
-// ============================================================
-// ATUALIZAR UI PROFESSOR
-// ============================================================
-function atualizarUIProfessor(data) {
-    if (!data) return;
-    
-    document.getElementById('fase-atual-titulo').innerText = data.fase;
-    document.getElementById('fase-progresso').innerText = `${data.fase}/5`;
-    document.getElementById('prof-fase-info').innerText = `${data.fase}/5`;
-    
-    const modalidadeNome = appState.getModalidadeNome();
-    document.getElementById('modalidade-titulo').innerText = modalidadeNome;
-    
-    atualizarUI();
-    renderListaAlunosGerenciar();
 }
