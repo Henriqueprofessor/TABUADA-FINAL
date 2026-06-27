@@ -121,6 +121,7 @@
         .pontuacao-atual { font-size: 24px; font-weight: bold; background: #000000aa; padding: 6px 18px; border-radius: 40px; display: inline-block; }
         .indicador-posicao { font-size: 28px; font-weight: bold; background: #000000aa; padding: 6px 18px; border-radius: 40px; display: inline-flex; align-items: center; gap: 8px; }
         .velocidade-media { font-size: 20px; font-weight: bold; background: #000000aa; padding: 6px 18px; border-radius: 40px; display: inline-flex; align-items: center; gap: 8px; color: #2ecc71; }
+        #posicao-ameaca { min-width: 40px; text-align: center; transition: all 0.3s ease; }
         .modal-resultados { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f172a; border-radius: 32px; padding: 24px; width: 90%; max-width: 500px; z-index: 10000; box-shadow: 0 20px 35px rgba(0,0,0,0.5); border: 2px solid #ffd966; text-align: center; max-height: 90vh; overflow-y: auto; }
         .modal-classificado { border-color: #2ecc71; background: #0a2a1a; }
         .modal-eliminado { border-color: #e74c3c; background: #2a0a0a; }
@@ -285,9 +286,14 @@
                     </div>
                     <div class="indicador-posicao">
                         <span id="posicao-numero">--</span><span>º</span>
+                        <span style="font-size: 14px; opacity: 0.6; margin-left: 4px;">atual</span>
                     </div>
                     <div class="velocidade-media">
                         ⚡ <span id="velocidade-media">0.00</span>s
+                    </div>
+                    <div class="indicador-posicao" style="font-size: 22px; border-color: rgba(46, 204, 113, 0.3);">
+                        🎯 <span id="posicao-ameaca" style="color: #2ecc71;">—</span>
+                        <span style="font-size: 12px; opacity: 0.6;">projetada</span>
                     </div>
                 </div>
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
@@ -338,6 +344,7 @@
         <div id="podium-torcida-container" class="status-box hidden"></div>
     </div>
 </div>
+
 <div id="toast" class="toast hidden"></div>
 
 <!-- ============================================================ -->
@@ -499,9 +506,15 @@
         const faseAtual = estadoAtual.fase;
         
         try {
+            // 1. Buscar resultados da fase (partidas salvas)
             const snap = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
             const resultados = snap.val() || {};
             
+            // 2. Buscar dados temporários (partida em andamento)
+            const snapTemp = await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).once('value');
+            const dadosTemp = snapTemp.val();
+            
+            // 3. Calcular posição ATUAL do aluno (baseada em partidas salvas)
             let lista = [];
             for (const [id, partidas] of Object.entries(resultados)) {
                 if (partidas && partidas.length > 0) {
@@ -510,28 +523,75 @@
                 }
             }
             lista.sort((a, b) => b.pontos - a.pontos);
-            const posicao = lista.findIndex(p => p.id === alunoId) + 1;
+            const posicaoAtual = lista.findIndex(p => p.id === alunoId) + 1;
             
+            // 4. Atualizar posição atual na tela
             const posSpan = document.getElementById('posicao-numero');
             if (posSpan) {
-                posSpan.innerText = posicao > 0 ? posicao : '--';
-                if (posicao === 1) {
+                posSpan.innerText = posicaoAtual > 0 ? posicaoAtual : '--';
+                if (posicaoAtual === 1) {
                     posSpan.style.color = '#ffd700';
-                } else if (posicao === 2) {
+                } else if (posicaoAtual === 2) {
                     posSpan.style.color = '#c0c0c0';
-                } else if (posicao === 3) {
+                } else if (posicaoAtual === 3) {
                     posSpan.style.color = '#cd7f32';
                 } else {
                     posSpan.style.color = '#ffffff';
                 }
             }
             
+            // ============================================================
+            // 5. CALCULAR POSIÇÃO PROJETADA (AMEAÇA) - IGUAL AO RANKING
+            // ============================================================
+            let posicaoProjetada = posicaoAtual;
+            let posicaoProjetadaValida = false;
+            
+            // Verificar se há dados da partida em andamento
+            if (dadosTemp && dadosTemp.perguntas > 0 && dadosTemp.pontos > 0) {
+                // Calcular ritmo do aluno (pontos por pergunta)
+                const ritmo = dadosTemp.pontos / dadosTemp.perguntas;
+                const projecao = ritmo * 20; // Projetar para 20 perguntas
+                
+                // Buscar todas as partidas salvas para comparar com a projeção
+                let listaProjecao = [];
+                for (const [id, partidas] of Object.entries(resultados)) {
+                    if (id === alunoId) {
+                        // Usar a projeção do aluno atual
+                        listaProjecao.push({ id, pontos: projecao, isProjecao: true });
+                    } else if (partidas && partidas.length > 0) {
+                        const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+                        listaProjecao.push({ id, pontos: melhor.pontos, isProjecao: false });
+                    }
+                }
+                
+                // Ordenar e encontrar posição projetada
+                listaProjecao.sort((a, b) => b.pontos - a.pontos);
+                const posProjetada = listaProjecao.findIndex(p => p.id === alunoId) + 1;
+                
+                // Se a posição projetada for melhor que a atual e válida
+                if (posProjetada > 0 && posProjetada < posicaoAtual) {
+                    posicaoProjetada = posProjetada;
+                    posicaoProjetadaValida = true;
+                }
+            }
+            
+            // 6. ATUALIZAR POSIÇÃO PROJETADA (AMEAÇA) NA TELA
+            const posAmeacaSpan = document.getElementById('posicao-ameaca');
+            if (posAmeacaSpan) {
+                if (posicaoProjetadaValida && posicaoProjetada > 0) {
+                    posAmeacaSpan.innerText = `${posicaoProjetada}º 🎯`;
+                    posAmeacaSpan.style.color = '#2ecc71';
+                    posAmeacaSpan.style.display = 'inline-flex';
+                } else {
+                    posAmeacaSpan.innerText = '—';
+                    posAmeacaSpan.style.color = '#666';
+                }
+            }
+            
+            // 7. Calcular velocidade média
             let velocidadeMedia = 0;
             let acertos = 0;
             let tempo = 0;
-            
-            const snapTemp = await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).once('value');
-            const dadosTemp = snapTemp.val();
             
             if (dadosTemp && dadosTemp.acertos > 0 && dadosTemp.tempo > 0) {
                 acertos = dadosTemp.acertos;
@@ -549,6 +609,7 @@
                 }
             }
             
+            // 8. Atualizar velocidade média na tela
             const velSpan = document.getElementById('velocidade-media');
             if (velSpan) {
                 if (velocidadeMedia > 0 && acertos > 0) {
