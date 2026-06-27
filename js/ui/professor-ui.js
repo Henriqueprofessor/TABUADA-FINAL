@@ -69,10 +69,11 @@ export function initProfessorUI() {
     
     // ============================================================
     // ADICIONAR O BLOCO "VALOR DA PARTIDA" NA PÁGINA
+    // Usando um timeout maior e inserindo no início do painel
     // ============================================================
     setTimeout(() => {
         adicionarBlocoValorPartida();
-    }, 500);
+    }, 1000);
 }
 
 // ============================================================
@@ -85,43 +86,7 @@ function adicionarBlocoValorPartida() {
         return;
     }
     
-    console.log('🔍 Procurando onde inserir o bloco "Valor da Partida"...');
-    
-    // ============================================================
-    // PROCURAR O CONTAINER PRINCIPAL DO PAINEL
-    // ============================================================
-    let container = document.getElementById('painel-professor');
-    
-    // Se não encontrar, tentar outros IDs comuns
-    if (!container) {
-        container = document.getElementById('professor-painel') || 
-                    document.getElementById('painel') || 
-                    document.getElementById('app') ||
-                    document.body;
-        console.warn('⚠️ Painel do professor não encontrado, usando body como fallback');
-    }
-    
-    // ============================================================
-    // PROCURAR ONDE INSERIR (antes do rodapé ou no final)
-    // ============================================================
-    let targetElement = container;
-    let footer = null;
-    
-    // Tentar inserir antes do rodapé
-    footer = container.querySelector('footer, .footer, .rodape, [class*="footer"], [class*="rodape"]');
-    if (footer) {
-        targetElement = footer;
-        console.log('✅ Rodapé encontrado, inserindo antes dele');
-    } else {
-        // Tentar inserir depois do "Controle da Fase"
-        const controleFase = container.querySelector('[class*="controle"], #controle, .controle-fase');
-        if (controleFase && controleFase.parentNode) {
-            targetElement = controleFase.parentNode;
-            console.log('✅ "Controle da Fase" encontrado, inserindo depois dele');
-        } else {
-            console.log('⚠️ Nenhum ponto de referência encontrado, inserindo no final');
-        }
-    }
+    console.log('🔍 Inserindo bloco "Valor da Partida"...');
     
     // ============================================================
     // CRIAR O BLOCO HTML
@@ -136,6 +101,8 @@ function adicionarBlocoValorPartida() {
         border: 1px solid #334155;
         box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
         max-width: 800px;
+        z-index: 9999;
+        position: relative;
     `;
     
     bloco.innerHTML = `
@@ -194,20 +161,20 @@ function adicionarBlocoValorPartida() {
     `;
     
     // ============================================================
-    // INSERIR O BLOCO
+    // INSERIR O BLOCO NO INÍCIO DO PAINEL
     // ============================================================
-    if (footer) {
-        // Inserir antes do rodapé
-        targetElement.parentNode.insertBefore(bloco, targetElement);
-    } else if (targetElement === container) {
-        // Inserir no final do container
-        container.appendChild(bloco);
-    } else {
-        // Inserir depois do elemento alvo
-        targetElement.parentNode.insertBefore(bloco, targetElement.nextSibling);
-    }
+    let painel = document.getElementById('painel-professor');
     
-    console.log('✅ Bloco "Valor da Partida" adicionado com sucesso!');
+    if (painel) {
+        // Inserir no início do painel, depois do cabeçalho
+        const primeiroFilho = painel.firstChild;
+        painel.insertBefore(bloco, primeiroFilho);
+        console.log('✅ Bloco inserido no início do painel-professor');
+    } else {
+        // Se não encontrar o painel, inserir no body
+        document.body.insertBefore(bloco, document.body.firstChild);
+        console.log('⚠️ Painel não encontrado, bloco inserido no body');
+    }
     
     // ============================================================
     // CONFIGURAR EVENTOS DO BLOCO
@@ -219,8 +186,6 @@ function adicionarBlocoValorPartida() {
         if (btnAtualizar) {
             btnAtualizar.addEventListener('click', window.atualizarValorPartida);
             console.log('✅ Evento do botão "Atualizar" configurado');
-        } else {
-            console.warn('⚠️ Botão "btn-atualizar-valor-partida" não encontrado');
         }
         
         if (inputValor) {
@@ -237,7 +202,9 @@ function adicionarBlocoValorPartida() {
         const exibicao = document.getElementById('valor-partida-atual');
         if (exibicao) exibicao.textContent = valorAtual;
         if (inputValor) inputValor.value = valorAtual;
-    }, 100);
+        
+        console.log('✅ Bloco "Valor da Partida" adicionado com sucesso!');
+    }, 200);
 }
 
 // ============================================================
