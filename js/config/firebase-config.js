@@ -1,10 +1,6 @@
 // ============================================================
 // ARQUIVO: js/config/firebase-config.js
-// DESCRIÇÃO: Configuração do Firebase - VERSÃO CORRIGIDA
-// ============================================================
-
-// ============================================================
-// CONFIGURAÇÕES DO FIREBASE (DECLARADO PRIMEIRO)
+// DESCRIÇÃO: Configuração do Firebase
 // ============================================================
 
 export const firebaseConfig = {
@@ -17,22 +13,7 @@ export const firebaseConfig = {
     appId: "1:488825824115:web:50e94f68253473aee91b06"
 };
 
-// ============================================================
-// VERIFICAR SE O FIREBASE FOI CARREGADO
-// ============================================================
-
-// Verificar se o Firebase está disponível (carregado pelo HTML)
-if (typeof firebase === 'undefined') {
-    console.error('❌ Firebase NÃO foi carregado!');
-    console.error('Verifique se os scripts do Firebase estão no HTML.');
-} else {
-    console.log('✅ Firebase carregado com sucesso! Versão:', firebase.SDK_VERSION);
-}
-
-// ============================================================
-// CONFIGURAÇÕES PADRÃO DO JOGO
-// ============================================================
-
+// ========== CONFIGURAÇÕES PADRÃO ==========
 export const CONFIG_PADRAO = {
     confetes: true,
     notificacoes: true,
@@ -46,28 +27,16 @@ export const CONFIG_PADRAO = {
     syncOffline: true
 };
 
-// ============================================================
-// CONSTANTES DO JOGO
-// ============================================================
-
-export const TOTAL_FASES = 5;
-export const TOTAL_PERGUNTAS = 20;
-
-export const VAGAS_POR_FASE = {
-    1: 30,
-    2: 20,
-    3: 10,
-    4: 5,
-    5: 5
+// ========== CHAVES DO FIREBASE ==========
+export const FIREBASE_KEYS = {
+    COPA: 'copaV2',
+    ONLINE: 'online',
+    CONFIGURACOES: 'copaV2/configuracoes',
+    RESULTADOS: 'copaV2/resultados',
+    RESULTADOS_TEMP: 'copaV2/resultados_temp',
+    PARTICIPANTES: 'copaV2/participantes',
+    CLASSIFICADOS: 'copaV2/classificados',
+    TURMAS: 'copaV2/turmas',
+    INTERVALOS: 'copaV2/configuracoes/intervalos',
+    VALOR_PARTIDA: 'copaV2/configuracoes/valorPartida'
 };
-
-export const MODALIDADE_CONFIG = {
-    "2-5": { min: 2, max: 5, nome: "Tabuada 2️⃣➡️5️⃣" },
-    "6-9": { min: 6, max: 9, nome: "Tabuada 6️⃣➡️9️⃣" },
-    "0-10": { min: 0, max: 10, nome: "Tabuada 0️⃣➡️🔟 (Completa)" }
-};
-
-export const TURMAS_PADRAO = [
-    "901", "1001", "1002", "1003", "1004",
-    "2001", "2002", "2003", "3001", "3002"
-];
