@@ -144,6 +144,112 @@
         .status-finalizado { color: #3498db; font-weight: bold; }
         .btn-verificar-versao { background: #9b59b6; color: white; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px; }
         .btn-verificar-versao:hover { background: #8e44ad; transform: scale(1.02); }
+
+        /* ============================================================ */
+        /* BOLINHAS DE EVOLUÇÃO - ESTILO MOTO GP */
+        /* ============================================================ */
+        .evolucao-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #000000aa;
+            padding: 6px 16px;
+            border-radius: 40px;
+            margin: 5px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .evolucao-container .label {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-right: 4px;
+        }
+        .bolinha {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .bolinha-vermelha {
+            background: #e74c3c;
+            color: white;
+            border-color: #ff6b6b;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+        }
+        .bolinha-laranja {
+            background: #f39c12;
+            color: white;
+            border-color: #ffbe76;
+            box-shadow: 0 0 15px rgba(243, 156, 18, 0.5);
+        }
+        .bolinha-branca {
+            background: #7f8c8d;
+            color: white;
+            border-color: #bdc3c7;
+        }
+        .bolinha-azul {
+            background: #3498db;
+            color: white;
+            border-color: #74b9ff;
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+        }
+        .bolinha-cinza {
+            background: #2c3e50;
+            color: #7f8c8d;
+            border-color: #34495e;
+            opacity: 0.5;
+        }
+        .bolinha-interrogacao {
+            background: #1f3a4b;
+            color: #ffd966;
+            border-color: #ffd966;
+            border-style: dashed;
+            animation: pulse-interrogacao 1s ease-in-out infinite;
+            font-size: 16px;
+        }
+        @keyframes pulse-interrogacao {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+        .evolucao-legenda {
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            opacity: 0.7;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 4px;
+        }
+        .evolucao-legenda .item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .evolucao-legenda .bolinha-mini {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .bolinha-mini-vermelha { background: #e74c3c; }
+        .bolinha-mini-laranja { background: #f39c12; }
+        .bolinha-mini-branca { background: #7f8c8d; }
+        .bolinha-mini-azul { background: #3498db; }
+        .bolinha-mini-interrogacao { 
+            background: #1f3a4b; 
+            border: 1px dashed #ffd966;
+            color: #ffd966;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -192,6 +298,7 @@
             <div class="tab-btn" data-tab="gerenciar-alunos">✏️ Gerenciar Alunos</div>
             <div class="tab-btn" data-tab="gerenciar-turmas">🏷️ Gerenciar Turmas</div>
         </div>
+        <!-- PAINEL DO PROFESSOR - CONTEÚDO COMPLETO AQUI -->
         <div id="tab-controle" class="tab-content">
             <div class="flex-grid">
                 <div>
@@ -271,6 +378,7 @@
         </div>
     </div>
 
+    <!-- TELA DO ALUNO - COM 4 BOLINHAS + EXPECTATIVA -->
     <div id="tela-aluno" class="card hidden">
         <div class="header-actions">
             <h2 id="aluno-nome-display">Aluno</h2>
@@ -291,11 +399,27 @@
                     <div class="velocidade-media">
                         ⚡ <span id="velocidade-media">0.00</span>s
                     </div>
-                    <div class="indicador-posicao" style="font-size: 22px; border-color: rgba(46, 204, 113, 0.3);">
-                        🎯 <span id="posicao-ameaca" style="color: #2ecc71;">—</span>
-                        <span style="font-size: 12px; opacity: 0.6;">projetada</span>
-                    </div>
                 </div>
+                
+                <!-- ============================================================ -->
+                <!-- BOLINHAS DE EVOLUÇÃO (4 bolinhas + ❓) -->
+                <!-- ============================================================ -->
+                <div class="evolucao-container">
+                    <span class="label">📊 EVOLUÇÃO:</span>
+                    <span class="bolinha bolinha-cinza" id="bolinha1">1</span>
+                    <span class="bolinha bolinha-cinza" id="bolinha2">2</span>
+                    <span class="bolinha bolinha-cinza" id="bolinha3">3</span>
+                    <span class="bolinha bolinha-cinza" id="bolinha4">4</span>
+                    <span class="bolinha bolinha-interrogacao" id="bolinha5">❓</span>
+                </div>
+                <div class="evolucao-legenda">
+                    <span class="item"><span class="bolinha-mini bolinha-mini-vermelha"></span> Campeão!</span>
+                    <span class="item"><span class="bolinha-mini bolinha-mini-laranja"></span> Subindo</span>
+                    <span class="item"><span class="bolinha-mini bolinha-mini-branca"></span> Mantendo</span>
+                    <span class="item"><span class="bolinha-mini bolinha-mini-azul"></span> Caindo</span>
+                    <span class="item"><span class="bolinha-mini bolinha-mini-interrogacao">❓</span> Resultado final</span>
+                </div>
+                
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
                 <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
                 <div class="opcoes-grid">
@@ -347,9 +471,7 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<!-- ============================================================ -->
-<!-- RODAPÉ - HENRIQUE ANGELO DA SILVA -->
-<!-- ============================================================ -->
+<!-- RODAPÉ -->
 <div style="text-align: center; margin-top: 30px; padding: 15px; color: #666; font-size: 14px; border-top: 1px solid #2c3e50;">
     🏆 Copa Tabuada CEIB 2026 - Desenvolvido por <strong style="color: #ffd966;">HENRIQUE ANGELO DA SILVA</strong>
 </div>
@@ -405,6 +527,256 @@
         window.open('tutorial-instalacao.html', '_blank');
         toast('📱 Abrindo tutorial de instalação...');
     });
+
+    // ============================================================
+    // FUNÇÃO PARA ATUALIZAR AS BOLINHAS DE EVOLUÇÃO
+    // ============================================================
+    function atualizarBolinhas(perguntaAtual, corBolinha1, corBolinha2, corBolinha3, corBolinha4) {
+        const bolinhas = [
+            { id: 'bolinha1', cor: corBolinha1, label: '1' },
+            { id: 'bolinha2', cor: corBolinha2, label: '2' },
+            { id: 'bolinha3', cor: corBolinha3, label: '3' },
+            { id: 'bolinha4', cor: corBolinha4, label: '4' }
+        ];
+        
+        // Determinar quantas bolinhas mostrar com base na pergunta atual
+        let bolinhasVisiveis = 0;
+        if (perguntaAtual >= 4) bolinhasVisiveis = 1;
+        if (perguntaAtual >= 8) bolinhasVisiveis = 2;
+        if (perguntaAtual >= 12) bolinhasVisiveis = 3;
+        if (perguntaAtual >= 16) bolinhasVisiveis = 4;
+        
+        bolinhas.forEach((b, index) => {
+            const el = document.getElementById(b.id);
+            if (!el) return;
+            
+            if (index < bolinhasVisiveis) {
+                // Mostrar a bolinha com a cor correspondente
+                const cor = b.cor || 'cinza';
+                el.className = `bolinha bolinha-${cor}`;
+                el.textContent = b.label;
+                el.style.opacity = '1';
+            } else if (perguntaAtual >= 17) {
+                // Últimas 4 perguntas (17-20): mostrar a 4ª bolinha e manter a 5ª como ❓
+                if (index === 3) {
+                    const cor = b.cor || 'cinza';
+                    el.className = `bolinha bolinha-${cor}`;
+                    el.textContent = b.label;
+                    el.style.opacity = '1';
+                } else if (index < 3) {
+                    el.className = `bolinha bolinha-cinza`;
+                    el.textContent = b.label;
+                    el.style.opacity = '0.3';
+                }
+            } else {
+                // Bolinhas futuras: cinza e opaco
+                el.className = 'bolinha bolinha-cinza';
+                el.textContent = b.label;
+                el.style.opacity = '0.3';
+            }
+        });
+        
+        // Bolinha 5 (❓) - sempre visível, com animação de expectativa
+        const el5 = document.getElementById('bolinha5');
+        if (el5) {
+            if (perguntaAtual >= 20) {
+                // Se a partida acabou, a bolinha 5 some ou muda
+                el5.className = 'bolinha bolinha-cinza';
+                el5.textContent = '✓';
+                el5.style.opacity = '0.3';
+            } else {
+                el5.className = 'bolinha bolinha-interrogacao';
+                el5.textContent = '❓';
+                el5.style.opacity = '1';
+            }
+        }
+    }
+
+    // ============================================================
+    // FUNÇÃO PARA CALCULAR A COR DA BOLINHA BASEADO NA PROJEÇÃO
+    // ============================================================
+    function calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida) {
+        if (!posicaoProjetadaValida || posicaoProjetada <= 0) {
+            return 'cinza';
+        }
+        
+        if (posicaoProjetada < posicaoAtual) {
+            // Vai melhorar (subir)
+            if (posicaoProjetada === 1) {
+                return 'vermelha'; // Vai para 1º lugar!
+            } else {
+                return 'laranja'; // Vai subir, mas não para 1º
+            }
+        } else if (posicaoProjetada === posicaoAtual) {
+            return 'branca'; // Vai manter
+        } else {
+            return 'azul'; // Vai cair
+        }
+    }
+
+    // ============================================================
+    // FUNÇÃO PARA ATUALIZAR POSIÇÃO, VELOCIDADE E BOLINHAS
+    // ============================================================
+    async function atualizarInfoAluno() {
+        if (!alunoId || !estadoAtual) return;
+        
+        const faseAtual = estadoAtual.fase;
+        
+        try {
+            // 1. Buscar resultados da fase (partidas salvas)
+            const snap = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
+            const resultados = snap.val() || {};
+            
+            // 2. Buscar dados temporários (partida em andamento)
+            const snapTemp = await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).once('value');
+            const dadosTemp = snapTemp.val();
+            
+            // 3. Calcular posição ATUAL
+            let lista = [];
+            for (const [id, partidas] of Object.entries(resultados)) {
+                if (partidas && partidas.length > 0) {
+                    const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+                    lista.push({ id, pontos: melhor.pontos });
+                }
+            }
+            lista.sort((a, b) => b.pontos - a.pontos);
+            const posicaoAtual = lista.findIndex(p => p.id === alunoId) + 1;
+            
+            // 4. Atualizar posição atual na tela
+            const posSpan = document.getElementById('posicao-numero');
+            if (posSpan) {
+                posSpan.innerText = posicaoAtual > 0 ? posicaoAtual : '--';
+                if (posicaoAtual === 1) posSpan.style.color = '#ffd700';
+                else if (posicaoAtual === 2) posSpan.style.color = '#c0c0c0';
+                else if (posicaoAtual === 3) posSpan.style.color = '#cd7f32';
+                else posSpan.style.color = '#ffffff';
+            }
+            
+            // 5. Calcular posição projetada
+            let posicaoProjetada = posicaoAtual;
+            let posicaoProjetadaValida = false;
+            let projetado = false;
+            
+            if (dadosTemp && dadosTemp.perguntas > 0 && dadosTemp.pontos > 0) {
+                const ritmo = dadosTemp.pontos / dadosTemp.perguntas;
+                const projecao = ritmo * 20;
+                
+                let listaProjecao = [];
+                for (const [id, partidas] of Object.entries(resultados)) {
+                    if (id === alunoId) {
+                        listaProjecao.push({ id, pontos: projecao, isProjecao: true });
+                    } else if (partidas && partidas.length > 0) {
+                        const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+                        listaProjecao.push({ id, pontos: melhor.pontos, isProjecao: false });
+                    }
+                }
+                
+                listaProjecao.sort((a, b) => b.pontos - a.pontos);
+                const posProjetada = listaProjecao.findIndex(p => p.id === alunoId) + 1;
+                
+                if (posProjetada > 0) {
+                    posicaoProjetada = posProjetada;
+                    posicaoProjetadaValida = true;
+                    projetado = true;
+                }
+            }
+            
+            // 6. Calcular cores das bolinhas com base nas projeções
+            // Para cada bloco, simulamos a projeção com base no ritmo atual
+            const perguntaAtual = dadosTemp?.perguntas || 0;
+            
+            // Cor da bolinha 1 (perguntas 1-4)
+            let cor1 = 'cinza';
+            if (perguntaAtual >= 4 && projetado) {
+                // Projeção baseada no ritmo atual
+                cor1 = calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida);
+            }
+            
+            // Cor da bolinha 2 (perguntas 5-8)
+            let cor2 = 'cinza';
+            if (perguntaAtual >= 8 && projetado) {
+                cor2 = calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida);
+            }
+            
+            // Cor da bolinha 3 (perguntas 9-12)
+            let cor3 = 'cinza';
+            if (perguntaAtual >= 12 && projetado) {
+                cor3 = calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida);
+            }
+            
+            // Cor da bolinha 4 (perguntas 13-16)
+            let cor4 = 'cinza';
+            if (perguntaAtual >= 16 && projetado) {
+                cor4 = calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida);
+            }
+            
+            // Atualizar bolinhas na tela
+            atualizarBolinhas(perguntaAtual, cor1, cor2, cor3, cor4);
+            
+            // 7. Calcular velocidade média
+            let velocidadeMedia = 0;
+            let acertos = 0;
+            let tempo = 0;
+            
+            if (dadosTemp && dadosTemp.acertos > 0 && dadosTemp.tempo > 0) {
+                acertos = dadosTemp.acertos;
+                tempo = dadosTemp.tempo;
+                velocidadeMedia = tempo / acertos;
+            } else {
+                const partidasAluno = resultados[alunoId] || [];
+                if (partidasAluno.length > 0) {
+                    const melhor = partidasAluno.sort((a, b) => b.pontos - a.pontos)[0];
+                    if (melhor.acertos > 0 && melhor.tempo > 0) {
+                        acertos = melhor.acertos;
+                        tempo = melhor.tempo;
+                        velocidadeMedia = tempo / acertos;
+                    }
+                }
+            }
+            
+            // 8. Atualizar velocidade média na tela
+            const velSpan = document.getElementById('velocidade-media');
+            if (velSpan) {
+                if (velocidadeMedia > 0 && acertos > 0) {
+                    velSpan.innerText = velocidadeMedia.toFixed(2) + 's';
+                    if (velocidadeMedia < 1.5) velSpan.style.color = '#2ecc71';
+                    else if (velocidadeMedia < 2.5) velSpan.style.color = '#f39c12';
+                    else velSpan.style.color = '#e74c3c';
+                } else {
+                    velSpan.innerText = '--';
+                    velSpan.style.color = '#ffffff';
+                }
+            }
+            
+        } catch (e) {
+            console.warn('Erro ao atualizar info do aluno:', e);
+        }
+    }
+
+    // ============================================================
+    // FUNÇÃO PARA ATUALIZAR POSIÇÃO E VELOCIDADE EM TEMPO REAL
+    // ============================================================
+    let intervaloTempoReal = null;
+
+    function iniciarAtualizacaoTempoReal() {
+        if (intervaloTempoReal) {
+            clearInterval(intervaloTempoReal);
+        }
+        const intervalo = intervaloIndividualSegundos || 4;
+        intervaloTempoReal = setInterval(() => {
+            if (meuTipo === 'aluno' && jogoAtivo) {
+                atualizarInfoAluno();
+            }
+        }, intervalo * 1000);
+        console.log(`⏱️ Atualização em tempo real: a cada ${intervalo} segundos`);
+    }
+
+    function pararAtualizacaoTempoReal() {
+        if (intervaloTempoReal) {
+            clearInterval(intervaloTempoReal);
+            intervaloTempoReal = null;
+        }
+    }
 
     // ---------- VARIÁVEIS GLOBAIS ----------
     let meuTipo = null, alunoId = null, alunoNome = null, alunoTurma = null;
@@ -495,165 +867,6 @@
             if (timer) clearTimeout(timer);
             timer = setTimeout(() => { fn.apply(this, args); timer = null; }, delay);
         };
-    }
-
-    // ============================================================
-    // FUNÇÃO PARA ATUALIZAR VELOCIDADE MÉDIA E POSIÇÃO DO ALUNO
-    // ============================================================
-    async function atualizarInfoAluno() {
-        if (!alunoId || !estadoAtual) return;
-        
-        const faseAtual = estadoAtual.fase;
-        
-        try {
-            // 1. Buscar resultados da fase (partidas salvas)
-            const snap = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
-            const resultados = snap.val() || {};
-            
-            // 2. Buscar dados temporários (partida em andamento)
-            const snapTemp = await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).once('value');
-            const dadosTemp = snapTemp.val();
-            
-            // 3. Calcular posição ATUAL do aluno (baseada em partidas salvas)
-            let lista = [];
-            for (const [id, partidas] of Object.entries(resultados)) {
-                if (partidas && partidas.length > 0) {
-                    const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
-                    lista.push({ id, pontos: melhor.pontos });
-                }
-            }
-            lista.sort((a, b) => b.pontos - a.pontos);
-            const posicaoAtual = lista.findIndex(p => p.id === alunoId) + 1;
-            
-            // 4. Atualizar posição atual na tela
-            const posSpan = document.getElementById('posicao-numero');
-            if (posSpan) {
-                posSpan.innerText = posicaoAtual > 0 ? posicaoAtual : '--';
-                if (posicaoAtual === 1) {
-                    posSpan.style.color = '#ffd700';
-                } else if (posicaoAtual === 2) {
-                    posSpan.style.color = '#c0c0c0';
-                } else if (posicaoAtual === 3) {
-                    posSpan.style.color = '#cd7f32';
-                } else {
-                    posSpan.style.color = '#ffffff';
-                }
-            }
-            
-            // ============================================================
-            // 5. CALCULAR POSIÇÃO PROJETADA (AMEAÇA) - IGUAL AO RANKING
-            // ============================================================
-            let posicaoProjetada = posicaoAtual;
-            let posicaoProjetadaValida = false;
-            
-            // Verificar se há dados da partida em andamento
-            if (dadosTemp && dadosTemp.perguntas > 0 && dadosTemp.pontos > 0) {
-                // Calcular ritmo do aluno (pontos por pergunta)
-                const ritmo = dadosTemp.pontos / dadosTemp.perguntas;
-                const projecao = ritmo * 20; // Projetar para 20 perguntas
-                
-                // Buscar todas as partidas salvas para comparar com a projeção
-                let listaProjecao = [];
-                for (const [id, partidas] of Object.entries(resultados)) {
-                    if (id === alunoId) {
-                        // Usar a projeção do aluno atual
-                        listaProjecao.push({ id, pontos: projecao, isProjecao: true });
-                    } else if (partidas && partidas.length > 0) {
-                        const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
-                        listaProjecao.push({ id, pontos: melhor.pontos, isProjecao: false });
-                    }
-                }
-                
-                // Ordenar e encontrar posição projetada
-                listaProjecao.sort((a, b) => b.pontos - a.pontos);
-                const posProjetada = listaProjecao.findIndex(p => p.id === alunoId) + 1;
-                
-                // Se a posição projetada for melhor que a atual e válida
-                if (posProjetada > 0 && posProjetada < posicaoAtual) {
-                    posicaoProjetada = posProjetada;
-                    posicaoProjetadaValida = true;
-                }
-            }
-            
-            // 6. ATUALIZAR POSIÇÃO PROJETADA (AMEAÇA) NA TELA
-            const posAmeacaSpan = document.getElementById('posicao-ameaca');
-            if (posAmeacaSpan) {
-                if (posicaoProjetadaValida && posicaoProjetada > 0) {
-                    posAmeacaSpan.innerText = `${posicaoProjetada}º 🎯`;
-                    posAmeacaSpan.style.color = '#2ecc71';
-                    posAmeacaSpan.style.display = 'inline-flex';
-                } else {
-                    posAmeacaSpan.innerText = '—';
-                    posAmeacaSpan.style.color = '#666';
-                }
-            }
-            
-            // 7. Calcular velocidade média
-            let velocidadeMedia = 0;
-            let acertos = 0;
-            let tempo = 0;
-            
-            if (dadosTemp && dadosTemp.acertos > 0 && dadosTemp.tempo > 0) {
-                acertos = dadosTemp.acertos;
-                tempo = dadosTemp.tempo;
-                velocidadeMedia = tempo / acertos;
-            } else {
-                const partidasAluno = resultados[alunoId] || [];
-                if (partidasAluno.length > 0) {
-                    const melhor = partidasAluno.sort((a, b) => b.pontos - a.pontos)[0];
-                    if (melhor.acertos > 0 && melhor.tempo > 0) {
-                        acertos = melhor.acertos;
-                        tempo = melhor.tempo;
-                        velocidadeMedia = tempo / acertos;
-                    }
-                }
-            }
-            
-            // 8. Atualizar velocidade média na tela
-            const velSpan = document.getElementById('velocidade-media');
-            if (velSpan) {
-                if (velocidadeMedia > 0 && acertos > 0) {
-                    velSpan.innerText = velocidadeMedia.toFixed(2) + 's';
-                    if (velocidadeMedia < 1.5) {
-                        velSpan.style.color = '#2ecc71';
-                    } else if (velocidadeMedia < 2.5) {
-                        velSpan.style.color = '#f39c12';
-                    } else {
-                        velSpan.style.color = '#e74c3c';
-                    }
-                } else {
-                    velSpan.innerText = '--';
-                    velSpan.style.color = '#ffffff';
-                }
-            }
-        } catch (e) {
-            console.warn('Erro ao atualizar info do aluno:', e);
-        }
-    }
-
-    // ============================================================
-    // FUNÇÃO PARA ATUALIZAR POSIÇÃO E VELOCIDADE EM TEMPO REAL
-    // ============================================================
-    let intervaloTempoReal = null;
-
-    function iniciarAtualizacaoTempoReal() {
-        if (intervaloTempoReal) {
-            clearInterval(intervaloTempoReal);
-        }
-        const intervalo = intervaloIndividualSegundos || 4;
-        intervaloTempoReal = setInterval(() => {
-            if (meuTipo === 'aluno' && jogoAtivo) {
-                atualizarInfoAluno();
-            }
-        }, intervalo * 1000);
-        console.log(`⏱️ Atualização em tempo real: a cada ${intervalo} segundos`);
-    }
-
-    function pararAtualizacaoTempoReal() {
-        if (intervaloTempoReal) {
-            clearInterval(intervaloTempoReal);
-            intervaloTempoReal = null;
-        }
     }
 
     // ---------- CENTRALIZAÇÃO DE CLASSIFICAÇÃO ----------
