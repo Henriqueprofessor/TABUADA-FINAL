@@ -17,17 +17,42 @@ import { calcularBonusFase, obterPontuacaoComBonus } from '../config/bonus-confi
 // ========== CACHE ==========
 const cache = new Map();
 
+// ========== CONFIGURAÇÃO ==========
+// VALOR_PARTIDA: quantidade de pontos que uma partida completa vale
+// Este valor pode ser alterado no painel do professor
+// ============================================================
+let VALOR_PARTIDA = 2000; // Valor padrão
+
+// ========== FUNÇÃO PARA ALTERAR O VALOR DA PARTIDA ==========
+export function setValorPartida(novoValor) {
+    if (novoValor && novoValor > 0) {
+        VALOR_PARTIDA = novoValor;
+        // Limpar cache para forçar recálculo
+        limparCacheRanking();
+        console.log(`✅ Valor da partida atualizado para: ${VALOR_PARTIDA} pontos`);
+    }
+}
+
+export function getValorPartida() {
+    return VALOR_PARTIDA;
+}
+
 // ============================================================
 // FUNÇÃO: PROJEÇÃO DE PONTOS POR PARTIDA
 // ============================================================
 // Converte a velocidade média em pontos projetados para a PRÓXIMA partida
-// Quanto menor o tempo, mais pontos (ex: 1.00s → 1000 pts, 2.00s → 500 pts)
+// Quanto menor o tempo, mais pontos (distribuição proporcional)
 // ============================================================
 function projetarPontosPorPartida(velocidadeMedia) {
     if (!velocidadeMedia || velocidadeMedia <= 0) return 0;
-    // Fator de conversão: quanto menor o tempo, mais pontos
-    // Ajuste este valor conforme a regra do seu jogo
-    return Math.round(1000 / velocidadeMedia);
+    
+    // Quanto menor o tempo, maior a pontuação
+    // Exemplo: 
+    //   - 1.00s → ganha 100% do valor da partida (2000 pts)
+    //   - 2.00s → ganha 50% do valor da partida (1000 pts)
+    //   - 0.50s → ganha 200% do valor da partida (4000 pts)
+    const fator = 1.0 / velocidadeMedia;
+    return Math.round(VALOR_PARTIDA * fator);
 }
 
 // ============================================================
@@ -58,6 +83,7 @@ function calcularPosicoesFuturas(lista) {
         const pontosProjetados = projetarPontosPorPartida(velMedia);
         j.pontosFuturos = j.pontos + pontosProjetados;
         j.velocidadeMediaUsada = velMedia;
+        j.pontosProjetados = pontosProjetados;
     });
     
     // 4. Calcular a posição futura de cada jogador
@@ -311,19 +337,20 @@ function construirTabelaRankingCompleta(lista, fase, exibirClassificacao) {
         if (j.tipoFuturo === 'lider') {
             futPosHtml = '—';
         } else {
+            // Apenas o número da posição com indicador visual
             let icone = '';
             let classe = '';
             if (j.tipoFuturo === 'sobe') {
-                icone = ' 🟢';
+                icone = '🟢';
                 classe = 'fut-sobe';
             } else if (j.tipoFuturo === 'mantem') {
-                icone = ' ⚪';
+                icone = '⚪';
                 classe = 'fut-mantem';
             } else {
-                icone = ' 🔴';
+                icone = '🔴';
                 classe = 'fut-desce';
             }
-            futPosHtml = `<span class="${classe}">${j.posFutura}°${icone}</span>`;
+            futPosHtml = `<span class="${classe}">${j.posFutura}° ${icone}</span>`;
         }
 
         // ========== PROGRESSO ==========
