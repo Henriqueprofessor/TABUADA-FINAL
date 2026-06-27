@@ -1,10 +1,10 @@
 // ============================================================
 // ARQUIVO: js/services/sync-service.js
-// DESCRIÇÃO: Sincronização Offline - VERSÃO CORRIGIDA
+// DESCRIÇÃO: Sincronização Offline
 // ============================================================
 
 import { salvarResultado, removerResultadoTemp } from './firebase-service.js';
-import { toast } from '../utils/helpers.js';
+import { toast, isOnline } from '../utils/helpers.js';
 
 class SyncService {
     constructor() {
@@ -22,7 +22,7 @@ class SyncService {
         });
 
         setTimeout(() => {
-            if (this.config.syncOffline && navigator.onLine) {
+            if (this.config.syncOffline && isOnline()) {
                 this.sincronizarPartidas();
             }
         }, 3000);
@@ -40,7 +40,7 @@ class SyncService {
     salvarPartidasOffline(partidas) {
         try {
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(partidas));
-        } catch (e) {}
+        } catch (e) { /* ignora */ }
     }
 
     adicionarPartidaOffline(alunoId, fase, dados) {
@@ -55,13 +55,13 @@ class SyncService {
             tentativas: 0
         });
         this.salvarPartidasOffline(partidas);
-        
+
         console.log('[Sync] Partida salva offline:', dados);
         toast('📶 Sem internet. Partida salva e será sincronizada automaticamente.');
     }
 
     estaOnline() {
-        return navigator.onLine;
+        return isOnline();
     }
 
     async sincronizarPartidas() {
@@ -114,7 +114,7 @@ class SyncService {
     limparPartidasOffline() {
         try {
             localStorage.removeItem(this.STORAGE_KEY);
-        } catch (e) {}
+        } catch (e) { /* ignora */ }
     }
 
     updateConfig(config) {
@@ -125,10 +125,6 @@ class SyncService {
     }
 }
 
-// ============================================================
-// EXPORTAR
-// ============================================================
-
 export const syncService = new SyncService();
 
 export const addOfflinePartida = (alunoId, fase, dados) => {
@@ -137,9 +133,4 @@ export const addOfflinePartida = (alunoId, fase, dados) => {
 
 export const syncOfflinePartidas = () => {
     syncService.sincronizarPartidas();
-};
-
-// Apenas UMA declaração de isOnline
-export const isOnline = () => {
-    return syncService.estaOnline();
 };
