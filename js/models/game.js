@@ -1,6 +1,6 @@
 // ============================================================
 // ARQUIVO: js/models/game.js
-// DESCRIÇÃO: Lógica do Jogo - PONTUAÇÃO CORRIGIDA
+// DESCRIÇÃO: Lógica do Jogo - Perguntas, Partidas e Pontuação
 // ============================================================
 
 import { MODALIDADE_CONFIG, TOTAL_PERGUNTAS, TEMPO_PERGUNTA } from '../utils/constants.js';
@@ -11,25 +11,25 @@ const poolCache = {};
 function gerarPool(modalidade) {
     const config = MODALIDADE_CONFIG[modalidade];
     if (!config) return [];
-    
+
     const { min, max } = config;
     const pool = [];
-    
+
     for (let i = 0; i < 100; i++) {
         let a = randInt(min, max);
         let b = randInt(min, max);
         let r = a * b;
-        
+
         let opts = [r];
         while (opts.length < 4) {
             let x = r + randInt(-5, 5);
             if (x >= 0 && !opts.includes(x)) opts.push(x);
         }
-        
+
         shuffleArray(opts);
         pool.push({ a, b, opts });
     }
-    
+
     return pool;
 }
 
@@ -37,7 +37,7 @@ export function obterPerguntas(modalidade) {
     if (!poolCache[modalidade]) {
         poolCache[modalidade] = gerarPool(modalidade);
     }
-    
+
     const pool = poolCache[modalidade];
     const shuffled = [...pool];
     shuffleArray(shuffled);
@@ -52,7 +52,7 @@ export function iniciarPartida(perguntas) {
         acertos: 0,
         erros: 0,
         tempoTotal: 0,
-        tempoRestantePergunta: TEMPO_PERGUNTA, // Inicia com 10
+        tempoRestantePergunta: TEMPO_PERGUNTA,
         finalizada: false,
         sequenciaAcertos: 0,
         maiorSequencia: 0,
@@ -66,42 +66,32 @@ export function processarResposta(partida, opcaoSelecionada) {
 
     const respostaCorreta = p.a * p.b;
     const acertou = opcaoSelecionada === respostaCorreta;
-    
-    // ============================================================
-    // CÁLCULO DA PONTUAÇÃO - USA O tempoRestantePergunta
-    // ============================================================
+
     const tempoRestante = partida.tempoRestantePergunta || 0;
     const tempoGasto = TEMPO_PERGUNTA - tempoRestante;
-    
+
     let pontosGanhos = 0;
-    
+
     if (acertou) {
         partida.acertos++;
         partida.sequenciaAcertos++;
         if (partida.sequenciaAcertos > partida.maiorSequencia) {
             partida.maiorSequencia = partida.sequenciaAcertos;
         }
-        
-        // ============================================================
-        // PONTUAÇÃO: Quanto maior o tempoRestante, mais pontos
-        // tempoRestante = 10 → 100 pontos
-        // tempoRestante = 5  → 50 pontos
-        // tempoRestante = 0  → 0 pontos
-        // ============================================================
+
         const percentual = Math.max(0, tempoRestante / TEMPO_PERGUNTA);
         pontosGanhos = Math.round(100 * percentual);
-        
-        // Garantir que se acertou com tempo > 0, ganhe pelo menos 1 ponto
+
         if (pontosGanhos === 0 && tempoRestante > 0) {
             pontosGanhos = 1;
         }
-        
+
         partida.pontos += pontosGanhos;
     } else {
         partida.erros++;
         partida.sequenciaAcertos = 0;
     }
-    
+
     partida.tempoTotal += tempoGasto;
     partida.respostas.push({
         pergunta: `${p.a} x ${p.b}`,
@@ -112,14 +102,14 @@ export function processarResposta(partida, opcaoSelecionada) {
         pontos: pontosGanhos,
         tempoRestante: tempoRestante
     });
-    
+
     partida.indice++;
-    
+
     const finalizada = partida.indice >= TOTAL_PERGUNTAS;
     if (finalizada) {
         partida.finalizada = true;
     }
-    
+
     return {
         acertou,
         respostaCorreta,
@@ -144,7 +134,7 @@ export function getProximaPergunta(partida) {
 export function calcularEstatisticas(partida) {
     const total = partida.perguntas.length;
     const respondidas = partida.respostas.length;
-    
+
     return {
         totalPerguntas: total,
         respondidas: respondidas,
@@ -176,24 +166,24 @@ export function criarObjetoPartida(partida) {
 
 export function verificarNotificacoes(partida, ultimoResultado) {
     if (!ultimoResultado) return [];
-    
+
     const notificacoes = [];
     const seq = partida.sequenciaAcertos;
     const erros = partida.erros;
-    
+
     if (seq === 5) notificacoes.push('seq5');
     else if (seq === 10) notificacoes.push('seq10');
     else if (seq === 15) notificacoes.push('seq15');
     else if (seq === 20) notificacoes.push('seq20');
-    
+
     if (erros === 3 && !ultimoResultado.acertou) notificacoes.push('erro3');
     else if (erros === 5 && !ultimoResultado.acertou) notificacoes.push('erro5');
-    
+
     if (ultimoResultado.acertou) {
         if (ultimoResultado.tempoGasto <= 1.0) notificacoes.push('relampago');
         else if (ultimoResultado.tempoGasto <= 1.5) notificacoes.push('rapido');
     }
-    
+
     return notificacoes;
 }
 
@@ -201,10 +191,10 @@ export function verificarRecordes(partida, resultadosAnteriores) {
     if (!resultadosAnteriores || resultadosAnteriores.length === 0) {
         return { recordeFase: true, recordeGeral: true };
     }
-    
+
     const melhorAnterior = Math.max(...resultadosAnteriores.map(r => r.pontos || 0));
     const pontuacaoAtual = partida.pontos;
-    
+
     return {
         recordeFase: pontuacaoAtual > melhorAnterior,
         recordeGeral: pontuacaoAtual > (resultadosAnteriores[0]?.pontos || 0)
