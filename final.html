@@ -144,6 +144,11 @@
         .status-finalizado { color: #3498db; font-weight: bold; }
         .btn-verificar-versao { background: #9b59b6; color: white; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px; }
         .btn-verificar-versao:hover { background: #8e44ad; transform: scale(1.02); }
+        
+        /* Estilos para Fut. Pos. */
+        .fut-sobe { color: #2ecc71; font-weight: bold; }
+        .fut-mantem { color: #f39c12; font-weight: bold; }
+        .fut-desce { color: #e74c3c; font-weight: bold; }
 
         /* ============================================================ */
         /* BOLINHAS DE EVOLUÇÃO - ESTILO MOTO GP */
@@ -250,6 +255,47 @@
             justify-content: center;
             font-size: 9px;
         }
+
+        /* ============================================================ */
+        /* BLOCO VALOR DA PARTIDA - ESTILOS */
+        /* ============================================================ */
+        .config-card {
+            background: #1e293b;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            border: 1px solid #334155;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+        }
+        .config-card h4 {
+            color: #f1f5f9;
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+        .config-card label {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .feedback-sucesso {
+            background: #14532d;
+            color: #4ade80;
+            border: 1px solid #4ade80;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .feedback-erro {
+            background: #7f1d1d;
+            color: #f87171;
+            border: 1px solid #f87171;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            opacity: 0.5;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -290,6 +336,65 @@
                 <button id="btn-voltar-menu-prof" class="btn-danger">🏠 Voltar ao Menu</button>
             </div>
         </div>
+        
+        <!-- ============================================================ -->
+        <!-- BLOCO: VALOR DA PARTIDA (ADICIONADO) -->
+        <!-- ============================================================ -->
+        <div id="bloco-valor-partida" class="config-card">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <span style="font-size: 28px;">💰</span>
+                <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Valor da Partida</h4>
+                <span style="background: #3b82f6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+            </div>
+            
+            <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                Define quantos pontos uma partida completa vale. 
+                Este valor é usado para <strong>projetar a posição futura</strong> dos jogadores no ranking,
+                baseado na sua velocidade média de acertos.
+            </p>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                <label for="input-valor-partida" style="color: #94a3b8; font-weight: 500; font-size: 14px;">
+                    Pontos por partida:
+                </label>
+                
+                <input 
+                    type="number" 
+                    id="input-valor-partida" 
+                    value="2000" 
+                    min="1" 
+                    max="10000" 
+                    step="100"
+                    style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 16px; border-radius: 10px; font-size: 16px; width: 180px; font-weight: 600;"
+                />
+                
+                <button 
+                    id="btn-atualizar-valor-partida" 
+                    style="background: #3b82f6; color: white; border: none; padding: 10px 28px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.3s; display: flex; align-items: center; gap: 8px;"
+                    onmouseover="this.style.background='#2563eb'"
+                    onmouseout="this.style.background='#3b82f6'"
+                >
+                    <span>🔄</span> Atualizar
+                </button>
+                
+                <span style="color: #64748b; font-size: 13px; display: flex; align-items: center; gap: 4px;">
+                    Valor atual: 
+                    <strong id="valor-partida-atual" style="color: #4ade80; font-size: 15px;">2000</strong> 
+                    pontos
+                </span>
+            </div>
+            
+            <div id="feedback-valor-partida" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            
+            <div style="margin-top: 12px; padding: 12px 16px; background: #0f172a; border-radius: 8px; border-left: 3px solid #facc15;">
+                <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+                    💡 <strong>Exemplo:</strong> Com 2000 pontos por partida, um jogador com 
+                    <strong>1.00s</strong> de média projeta <strong>2000 pts</strong> na próxima partida, 
+                    enquanto um com <strong>2.00s</strong> projeta <strong>1000 pts</strong>.
+                </p>
+            </div>
+        </div>
+        
         <div class="tab-buttons">
             <div class="tab-btn active" data-tab="controle">🎮 Controle</div>
             <div class="tab-btn" data-tab="ranking-geral">🏆 Ranking Geral</div>
@@ -298,7 +403,8 @@
             <div class="tab-btn" data-tab="gerenciar-alunos">✏️ Gerenciar Alunos</div>
             <div class="tab-btn" data-tab="gerenciar-turmas">🏷️ Gerenciar Turmas</div>
         </div>
-        <!-- PAINEL DO PROFESSOR - CONTEÚDO COMPLETO AQUI -->
+        
+        <!-- PAINEL DO PROFESSOR - CONTEÚDO -->
         <div id="tab-controle" class="tab-content">
             <div class="flex-grid">
                 <div>
@@ -490,6 +596,95 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // ============================================================
+    // VALOR DA PARTIDA - CONFIGURAÇÃO (ADICIONADO)
+    // ============================================================
+    let VALOR_PARTIDA = 2000;
+    const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
+
+    // Carregar valor do Firebase
+    async function carregarValorPartida() {
+        try {
+            const snap = await db.ref(VALOR_PARTIDA_KEY).once('value');
+            let valor = snap.val();
+            if (valor === null || valor === undefined) {
+                valor = 2000;
+                await db.ref(VALOR_PARTIDA_KEY).set(valor);
+            }
+            VALOR_PARTIDA = valor;
+            
+            const input = document.getElementById('input-valor-partida');
+            const exibicao = document.getElementById('valor-partida-atual');
+            if (input) input.value = valor;
+            if (exibicao) exibicao.textContent = valor;
+            
+            console.log(`✅ Valor da partida carregado: ${valor} pontos`);
+        } catch (e) {
+            console.warn('Erro ao carregar valor da partida:', e);
+            VALOR_PARTIDA = 2000;
+        }
+    }
+
+    // Salvar valor no Firebase
+    async function salvarValorPartida(novoValor) {
+        if (!novoValor || novoValor < 1) {
+            toast('❌ Digite um valor válido maior que 0.');
+            return false;
+        }
+        
+        try {
+            await db.ref(VALOR_PARTIDA_KEY).set(novoValor);
+            VALOR_PARTIDA = novoValor;
+            
+            const exibicao = document.getElementById('valor-partida-atual');
+            if (exibicao) exibicao.textContent = novoValor;
+            
+            const feedback = document.getElementById('feedback-valor-partida');
+            if (feedback) {
+                feedback.style.display = 'block';
+                feedback.className = 'feedback-sucesso';
+                feedback.textContent = `✅ Valor da partida atualizado para ${novoValor} pontos!`;
+                setTimeout(() => {
+                    feedback.style.display = 'none';
+                }, 5000);
+            }
+            
+            // Recarregar rankings
+            if (typeof atualizarRankingProfessor === 'function') {
+                atualizarRankingProfessor();
+            }
+            
+            toast(`✅ Valor da partida atualizado para ${novoValor} pontos!`);
+            return true;
+        } catch (e) {
+            console.error('Erro ao salvar valor da partida:', e);
+            const feedback = document.getElementById('feedback-valor-partida');
+            if (feedback) {
+                feedback.style.display = 'block';
+                feedback.className = 'feedback-erro';
+                feedback.textContent = `❌ Erro ao salvar: ${e.message}`;
+            }
+            toast('❌ Erro ao salvar valor da partida.');
+            return false;
+        }
+    }
+
+    // Função global para o botão "Atualizar"
+    window.atualizarValorPartida = async function() {
+        const input = document.getElementById('input-valor-partida');
+        if (!input) {
+            toast('❌ Campo não encontrado.');
+            return;
+        }
+        const novoValor = parseInt(input.value);
+        await salvarValorPartida(novoValor);
+    };
+
+    // Chamar ao carregar a página
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(carregarValorPartida, 1000);
+    });
+
     // ---------- FUNÇÃO TOAST ----------
     function toast(m) {
         const t = document.getElementById('toast');
@@ -551,13 +746,11 @@
             if (!el) return;
             
             if (index < bolinhasVisiveis) {
-                // Mostrar a bolinha com a cor correspondente
                 const cor = b.cor || 'cinza';
                 el.className = `bolinha bolinha-${cor}`;
                 el.textContent = b.label;
                 el.style.opacity = '1';
             } else if (perguntaAtual >= 17) {
-                // Últimas 4 perguntas (17-20): mostrar a 4ª bolinha e manter a 5ª como ❓
                 if (index === 3) {
                     const cor = b.cor || 'cinza';
                     el.className = `bolinha bolinha-${cor}`;
@@ -569,18 +762,15 @@
                     el.style.opacity = '0.3';
                 }
             } else {
-                // Bolinhas futuras: cinza e opaco
                 el.className = 'bolinha bolinha-cinza';
                 el.textContent = b.label;
                 el.style.opacity = '0.3';
             }
         });
         
-        // Bolinha 5 (❓) - sempre visível, com animação de expectativa
         const el5 = document.getElementById('bolinha5');
         if (el5) {
             if (perguntaAtual >= 20) {
-                // Se a partida acabou, a bolinha 5 some ou muda
                 el5.className = 'bolinha bolinha-cinza';
                 el5.textContent = '✓';
                 el5.style.opacity = '0.3';
@@ -601,16 +791,15 @@
         }
         
         if (posicaoProjetada < posicaoAtual) {
-            // Vai melhorar (subir)
             if (posicaoProjetada === 1) {
-                return 'vermelha'; // Vai para 1º lugar!
+                return 'vermelha';
             } else {
-                return 'laranja'; // Vai subir, mas não para 1º
+                return 'laranja';
             }
         } else if (posicaoProjetada === posicaoAtual) {
-            return 'branca'; // Vai manter
+            return 'branca';
         } else {
-            return 'azul'; // Vai cair
+            return 'azul';
         }
     }
 
@@ -623,15 +812,12 @@
         const faseAtual = estadoAtual.fase;
         
         try {
-            // 1. Buscar resultados da fase (partidas salvas)
             const snap = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
             const resultados = snap.val() || {};
             
-            // 2. Buscar dados temporários (partida em andamento)
             const snapTemp = await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).once('value');
             const dadosTemp = snapTemp.val();
             
-            // 3. Calcular posição ATUAL
             let lista = [];
             for (const [id, partidas] of Object.entries(resultados)) {
                 if (partidas && partidas.length > 0) {
@@ -642,7 +828,6 @@
             lista.sort((a, b) => b.pontos - a.pontos);
             const posicaoAtual = lista.findIndex(p => p.id === alunoId) + 1;
             
-            // 4. Atualizar posição atual na tela
             const posSpan = document.getElementById('posicao-numero');
             if (posSpan) {
                 posSpan.innerText = posicaoAtual > 0 ? posicaoAtual : '--';
@@ -652,7 +837,6 @@
                 else posSpan.style.color = '#ffffff';
             }
             
-            // 5. Calcular posição projetada
             let posicaoProjetada = posicaoAtual;
             let posicaoProjetadaValida = false;
             let projetado = false;
@@ -681,39 +865,30 @@
                 }
             }
             
-            // 6. Calcular cores das bolinhas com base nas projeções
-            // Para cada bloco, simulamos a projeção com base no ritmo atual
             const perguntaAtual = dadosTemp?.perguntas || 0;
             
-            // Cor da bolinha 1 (perguntas 1-4)
             let cor1 = 'cinza';
             if (perguntaAtual >= 4 && projetado) {
-                // Projeção baseada no ritmo atual
                 cor1 = calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida);
             }
             
-            // Cor da bolinha 2 (perguntas 5-8)
             let cor2 = 'cinza';
             if (perguntaAtual >= 8 && projetado) {
                 cor2 = calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida);
             }
             
-            // Cor da bolinha 3 (perguntas 9-12)
             let cor3 = 'cinza';
             if (perguntaAtual >= 12 && projetado) {
                 cor3 = calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida);
             }
             
-            // Cor da bolinha 4 (perguntas 13-16)
             let cor4 = 'cinza';
             if (perguntaAtual >= 16 && projetado) {
                 cor4 = calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida);
             }
             
-            // Atualizar bolinhas na tela
             atualizarBolinhas(perguntaAtual, cor1, cor2, cor3, cor4);
             
-            // 7. Calcular velocidade média
             let velocidadeMedia = 0;
             let acertos = 0;
             let tempo = 0;
@@ -734,7 +909,6 @@
                 }
             }
             
-            // 8. Atualizar velocidade média na tela
             const velSpan = document.getElementById('velocidade-media');
             if (velSpan) {
                 if (velocidadeMedia > 0 && acertos > 0) {
@@ -977,7 +1151,9 @@
         if (meuTipo === 'projecao') reiniciarIntervalosTorcida();
     }
 
-    // ---------- RANKING UNIFICADO ----------
+    // ============================================================
+    // RANKING UNIFICADO - COM "FUT. POS." CORRIGIDO
+    // ============================================================
     let cacheRanking = {};
 
     async function renderRanking(faseNum, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -1139,6 +1315,9 @@
             }
         }
 
+        // ============================================================
+        // CÁLCULO DA POSIÇÃO FUTURA COM O VALOR DA PARTIDA (VALOR_PARTIDA)
+        // ============================================================
         let posProjetadaMap = new Map();
         if (estadoAtual.status !== 'finalizado') {
             let projecaoValida = false;
@@ -1166,10 +1345,13 @@
         const vagas = VAGAS_POR_FASE[faseNum] || 30;
         const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirClassificacao;
 
+        // ============================================================
+        // CABEÇALHO COM "Fut. Pos." AO INVÉS DE "Ameaça"
+        // ============================================================
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th>
             <th>Nome</th>
-            <th>Ameaça</th>
+            <th>Fut. Pos.</th>
             <th>Pontuação</th>
             <th>Delta Líder</th>
             <th>Veloc.<br>Média</th>
@@ -1223,14 +1405,33 @@
                 deltaVelocidadeHtml = "—";
             }
 
-            let ameacaHtml = "";
+            // ============================================================
+            // FUT. POS. - com ícones coloridos
+            // ============================================================
+            let futPosHtml = "";
             const posProjetada = posProjetadaMap.get(j.id);
-            if (posProjetada !== undefined && posProjetada < posAtual) {
-                ameacaHtml = posProjetada.toString();
+            
+            if (posAtual === 1) {
+                // Líder: não mostra nada
+                futPosHtml = "—";
+            } else if (posProjetada !== undefined && posProjetada > 0) {
+                let icone = "";
+                let classe = "";
+                if (posProjetada < posAtual) {
+                    icone = "🟢";
+                    classe = "fut-sobe";
+                } else if (posProjetada === posAtual) {
+                    icone = "⚪";
+                    classe = "fut-mantem";
+                } else {
+                    icone = "🔴";
+                    classe = "fut-desce";
+                }
+                futPosHtml = `<span class="${classe}">${posProjetada}° ${icone}</span>`;
             } else {
-                ameacaHtml = "—";
+                futPosHtml = "—";
             }
-            if ((j.perguntas || 0) === 0) ameacaHtml = "—";
+            if ((j.perguntas || 0) === 0) futPosHtml = "—";
 
             let progressoHtml = "";
             if (j.status === 'em_jogo') {
@@ -1255,7 +1456,7 @@
             html += `<tr>
                 <td class="${classePos}">${idx+1}º</td>
                 <td>${escapeHtml(j.nome)}</td>
-                <td>${ameacaHtml}</td>
+                <td>${futPosHtml}</td>
                 <td>${j.pontos}</td>
                 <td>${deltaText}</td>
                 <td>${velocidadeAtualStr}</td>
@@ -1883,9 +2084,6 @@
             if (podiumAluno) podiumAluno.classList.add('hidden');
         }
         
-        // ============================================================
-        // INICIAR ATUALIZAÇÃO EM TEMPO REAL (VELOCIDADE E POSIÇÃO)
-        // ============================================================
         iniciarAtualizacaoTempoReal();
     }
 
@@ -2087,9 +2285,6 @@
             timestamp: Date.now()
         });
         
-        // ============================================================
-        // ATUALIZAR VELOCIDADE MÉDIA E POSIÇÃO IMEDIATAMENTE
-        // ============================================================
         await atualizarInfoAluno();
     }
 
@@ -2145,9 +2340,6 @@
         document.getElementById('jogo-area').classList.remove('hidden');
         document.getElementById('aguardando-aluno').classList.add('hidden');
         
-        // ============================================================
-        // INICIAR ATUALIZAÇÃO EM TEMPO REAL
-        // ============================================================
         iniciarAtualizacaoTempoReal();
         
         proxima();
@@ -2386,7 +2578,6 @@
         document.getElementById('btn-sync-prof')?.addEventListener('click', () => updateLastSyncTime());
         document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
         document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
-            // Parar atualização em tempo real
             pararAtualizacaoTempoReal();
             if (alunoId) {
                 db.ref(`online/${alunoId}`).remove();
@@ -2419,6 +2610,20 @@
             if (atualizacaoRankingAuto) atualizarRankingProfessor();
         });
 
+        // ============================================================
+        // EVENTO: BOTÃO ATUALIZAR VALOR DA PARTIDA
+        // ============================================================
+        document.getElementById('btn-atualizar-valor-partida')?.addEventListener('click', window.atualizarValorPartida);
+
+        // ============================================================
+        // EVENTO: TECLA ENTER NO INPUT DO VALOR DA PARTIDA
+        // ============================================================
+        document.getElementById('input-valor-partida')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                window.atualizarValorPartida();
+            }
+        });
+
         db.ref('.info/connected').on('value', snap => {
             if (snap.val() === true && alunoId && meuTipo === 'aluno') {
                 db.ref(`online/${alunoId}`).onDisconnect().remove();
@@ -2440,6 +2645,9 @@
                 }
             }
         });
+
+        // Carregar valor da partida ao iniciar
+        setTimeout(carregarValorPartida, 500);
     }
 
     document.addEventListener('DOMContentLoaded', init);
