@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo - HENRIQUE ANGELO DA SILVA</title>
-    
+
     <!-- ============================================================ -->
     <!-- CONTROLE DE VERSÃO -->
     <!-- ============================================================ -->
@@ -17,7 +17,7 @@
             window.location.replace(newUrl);
             return;
         }
-        
+
         window.verificarVersao = async function(mostrarToast = true) {
             try {
                 const response = await fetch('version.json?v=' + Date.now());
@@ -27,7 +27,7 @@
                 }
                 const data = await response.json();
                 const versaoSalva = localStorage.getItem('versao_jogo');
-                
+
                 if (versaoSalva && versaoSalva !== data.version) {
                     const confirmar = confirm(
                         '🔄 NOVA VERSÃO DISPONÍVEL!\n\n' +
@@ -53,12 +53,12 @@
                 return null;
             }
         };
-        
+
         setTimeout(() => window.verificarVersao(false), 2000);
         console.log('✅ Controle de versão ativado!');
     })();
     </script>
-    
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: #0a0f1e; color: #eee; padding: 20px; }
@@ -147,6 +147,34 @@
         .fut-mantem { color: #f39c12; font-weight: bold; }
         .fut-desce { color: #e74c3c; font-weight: bold; }
 
+        /* Estilos para o display da versão */
+        .version-display {
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid #334155;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+        .version-display .version-number {
+            color: #4ade80;
+            font-weight: 600;
+        }
+        .version-display .version-check {
+            color: #facc15;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .version-display .version-check:hover {
+            transform: scale(1.1);
+        }
+
         .config-card {
             background: #1e293b;
             padding: 24px;
@@ -228,7 +256,7 @@
             font-size: 9px;
         }
     </style>
-    
+
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 </head>
@@ -239,6 +267,11 @@
         <div class="header-title">
             <h1>🏆 COPA TABUADA CEIB 2026 <span id="modalidade-titulo" class="modalidade-badge">Carregando...</span></h1>
             <a href="https://henriqueprofessor.github.io/Tabuada/" target="_blank" class="link-classificatoria" rel="noopener noreferrer">🔗 Fase Classificatória</a>
+            <!-- DISPLAY DA VERSÃO - VISÍVEL PARA TODOS -->
+            <span class="version-display" id="version-display">
+                📌 Versão: <span class="version-number" id="version-number">--</span>
+                <span class="version-check" id="version-check-icon" title="Verificar atualizações">🔄</span>
+            </span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
             <div>
@@ -268,7 +301,7 @@
                 <button id="btn-voltar-menu-prof" class="btn-danger">🏠 Voltar ao Menu</button>
             </div>
         </div>
-        
+
         <div id="bloco-valor-partida" class="config-card">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <span style="font-size: 28px;">💰</span>
@@ -302,7 +335,7 @@
                 </p>
             </div>
         </div>
-        
+
         <div class="tab-buttons">
             <div class="tab-btn active" data-tab="controle">🎮 Controle</div>
             <div class="tab-btn" data-tab="ranking-geral">🏆 Ranking Geral</div>
@@ -311,7 +344,7 @@
             <div class="tab-btn" data-tab="gerenciar-alunos">✏️ Gerenciar Alunos</div>
             <div class="tab-btn" data-tab="gerenciar-turmas">🏷️ Gerenciar Turmas</div>
         </div>
-        
+
         <div id="tab-controle" class="tab-content">
             <div class="flex-grid">
                 <div>
@@ -474,6 +507,45 @@
 </div>
 
 <script>
+    // ============================================================
+    // FUNÇÃO PARA ATUALIZAR O DISPLAY DA VERSÃO
+    // ============================================================
+    async function atualizarDisplayVersao() {
+        const versionNumberEl = document.getElementById('version-number');
+        const versionCheckIcon = document.getElementById('version-check-icon');
+        
+        if (!versionNumberEl) return;
+        
+        try {
+            const response = await fetch('version.json?v=' + Date.now());
+            if (response.ok) {
+                const data = await response.json();
+                versionNumberEl.textContent = data.version || '--';
+                
+                // Adiciona evento de clique para verificar versão
+                if (versionCheckIcon) {
+                    versionCheckIcon.onclick = function(e) {
+                        e.stopPropagation();
+                        window.verificarVersao(true);
+                    };
+                }
+            } else {
+                versionNumberEl.textContent = '--';
+            }
+        } catch (e) {
+            console.log('Não foi possível carregar a versão:', e);
+            versionNumberEl.textContent = '--';
+        }
+    }
+
+    // ============================================================
+    // INICIALIZAÇÃO DA VERSÃO
+    // ============================================================
+    // Chama a função para atualizar o display da versão após o carregamento
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(atualizarDisplayVersao, 1500);
+    });
+
     // ---------- CONFIGURAÇÃO DO FIREBASE ----------
     const firebaseConfig = {
         apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBz0-o2HVhEE",
@@ -2326,6 +2398,9 @@
     async function init() {
         await carregarIntervalos();
         await carregarTurmas();
+
+        // Atualiza o display da versão
+        setTimeout(atualizarDisplayVersao, 2000);
 
         iniciarListeners();
 
