@@ -68,33 +68,57 @@ export function initProfessorUI() {
     carregarValorPartida();
     
     // ============================================================
-    // CRIAR O BLOCO "VALOR DA PARTIDA" NO HTML VIA JAVASCRIPT
+    // ADICIONAR O BLOCO "VALOR DA PARTIDA" NA PÁGINA
     // ============================================================
-    criarBlocoValorPartida();
+    setTimeout(() => {
+        adicionarBlocoValorPartida();
+    }, 500);
 }
 
 // ============================================================
-// FUNÇÃO: CRIAR BLOCO "VALOR DA PARTIDA" NO HTML
+// FUNÇÃO: ADICIONAR BLOCO "VALOR DA PARTIDA" NA PÁGINA
 // ============================================================
-function criarBlocoValorPartida() {
+function adicionarBlocoValorPartida() {
     // Verificar se o bloco já existe
     if (document.getElementById('bloco-valor-partida')) {
+        console.log('✅ Bloco "Valor da Partida" já existe.');
         return;
     }
     
-    // Procurar a aba de configurações
-    const tabConfig = document.getElementById('tab-configuracoes');
+    console.log('🔍 Procurando onde inserir o bloco "Valor da Partida"...');
+    
+    // ============================================================
+    // TENTAR INSERIR NA ABA DE CONFIGURAÇÕES
+    // ============================================================
+    let tabConfig = document.getElementById('tab-configuracoes');
+    
+    // Se não encontrar, tentar inserir no final do painel
     if (!tabConfig) {
-        console.warn('⚠️ Aba de configurações não encontrada. Criando...');
-        // Se não existir, criar a aba
-        criarAbaConfiguracoes();
-        return;
+        console.warn('⚠️ Aba de configurações não encontrada. Inserindo no final do painel...');
+        
+        // Criar uma nova seção no painel
+        const painel = document.getElementById('painel-professor');
+        if (!painel) {
+            console.error('❌ Painel do professor não encontrado!');
+            return;
+        }
+        
+        // Criar uma nova aba
+        const novaAba = document.createElement('div');
+        novaAba.id = 'tab-configuracoes';
+        novaAba.className = 'tab-content';
+        novaAba.style.cssText = 'padding: 20px;';
+        painel.appendChild(novaAba);
+        tabConfig = novaAba;
+        
+        console.log('✅ Nova aba de configurações criada!');
     }
     
-    // Criar o bloco HTML
+    // ============================================================
+    // CRIAR O BLOCO HTML
+    // ============================================================
     const bloco = document.createElement('div');
     bloco.id = 'bloco-valor-partida';
-    bloco.className = 'config-card';
     bloco.style.cssText = `
         background: #1e293b;
         padding: 24px;
@@ -102,6 +126,7 @@ function criarBlocoValorPartida() {
         margin-bottom: 24px;
         border: 1px solid #334155;
         box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+        max-width: 800px;
     `;
     
     bloco.innerHTML = `
@@ -129,30 +154,26 @@ function criarBlocoValorPartida() {
                 min="1" 
                 max="10000" 
                 step="100"
-                style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 16px; border-radius: 10px; font-size: 16px; width: 180px; font-weight: 600; transition: border 0.3s, box-shadow 0.3s;"
-                onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2)'"
-                onblur="this.style.borderColor='#334155'; this.style.boxShadow='none'"
+                style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 16px; border-radius: 10px; font-size: 16px; width: 180px; font-weight: 600;"
             />
             
             <button 
                 id="btn-atualizar-valor-partida" 
-                style="background: #3b82f6; color: white; border: none; padding: 10px 28px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.3s, transform 0.15s; display: flex; align-items: center; gap: 8px;"
+                style="background: #3b82f6; color: white; border: none; padding: 10px 28px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.3s; display: flex; align-items: center; gap: 8px;"
                 onmouseover="this.style.background='#2563eb'"
                 onmouseout="this.style.background='#3b82f6'"
-                onmousedown="this.style.transform='scale(0.97)'"
-                onmouseup="this.style.transform='scale(1)'"
             >
                 <span>🔄</span> Atualizar
             </button>
             
-            <span style="color: #64748b; font-size: 13px; margin-left: 4px; display: flex; align-items: center; gap: 4px;">
+            <span style="color: #64748b; font-size: 13px; display: flex; align-items: center; gap: 4px;">
                 Valor atual: 
                 <strong id="valor-partida-atual" style="color: #4ade80; font-size: 15px;">2000</strong> 
                 pontos
             </span>
         </div>
         
-        <div id="feedback-valor-partida" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none; transition: all 0.3s;"></div>
+        <div id="feedback-valor-partida" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
         
         <div style="margin-top: 12px; padding: 12px 16px; background: #0f172a; border-radius: 8px; border-left: 3px solid #facc15;">
             <p style="color: #94a3b8; font-size: 13px; margin: 0;">
@@ -166,56 +187,33 @@ function criarBlocoValorPartida() {
     // Inserir no início da aba de configurações
     tabConfig.insertBefore(bloco, tabConfig.firstChild);
     
-    // Configurar eventos do bloco
-    document.getElementById('btn-atualizar-valor-partida')?.addEventListener('click', window.atualizarValorPartida);
-    document.getElementById('input-valor-partida')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            window.atualizarValorPartida();
-        }
-    });
+    // ============================================================
+    // CONFIGURAR EVENTOS DO BLOCO
+    // ============================================================
+    const btnAtualizar = document.getElementById('btn-atualizar-valor-partida');
+    const inputValor = document.getElementById('input-valor-partida');
     
-    console.log('✅ Bloco "Valor da Partida" criado com sucesso!');
-}
-
-// ============================================================
-// FUNÇÃO: CRIAR ABA DE CONFIGURAÇÕES SE NÃO EXISTIR
-// ============================================================
-function criarAbaConfiguracoes() {
-    // Verificar se o container de abas existe
-    const tabContainer = document.querySelector('.tab-content-wrapper');
-    if (!tabContainer) {
-        console.error('❌ Container de abas não encontrado!');
-        return;
+    if (btnAtualizar) {
+        btnAtualizar.addEventListener('click', window.atualizarValorPartida);
+        console.log('✅ Evento do botão "Atualizar" configurado');
     }
     
-    // Criar a aba de configurações
-    const tabConfig = document.createElement('div');
-    tabConfig.id = 'tab-configuracoes';
-    tabConfig.className = 'tab-content hidden';
-    tabConfig.innerHTML = `<h3 style="color: #f1f5f9; margin-bottom: 20px;">⚙️ Configurações</h3>`;
-    
-    tabContainer.appendChild(tabConfig);
-    
-    // Adicionar o botão no menu de abas
-    const tabNav = document.querySelector('.tab-nav');
-    if (tabNav) {
-        const btn = document.createElement('button');
-        btn.className = 'tab-btn';
-        btn.setAttribute('data-tab', 'configuracoes');
-        btn.textContent = '⚙️ Configurações';
-        tabNav.appendChild(btn);
-        
-        // Configurar evento do novo botão
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            tabConfig.classList.remove('hidden');
+    if (inputValor) {
+        inputValor.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                window.atualizarValorPartida();
+            }
         });
+        console.log('✅ Evento do input "Enter" configurado');
     }
     
-    // Agora criar o bloco dentro da nova aba
-    criarBlocoValorPartida();
+    // Atualizar o valor exibido
+    const valorAtual = getValorPartida();
+    const exibicao = document.getElementById('valor-partida-atual');
+    if (exibicao) exibicao.textContent = valorAtual;
+    if (inputValor) inputValor.value = valorAtual;
+    
+    console.log('✅ Bloco "Valor da Partida" adicionado com sucesso!');
 }
 
 // ============================================================
@@ -347,6 +345,7 @@ window.atualizarValorPartida = async function() {
     const input = document.getElementById('input-valor-partida');
     if (!input) {
         console.error('❌ Campo "input-valor-partida" não encontrado!');
+        toast('❌ Erro: campo não encontrado. Recarregue a página.');
         return;
     }
     
