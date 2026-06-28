@@ -3027,6 +3027,22 @@ async function finalizar() {
 // ============================================================
 // INICIALIZAÇÃO
 // ============================================================
+function entrarProfessor() {
+    const senha = prompt("Senha:");
+    if (senha === "......") {
+        meuTipo = 'professor';
+        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.getElementById('painel-professor').classList.remove('hidden');
+        document.getElementById('online-stats').classList.remove('hidden');
+        atualizarUI();
+        iniciarAtualizacaoProfessor();
+        tocarSom('clique');
+    }
+}
+
+async function init() {
+    // ... resto do código
+}
 async function init() {
     await carregarIntervalos();
     await carregarTurmas();
