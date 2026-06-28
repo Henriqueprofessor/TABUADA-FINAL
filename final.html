@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo - HENRIQUE ANGELO DA SILVA - PROFESSOR DE MATEMÁTICA</title>
+    <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo - HENRIQUE ANGELO DA SILVA</title>
 
     <!-- ============================================================ -->
     <!-- CONTROLE DE VERSÃO -->
@@ -179,259 +179,103 @@
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
 
+        /* ================================================================
+           ESTILOS DA BOLINHA ÚNICA DE EVOLUÇÃO
+           ================================================================ */
         .evolucao-container {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 20px;
             background: #000000aa;
-            padding: 6px 16px;
-            border-radius: 40px;
-            margin: 5px 0;
+            padding: 10px 24px;
+            border-radius: 60px;
+            margin: 10px 0;
             flex-wrap: wrap;
             justify-content: center;
         }
-        .evolucao-container .label { font-size: 12px; opacity: 0.6; margin-right: 4px; }
-        .bolinha {
-            width: 32px;
-            height: 32px;
+        .evolucao-container .label {
+            font-size: 16px;
+            font-weight: 600;
+            opacity: 0.8;
+            letter-spacing: 1px;
+        }
+        .bolinha-unica {
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 28px;
             font-weight: bold;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
+            transition: all 0.4s ease;
+            border: 3px solid transparent;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
-        .bolinha-vermelha { background: #e74c3c; color: white; border-color: #ff6b6b; box-shadow: 0 0 15px rgba(231,76,60,0.5); }
-        .bolinha-laranja { background: #f39c12; color: white; border-color: #ffbe76; box-shadow: 0 0 15px rgba(243,156,18,0.5); }
-        .bolinha-branca { background: #7f8c8d; color: white; border-color: #bdc3c7; }
-        .bolinha-azul { background: #3498db; color: white; border-color: #74b9ff; box-shadow: 0 0 15px rgba(52,152,219,0.5); }
-        .bolinha-cinza { background: #2c3e50; color: #7f8c8d; border-color: #34495e; opacity: 0.5; }
-        .bolinha-interrogacao {
-            background: #1f3a4b;
-            color: #ffd966;
-            border-color: #ffd966;
-            border-style: dashed;
-            animation: pulse-interrogacao 1s ease-in-out infinite;
-            font-size: 16px;
+        .bolinha-unica.vermelha {
+            background: #e74c3c;
+            color: white;
+            border-color: #ff6b6b;
+            box-shadow: 0 0 30px rgba(231,76,60,0.7);
         }
-        @keyframes pulse-interrogacao {
-            0%, 100% { transform: scale(1); opacity: 0.7; }
-            50% { transform: scale(1.1); opacity: 1; }
+        .bolinha-unica.laranja {
+            background: #f39c12;
+            color: white;
+            border-color: #ffbe76;
+            box-shadow: 0 0 30px rgba(243,156,18,0.7);
+        }
+        .bolinha-unica.branca {
+            background: #7f8c8d;
+            color: white;
+            border-color: #bdc3c7;
+            box-shadow: 0 0 30px rgba(127,140,141,0.5);
+        }
+        .bolinha-unica.azul {
+            background: #3498db;
+            color: white;
+            border-color: #74b9ff;
+            box-shadow: 0 0 30px rgba(52,152,219,0.7);
+        }
+        .bolinha-unica.cinza {
+            background: #2c3e50;
+            color: #7f8c8d;
+            border-color: #34495e;
+            opacity: 0.6;
+        }
+        .bolinha-unica .emoji {
+            font-size: 32px;
+            line-height: 1;
         }
         .evolucao-legenda {
             display: flex;
-            gap: 12px;
-            font-size: 11px;
-            opacity: 0.7;
+            gap: 16px;
+            font-size: 12px;
+            opacity: 0.8;
             flex-wrap: wrap;
             justify-content: center;
-            margin-top: 4px;
+            margin-top: 6px;
         }
-        .evolucao-legenda .item { display: flex; align-items: center; gap: 4px; }
-        .evolucao-legenda .bolinha-mini { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
-        .bolinha-mini-vermelha { background: #e74c3c; }
-        .bolinha-mini-laranja { background: #f39c12; }
-        .bolinha-mini-branca { background: #7f8c8d; }
-        .bolinha-mini-azul { background: #3498db; }
-        .bolinha-mini-interrogacao { 
-            background: #1f3a4b; 
-            border: 1px dashed #ffd966;
-            color: #ffd966;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 9px;
-        }
-
-        /* ESTILOS DO PAINEL DE CONTROLE DE SOM */
-        .som-card {
-            background: #0f172a;
-            border: 1px solid #2d3a4f;
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 12px;
-        }
-        .som-card h4 {
-            color: #f1f5f9;
-            font-size: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .som-card h4 .badge-som {
-            font-size: 11px;
-            background: #2d3a4f;
-            padding: 2px 10px;
-            border-radius: 20px;
-            color: #94a3b8;
-        }
-        .som-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
-        }
-        .som-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #1e293b;
-            padding: 8px 14px;
-            border-radius: 10px;
-            gap: 12px;
-        }
-        .som-item .som-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            color: #e2e8f0;
-        }
-        .som-item .som-info .emoji { font-size: 18px; }
-        .som-item .som-info .nome { font-weight: 500; }
-        .som-item .som-controles {
+        .evolucao-legenda .item {
             display: flex;
             align-items: center;
             gap: 6px;
         }
-        .som-item .btn-testar-som {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .som-item .btn-testar-som:hover { background: #2563eb; }
-        .som-item .som-toggle {
-            position: relative;
-            width: 40px;
-            height: 22px;
-            background: #4a5568;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: 0.3s;
-            flex-shrink: 0;
-        }
-        .som-item .som-toggle.ativo {
-            background: #27ae60;
-        }
-        .som-item .som-toggle .toggle-slider {
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 18px;
-            height: 18px;
-            background: white;
+        .evolucao-legenda .bolinha-mini {
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
-            transition: 0.3s;
+            display: inline-block;
+            border: 1px solid rgba(255,255,255,0.3);
         }
-        .som-item .som-toggle.ativo .toggle-slider {
-            left: 20px;
-        }
-        .som-controles-gerais {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 16px;
-            padding: 12px 16px;
-            background: #0f172a;
-            border-radius: 12px;
-            border: 1px solid #2d3a4f;
-        }
-        .som-controles-gerais .controle-vol {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .som-controles-gerais .controle-vol input[type="range"] {
-            width: 120px;
-            accent-color: #27ae60;
-        }
-        .btn-som-master {
-            padding: 6px 16px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            font-size: 13px;
-        }
-        .btn-som-master.ativado { background: #27ae60; color: white; }
-        .btn-som-master.desativado { background: #e74c3c; color: white; }
-        .btn-som-master:hover { transform: scale(1.03); }
-
-        .evolucao-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #000000aa;
-            padding: 6px 16px;
-            border-radius: 40px;
-            margin: 5px 0;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .evolucao-container .label { font-size: 12px; opacity: 0.6; margin-right: 4px; }
-        .bolinha {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
-        .bolinha-vermelha { background: #e74c3c; color: white; border-color: #ff6b6b; box-shadow: 0 0 15px rgba(231,76,60,0.5); }
-        .bolinha-laranja { background: #f39c12; color: white; border-color: #ffbe76; box-shadow: 0 0 15px rgba(243,156,18,0.5); }
-        .bolinha-branca { background: #7f8c8d; color: white; border-color: #bdc3c7; }
-        .bolinha-azul { background: #3498db; color: white; border-color: #74b9ff; box-shadow: 0 0 15px rgba(52,152,219,0.5); }
-        .bolinha-cinza { background: #2c3e50; color: #7f8c8d; border-color: #34495e; opacity: 0.5; }
-        .bolinha-interrogacao {
-            background: #1f3a4b;
-            color: #ffd966;
-            border-color: #ffd966;
-            border-style: dashed;
-            animation: pulse-interrogacao 1s ease-in-out infinite;
-            font-size: 16px;
-        }
-        @keyframes pulse-interrogacao {
-            0%, 100% { transform: scale(1); opacity: 0.7; }
-            50% { transform: scale(1.1); opacity: 1; }
-        }
-        .evolucao-legenda {
-            display: flex;
-            gap: 12px;
-            font-size: 11px;
-            opacity: 0.7;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 4px;
-        }
-        .evolucao-legenda .item { display: flex; align-items: center; gap: 4px; }
-        .evolucao-legenda .bolinha-mini { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
         .bolinha-mini-vermelha { background: #e74c3c; }
-        .bolinha-mini-laranja { background: #f39c12; }
-        .bolinha-mini-branca { background: #7f8c8d; }
-        .bolinha-mini-azul { background: #3498db; }
-        .bolinha-mini-interrogacao { 
-            background: #1f3a4b; 
-            border: 1px dashed #ffd966;
-            color: #ffd966;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 9px;
-        }
+        .bolinha-mini-laranja  { background: #f39c12; }
+        .bolinha-mini-branca   { background: #7f8c8d; }
+        .bolinha-mini-azul     { background: #3498db; }
+        .bolinha-mini-cinza    { background: #2c3e50; }
 
-        /* Estilos para o painel de som */
+        /* ================================================================
+           ESTILOS DO PAINEL DE CONTROLE DE SOM
+           ================================================================ */
         .som-card {
             background: #0f172a;
             border: 1px solid #2d3a4f;
@@ -767,21 +611,24 @@
                     <div class="indicador-posicao"><span id="posicao-numero">--</span><span>º</span><span style="font-size: 14px; opacity: 0.6; margin-left: 4px;">atual</span></div>
                     <div class="velocidade-media">⚡ <span id="velocidade-media">0.00</span>s</div>
                 </div>
+
+                <!-- ============================================================
+                     BOLINHA ÚNICA DE EVOLUÇÃO
+                     ============================================================ -->
                 <div class="evolucao-container">
-                    <span class="label">📊 EVOLUÇÃO:</span>
-                    <span class="bolinha bolinha-cinza" id="bolinha1">1</span>
-                    <span class="bolinha bolinha-cinza" id="bolinha2">2</span>
-                    <span class="bolinha bolinha-cinza" id="bolinha3">3</span>
-                    <span class="bolinha bolinha-cinza" id="bolinha4">4</span>
-                    <span class="bolinha bolinha-interrogacao" id="bolinha5">❓</span>
+                    <span class="label">📊 DESEMPENHO:</span>
+                    <span class="bolinha-unica cinza" id="bolinha-unica">
+                        <span class="emoji">⚡</span>
+                    </span>
                 </div>
                 <div class="evolucao-legenda">
-                    <span class="item"><span class="bolinha-mini bolinha-mini-vermelha"></span> Campeão!</span>
+                    <span class="item"><span class="bolinha-mini bolinha-mini-vermelha"></span> Campeão</span>
                     <span class="item"><span class="bolinha-mini bolinha-mini-laranja"></span> Subindo</span>
                     <span class="item"><span class="bolinha-mini bolinha-mini-branca"></span> Mantendo</span>
                     <span class="item"><span class="bolinha-mini bolinha-mini-azul"></span> Caindo</span>
-                    <span class="item"><span class="bolinha-mini bolinha-mini-interrogacao">❓</span> Resultado final</span>
+                    <span class="item"><span class="bolinha-mini bolinha-mini-cinza"></span> Sem dados</span>
                 </div>
+
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
                 <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
                 <div class="opcoes-grid">
@@ -841,7 +688,6 @@
 // SISTEMA DE SONS - COMPLETO
 // ============================================================
 const SONS_CONFIG = {
-    // 1. Acerto
     acerto: {
         emoji: '✅',
         nome: 'Acerto',
@@ -849,7 +695,6 @@ const SONS_CONFIG = {
         enabled: true,
         url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'
     },
-    // 2. Erro
     erro: {
         emoji: '❌',
         nome: 'Erro',
@@ -857,7 +702,6 @@ const SONS_CONFIG = {
         enabled: true,
         url: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3'
     },
-    // 3. Tempo Esgotado (pergunta)
     tempo_esgotado: {
         emoji: '⏰',
         nome: 'Tempo Esgotado',
@@ -865,7 +709,6 @@ const SONS_CONFIG = {
         enabled: true,
         url: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'
     },
-    // 5. Início da Fase
     inicio_fase: {
         emoji: '🏁',
         nome: 'Início da Fase',
@@ -873,7 +716,6 @@ const SONS_CONFIG = {
         enabled: true,
         url: 'https://assets.mixkit.co/active_storage/sfx/2774/2774-preview.mp3'
     },
-    // 6. Fim da Fase
     fim_fase: {
         emoji: '⏹️',
         nome: 'Fim da Fase',
@@ -881,7 +723,6 @@ const SONS_CONFIG = {
         enabled: true,
         url: 'https://assets.mixkit.co/active_storage/sfx/2773/2773-preview.mp3'
     },
-    // 7. Nova Fase / Classificação
     nova_fase: {
         emoji: '🚀',
         nome: 'Nova Fase',
@@ -889,7 +730,6 @@ const SONS_CONFIG = {
         enabled: true,
         url: 'https://assets.mixkit.co/active_storage/sfx/2726/2726-preview.mp3'
     },
-    // 8. Top 3 / Pódio
     top3: {
         emoji: '🏆',
         nome: 'Pódio / Vitória',
@@ -897,7 +737,6 @@ const SONS_CONFIG = {
         enabled: true,
         url: 'https://assets.mixkit.co/active_storage/sfx/2754/2754-preview.mp3'
     },
-    // 9. Subiu no Ranking
     subiu_ranking: {
         emoji: '📈',
         nome: 'Subiu no Ranking',
@@ -905,7 +744,6 @@ const SONS_CONFIG = {
         enabled: true,
         url: 'https://assets.mixkit.co/active_storage/sfx/2709/2709-preview.mp3'
     },
-    // 10. Classificado!
     classificado: {
         emoji: '🔔',
         nome: 'Classificado!',
@@ -913,7 +751,6 @@ const SONS_CONFIG = {
         enabled: true,
         url: 'https://assets.mixkit.co/active_storage/sfx/2787/2787-preview.mp3'
     },
-    // 11. Clique / Botão
     clique: {
         emoji: '🖱️',
         nome: 'Clique',
@@ -921,7 +758,6 @@ const SONS_CONFIG = {
         enabled: true,
         url: 'https://assets.mixkit.co/active_storage/sfx/2706/2706-preview.mp3'
     },
-    // 12. Notificação / Toast
     notificacao: {
         emoji: '📢',
         nome: 'Notificação',
@@ -931,12 +767,10 @@ const SONS_CONFIG = {
     }
 };
 
-// Cache de áudio para reutilização
 const audioCache = new Map();
 let somMasterEnabled = true;
 let volumeGlobal = 0.7;
 
-// Carregar preferências do localStorage
 function carregarPreferenciasSom() {
     try {
         const saved = localStorage.getItem('copa_som_prefs');
@@ -955,7 +789,6 @@ function carregarPreferenciasSom() {
     }
 }
 
-// Salvar preferências no localStorage
 function salvarPreferenciasSom() {
     try {
         const prefs = { master: somMasterEnabled, volume: Math.round(volumeGlobal * 100) };
@@ -968,7 +801,6 @@ function salvarPreferenciasSom() {
     }
 }
 
-// Tocar som
 function tocarSom(key, volumeOverride = null) {
     if (!somMasterEnabled) return;
     const config = SONS_CONFIG[key];
@@ -985,23 +817,20 @@ function tocarSom(key, volumeOverride = null) {
         audio.volume = Math.min(1, Math.max(0, volume));
         audio.currentTime = 0;
         audio.play().catch(e => {
-            // Silencia erro de autoplay bloqueado
             if (e.name !== 'NotAllowedError') {
                 console.warn('Erro ao tocar som:', e);
             }
         });
     } catch (e) {
-        // Silencia erros silenciosamente
+        // silencioso
     }
 }
 
-// Testar som
 function testarSom(key) {
     tocarSom(key, Math.min(1, volumeGlobal * 1.2));
     toast(`🔊 Testando: ${SONS_CONFIG[key].nome}`);
 }
 
-// Testar todos os sons em sequência
 async function testarTodosSons() {
     const keys = Object.keys(SONS_CONFIG);
     toast(`🔊 Testando ${keys.length} sons...`);
@@ -1012,9 +841,6 @@ async function testarTodosSons() {
     toast('✅ Todos os sons testados!');
 }
 
-// ============================================================
-// RENDERIZAR PAINEL DE CONTROLE DE SOM
-// ============================================================
 function renderizarPainelSom() {
     const container = document.getElementById('som-grid-container');
     if (!container) return;
@@ -1038,7 +864,6 @@ function renderizarPainelSom() {
     }
     container.innerHTML = html;
     
-    // Eventos dos toggles
     container.querySelectorAll('.som-toggle').forEach(toggle => {
         toggle.addEventListener('click', function() {
             const key = this.dataset.key;
@@ -1050,7 +875,6 @@ function renderizarPainelSom() {
         });
     });
     
-    // Eventos dos botões de teste
     container.querySelectorAll('.btn-testar-som').forEach(btn => {
         btn.addEventListener('click', function() {
             const key = this.dataset.key;
@@ -1059,14 +883,10 @@ function renderizarPainelSom() {
     });
 }
 
-// ============================================================
-// INICIALIZAR SISTEMA DE SOM
-// ============================================================
 function inicializarSons() {
     carregarPreferenciasSom();
     renderizarPainelSom();
     
-    // Botão Master
     const btnMaster = document.getElementById('btn-som-master');
     if (btnMaster) {
         btnMaster.textContent = somMasterEnabled ? '🔊 Sons Ativados' : '🔇 Sons Desativados';
@@ -1080,7 +900,6 @@ function inicializarSons() {
         });
     }
     
-    // Controle de Volume
     const volumeSlider = document.getElementById('volume-global');
     const volumeLabel = document.getElementById('volume-label');
     if (volumeSlider && volumeLabel) {
@@ -1093,28 +912,21 @@ function inicializarSons() {
         });
     }
     
-    // Botão Testar Todos
     const btnTestarTodos = document.getElementById('btn-testar-todos-sons');
     if (btnTestarTodos) {
         btnTestarTodos.addEventListener('click', testarTodosSons);
     }
 }
 
-// ============================================================
-// FUNÇÃO PARA ATUALIZAR O DISPLAY DA VERSÃO
-// ============================================================
 async function atualizarDisplayVersao() {
     const versionNumberEl = document.getElementById('version-number');
     const versionCheckIcon = document.getElementById('version-check-icon');
-    
     if (!versionNumberEl) return;
-    
     try {
         const response = await fetch('version.json?v=' + Date.now());
         if (response.ok) {
             const data = await response.json();
             versionNumberEl.textContent = data.version || '--';
-            
             if (versionCheckIcon) {
                 versionCheckIcon.onclick = function(e) {
                     e.stopPropagation();
@@ -1130,14 +942,8 @@ async function atualizarDisplayVersao() {
     }
 }
 
-// ============================================================
-// INICIALIZAÇÃO
-// ============================================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar sistema de sons
     inicializarSons();
-    
-    // Atualizar display da versão
     setTimeout(atualizarDisplayVersao, 1500);
 });
 
@@ -1155,7 +961,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // ============================================================
-// VALOR DA PARTIDA - CONFIGURAÇÃO
+// VALOR DA PARTIDA
 // ============================================================
 let VALOR_PARTIDA = 2000;
 const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
@@ -1169,12 +975,10 @@ async function carregarValorPartida() {
             await db.ref(VALOR_PARTIDA_KEY).set(valor);
         }
         VALOR_PARTIDA = valor;
-        
         const input = document.getElementById('input-valor-partida');
         const exibicao = document.getElementById('valor-partida-atual');
         if (input) input.value = valor;
         if (exibicao) exibicao.textContent = valor;
-        
         console.log(`✅ Valor da partida carregado: ${valor} pontos`);
     } catch (e) {
         console.warn('Erro ao carregar valor da partida:', e);
@@ -1187,28 +991,21 @@ async function salvarValorPartida(novoValor) {
         toast('❌ Digite um valor válido maior que 0.');
         return false;
     }
-    
     try {
         await db.ref(VALOR_PARTIDA_KEY).set(novoValor);
         VALOR_PARTIDA = novoValor;
-        
         const exibicao = document.getElementById('valor-partida-atual');
         if (exibicao) exibicao.textContent = novoValor;
-        
         const feedback = document.getElementById('feedback-valor-partida');
         if (feedback) {
             feedback.style.display = 'block';
             feedback.className = 'feedback-sucesso';
             feedback.textContent = `✅ Valor da partida atualizado para ${novoValor} pontos!`;
-            setTimeout(() => {
-                feedback.style.display = 'none';
-            }, 5000);
+            setTimeout(() => { feedback.style.display = 'none'; }, 5000);
         }
-        
         if (typeof atualizarRankingProfessor === 'function') {
             atualizarRankingProfessor();
         }
-        
         toast(`✅ Valor da partida atualizado para ${novoValor} pontos!`);
         return true;
     } catch (e) {
@@ -1245,7 +1042,6 @@ function toast(m) {
         t.innerText = m; 
         t.classList.remove('hidden'); 
         setTimeout(() => t.classList.add('hidden'), 3000);
-        // Tocar som de notificação
         tocarSom('notificacao');
     }
 }
@@ -1256,83 +1052,35 @@ document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
 });
 
 // ============================================================
-// FUNÇÃO PARA ATUALIZAR AS BOLINHAS DE EVOLUÇÃO
+// BOLINHA ÚNICA - FUNÇÃO DE ATUALIZAÇÃO
 // ============================================================
-function atualizarBolinhas(perguntaAtual, corBolinha1, corBolinha2, corBolinha3, corBolinha4) {
-    const bolinhas = [
-        { id: 'bolinha1', cor: corBolinha1, label: '1' },
-        { id: 'bolinha2', cor: corBolinha2, label: '2' },
-        { id: 'bolinha3', cor: corBolinha3, label: '3' },
-        { id: 'bolinha4', cor: corBolinha4, label: '4' }
-    ];
+function atualizarBolinhaUnica(cor, label) {
+    const el = document.getElementById('bolinha-unica');
+    if (!el) return;
     
-    let bolinhasVisiveis = 0;
-    if (perguntaAtual >= 4) bolinhasVisiveis = 1;
-    if (perguntaAtual >= 8) bolinhasVisiveis = 2;
-    if (perguntaAtual >= 12) bolinhasVisiveis = 3;
-    if (perguntaAtual >= 16) bolinhasVisiveis = 4;
-    
-    bolinhas.forEach((b, index) => {
-        const el = document.getElementById(b.id);
-        if (!el) return;
-        
-        if (index < bolinhasVisiveis) {
-            const cor = b.cor || 'cinza';
-            el.className = `bolinha bolinha-${cor}`;
-            el.textContent = b.label;
-            el.style.opacity = '1';
-        } else if (perguntaAtual >= 17) {
-            if (index === 3) {
-                const cor = b.cor || 'cinza';
-                el.className = `bolinha bolinha-${cor}`;
-                el.textContent = b.label;
-                el.style.opacity = '1';
-            } else if (index < 3) {
-                el.className = `bolinha bolinha-cinza`;
-                el.textContent = b.label;
-                el.style.opacity = '0.3';
-            }
-        } else {
-            el.className = 'bolinha bolinha-cinza';
-            el.textContent = b.label;
-            el.style.opacity = '0.3';
-        }
-    });
-    
-    const el5 = document.getElementById('bolinha5');
-    if (el5) {
-        if (perguntaAtual >= 20) {
-            el5.className = 'bolinha bolinha-cinza';
-            el5.textContent = '✓';
-            el5.style.opacity = '0.3';
-        } else {
-            el5.className = 'bolinha bolinha-interrogacao';
-            el5.textContent = '❓';
-            el5.style.opacity = '1';
-        }
-    }
-}
-
-function calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida) {
-    if (!posicaoProjetadaValida || posicaoProjetada <= 0) {
-        return 'cinza';
-    }
-    
-    if (posicaoProjetada < posicaoAtual) {
-        if (posicaoProjetada === 1) {
-            return 'vermelha';
-        } else {
-            return 'laranja';
-        }
-    } else if (posicaoProjetada === posicaoAtual) {
-        return 'branca';
+    // Remove todas as classes de cor
+    el.classList.remove('vermelha', 'laranja', 'branca', 'azul', 'cinza');
+    if (cor) {
+        el.classList.add(cor);
     } else {
-        return 'azul';
+        el.classList.add('cinza');
+    }
+    
+    // Atualiza o conteúdo (emoji ou texto)
+    const spanEmoji = el.querySelector('.emoji');
+    if (spanEmoji) {
+        if (label) {
+            spanEmoji.textContent = label;
+        } else {
+            spanEmoji.textContent = '⚡';
+        }
+    } else {
+        el.textContent = label || '⚡';
     }
 }
 
 // ============================================================
-// FUNÇÃO PARA ATUALIZAR POSIÇÃO, VELOCIDADE E BOLINHAS
+// ATUALIZAR INFO DO ALUNO (POSIÇÃO, VELOCIDADE E BOLINHA)
 // ============================================================
 async function atualizarInfoAluno() {
     if (!alunoId || !estadoAtual) return;
@@ -1346,6 +1094,7 @@ async function atualizarInfoAluno() {
         const snapTemp = await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).once('value');
         const dadosTemp = snapTemp.val();
         
+        // Montar ranking atual
         let lista = [];
         for (const [id, partidas] of Object.entries(resultados)) {
             if (partidas && partidas.length > 0) {
@@ -1365,6 +1114,7 @@ async function atualizarInfoAluno() {
             else posSpan.style.color = '#ffffff';
         }
         
+        // Calcular projeção
         let posicaoProjetada = posicaoAtual;
         let posicaoProjetadaValida = false;
         let projetado = false;
@@ -1382,7 +1132,6 @@ async function atualizarInfoAluno() {
                     listaProjecao.push({ id, pontos: melhor.pontos, isProjecao: false });
                 }
             }
-            
             listaProjecao.sort((a, b) => b.pontos - a.pontos);
             const posProjetada = listaProjecao.findIndex(p => p.id === alunoId) + 1;
             
@@ -1395,28 +1144,40 @@ async function atualizarInfoAluno() {
         
         const perguntaAtual = dadosTemp?.perguntas || 0;
         
-        let cor1 = 'cinza';
-        if (perguntaAtual >= 4 && projetado) {
-            cor1 = calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida);
+        // ============================================================
+        // DETERMINAR COR DA BOLINHA ÚNICA
+        // ============================================================
+        let cor = 'cinza';
+        let label = '⚡';
+        
+        // Só mostra a bolinha com dados se tiver pelo menos 4 perguntas respondidas
+        if (perguntaAtual >= 4 && projetado && posicaoAtual > 0) {
+            if (posicaoAtual === 1) {
+                cor = 'vermelha';
+                label = '🏆';
+            } else if (posicaoProjetada < posicaoAtual) {
+                cor = 'laranja';
+                label = '📈';
+            } else if (posicaoProjetada === posicaoAtual) {
+                cor = 'branca';
+                label = '➖';
+            } else {
+                cor = 'azul';
+                label = '📉';
+            }
+        } else if (perguntaAtual >= 4 && !projetado) {
+            // Tem perguntas mas não há projeção (talvez porque a pontuação é zero)
+            cor = 'cinza';
+            label = '⚡';
+        } else {
+            // Menos de 4 perguntas
+            cor = 'cinza';
+            label = '⚡';
         }
         
-        let cor2 = 'cinza';
-        if (perguntaAtual >= 8 && projetado) {
-            cor2 = calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida);
-        }
+        atualizarBolinhaUnica(cor, label);
         
-        let cor3 = 'cinza';
-        if (perguntaAtual >= 12 && projetado) {
-            cor3 = calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida);
-        }
-        
-        let cor4 = 'cinza';
-        if (perguntaAtual >= 16 && projetado) {
-            cor4 = calcularCorBolinha(posicaoAtual, posicaoProjetada, posicaoProjetadaValida);
-        }
-        
-        atualizarBolinhas(perguntaAtual, cor1, cor2, cor3, cor4);
-        
+        // Velocidade média
         let velocidadeMedia = 0;
         let acertos = 0;
         let tempo = 0;
@@ -1456,7 +1217,7 @@ async function atualizarInfoAluno() {
 }
 
 // ============================================================
-// FUNÇÃO PARA ATUALIZAR POSIÇÃO E VELOCIDADE EM TEMPO REAL
+// ATUALIZAÇÃO EM TEMPO REAL
 // ============================================================
 let intervaloTempoReal = null;
 
@@ -1509,7 +1270,7 @@ const MODALIDADE_CONFIG = {
 
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 
-// ---------- CACHE DE PERGUNTAS POR MODALIDADE ----------
+// ---------- CACHE DE PERGUNTAS ----------
 const poolPerguntas = {};
 
 function gerarPoolPerguntas(modalidade) {
@@ -1576,15 +1337,11 @@ function isClassificado(fase, alunoId) {
     return classificados.includes(alunoId);
 }
 
-// ============================================================
-// FUNÇÃO AUXILIAR: ATUALIZAR DISPLAY DO TIMER
-// ============================================================
 function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer) {
     const segundos = Math.floor(milissegundos / 1000);
     const min = Math.floor(segundos / 60);
     const sec = segundos % 60;
     const timeStr = `${min}:${sec.toString().padStart(2, '0')}`;
-    
     if (timerDisplay) timerDisplay.innerText = timeStr;
     if (torcidaTimer) torcidaTimer.innerText = timeStr;
 }
@@ -1663,7 +1420,7 @@ function iniciarListeners() {
     });
 }
 
-// ---------- CARREGAR DADOS ESTÁTICOS COM ONCE ----------
+// ---------- CARREGAR DADOS ESTÁTICOS ----------
 async function carregarTurmas() {
     const snap = await db.ref('copaV2/turmas').once('value');
     let turmas = snap.val();
@@ -1691,7 +1448,7 @@ async function carregarIntervalos() {
 }
 
 // ============================================================
-// RANKING UNIFICADO - COM "FUT. POS."
+// RANKING UNIFICADO
 // ============================================================
 let cacheRanking = {};
 
@@ -1938,12 +1695,8 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             deltaVelocidadeHtml = "—";
         }
 
-        // ============================================================
-        // FUT. POS.
-        // ============================================================
         let futPosHtml = "";
         const posProjetada = posProjetadaMap.get(j.id);
-        
         if (posAtual === 1) {
             futPosHtml = "—";
         } else if (posProjetada !== undefined && posProjetada > 0) {
@@ -2008,7 +1761,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     cacheRanking[cacheKey] = { html, timestamp: Date.now() };
 }
 
-// RANKING POR TURMAS
 async function renderRankingTurmas(containerId) {
     if (!estadoAtual) return;
     let turmasMap = new Map();
@@ -2365,12 +2117,10 @@ function renderPodioFinal(containerId) {
 // ---------- CONTROLE DE FASE ----------
 async function pausarFase() {
     if (!estadoAtual || estadoAtual.status !== 'em_andamento') return;
-    
     if (timerFase) {
         clearInterval(timerFase);
         timerFase = null;
     }
-    
     const agora = Date.now();
     const tempoRestante = Math.max(0, estadoAtual.fim - agora);
     await db.ref('copaV2').update({ status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
@@ -2389,12 +2139,10 @@ async function continuarFase() {
 async function resetarFase() {
     const faseAtual = estadoAtual.fase;
     if (!confirm(`⚠️ Resetar a Fase ${faseAtual}? Todos os resultados, cadastros e classificações desta fase serão apagados.`)) return;
-    
     if (timerFase) {
         clearInterval(timerFase);
         timerFase = null;
     }
-    
     await db.ref(`copaV2/resultados/${faseAtual}`).remove();
     await db.ref(`copaV2/participantes/${faseAtual}`).remove();
     await db.ref(`copaV2/resultados_temp/${faseAtual}`).remove();
@@ -2410,7 +2158,6 @@ async function avancarFase() {
         clearInterval(timerFase);
         timerFase = null;
     }
-    
     const faseAtual = estadoAtual.fase;
     if (faseAtual > TOTAL_FASES) { toast("Competição já finalizada!"); return; }
     const res = estadoAtual.resultados?.[faseAtual] || {};
@@ -2476,17 +2223,14 @@ async function verificarTempoEsgotado() {
     if (estadoAtual.status === 'em_andamento' && Date.now() >= estadoAtual.fim) {
         if (!tempoEsgotadoProcessado) {
             tempoEsgotadoProcessado = true;
-            
             if (timerFase) {
                 clearInterval(timerFase);
                 timerFase = null;
             }
-            
             const timerDisplay = document.getElementById('timer-fase');
             const torcidaTimer = document.getElementById('torcida-timer');
             if (timerDisplay) timerDisplay.innerText = '00:00';
             if (torcidaTimer) torcidaTimer.innerText = '00:00';
-            
             toast("⏰ TEMPO ESGOTADO! Fase finalizada.");
             await avancarFase();
         }
@@ -2674,9 +2418,6 @@ function atualizarExibicaoFase() {
     if (tituloFase) tituloFase.innerText = faseAtual;
 }
 
-// ============================================================
-// ATUALIZAR UI - COM TIMER CORRIGIDO
-// ============================================================
 function atualizarUI() {
     if (!estadoAtual) return;
     const modalidadeNome = MODALIDADE_CONFIG[estadoAtual.modalidade]?.nome || "Tabuada 2-5";
@@ -2685,9 +2426,7 @@ function atualizarUI() {
     document.getElementById('fase-atual-titulo').innerText = estadoAtual.fase;
     atualizarExibicaoFase();
 
-    // ============================================================
-    // TIMER DA FASE - CORRIGIDO
-    // ============================================================
+    // TIMER
     if (timerFase) {
         clearInterval(timerFase);
         timerFase = null;
@@ -2699,19 +2438,14 @@ function atualizarUI() {
     if (estadoAtual.status === 'em_andamento') {
         const agora = Date.now();
         let restante = Math.max(0, estadoAtual.fim - agora);
-        
         atualizarDisplayTimer(restante, timerDisplay, torcidaTimer);
-        
         timerFase = setInterval(() => {
             const agora2 = Date.now();
             let restante2 = Math.max(0, estadoAtual.fim - agora2);
-            
             if (restante2 <= 0) {
                 clearInterval(timerFase);
                 timerFase = null;
-                
                 atualizarDisplayTimer(0, timerDisplay, torcidaTimer);
-                
                 if (!tempoEsgotadoProcessado) {
                     tempoEsgotadoProcessado = true;
                     toast("⏰ TEMPO ESGOTADO! Fase finalizada.");
@@ -2719,10 +2453,8 @@ function atualizarUI() {
                 }
                 return;
             }
-            
             atualizarDisplayTimer(restante2, timerDisplay, torcidaTimer);
         }, 1000);
-        
     } else if (estadoAtual.status === 'pausado') {
         const tempoPausado = estadoAtual.tempoRestantePausa || 0;
         atualizarDisplayTimer(tempoPausado, timerDisplay, torcidaTimer);
@@ -2732,9 +2464,6 @@ function atualizarUI() {
         if (torcidaTimer) torcidaTimer.innerText = texto;
     }
 
-    // ============================================================
-    // RESTO DA UI (botoes, rankings, etc)
-    // ============================================================
     const btnPararContinuar = document.getElementById('btn-continuar-parar-fase');
     if (btnPararContinuar) {
         if (estadoAtual.status === 'em_andamento') {
@@ -2856,14 +2585,11 @@ window.responder = async function(idx) {
             acertosPartida++;
             const pontosGanhos = Math.round(100 * (Math.max(0, tempoRestantePergunta) / 10));
             pontosPartida += pontosGanhos;
-            // 🎵 SOM DE ACERTO
             tocarSom('acerto');
         } else {
-            // 🎵 SOM DE ERRO
             tocarSom('erro');
         }
     } else {
-        // 🎵 SOM DE TEMPO ESGOTADO
         tocarSom('tempo_esgotado');
     }
     const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
@@ -2887,7 +2613,6 @@ async function atualizarPontuacaoParcial() {
         perguntas: perguntaIdx,
         timestamp: Date.now()
     });
-    
     await atualizarInfoAluno();
 }
 
@@ -2997,10 +2722,7 @@ async function init() {
     await carregarIntervalos();
     await carregarTurmas();
 
-    // Inicializar sistema de sons
     inicializarSons();
-
-    // Atualizar display da versão
     setTimeout(atualizarDisplayVersao, 2000);
 
     iniciarListeners();
@@ -3017,7 +2739,6 @@ async function init() {
             if (tab === 'ranking-turmas') renderRanking(null, 'ranking-turmas-container', 'turmas', false);
             if (tab === 'gerenciar-alunos') renderListaAlunosGerenciar();
             if (tab === 'gerenciar-turmas') renderListaTurmas();
-            // 🎵 SOM DE CLIQUE
             tocarSom('clique');
         });
     });
@@ -3071,7 +2792,6 @@ async function init() {
             let fim = Date.now() + duracao*60000;
             db.ref('copaV2').update({ status:'em_andamento', fim, tempoRestantePausa: null });
             tempoEsgotadoProcessado = false;
-            // 🎵 SOM DE INÍCIO DE FASE
             tocarSom('inicio_fase');
         }, debounceDelay));
     }
@@ -3079,7 +2799,6 @@ async function init() {
         btnAvancarFase.addEventListener('click', debounce(async () => {
             if (confirm("Finalizar fase?")) {
                 await avancarFase();
-                // 🎵 SOM DE FIM DE FASE
                 tocarSom('fim_fase');
             }
         }, debounceDelay));
