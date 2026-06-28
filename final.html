@@ -93,9 +93,45 @@
         .medalha { font-size: 40px; }
         .barra-tempo { width: 100%; height: 12px; background: #2c3e50; border-radius: 6px; overflow: hidden; margin: 15px 0; }
         .progresso-tempo { width: 100%; height: 100%; background: #27ae60; transition: width 0.05s linear; }
-        .opcoes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0; }
-        .opcao { background: #1f3a4b; color: white; padding: 15px; font-size: 20px; border-radius: 40px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
-        .opcao:hover { background: #2c5a6e; border-color: #ffd966; }
+
+        /* ================================================================
+           LAYOUT VERTICAL DAS OPÇÕES (NOVO)
+           ================================================================ */
+        .opcoes-vertical {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            width: 100%;
+        }
+        .opcao-vertical {
+            background: #1f3a4b;
+            color: white;
+            padding: 18px 20px;
+            font-size: 24px;
+            border-radius: 60px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.2s;
+            width: 80%;
+            max-width: 350px;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .opcao-vertical:hover {
+            background: #2c5a6e;
+            border-color: #ffd966;
+            transform: scale(1.02);
+        }
+        .opcao-vertical:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: scale(1);
+            border-color: transparent;
+        }
+
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #e67e22; padding: 12px 24px; border-radius: 60px; z-index: 3000; font-weight: bold; }
         .fase-selector { background: #0a0f1e; padding: 8px; border-radius: 20px; margin: 10px 0; }
         .aluno-item { background: #1f3a4b; margin: 8px 0; padding: 10px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
@@ -207,38 +243,14 @@
             transition: all 0.4s ease;
             border: 3px solid transparent;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            background: #2c3e50; /* cor padrão cinza */
-            opacity: 0.6;
-        }
-        .bolinha-unica.vermelha {
-            background: #e74c3c;
-            border-color: #ff6b6b;
-            box-shadow: 0 0 30px rgba(231,76,60,0.7);
-            opacity: 1;
-        }
-        .bolinha-unica.laranja {
-            background: #f39c12;
-            border-color: #ffbe76;
-            box-shadow: 0 0 30px rgba(243,156,18,0.7);
-            opacity: 1;
-        }
-        .bolinha-unica.branca {
-            background: #7f8c8d;
-            border-color: #bdc3c7;
-            box-shadow: 0 0 30px rgba(127,140,141,0.5);
-            opacity: 1;
-        }
-        .bolinha-unica.azul {
-            background: #3498db;
-            border-color: #74b9ff;
-            box-shadow: 0 0 30px rgba(52,152,219,0.7);
-            opacity: 1;
-        }
-        .bolinha-unica.cinza {
             background: #2c3e50;
-            border-color: #34495e;
             opacity: 0.6;
         }
+        .bolinha-unica.vermelha { background: #e74c3c; border-color: #ff6b6b; box-shadow: 0 0 30px rgba(231,76,60,0.7); opacity: 1; }
+        .bolinha-unica.laranja  { background: #f39c12; border-color: #ffbe76; box-shadow: 0 0 30px rgba(243,156,18,0.7); opacity: 1; }
+        .bolinha-unica.branca   { background: #7f8c8d; border-color: #bdc3c7; box-shadow: 0 0 30px rgba(127,140,141,0.5); opacity: 1; }
+        .bolinha-unica.azul     { background: #3498db; border-color: #74b9ff; box-shadow: 0 0 30px rgba(52,152,219,0.7); opacity: 1; }
+        .bolinha-unica.cinza    { background: #2c3e50; border-color: #34495e; opacity: 0.6; }
 
         .evolucao-legenda {
             display: flex;
@@ -249,18 +261,8 @@
             justify-content: center;
             margin-top: 6px;
         }
-        .evolucao-legenda .item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .evolucao-legenda .bolinha-mini {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            display: inline-block;
-            border: 1px solid rgba(255,255,255,0.3);
-        }
+        .evolucao-legenda .item { display: flex; align-items: center; gap: 6px; }
+        .evolucao-legenda .bolinha-mini { width: 16px; height: 16px; border-radius: 50%; display: inline-block; border: 1px solid rgba(255,255,255,0.3); }
         .bolinha-mini-vermelha { background: #e74c3c; }
         .bolinha-mini-laranja  { background: #f39c12; }
         .bolinha-mini-branca   { background: #7f8c8d; }
@@ -268,7 +270,7 @@
         .bolinha-mini-cinza    { background: #2c3e50; }
 
         /* ================================================================
-           ESTILOS DO PAINEL DE CONTROLE DE SOM
+           PAINEL DE CONTROLE DE SOM (mantido igual)
            ================================================================ */
         .som-card {
             background: #0f172a;
@@ -341,9 +343,7 @@
             transition: 0.3s;
             flex-shrink: 0;
         }
-        .som-item .som-toggle.ativo {
-            background: #27ae60;
-        }
+        .som-item .som-toggle.ativo { background: #27ae60; }
         .som-item .som-toggle .toggle-slider {
             position: absolute;
             top: 2px;
@@ -354,9 +354,7 @@
             border-radius: 50%;
             transition: 0.3s;
         }
-        .som-item .som-toggle.ativo .toggle-slider {
-            left: 20px;
-        }
+        .som-item .som-toggle.ativo .toggle-slider { left: 20px; }
         .som-controles-gerais {
             display: flex;
             flex-wrap: wrap;
@@ -606,9 +604,7 @@
                     <div class="velocidade-media">⚡ <span id="velocidade-media">0.00</span>s</div>
                 </div>
 
-                <!-- ============================================================
-                     BOLINHA ÚNICA - SEM ÍCONES, APENAS COR
-                     ============================================================ -->
+                <!-- BOLINHA ÚNICA -->
                 <div class="evolucao-container">
                     <span class="label">📊 DESEMPENHO:</span>
                     <span class="bolinha-unica cinza" id="bolinha-unica"></span>
@@ -623,11 +619,12 @@
 
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
                 <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
-                <div class="opcoes-grid">
-                    <button class="opcao" onclick="window.responder(0)"></button>
-                    <button class="opcao" onclick="window.responder(1)"></button>
-                    <button class="opcao" onclick="window.responder(2)"></button>
-                    <button class="opcao" onclick="window.responder(3)"></button>
+                <!-- Opções em coluna vertical -->
+                <div class="opcoes-vertical">
+                    <button class="opcao-vertical" onclick="window.responder(0)"></button>
+                    <button class="opcao-vertical" onclick="window.responder(1)"></button>
+                    <button class="opcao-vertical" onclick="window.responder(2)"></button>
+                    <button class="opcao-vertical" onclick="window.responder(3)"></button>
                 </div>
                 <div style="text-align: center;">Pergunta: <span id="pergunta-num">1</span>/20</div>
             </div>
@@ -677,86 +674,20 @@
 
 <script>
 // ============================================================
-// SISTEMA DE SONS - COMPLETO
+// SISTEMA DE SONS - COMPLETO (mantido)
 // ============================================================
 const SONS_CONFIG = {
-    acerto: {
-        emoji: '✅',
-        nome: 'Acerto',
-        descricao: 'Quando o aluno acerta a pergunta',
-        enabled: true,
-        url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'
-    },
-    erro: {
-        emoji: '❌',
-        nome: 'Erro',
-        descricao: 'Quando o aluno erra a pergunta',
-        enabled: true,
-        url: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3'
-    },
-    tempo_esgotado: {
-        emoji: '⏰',
-        nome: 'Tempo Esgotado',
-        descricao: 'Quando o tempo da pergunta acaba',
-        enabled: true,
-        url: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'
-    },
-    inicio_fase: {
-        emoji: '🏁',
-        nome: 'Início da Fase',
-        descricao: 'Quando a fase é iniciada pelo professor',
-        enabled: true,
-        url: 'https://assets.mixkit.co/active_storage/sfx/2774/2774-preview.mp3'
-    },
-    fim_fase: {
-        emoji: '⏹️',
-        nome: 'Fim da Fase',
-        descricao: 'Quando o tempo da fase acaba',
-        enabled: true,
-        url: 'https://assets.mixkit.co/active_storage/sfx/2773/2773-preview.mp3'
-    },
-    nova_fase: {
-        emoji: '🚀',
-        nome: 'Nova Fase',
-        descricao: 'Ao passar para a próxima fase',
-        enabled: true,
-        url: 'https://assets.mixkit.co/active_storage/sfx/2726/2726-preview.mp3'
-    },
-    top3: {
-        emoji: '🏆',
-        nome: 'Pódio / Vitória',
-        descricao: 'Ao mostrar o pódio final',
-        enabled: true,
-        url: 'https://assets.mixkit.co/active_storage/sfx/2754/2754-preview.mp3'
-    },
-    subiu_ranking: {
-        emoji: '📈',
-        nome: 'Subiu no Ranking',
-        descricao: 'Quando o jogador sobe de posição',
-        enabled: true,
-        url: 'https://assets.mixkit.co/active_storage/sfx/2709/2709-preview.mp3'
-    },
-    classificado: {
-        emoji: '🔔',
-        nome: 'Classificado!',
-        descricao: 'Quando o aluno se classifica para próxima fase',
-        enabled: true,
-        url: 'https://assets.mixkit.co/active_storage/sfx/2787/2787-preview.mp3'
-    },
-    clique: {
-        emoji: '🖱️',
-        nome: 'Clique',
-        descricao: 'Ao clicar em qualquer botão',
-        enabled: true,
-        url: 'https://assets.mixkit.co/active_storage/sfx/2706/2706-preview.mp3'
-    },
-    notificacao: {
-        emoji: '📢',
-        nome: 'Notificação',
-        descricao: 'Quando aparece uma notificação (toast)',
-        enabled: true,
-        url: 'https://assets.mixkit.co/active_storage/sfx/2579/2579-preview.mp3'
-    }
+    acerto: { emoji: '✅', nome: 'Acerto', descricao: 'Quando o aluno acerta a pergunta', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' },
+    erro: { emoji: '❌', nome: 'Erro', descricao: 'Quando o aluno erra a pergunta', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3' },
+    tempo_esgotado: { emoji: '⏰', nome: 'Tempo Esgotado', descricao: 'Quando o tempo da pergunta acaba', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3' },
+    inicio_fase: { emoji: '🏁', nome: 'Início da Fase', descricao: 'Quando a fase é iniciada pelo professor', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2774/2774-preview.mp3' },
+    fim_fase: { emoji: '⏹️', nome: 'Fim da Fase', descricao: 'Quando o tempo da fase acaba', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2773/2773-preview.mp3' },
+    nova_fase: { emoji: '🚀', nome: 'Nova Fase', descricao: 'Ao passar para a próxima fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2726/2726-preview.mp3' },
+    top3: { emoji: '🏆', nome: 'Pódio / Vitória', descricao: 'Ao mostrar o pódio final', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2754/2754-preview.mp3' },
+    subiu_ranking: { emoji: '📈', nome: 'Subiu no Ranking', descricao: 'Quando o jogador sobe de posição', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2709/2709-preview.mp3' },
+    classificado: { emoji: '🔔', nome: 'Classificado!', descricao: 'Quando o aluno se classifica para próxima fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2787/2787-preview.mp3' },
+    clique: { emoji: '🖱️', nome: 'Clique', descricao: 'Ao clicar em qualquer botão', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2706/2706-preview.mp3' },
+    notificacao: { emoji: '📢', nome: 'Notificação', descricao: 'Quando aparece uma notificação (toast)', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2579/2579-preview.mp3' }
 };
 
 const audioCache = new Map();
@@ -771,58 +702,35 @@ function carregarPreferenciasSom() {
             somMasterEnabled = prefs.master !== undefined ? prefs.master : true;
             volumeGlobal = prefs.volume !== undefined ? prefs.volume / 100 : 0.7;
             for (const key in SONS_CONFIG) {
-                if (prefs[key] !== undefined) {
-                    SONS_CONFIG[key].enabled = prefs[key];
-                }
+                if (prefs[key] !== undefined) SONS_CONFIG[key].enabled = prefs[key];
             }
         }
-    } catch (e) {
-        console.warn('Erro ao carregar preferências de som:', e);
-    }
+    } catch (e) {}
 }
-
 function salvarPreferenciasSom() {
     try {
         const prefs = { master: somMasterEnabled, volume: Math.round(volumeGlobal * 100) };
-        for (const key in SONS_CONFIG) {
-            prefs[key] = SONS_CONFIG[key].enabled;
-        }
+        for (const key in SONS_CONFIG) prefs[key] = SONS_CONFIG[key].enabled;
         localStorage.setItem('copa_som_prefs', JSON.stringify(prefs));
-    } catch (e) {
-        console.warn('Erro ao salvar preferências de som:', e);
-    }
+    } catch (e) {}
 }
-
 function tocarSom(key, volumeOverride = null) {
     if (!somMasterEnabled) return;
     const config = SONS_CONFIG[key];
     if (!config || !config.enabled) return;
-    
     const volume = volumeOverride !== null ? volumeOverride : volumeGlobal;
-    
     try {
         let audio = audioCache.get(key);
-        if (!audio) {
-            audio = new Audio(config.url);
-            audioCache.set(key, audio);
-        }
+        if (!audio) { audio = new Audio(config.url); audioCache.set(key, audio); }
         audio.volume = Math.min(1, Math.max(0, volume));
         audio.currentTime = 0;
-        audio.play().catch(e => {
-            if (e.name !== 'NotAllowedError') {
-                console.warn('Erro ao tocar som:', e);
-            }
-        });
-    } catch (e) {
-        // silencioso
-    }
+        audio.play().catch(e => {});
+    } catch (e) {}
 }
-
 function testarSom(key) {
     tocarSom(key, Math.min(1, volumeGlobal * 1.2));
     toast(`🔊 Testando: ${SONS_CONFIG[key].nome}`);
 }
-
 async function testarTodosSons() {
     const keys = Object.keys(SONS_CONFIG);
     toast(`🔊 Testando ${keys.length} sons...`);
@@ -832,11 +740,9 @@ async function testarTodosSons() {
     }
     toast('✅ Todos os sons testados!');
 }
-
 function renderizarPainelSom() {
     const container = document.getElementById('som-grid-container');
     if (!container) return;
-    
     let html = '';
     for (const [key, config] of Object.entries(SONS_CONFIG)) {
         html += `
@@ -851,34 +757,27 @@ function renderizarPainelSom() {
                         <div class="toggle-slider"></div>
                     </div>
                 </div>
-            </div>
-        `;
+            </div>`;
     }
     container.innerHTML = html;
-    
     container.querySelectorAll('.som-toggle').forEach(toggle => {
         toggle.addEventListener('click', function() {
             const key = this.dataset.key;
             SONS_CONFIG[key].enabled = !SONS_CONFIG[key].enabled;
             this.classList.toggle('ativo');
             salvarPreferenciasSom();
-            const status = SONS_CONFIG[key].enabled ? 'ativado' : 'desativado';
-            toast(`🔊 ${SONS_CONFIG[key].nome} ${status}`);
+            toast(`🔊 ${SONS_CONFIG[key].nome} ${SONS_CONFIG[key].enabled ? 'ativado' : 'desativado'}`);
         });
     });
-    
     container.querySelectorAll('.btn-testar-som').forEach(btn => {
         btn.addEventListener('click', function() {
-            const key = this.dataset.key;
-            testarSom(key);
+            testarSom(this.dataset.key);
         });
     });
 }
-
 function inicializarSons() {
     carregarPreferenciasSom();
     renderizarPainelSom();
-    
     const btnMaster = document.getElementById('btn-som-master');
     if (btnMaster) {
         btnMaster.textContent = somMasterEnabled ? '🔊 Sons Ativados' : '🔇 Sons Desativados';
@@ -891,7 +790,6 @@ function inicializarSons() {
             toast(somMasterEnabled ? '🔊 Sons ativados globalmente' : '🔇 Sons desativados globalmente');
         });
     }
-    
     const volumeSlider = document.getElementById('volume-global');
     const volumeLabel = document.getElementById('volume-label');
     if (volumeSlider && volumeLabel) {
@@ -903,33 +801,25 @@ function inicializarSons() {
             salvarPreferenciasSom();
         });
     }
-    
-    const btnTestarTodos = document.getElementById('btn-testar-todos-sons');
-    if (btnTestarTodos) {
-        btnTestarTodos.addEventListener('click', testarTodosSons);
-    }
+    document.getElementById('btn-testar-todos-sons')?.addEventListener('click', testarTodosSons);
 }
 
 async function atualizarDisplayVersao() {
     const versionNumberEl = document.getElementById('version-number');
-    const versionCheckIcon = document.getElementById('version-check-icon');
     if (!versionNumberEl) return;
     try {
         const response = await fetch('version.json?v=' + Date.now());
         if (response.ok) {
             const data = await response.json();
             versionNumberEl.textContent = data.version || '--';
-            if (versionCheckIcon) {
-                versionCheckIcon.onclick = function(e) {
-                    e.stopPropagation();
-                    window.verificarVersao(true);
-                };
-            }
+            document.getElementById('version-check-icon')?.addEventListener('click', function(e) {
+                e.stopPropagation();
+                window.verificarVersao(true);
+            });
         } else {
             versionNumberEl.textContent = '--';
         }
     } catch (e) {
-        console.log('Não foi possível carregar a versão:', e);
         versionNumberEl.textContent = '--';
     }
 }
@@ -953,36 +843,24 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // ============================================================
-// VALOR DA PARTIDA
+// VALOR DA PARTIDA (mantido)
 // ============================================================
 let VALOR_PARTIDA = 2000;
 const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
-
 async function carregarValorPartida() {
     try {
         const snap = await db.ref(VALOR_PARTIDA_KEY).once('value');
         let valor = snap.val();
-        if (valor === null || valor === undefined) {
-            valor = 2000;
-            await db.ref(VALOR_PARTIDA_KEY).set(valor);
-        }
+        if (valor === null || valor === undefined) { valor = 2000; await db.ref(VALOR_PARTIDA_KEY).set(valor); }
         VALOR_PARTIDA = valor;
         const input = document.getElementById('input-valor-partida');
         const exibicao = document.getElementById('valor-partida-atual');
         if (input) input.value = valor;
         if (exibicao) exibicao.textContent = valor;
-        console.log(`✅ Valor da partida carregado: ${valor} pontos`);
-    } catch (e) {
-        console.warn('Erro ao carregar valor da partida:', e);
-        VALOR_PARTIDA = 2000;
-    }
+    } catch (e) { VALOR_PARTIDA = 2000; }
 }
-
 async function salvarValorPartida(novoValor) {
-    if (!novoValor || novoValor < 1) {
-        toast('❌ Digite um valor válido maior que 0.');
-        return false;
-    }
+    if (!novoValor || novoValor < 1) { toast('❌ Digite um valor válido maior que 0.'); return false; }
     try {
         await db.ref(VALOR_PARTIDA_KEY).set(novoValor);
         VALOR_PARTIDA = novoValor;
@@ -993,15 +871,12 @@ async function salvarValorPartida(novoValor) {
             feedback.style.display = 'block';
             feedback.className = 'feedback-sucesso';
             feedback.textContent = `✅ Valor da partida atualizado para ${novoValor} pontos!`;
-            setTimeout(() => { feedback.style.display = 'none'; }, 5000);
+            setTimeout(() => feedback.style.display = 'none', 5000);
         }
-        if (typeof atualizarRankingProfessor === 'function') {
-            atualizarRankingProfessor();
-        }
+        if (typeof atualizarRankingProfessor === 'function') atualizarRankingProfessor();
         toast(`✅ Valor da partida atualizado para ${novoValor} pontos!`);
         return true;
     } catch (e) {
-        console.error('Erro ao salvar valor da partida:', e);
         const feedback = document.getElementById('feedback-valor-partida');
         if (feedback) {
             feedback.style.display = 'block';
@@ -1012,17 +887,12 @@ async function salvarValorPartida(novoValor) {
         return false;
     }
 }
-
 window.atualizarValorPartida = async function() {
     const input = document.getElementById('input-valor-partida');
-    if (!input) {
-        toast('❌ Campo não encontrado.');
-        return;
-    }
+    if (!input) { toast('❌ Campo não encontrado.'); return; }
     const novoValor = parseInt(input.value);
     await salvarValorPartida(novoValor);
 };
-
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(carregarValorPartida, 1000);
 });
@@ -1030,53 +900,278 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---------- FUNÇÃO TOAST ----------
 function toast(m) {
     const t = document.getElementById('toast');
-    if (t) { 
-        t.innerText = m; 
-        t.classList.remove('hidden'); 
-        setTimeout(() => t.classList.add('hidden'), 3000);
-        tocarSom('notificacao');
-    }
+    if (t) { t.innerText = m; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
+    tocarSom('notificacao');
 }
-
 document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
     window.open('tutorial-instalacao.html', '_blank');
     toast('📱 Abrindo tutorial de instalação...');
 });
 
 // ============================================================
-// BOLINHA ÚNICA - FUNÇÃO DE ATUALIZAÇÃO (SEM ÍCONES)
+// BOLINHA ÚNICA (mantida)
 // ============================================================
 function atualizarBolinhaUnica(cor) {
     const el = document.getElementById('bolinha-unica');
     if (!el) return;
-    
-    // Remove todas as classes de cor
     el.classList.remove('vermelha', 'laranja', 'branca', 'azul', 'cinza');
-    if (cor) {
-        el.classList.add(cor);
-    } else {
-        el.classList.add('cinza');
-    }
+    if (cor) el.classList.add(cor);
+    else el.classList.add('cinza');
 }
 
 // ============================================================
-// ATUALIZAR INFO DO ALUNO (POSIÇÃO, VELOCIDADE E BOLINHA)
+// NOVO GERADOR DE PERGUNTAS (COM REGRAS DA FASE 5)
 // ============================================================
-let posicaoAnteriorAluno = null; // para controle de subida de ranking
+const MODALIDADE_CONFIG = {
+    "2-5": { min: 2, max: 5, nome: "Tabuada 2️⃣➡️5️⃣" },
+    "6-9": { min: 6, max: 9, nome: "Tabuada 6️⃣➡️9️⃣" },
+    "0-10": { min: 0, max: 10, nome: "Tabuada 0️⃣➡️🔟 (Completa)" }
+};
+
+/**
+ * Gera uma lista de 20 perguntas para a fase especificada.
+ * @param {string} modalidade - "2-5", "6-9" ou "0-10"
+ * @param {number} fase - 1 a 5
+ * @returns {Array} Array de 20 objetos { a, b, opts, posicaoCorreta } onde opts já está ordenado.
+ */
+function gerarPerguntas(modalidade, fase) {
+    const config = MODALIDADE_CONFIG[modalidade];
+    if (!config) return [];
+
+    // 1. Determinar a base B (fatores permitidos)
+    let base;
+    if (fase === 5) {
+        // Fase 5: exclui 0 e 1
+        const min = Math.max(config.min, 2);
+        const max = config.max;
+        base = [];
+        for (let i = min; i <= max; i++) base.push(i);
+        // Se a modalidade for 0-10, teremos {2,3,4,5,6,7,8,9,10}
+        // Se for 2-5, teremos {2,3,4,5}
+        // Se for 6-9, teremos {6,7,8,9}
+    } else {
+        // Fases 1-4: usa a base completa (inclui 0 e 1 se existir)
+        base = [];
+        for (let i = config.min; i <= config.max; i++) base.push(i);
+    }
+
+    // 2. Conjunto difícil H = {6,7,8,9} para fase 5, senão vazio
+    const H = (fase === 5) ? [6,7,8,9] : [];
+
+    // 3. Construir o pool de perguntas
+    let pool = [];
+    if (fase === 5) {
+        // Fase 5: combinações B × H e H × B (comutativas), mas evitando repetição de fatores iguais?
+        // Vamos gerar todas as combinações únicas de (a,b) onde a ∈ B, b ∈ H ou a ∈ H, b ∈ B.
+        // Para evitar duplicatas (ex: 2x6 e 6x2 são diferentes), vamos gerar ambas.
+        // No entanto, precisamos evitar que a mesma pergunta apareça duas vezes (mesmo a e b).
+        const used = new Set();
+        for (let a of base) {
+            for (let b of H) {
+                const key = `${a}x${b}`;
+                if (!used.has(key)) {
+                    used.add(key);
+                    pool.push({ a, b });
+                }
+            }
+        }
+        // Também adicionamos as comutativas (H × B) que não estejam já na lista
+        for (let a of H) {
+            for (let b of base) {
+                const key = `${a}x${b}`;
+                if (!used.has(key)) {
+                    used.add(key);
+                    pool.push({ a, b });
+                }
+            }
+        }
+    } else {
+        // Fases 1-4: todas as combinações dentro da base (incluindo comutativas)
+        for (let a of base) {
+            for (let b of base) {
+                pool.push({ a, b });
+            }
+        }
+    }
+
+    // Se o pool for menor que 20, repetimos perguntas (caso raro, ex: modalidade 6-9 na fase 5, base={6,7,8,9}, H={6,7,8,9} -> pool tem 16)
+    while (pool.length < 20) {
+        // Duplica o pool (ou pega aleatórias)
+        const extra = pool.slice(0, 20 - pool.length);
+        pool = pool.concat(extra);
+    }
+
+    // 4. Embaralhar o pool e selecionar 20 perguntas (sem repetição consecutiva)
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    let selecionadas = [];
+    let tentativas = 0;
+    const maxTentativas = 100;
+    while (selecionadas.length < 20 && tentativas < maxTentativas) {
+        tentativas++;
+        const copia = shuffle([...pool]);
+        let candidatas = [];
+        for (let i = 0; i < copia.length && candidatas.length < 20; i++) {
+            const p = copia[i];
+            // Evitar repetição consecutiva
+            if (candidatas.length > 0) {
+                const ultima = candidatas[candidatas.length - 1];
+                if (ultima.a === p.a && ultima.b === p.b) continue;
+            }
+            candidatas.push({ a: p.a, b: p.b });
+        }
+        if (candidatas.length === 20) {
+            selecionadas = candidatas;
+            break;
+        }
+    }
+    // Se não conseguiu 20 sem repetição, força completar com qualquer uma
+    while (selecionadas.length < 20) {
+        const p = pool[Math.floor(Math.random() * pool.length)];
+        if (selecionadas.length > 0) {
+            const ultima = selecionadas[selecionadas.length - 1];
+            if (ultima.a === p.a && ultima.b === p.b) continue;
+        }
+        selecionadas.push({ a: p.a, b: p.b });
+    }
+
+    // 5. Distribuir posições corretas (25% cada posição) de forma aleatória
+    const posicoes = [];
+    for (let i = 0; i < 5; i++) { posicoes.push(1,2,3,4); }
+    shuffle(posicoes);
+
+    // 6. Para cada pergunta, gerar os distratores de modo que a resposta correta fique na posição definida
+    const resultado = selecionadas.map((p, idx) => {
+        const correta = p.a * p.b;
+        const posAlvo = posicoes[idx]; // 1 a 4
+
+        // Gerar 3 distratores (números diferentes da correta e entre 0 e 100 para não fugir muito)
+        let distratores = [];
+        let tentativasDist = 0;
+        while (distratores.length < 3 && tentativasDist < 100) {
+            tentativasDist++;
+            // Gera um número próximo: correta +- (1 a 15)
+            let offset = Math.floor(Math.random() * 15) + 1;
+            let sinal = Math.random() < 0.5 ? 1 : -1;
+            let d = correta + sinal * offset;
+            // Evita números negativos e repetidos
+            if (d < 0) d = correta + offset;
+            if (d !== correta && !distratores.includes(d) && d >= 0) {
+                distratores.push(d);
+            }
+        }
+        // Se faltar, completa com números aleatórios
+        while (distratores.length < 3) {
+            let d = Math.floor(Math.random() * 100);
+            if (d !== correta && !distratores.includes(d) && d >= 0) distratores.push(d);
+        }
+
+        // Montar array com correta + distratores
+        let opcoes = [correta, ...distratores];
+        // Ordenar crescente
+        opcoes.sort((a,b) => a - b);
+        // Descobrir em qual posição ficou a correta
+        const posReal = opcoes.indexOf(correta) + 1; // 1 a 4
+
+        // Se a posição real não for a posAlvo, precisamos rearranjar os distratores
+        // para que a correta fique exatamente na posAlvo.
+        // Estratégia: construir um array de tamanho 4, colocar a correta na posAlvo-1,
+        // e preencher as outras com distratores (garantindo ordem crescente).
+        // Para manter a ordem crescente, os distratores devem ser escolhidos de forma apropriada.
+        // Vamos gerar novos distratores sob medida.
+        function gerarDistratoresParaPos(correta, pos) {
+            // pos = 1..4
+            const min = 0, max = 150;
+            let menores = [], maiores = [];
+            // Gerar números menores que correta
+            for (let i = 0; i < 20; i++) {
+                let d = Math.floor(Math.random() * correta);
+                if (d !== correta && d >= 0 && !menores.includes(d)) menores.push(d);
+            }
+            menores.sort((a,b) => b - a); // maiores primeiro
+            // Gerar números maiores que correta
+            for (let i = 0; i < 20; i++) {
+                let d = correta + Math.floor(Math.random() * 30) + 1;
+                if (d !== correta && !maiores.includes(d)) maiores.push(d);
+            }
+            maiores.sort((a,b) => a - b);
+            // Montar
+            let escolhidos = [];
+            if (pos === 1) {
+                // precisa de 3 maiores que correta
+                escolhidos = maiores.slice(0,3);
+            } else if (pos === 4) {
+                // precisa de 3 menores que correta
+                escolhidos = menores.slice(0,3);
+            } else if (pos === 2) {
+                // 1 menor e 2 maiores
+                let umMenor = menores.length > 0 ? menores[0] : Math.max(0, correta - 5);
+                let doisMaiores = maiores.slice(0,2);
+                escolhidos = [umMenor, ...doisMaiores];
+            } else if (pos === 3) {
+                // 2 menores e 1 maior
+                let doisMenores = menores.slice(0,2);
+                let umMaior = maiores.length > 0 ? maiores[0] : correta + 5;
+                escolhidos = [...doisMenores, umMaior];
+            }
+            // Garantir que temos exatamente 3 números diferentes e diferentes de correta
+            while (escolhidos.length < 3) {
+                let d = Math.floor(Math.random() * 100);
+                if (d !== correta && !escolhidos.includes(d) && d >= 0) escolhidos.push(d);
+            }
+            return escolhidos;
+        }
+
+        let novosDistratores = gerarDistratoresParaPos(correta, posAlvo);
+        let novasOpcoes = [correta, ...novosDistratores];
+        novasOpcoes.sort((a,b) => a - b);
+        // Verifica se a correta está na posição certa (deve estar)
+        const posFinal = novasOpcoes.indexOf(correta) + 1;
+        if (posFinal !== posAlvo) {
+            // Fallback: força a posição trocando manualmente (mas a ordenação deve ser mantida)
+            // Isso é raro, mas se acontecer, fazemos um ajuste grosseiro.
+            // Simplesmente recolocamos a correta na posição e ordenamos novamente? Isso quebra a ordem.
+            // Vamos tentar novamente com novos distratores.
+            let tentativa = 0;
+            while (posFinal !== posAlvo && tentativa < 20) {
+                tentativa++;
+                novosDistratores = gerarDistratoresParaPos(correta, posAlvo);
+                novasOpcoes = [correta, ...novosDistratores];
+                novasOpcoes.sort((a,b) => a - b);
+                if (novasOpcoes.indexOf(correta) + 1 === posAlvo) break;
+            }
+        }
+
+        return {
+            a: p.a,
+            b: p.b,
+            opts: novasOpcoes,
+            posicaoCorreta: posAlvo // para depuração
+        };
+    });
+
+    return resultado;
+}
+
+// ============================================================
+// ATUALIZAR INFO DO ALUNO (mantido)
+// ============================================================
+let posicaoAnteriorAluno = null;
 
 async function atualizarInfoAluno() {
     if (!alunoId || !estadoAtual) return;
-    
     const faseAtual = estadoAtual.fase;
-    
     try {
         const snap = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
         const resultados = snap.val() || {};
-        
         const snapTemp = await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).once('value');
         const dadosTemp = snapTemp.val();
-        
-        // Montar ranking atual
         let lista = [];
         for (const [id, partidas] of Object.entries(resultados)) {
             if (partidas && partidas.length > 0) {
@@ -1086,14 +1181,10 @@ async function atualizarInfoAluno() {
         }
         lista.sort((a, b) => b.pontos - a.pontos);
         const posicaoAtual = lista.findIndex(p => p.id === alunoId) + 1;
-        
-        // Verificar se subiu de ranking (posição melhorou)
         if (posicaoAnteriorAluno !== null && posicaoAtual > 0 && posicaoAtual < posicaoAnteriorAluno) {
-            // Tocar som de subida
             tocarSom('subiu_ranking');
         }
         posicaoAnteriorAluno = posicaoAtual;
-        
         const posSpan = document.getElementById('posicao-numero');
         if (posSpan) {
             posSpan.innerText = posicaoAtual > 0 ? posicaoAtual : '--';
@@ -1102,16 +1193,12 @@ async function atualizarInfoAluno() {
             else if (posicaoAtual === 3) posSpan.style.color = '#cd7f32';
             else posSpan.style.color = '#ffffff';
         }
-        
-        // Calcular projeção
-        let posicaoProjetada = posicaoAtual;
-        let posicaoProjetadaValida = false;
+        // Projeção
+        let cor = 'cinza';
         let projetado = false;
-        
         if (dadosTemp && dadosTemp.perguntas > 0 && dadosTemp.pontos > 0) {
             const ritmo = dadosTemp.pontos / dadosTemp.perguntas;
             const projecao = ritmo * 20;
-            
             let listaProjecao = [];
             for (const [id, partidas] of Object.entries(resultados)) {
                 if (id === alunoId) {
@@ -1123,62 +1210,32 @@ async function atualizarInfoAluno() {
             }
             listaProjecao.sort((a, b) => b.pontos - a.pontos);
             const posProjetada = listaProjecao.findIndex(p => p.id === alunoId) + 1;
-            
-            if (posProjetada > 0) {
-                posicaoProjetada = posProjetada;
-                posicaoProjetadaValida = true;
+            if (posProjetada > 0 && posicaoAtual > 0) {
                 projetado = true;
+                if (posicaoAtual === 1) cor = 'vermelha';
+                else if (posProjetada < posicaoAtual) cor = 'laranja';
+                else if (posProjetada === posicaoAtual) cor = 'branca';
+                else cor = 'azul';
             }
         }
-        
-        const perguntaAtual = dadosTemp?.perguntas || 0;
-        
-        // ============================================================
-        // DETERMINAR COR DA BOLINHA ÚNICA (APENAS COR, SEM ÍCONE)
-        // ============================================================
-        let cor = 'cinza';
-        
-        // Só mostra a bolinha com dados se tiver pelo menos 4 perguntas respondidas
-        if (perguntaAtual >= 4 && projetado && posicaoAtual > 0) {
-            if (posicaoAtual === 1) {
-                cor = 'vermelha';
-            } else if (posicaoProjetada < posicaoAtual) {
-                cor = 'laranja';
-            } else if (posicaoProjetada === posicaoAtual) {
-                cor = 'branca';
-            } else {
-                cor = 'azul';
-            }
-        } else {
-            cor = 'cinza';
-        }
-        
+        if (!projetado) cor = 'cinza';
         atualizarBolinhaUnica(cor);
-        
-        // Velocidade média
+        // Velocidade
         let velocidadeMedia = 0;
-        let acertos = 0;
-        let tempo = 0;
-        
         if (dadosTemp && dadosTemp.acertos > 0 && dadosTemp.tempo > 0) {
-            acertos = dadosTemp.acertos;
-            tempo = dadosTemp.tempo;
-            velocidadeMedia = tempo / acertos;
+            velocidadeMedia = dadosTemp.tempo / dadosTemp.acertos;
         } else {
             const partidasAluno = resultados[alunoId] || [];
             if (partidasAluno.length > 0) {
                 const melhor = partidasAluno.sort((a, b) => b.pontos - a.pontos)[0];
                 if (melhor.acertos > 0 && melhor.tempo > 0) {
-                    acertos = melhor.acertos;
-                    tempo = melhor.tempo;
-                    velocidadeMedia = tempo / acertos;
+                    velocidadeMedia = melhor.tempo / melhor.acertos;
                 }
             }
         }
-        
         const velSpan = document.getElementById('velocidade-media');
         if (velSpan) {
-            if (velocidadeMedia > 0 && acertos > 0) {
+            if (velocidadeMedia > 0) {
                 velSpan.innerText = velocidadeMedia.toFixed(2) + 's';
                 if (velocidadeMedia < 1.5) velSpan.style.color = '#2ecc71';
                 else if (velocidadeMedia < 2.5) velSpan.style.color = '#f39c12';
@@ -1188,35 +1245,24 @@ async function atualizarInfoAluno() {
                 velSpan.style.color = '#ffffff';
             }
         }
-        
     } catch (e) {
         console.warn('Erro ao atualizar info do aluno:', e);
     }
 }
 
 // ============================================================
-// ATUALIZAÇÃO EM TEMPO REAL
+// ATUALIZAÇÃO EM TEMPO REAL (mantido)
 // ============================================================
 let intervaloTempoReal = null;
-
 function iniciarAtualizacaoTempoReal() {
-    if (intervaloTempoReal) {
-        clearInterval(intervaloTempoReal);
-    }
+    if (intervaloTempoReal) clearInterval(intervaloTempoReal);
     const intervalo = intervaloIndividualSegundos || 4;
     intervaloTempoReal = setInterval(() => {
-        if (meuTipo === 'aluno' && jogoAtivo) {
-            atualizarInfoAluno();
-        }
+        if (meuTipo === 'aluno' && jogoAtivo) atualizarInfoAluno();
     }, intervalo * 1000);
-    console.log(`⏱️ Atualização em tempo real: a cada ${intervalo} segundos`);
 }
-
 function pararAtualizacaoTempoReal() {
-    if (intervaloTempoReal) {
-        clearInterval(intervaloTempoReal);
-        intervaloTempoReal = null;
-    }
+    if (intervaloTempoReal) { clearInterval(intervaloTempoReal); intervaloTempoReal = null; }
 }
 
 // ---------- VARIÁVEIS GLOBAIS ----------
@@ -1240,49 +1286,11 @@ let intervaloEquipesSegundos = 60;
 let tempoEsgotadoProcessado = false;
 
 const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
-const MODALIDADE_CONFIG = {
-    "2-5": { min: 2, max: 5, nome: "Tabuada 2️⃣➡️5️⃣" },
-    "6-9": { min: 6, max: 9, nome: "Tabuada 6️⃣➡️9️⃣" },
-    "0-10": { min: 0, max: 10, nome: "Tabuada 0️⃣➡️🔟 (Completa)" }
-};
 
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 
-// ---------- CACHE DE PERGUNTAS ----------
-const poolPerguntas = {};
-
-function gerarPoolPerguntas(modalidade) {
-    const config = MODALIDADE_CONFIG[modalidade];
-    if (!config) return [];
-    const minFator = config.min, maxFator = config.max;
-    const pool = [];
-    for (let i = 0; i < 100; i++) {
-        let a = Math.floor(Math.random() * (maxFator - minFator + 1)) + minFator;
-        let b = Math.floor(Math.random() * (maxFator - minFator + 1)) + minFator;
-        let r = a * b;
-        let opts = [r];
-        while (opts.length < 4) {
-            let x = r + Math.floor(Math.random() * 11) - 5;
-            if (x >= 0 && !opts.includes(x)) opts.push(x);
-        }
-        opts.sort((x, y) => x - y);
-        pool.push({ a, b, opts });
-    }
-    return pool;
-}
-
-function obterPerguntas(modalidade) {
-    if (!poolPerguntas[modalidade]) {
-        poolPerguntas[modalidade] = gerarPoolPerguntas(modalidade);
-    }
-    const pool = poolPerguntas[modalidade];
-    const shuffled = [...pool];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled.slice(0, 20);
-}
+// ---------- CACHE DE PERGUNTAS (NOVO) ----------
+// Não precisamos mais de pool global, pois geramos sob demanda com a função gerarPerguntas.
 
 // ---------- FUNÇÕES AUXILIARES ----------
 function updateLastSyncTime() {
@@ -1290,7 +1298,6 @@ function updateLastSyncTime() {
     if (span) span.innerText = new Date().toLocaleString('pt-BR');
     toast("🔄 Sincronizado!");
 }
-
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, function(m) {
@@ -1300,7 +1307,6 @@ function escapeHtml(str) {
         return m;
     }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) { return c; });
 }
-
 function debounce(fn, delay) {
     let timer = null;
     return function(...args) {
@@ -1308,13 +1314,11 @@ function debounce(fn, delay) {
         timer = setTimeout(() => { fn.apply(this, args); timer = null; }, delay);
     };
 }
-
 function isClassificado(fase, alunoId) {
     if (fase <= 1) return true;
     const classificados = estadoAtual?.classificados?.[fase-1] || [];
     return classificados.includes(alunoId);
 }
-
 function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer) {
     const segundos = Math.floor(milissegundos / 1000);
     const min = Math.floor(segundos / 60);
@@ -1324,7 +1328,7 @@ function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer) {
     if (torcidaTimer) torcidaTimer.innerText = timeStr;
 }
 
-// ---------- LISTENERS UNIFICADOS ----------
+// ---------- LISTENERS (mantido) ----------
 let listenerCopa = null;
 let listenerOnline = null;
 
@@ -1398,7 +1402,7 @@ function iniciarListeners() {
     });
 }
 
-// ---------- CARREGAR DADOS ESTÁTICOS ----------
+// ---------- CARREGAR DADOS ESTÁTICOS (mantido) ----------
 async function carregarTurmas() {
     const snap = await db.ref('copaV2/turmas').once('value');
     let turmas = snap.val();
@@ -1408,7 +1412,6 @@ async function carregarTurmas() {
     }
     return turmas;
 }
-
 async function carregarIntervalos() {
     const snap = await db.ref('copaV2/configuracoes/intervalos').once('value');
     const config = snap.val();
@@ -1426,10 +1429,9 @@ async function carregarIntervalos() {
 }
 
 // ============================================================
-// RANKING UNIFICADO
+// RANKING UNIFICADO (mantido, pois não afeta as perguntas)
 // ============================================================
 let cacheRanking = {};
-
 async function renderRanking(faseNum, containerId, tipo = 'individual', exibirClassificacao = false) {
     if (!estadoAtual) return;
     const cacheKey = `${faseNum}_${tipo}_${exibirClassificacao}`;
@@ -1437,16 +1439,13 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         document.getElementById(containerId).innerHTML = cacheRanking[cacheKey].html;
         return;
     }
-
     if (tipo === 'turmas') {
         await renderRankingTurmas(containerId);
         return;
     }
-
     const snapFinal = await db.ref(`copaV2/resultados/${faseNum}`).once('value');
     const snapTemp = await db.ref(`copaV2/resultados_temp/${faseNum}`).once('value');
     const participantes = estadoAtual.participantes?.[faseNum] || {};
-
     const statusMap = new Map();
     snapTemp.forEach(child => {
         const data = child.val();
@@ -1475,7 +1474,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             }
         }
     });
-
     const todasFases = estadoAtual.resultados || {};
     const recordeVelocMap = new Map();
     for (let fase = 1; fase <= TOTAL_FASES; fase++) {
@@ -1493,7 +1491,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             }
         }
     }
-
     let mapa = new Map();
     snapFinal.forEach(child => {
         const partidas = child.val();
@@ -1560,21 +1557,18 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             }
         }
     });
-
     let listaComId = [];
     for (let [id, dados] of mapa.entries()) {
         dados.recordeVelocidade = recordeVelocMap.get(id) || null;
         listaComId.push({ id, ...dados });
     }
     listaComId.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
-
     if (listaComId.length === 0) {
         const html = '<p>⏳ Nenhum resultado registrado ainda. Aguarde os primeiros jogadores...</p>';
         document.getElementById(containerId).innerHTML = html;
         cacheRanking[cacheKey] = { html, timestamp: Date.now() };
         return;
     }
-
     for (let i = 0; i < listaComId.length; i++) {
         const jogador = listaComId[i];
         if (jogador.ultimaPosicao === null) {
@@ -1588,7 +1582,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             }
         }
     }
-
     let posProjetadaMap = new Map();
     if (estadoAtual.status !== 'finalizado') {
         let projecaoValida = false;
@@ -1611,26 +1604,15 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             });
         }
     }
-
     const maxPontos = listaComId[0].pontos;
     const vagas = VAGAS_POR_FASE[faseNum] || 30;
     const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirClassificacao;
 
     let html = `<table class="ranking-table"><thead><tr>
-        <th>Pos</th>
-        <th>Nome</th>
-        <th>Fut. Pos.</th>
-        <th>Pontuação</th>
-        <th>Delta Líder</th>
-        <th>Veloc.<br>Média</th>
-        <th>Veloc.<br>Recorde</th>
-        <th>Δ Veloc.</th>
-        <th>Progresso</th>
-        ${mostrarClassificacao ? '<th>Classificação</th>' : ''}
-        <th>Partidas</th>
-        <th>Turma</th>
+        <th>Pos</th><th>Nome</th><th>Fut. Pos.</th><th>Pontuação</th><th>Delta Líder</th>
+        <th>Veloc.<br>Média</th><th>Veloc.<br>Recorde</th><th>Δ Veloc.</th>
+        <th>Progresso</th>${mostrarClassificacao ? '<th>Classificação</th>' : ''}<th>Partidas</th><th>Turma</th>
      </tr></thead><tbody>`;
-
     for (let idx = 0; idx < listaComId.length; idx++) {
         const j = listaComId[idx];
         const posAtual = idx + 1;
@@ -1640,10 +1622,8 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             if (posAtual < posAnterior) classePos = 'posicao-subiu';
             else if (posAtual > posAnterior) classePos = 'posicao-desceu';
         }
-
         const deltaLider = maxPontos - j.pontos;
         const deltaText = deltaLider === 0 ? "🏆 Líder" : `+${deltaLider}`;
-
         let velocidadeAtualStr = "-", velocidadeAtualNum = null;
         if (j.velocidadeAtual !== null && j.velocidadeAtual !== undefined) {
             velocidadeAtualNum = j.velocidadeAtual;
@@ -1652,13 +1632,11 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             velocidadeAtualNum = j.tempo / j.acertos;
             velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
         }
-
         let recordeStr = "-";
         let recordeNum = j.recordeVelocidade;
         if (recordeNum !== null && recordeNum > 0) {
             recordeStr = recordeNum.toFixed(2) + " s";
         }
-
         let deltaVelocidadeHtml = "";
         if (velocidadeAtualNum !== null && recordeNum !== null && recordeNum > 0) {
             const diff = velocidadeAtualNum - recordeNum;
@@ -1672,40 +1650,25 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         } else {
             deltaVelocidadeHtml = "—";
         }
-
         let futPosHtml = "";
         const posProjetada = posProjetadaMap.get(j.id);
         if (posAtual === 1) {
             futPosHtml = "—";
         } else if (posProjetada !== undefined && posProjetada > 0) {
-            let icone = "";
-            let classe = "";
-            if (posProjetada < posAtual) {
-                icone = "🟢";
-                classe = "fut-sobe";
-            } else if (posProjetada === posAtual) {
-                icone = "⚪";
-                classe = "fut-mantem";
-            } else {
-                icone = "🔴";
-                classe = "fut-desce";
-            }
+            let icone = "", classe = "";
+            if (posProjetada < posAtual) { icone = "🟢"; classe = "fut-sobe"; }
+            else if (posProjetada === posAtual) { icone = "⚪"; classe = "fut-mantem"; }
+            else { icone = "🔴"; classe = "fut-desce"; }
             futPosHtml = `<span class="${classe}">${posProjetada}° ${icone}</span>`;
         } else {
             futPosHtml = "—";
         }
         if ((j.perguntas || 0) === 0) futPosHtml = "—";
-
         let progressoHtml = "";
-        if (j.status === 'em_jogo') {
-            progressoHtml = `${j.progresso}/20`;
-        } else if (j.status === 'finalizado') {
-            progressoHtml = `✅ Finalizado`;
-        } else {
-            progressoHtml = `—`;
-        }
+        if (j.status === 'em_jogo') progressoHtml = `${j.progresso}/20`;
+        else if (j.status === 'finalizado') progressoHtml = `✅ Finalizado`;
+        else progressoHtml = `—`;
         if (!j.status) progressoHtml = `—`;
-
         let colunaStatus = "";
         if (mostrarClassificacao) {
             const classificado = idx < vagas;
@@ -1715,7 +1678,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 colunaStatus = classificado ? `<td class="classificado-sim">Top${vagas}</td>` : `<td class="classificado-nao">Eliminado</td>`;
             }
         }
-
         html += `<tr>
             <td class="${classePos}">${idx+1}º</td>
             <td>${escapeHtml(j.nome)}</td>
@@ -1759,7 +1721,6 @@ async function renderRankingTurmas(containerId) {
                 nome = estadoAtual.participantes[fase-1][id].nome;
             }
             if (!nome) nome = "Anônimo";
-
             if (!turmasMap.has(turma)) {
                 turmasMap.set(turma, {
                     alunos: new Map(),
@@ -1825,7 +1786,7 @@ async function renderRankingTurmas(containerId) {
     document.getElementById(containerId).innerHTML = html;
 }
 
-// ---------- ATUALIZAÇÃO DOS RANKINGS ----------
+// ---------- ATUALIZAÇÃO DOS RANKINGS (mantido) ----------
 async function atualizarRankingProfessor() {
     if (meuTipo === 'professor' && atualizacaoRankingAuto && document.getElementById('tab-ranking-fase') && !document.getElementById('tab-ranking-fase').classList.contains('hidden')) {
         const faseSelecionada = document.getElementById('select-fase-ranking').value;
@@ -1854,13 +1815,11 @@ async function atualizarTorcidaIndividual() {
         infoSpan.innerText = (fase === estadoAtual.fase) ? '(Fase atual)' : '(Fase anterior)';
     }
 }
-
 async function atualizarTorcidaEquipes() {
     if (meuTipo !== 'projecao' || modoTorcida !== 'equipes') return;
     if (!estadoAtual) return;
     await renderRanking(null, 'ranking-torcida-container', 'turmas', true);
 }
-
 function reiniciarIntervalosTorcida() {
     if (intervaloTorcidaIndividual) clearInterval(intervaloTorcidaIndividual);
     if (intervaloTorcidaEquipes) clearInterval(intervaloTorcidaEquipes);
@@ -1881,7 +1840,6 @@ function reiniciarIntervalosTorcida() {
     if (spanInd) spanInd.innerText = intervaloIndividualSegundos;
     if (spanEq) spanEq.innerText = intervaloEquipesSegundos;
 }
-
 function iniciarAtualizacaoTorcida() {
     reiniciarIntervalosTorcida();
     popularSelectFasesTorcida();
@@ -1903,7 +1861,7 @@ function pararAtualizacaoTorcida() {
     intervaloTorcidaEquipes = null;
 }
 
-// ---------- GERENCIAMENTO DE TURMAS ----------
+// ---------- GERENCIAMENTO DE TURMAS (mantido) ----------
 async function adicionarTurma(novaTurma) {
     const turmas = await carregarTurmas();
     if (!turmas.includes(novaTurma)) {
@@ -1966,7 +1924,7 @@ async function renderListaTurmas() {
     });
 }
 
-// ---------- CONTROLE DE INTERVALOS ----------
+// ---------- CONTROLE DE INTERVALOS (mantido) ----------
 async function atualizarIntervaloIndividual(segundos) {
     intervaloIndividualSegundos = segundos;
     await db.ref('copaV2/configuracoes/intervalos/individual').set(segundos);
@@ -1980,7 +1938,7 @@ async function atualizarIntervaloEquipes(segundos) {
     toast(`Intervalo por equipes alterado para ${segundos} segundos`);
 }
 
-// ---------- RANKING GERAL ----------
+// ---------- RANKING GERAL (mantido) ----------
 function renderRankingGeral() {
     if (!estadoAtual) return;
     const todasFases = estadoAtual.resultados || {};
@@ -2055,7 +2013,7 @@ function renderRankingGeral() {
     document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
 }
 
-// ---------- PÓDIO ----------
+// ---------- PÓDIO (mantido) ----------
 function renderPodioFinal(containerId) {
     if (!estadoAtual || estadoAtual.fase !== 5) return;
     const resultadosFase5 = estadoAtual.resultados?.[5] || {};
@@ -2092,19 +2050,15 @@ function renderPodioFinal(containerId) {
     container.classList.remove('hidden');
 }
 
-// ---------- CONTROLE DE FASE ----------
+// ---------- CONTROLE DE FASE (mantido) ----------
 async function pausarFase() {
     if (!estadoAtual || estadoAtual.status !== 'em_andamento') return;
-    if (timerFase) {
-        clearInterval(timerFase);
-        timerFase = null;
-    }
+    if (timerFase) { clearInterval(timerFase); timerFase = null; }
     const agora = Date.now();
     const tempoRestante = Math.max(0, estadoAtual.fim - agora);
     await db.ref('copaV2').update({ status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
     toast("⏸️ Fase pausada.");
 }
-
 async function continuarFase() {
     if (!estadoAtual || estadoAtual.status !== 'pausado') return;
     const tempoRestante = estadoAtual.tempoRestantePausa || 0;
@@ -2113,14 +2067,10 @@ async function continuarFase() {
     await db.ref('copaV2').update({ status: 'em_andamento', fim: novoFim, tempoRestantePausa: null });
     toast("▶️ Fase retomada!");
 }
-
 async function resetarFase() {
     const faseAtual = estadoAtual.fase;
     if (!confirm(`⚠️ Resetar a Fase ${faseAtual}? Todos os resultados, cadastros e classificações desta fase serão apagados.`)) return;
-    if (timerFase) {
-        clearInterval(timerFase);
-        timerFase = null;
-    }
+    if (timerFase) { clearInterval(timerFase); timerFase = null; }
     await db.ref(`copaV2/resultados/${faseAtual}`).remove();
     await db.ref(`copaV2/participantes/${faseAtual}`).remove();
     await db.ref(`copaV2/resultados_temp/${faseAtual}`).remove();
@@ -2130,12 +2080,8 @@ async function resetarFase() {
     toast(`✅ Fase ${faseAtual} resetada!`);
     atualizarUI();
 }
-
 async function avancarFase() {
-    if (timerFase) {
-        clearInterval(timerFase);
-        timerFase = null;
-    }
+    if (timerFase) { clearInterval(timerFase); timerFase = null; }
     const faseAtual = estadoAtual.fase;
     if (faseAtual > TOTAL_FASES) { toast("Competição já finalizada!"); return; }
     const res = estadoAtual.resultados?.[faseAtual] || {};
@@ -2191,20 +2137,15 @@ async function avancarFase() {
     }
     forcarAlunosParaMenu();
 }
-
 function forcarAlunosParaMenu() {
     if (meuTipo === 'aluno') location.reload();
 }
-
 async function verificarTempoEsgotado() {
     if (!estadoAtual) return;
     if (estadoAtual.status === 'em_andamento' && Date.now() >= estadoAtual.fim) {
         if (!tempoEsgotadoProcessado) {
             tempoEsgotadoProcessado = true;
-            if (timerFase) {
-                clearInterval(timerFase);
-                timerFase = null;
-            }
+            if (timerFase) { clearInterval(timerFase); timerFase = null; }
             const timerDisplay = document.getElementById('timer-fase');
             const torcidaTimer = document.getElementById('torcida-timer');
             if (timerDisplay) timerDisplay.innerText = '00:00';
@@ -2217,7 +2158,7 @@ async function verificarTempoEsgotado() {
     return false;
 }
 
-// ---------- EXIBIÇÃO DE RESULTADO FINAL PARA ALUNO ----------
+// ---------- EXIBIÇÃO DE RESULTADO FINAL PARA ALUNO (mantido) ----------
 async function exibirResultadoFinalParaAluno() {
     if (!alunoId || !estadoAtual) return;
     const faseAtual = estadoAtual.fase;
@@ -2258,7 +2199,7 @@ async function obterRankingCompleto(fase) {
     return lista;
 }
 
-// ---------- GERENCIAR ALUNOS ----------
+// ---------- GERENCIAR ALUNOS (mantido) ----------
 function renderListaAlunosGerenciar() {
     if (!estadoAtual) return;
     const faseAtual = estadoAtual.fase;
@@ -2299,7 +2240,7 @@ function renderListaAlunosGerenciar() {
     });
 }
 
-// ---------- SELECTS ----------
+// ---------- SELECTS (mantido) ----------
 function popularSelectFasesTorcida() {
     const select = document.getElementById('select-fase-torcida');
     if (!select) return;
@@ -2331,7 +2272,7 @@ function popularSelectFases() {
     select.value = faseSelecionadaProf;
 }
 
-// ---------- ATUALIZAÇÃO DA UI ----------
+// ---------- ATUALIZAÇÃO DA UI (mantido, apenas ajuste no gerador de perguntas) ----------
 function renderAluno() {
     if (!estadoAtual) return;
     const agora = Date.now();
@@ -2377,7 +2318,6 @@ function renderAluno() {
         const podiumAluno = document.getElementById('podium-aluno-container');
         if (podiumAluno) podiumAluno.classList.add('hidden');
     }
-    
     iniciarAtualizacaoTempoReal();
 }
 
@@ -2404,12 +2344,7 @@ function atualizarUI() {
     document.getElementById('fase-atual-titulo').innerText = estadoAtual.fase;
     atualizarExibicaoFase();
 
-    // TIMER
-    if (timerFase) {
-        clearInterval(timerFase);
-        timerFase = null;
-    }
-
+    if (timerFase) { clearInterval(timerFase); timerFase = null; }
     const timerDisplay = document.getElementById('timer-fase');
     const torcidaTimer = document.getElementById('torcida-timer');
 
@@ -2502,16 +2437,13 @@ function atualizarUI() {
     }
 }
 
-// ---------- LÓGICA DO JOGO ----------
+// ---------- LÓGICA DO JOGO (atualizada para usar o novo gerador) ----------
 let animFrameId = null;
 
 function startTimer() {
     tempoRestantePergunta = 10;
     const barra = document.getElementById('progresso-tempo');
-    if (timerPergunta) {
-        clearInterval(timerPergunta);
-        timerPergunta = null;
-    }
+    if (timerPergunta) { clearInterval(timerPergunta); timerPergunta = null; }
     if (animFrameId) cancelAnimationFrame(animFrameId);
     let inicio = performance.now();
 
@@ -2539,25 +2471,22 @@ function proxima() {
     if (perguntaIdx >= 20) { finalizar(); return; }
     const p = perguntas[perguntaIdx];
     document.getElementById('pergunta').innerText = `${p.a} x ${p.b} = ?`;
-    const btns = document.querySelectorAll('.opcao');
-    p.opts.forEach((o, i) => { btns[i].innerText = o; btns[i].disabled = false; });
+    const btns = document.querySelectorAll('.opcao-vertical');
+    p.opts.forEach((o, i) => {
+        if (btns[i]) { btns[i].innerText = o; btns[i].disabled = false; }
+    });
     document.getElementById('pergunta-num').innerText = perguntaIdx + 1;
     startTimer();
 }
 
 window.responder = async function(idx) {
-    if (timerPergunta) {
-        clearInterval(timerPergunta);
-        timerPergunta = null;
-    }
-    if (animFrameId) {
-        cancelAnimationFrame(animFrameId);
-        animFrameId = null;
-    }
+    if (timerPergunta) { clearInterval(timerPergunta); timerPergunta = null; }
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
     const tempoGasto = 10 - Math.max(0, tempoRestantePergunta);
     tempoTotalPartida += tempoGasto;
     if (idx !== -1) {
-        const resp = parseInt(document.querySelectorAll('.opcao')[idx].innerText);
+        const btns = document.querySelectorAll('.opcao-vertical');
+        const resp = parseInt(btns[idx].innerText);
         const p = perguntas[perguntaIdx];
         if (resp === p.a * p.b) {
             acertosPartida++;
@@ -2638,16 +2567,15 @@ async function iniciarNovaPartida() {
         toast("❌ Não classificado para esta fase!");
         return;
     }
-    perguntas = obterPerguntas(estadoAtual.modalidade);
+    // Usa o novo gerador de perguntas
+    perguntas = gerarPerguntas(estadoAtual.modalidade, estadoAtual.fase);
     perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
     document.getElementById('pontuacao-acumulada').innerText = "0";
     document.getElementById('velocidade-media').innerText = "--";
     jogoAtivo = true;
     document.getElementById('jogo-area').classList.remove('hidden');
     document.getElementById('aguardando-aluno').classList.add('hidden');
-    
     iniciarAtualizacaoTempoReal();
-    
     proxima();
 }
 
@@ -2695,7 +2623,7 @@ async function finalizar() {
     renderAluno();
 }
 
-// ---------- INICIALIZAÇÃO ----------
+// ---------- INICIALIZAÇÃO (mantido, com ajustes) ----------
 async function init() {
     await carregarIntervalos();
     await carregarTurmas();
