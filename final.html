@@ -74,6 +74,7 @@
         .btn-danger { background: #c0392b; }
         .btn-warning { background: #f39c12; }
         .btn-secondary { background: #34495e; }
+        .btn-info { background: #3498db; }
         .status-box { background: #000000aa; border-radius: 20px; padding: 16px; margin-top: 20px; overflow-x: auto; }
         .flex-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
         .timer-display { font-size: 32px; font-weight: bold; color: #ffd966; background: #000; padding: 10px 20px; border-radius: 15px; display: inline-block; }
@@ -94,9 +95,6 @@
         .barra-tempo { width: 100%; height: 12px; background: #2c3e50; border-radius: 6px; overflow: hidden; margin: 15px 0; }
         .progresso-tempo { width: 100%; height: 100%; background: #27ae60; transition: width 0.05s linear; }
 
-        /* ================================================================
-           LAYOUT VERTICAL DAS OPÇÕES
-           ================================================================ */
         .opcoes-vertical {
             display: flex;
             flex-direction: column;
@@ -167,6 +165,9 @@
         .modal-turma { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f172a; border-radius: 32px; padding: 24px; width: 90%; max-width: 400px; z-index: 10001; box-shadow: 0 20px 35px rgba(0,0,0,0.5); border: 2px solid #ffd966; text-align: center; }
         .modal-turma select { width: 100%; padding: 12px; margin: 15px 0; border-radius: 20px; background: #1f3a4b; color: white; font-size: 16px; }
         .modal-turma button { margin-top: 10px; }
+        .modal-senha { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f172a; border-radius: 32px; padding: 24px; width: 90%; max-width: 350px; z-index: 10002; box-shadow: 0 20px 35px rgba(0,0,0,0.5); border: 2px solid #ffd966; text-align: center; }
+        .modal-senha input { width: 100%; padding: 12px; font-size: 28px; text-align: center; border-radius: 20px; background: #1f3a4b; color: white; border: none; margin: 15px 0; }
+        .modal-senha button { margin-top: 10px; }
         .controle-atualizacao { background: #1f3a4b; padding: 15px; border-radius: 20px; margin-top: 15px; }
         .controle-atualizacao input { background: #2c3e50; color: white; border: none; padding: 8px; border-radius: 10px; width: 80px; text-align: center; }
         .info-intervalo { font-size: 12px; color: #ffd966; margin-top: 5px; }
@@ -215,9 +216,6 @@
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
 
-        /* ================================================================
-           BOLINHA ÚNICA
-           ================================================================ */
         .evolucao-container {
             display: flex;
             align-items: center;
@@ -269,9 +267,6 @@
         .bolinha-mini-azul     { background: #3498db; }
         .bolinha-mini-cinza    { background: #2c3e50; }
 
-        /* ================================================================
-           PAINEL DE CONTROLE DE SOM
-           ================================================================ */
         .som-card {
             background: #0f172a;
             border: 1px solid #2d3a4f;
@@ -388,6 +383,89 @@
         .btn-som-master.ativado { background: #27ae60; color: white; }
         .btn-som-master.desativado { background: #e74c3c; color: white; }
         .btn-som-master:hover { transform: scale(1.03); }
+
+        .senha-card {
+            background: #1e293b;
+            border: 1px solid #facc15;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+        .senha-card input {
+            background: #0f172a;
+            color: white;
+            border: 1px solid #334155;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 24px;
+            width: 100px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .senha-card .btn-gerar-senha {
+            background: #8b5cf6;
+            margin-left: 10px;
+        }
+        .senha-card .btn-gerar-senha:hover { background: #7c3aed; }
+        .senha-card .toggle-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+        .senha-card .toggle-label input[type="checkbox"] {
+            width: 40px;
+            height: 22px;
+            appearance: none;
+            background: #4a5568;
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: 0.3s;
+            flex-shrink: 0;
+        }
+        .senha-card .toggle-label input[type="checkbox"]:checked {
+            background: #27ae60;
+        }
+        .senha-card .toggle-label input[type="checkbox"]::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .senha-card .toggle-label input[type="checkbox"]:checked::after {
+            left: 20px;
+        }
+        .liberar-card {
+            background: #1e293b;
+            border: 1px solid #3b82f6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+        .liberar-card input {
+            background: #0f172a;
+            color: white;
+            border: 1px solid #334155;
+            padding: 10px;
+            border-radius: 10px;
+            width: 180px;
+            margin: 4px;
+        }
+        .liberar-card .btn-liberar {
+            background: #3b82f6;
+        }
+        .liberar-card .btn-liberar:hover { background: #2563eb; }
+        .btn-desabilitado {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -447,8 +525,6 @@
                 Habilite ou desabilite cada som individualmente. Os alunos também ouvem os efeitos durante o jogo.
                 O volume e as preferências são salvos automaticamente no navegador.
             </p>
-
-            <!-- Controles Gerais -->
             <div class="som-controles-gerais">
                 <button id="btn-som-master" class="btn-som-master ativado">🔊 Sons Ativados</button>
                 <div class="controle-vol">
@@ -458,13 +534,9 @@
                 </div>
                 <button id="btn-testar-todos-sons" class="btn-secondary" style="padding: 6px 16px; font-size: 13px;">🔊 Testar Todos</button>
             </div>
-
-            <!-- Lista de Sons -->
             <div class="som-card">
                 <h4>🎵 Efeitos Sonoros <span class="badge-som">11 sons</span></h4>
-                <div class="som-grid" id="som-grid-container">
-                    <!-- Será preenchido pelo JavaScript -->
-                </div>
+                <div class="som-grid" id="som-grid-container"></div>
             </div>
         </div>
 
@@ -499,6 +571,65 @@
                     <strong>1.00s</strong> de média projeta <strong>2000 pts</strong> na próxima partida, 
                     enquanto um com <strong>2.00s</strong> projeta <strong>1000 pts</strong>.
                 </p>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- NOVO: SENHA DE ACESSO PARA FASE 1 -->
+        <!-- ============================================================ -->
+        <div class="config-card senha-card">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <span style="font-size: 28px;">🔑</span>
+                <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Senha de Acesso - Fase 1</h4>
+                <span style="background: #facc15; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+            </div>
+            <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                Defina uma senha numérica de 2 dígitos que os alunos deverão digitar para se cadastrar na <strong>Fase 1</strong>.
+                Após iniciar a fase, a senha fica bloqueada e não pode mais ser alterada.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                <div>
+                    <label style="color: #94a3b8; font-size: 14px;">Senha atual:</label>
+                    <input type="number" id="input-senha-fase1" min="10" max="99" value="42" 
+                        style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; font-size: 24px; width: 100px; text-align: center; font-weight: bold;">
+                </div>
+                <button id="btn-gerar-senha" class="btn-gerar-senha">🎲 Gerar</button>
+                <button id="btn-salvar-senha" class="btn-success">💾 Salvar</button>
+                <label class="toggle-label">
+                    <span>Exigir senha na Fase 1</span>
+                    <input type="checkbox" id="toggle-exigir-senha" checked>
+                </label>
+                <span id="status-senha" style="color: #4ade80; font-size: 14px; margin-left: 8px;">✅ Ativa</span>
+            </div>
+            <div id="feedback-senha" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            <p style="color: #94a3b8; font-size: 12px; margin-top: 12px;">
+                ⚠️ A senha só pode ser alterada <strong>antes</strong> de iniciar a Fase 1. Após o início, o campo fica bloqueado.
+            </p>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- NOVO: LIBERAR CADASTRO EMERGENCIAL -->
+        <!-- ============================================================ -->
+        <div class="config-card liberar-card">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <span style="font-size: 28px;">🚪</span>
+                <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Liberar Cadastro Emergencial</h4>
+                <span style="background: #3b82f6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+            </div>
+            <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                Use esta ferramenta para <strong>liberar manualmente</strong> um aluno classificado que esteja tendo problemas para entrar 
+                (ex: perda de deviceId, erro de digitação, bug). A liberação é persistente e válida apenas para a fase atual.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                <input type="text" id="input-liberar-nome" placeholder="Nome do aluno" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; width: 200px;">
+                <input type="text" id="input-liberar-turma" placeholder="Turma" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; width: 150px;">
+                <button id="btn-liberar-aluno" class="btn-liberar">🔓 Liberar</button>
+                <span style="color: #64748b; font-size: 13px;">(para a fase atual)</span>
+            </div>
+            <div id="feedback-liberar" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            <div style="margin-top: 12px; max-height: 150px; overflow-y: auto; background: #0f172a; border-radius: 8px; padding: 8px;">
+                <p style="color: #94a3b8; font-size: 12px; margin: 0;">📋 Alunos liberados nesta fase:</p>
+                <div id="lista-liberados" style="color: #4ade80; font-size: 13px; margin-top: 4px;"></div>
             </div>
         </div>
 
@@ -603,8 +734,6 @@
                     <div class="indicador-posicao"><span id="posicao-numero">--</span><span>º</span><span style="font-size: 14px; opacity: 0.6; margin-left: 4px;">atual</span></div>
                     <div class="velocidade-media">⚡ <span id="velocidade-media">0.00</span>s</div>
                 </div>
-
-                <!-- BOLINHA ÚNICA -->
                 <div class="evolucao-container">
                     <span class="label">📊 DESEMPENHO:</span>
                     <span class="bolinha-unica cinza" id="bolinha-unica"></span>
@@ -616,10 +745,8 @@
                     <span class="item"><span class="bolinha-mini bolinha-mini-azul"></span> Caindo</span>
                     <span class="item"><span class="bolinha-mini bolinha-mini-cinza"></span> Sem dados</span>
                 </div>
-
                 <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
                 <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
-                <!-- Opções em coluna vertical -->
                 <div class="opcoes-vertical">
                     <button class="opcao-vertical" onclick="window.responder(0)"></button>
                     <button class="opcao-vertical" onclick="window.responder(1)"></button>
@@ -674,7 +801,7 @@
 
 <script>
 // ============================================================
-// SISTEMA DE SONS - COMPLETO
+// SISTEMA DE SONS (mantido)
 // ============================================================
 const SONS_CONFIG = {
     acerto: { emoji: '✅', nome: 'Acerto', descricao: 'Quando o aluno acerta a pergunta', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' },
@@ -685,7 +812,7 @@ const SONS_CONFIG = {
     nova_fase: { emoji: '🚀', nome: 'Nova Fase', descricao: 'Ao passar para a próxima fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2726/2726-preview.mp3' },
     top3: { emoji: '🏆', nome: 'Pódio / Vitória', descricao: 'Ao mostrar o pódio final', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2754/2754-preview.mp3' },
     subiu_ranking: { emoji: '📈', nome: 'Subiu no Ranking', descricao: 'Quando o jogador sobe de posição', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2709/2709-preview.mp3' },
-    classificado: { emoji: '🔔', nome: 'Classificado!', descricao: 'Quando o aluno se classifica para próxima fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2787/2787-preview.mp3' },
+    classificado: { emoji: '🔔', nome: 'Classificado!', descricao: 'Tocado ao finalizar a fase e classificar os alunos', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2754/2754-preview.mp3' },
     clique: { emoji: '🖱️', nome: 'Clique', descricao: 'Ao clicar em qualquer botão', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2706/2706-preview.mp3' },
     notificacao: { emoji: '📢', nome: 'Notificação', descricao: 'Quando aparece uma notificação (toast)', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2579/2579-preview.mp3' }
 };
@@ -909,7 +1036,7 @@ document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
 });
 
 // ============================================================
-// BOLINHA ÚNICA
+// BOLINHA ÚNICA (mantida)
 // ============================================================
 function atualizarBolinhaUnica(cor) {
     const el = document.getElementById('bolinha-unica');
@@ -920,7 +1047,7 @@ function atualizarBolinhaUnica(cor) {
 }
 
 // ============================================================
-// NOVO GERADOR DE PERGUNTAS (COM REGRAS DA FASE 5)
+// GERADOR DE PERGUNTAS (mantido)
 // ============================================================
 const MODALIDADE_CONFIG = {
     "2-5": { min: 2, max: 5, nome: "Tabuada 2️⃣➡️5️⃣" },
@@ -931,8 +1058,6 @@ const MODALIDADE_CONFIG = {
 function gerarPerguntas(modalidade, fase) {
     const config = MODALIDADE_CONFIG[modalidade];
     if (!config) return [];
-
-    // 1. Determinar a base B
     let base;
     if (fase === 5) {
         const min = Math.max(config.min, 2);
@@ -943,29 +1068,20 @@ function gerarPerguntas(modalidade, fase) {
         base = [];
         for (let i = config.min; i <= config.max; i++) base.push(i);
     }
-
     const H = (fase === 5) ? [6,7,8,9] : [];
-
-    // 2. Pool de perguntas
     let pool = [];
     if (fase === 5) {
         const used = new Set();
         for (let a of base) {
             for (let b of H) {
                 const key = `${a}x${b}`;
-                if (!used.has(key)) {
-                    used.add(key);
-                    pool.push({ a, b });
-                }
+                if (!used.has(key)) { used.add(key); pool.push({ a, b }); }
             }
         }
         for (let a of H) {
             for (let b of base) {
                 const key = `${a}x${b}`;
-                if (!used.has(key)) {
-                    used.add(key);
-                    pool.push({ a, b });
-                }
+                if (!used.has(key)) { used.add(key); pool.push({ a, b }); }
             }
         }
     } else {
@@ -975,12 +1091,10 @@ function gerarPerguntas(modalidade, fase) {
             }
         }
     }
-
     while (pool.length < 20) {
         const extra = pool.slice(0, 20 - pool.length);
         pool = pool.concat(extra);
     }
-
     function shuffle(arr) {
         for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -988,7 +1102,6 @@ function gerarPerguntas(modalidade, fase) {
         }
         return arr;
     }
-
     let selecionadas = [];
     let tentativas = 0;
     const maxTentativas = 100;
@@ -1017,19 +1130,13 @@ function gerarPerguntas(modalidade, fase) {
         }
         selecionadas.push({ a: p.a, b: p.b });
     }
-
-    // 3. Distribuir posições corretas (25% cada)
     const posicoes = [];
     for (let i = 0; i < 5; i++) { posicoes.push(1,2,3,4); }
     shuffle(posicoes);
-
-    // 4. Gerar distratores sob medida para cada posição
     const resultado = selecionadas.map((p, idx) => {
         const correta = p.a * p.b;
         const posAlvo = posicoes[idx];
-
         function gerarDistratoresParaPos(correta, pos) {
-            const min = 0, max = 150;
             let menores = [], maiores = [];
             for (let i = 0; i < 20; i++) {
                 let d = Math.floor(Math.random() * correta);
@@ -1061,11 +1168,9 @@ function gerarPerguntas(modalidade, fase) {
             }
             return escolhidos;
         }
-
         let novosDistratores = gerarDistratoresParaPos(correta, posAlvo);
         let novasOpcoes = [correta, ...novosDistratores];
         novasOpcoes.sort((a,b) => a - b);
-        // Verificação final (se falhar, tenta novamente)
         let tentativa = 0;
         while (novasOpcoes.indexOf(correta) + 1 !== posAlvo && tentativa < 20) {
             tentativa++;
@@ -1073,22 +1178,15 @@ function gerarPerguntas(modalidade, fase) {
             novasOpcoes = [correta, ...novosDistratores];
             novasOpcoes.sort((a,b) => a - b);
         }
-        return {
-            a: p.a,
-            b: p.b,
-            opts: novasOpcoes,
-            posicaoCorreta: posAlvo
-        };
+        return { a: p.a, b: p.b, opts: novasOpcoes, posicaoCorreta: posAlvo };
     });
-
     return resultado;
 }
 
 // ============================================================
-// ATUALIZAR INFO DO ALUNO
+// ATUALIZAR INFO DO ALUNO (mantido)
 // ============================================================
 let posicaoAnteriorAluno = null;
-
 async function atualizarInfoAluno() {
     if (!alunoId || !estadoAtual) return;
     const faseAtual = estadoAtual.fase;
@@ -1286,6 +1384,9 @@ function iniciarListeners() {
             }
             popularSelectFases();
             renderListaTurmas();
+            // Atualiza status da senha e botão liberar
+            atualizarStatusSenha();
+            atualizarListaLiberados();
         }
     });
 
@@ -1349,7 +1450,7 @@ async function carregarIntervalos() {
 }
 
 // ============================================================
-// RANKING UNIFICADO (com correção: fut.pos = — para finalizados)
+// RANKING UNIFICADO (mantido)
 // ============================================================
 let cacheRanking = {};
 async function renderRanking(faseNum, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -1570,9 +1671,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         } else {
             deltaVelocidadeHtml = "—";
         }
-        // ============================================================
-        // CORREÇÃO: Se o jogador já finalizou, não exibe projeção
-        // ============================================================
         let futPosHtml = "";
         if (j.status === 'finalizado' || j.progresso >= 20 || (j.perguntas && j.perguntas >= 20)) {
             futPosHtml = "—";
@@ -2025,6 +2123,7 @@ async function avancarFase() {
     const vagas = VAGAS_POR_FASE[faseAtual];
     const classificadosIds = lista.slice(0, vagas).map(l => l.id);
     await db.ref(`copaV2/classificados/${faseAtual}`).set(classificadosIds);
+    tocarSom('classificado');
     const participantesAtual = estadoAtual.participantes?.[faseAtual] || {};
     const participantesProxima = {};
     for (let id of classificadosIds) {
@@ -2200,169 +2299,380 @@ function popularSelectFases() {
     select.value = faseSelecionadaProf;
 }
 
-// ---------- ATUALIZAÇÃO DA UI ----------
-function renderAluno() {
-    if (!estadoAtual) return;
-    const agora = Date.now();
-    const encerrado = (estadoAtual.status === 'em_andamento' && agora >= estadoAtual.fim) || estadoAtual.status === 'finalizado';
-    const liberado = estadoAtual.status === 'em_andamento' && !encerrado;
-    document.getElementById('aluno-nome-display').innerText = alunoNome;
-    document.getElementById('aluno-turma-display').innerText = alunoTurma;
-    const modalidadeNome = MODALIDADE_CONFIG[estadoAtual.modalidade]?.nome || "Tabuada 2-5";
-    document.getElementById('aluno-modalidade').innerText = modalidadeNome;
-    const msgDiv = document.getElementById('msg-status-aluno');
-    const btnJogar = document.getElementById('btn-iniciar-partida');
+// ---------- SENHA E LIBERAR (NOVAS FUNÇÕES) ----------
+let senhaBloqueada = false; // torna true quando a fase 1 for iniciada
 
-    if (estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
-        msgDiv.innerText = "❌ Você NÃO foi classificado para esta fase.";
-        btnJogar.classList.add('hidden');
+async function carregarConfigSenha() {
+    try {
+        const snap = await db.ref('copaV2/configuracoes/senhaFase1').once('value');
+        const senha = snap.val() || '42';
+        document.getElementById('input-senha-fase1').value = senha;
+        const snapExigir = await db.ref('copaV2/configuracoes/exigirSenhaFase1').once('value');
+        const exigir = snapExigir.val() !== undefined ? snapExigir.val() : true;
+        document.getElementById('toggle-exigir-senha').checked = exigir;
+        // Verifica se a fase 1 já foi iniciada
+        if (estadoAtual && estadoAtual.fase === 1 && estadoAtual.status === 'em_andamento') {
+            senhaBloqueada = true;
+        } else {
+            senhaBloqueada = false;
+        }
+        atualizarStatusSenha();
+    } catch (e) {
+        console.warn('Erro ao carregar senha:', e);
+    }
+}
+
+function atualizarStatusSenha() {
+    const input = document.getElementById('input-senha-fase1');
+    const btnGerar = document.getElementById('btn-gerar-senha');
+    const btnSalvar = document.getElementById('btn-salvar-senha');
+    const toggle = document.getElementById('toggle-exigir-senha');
+    const status = document.getElementById('status-senha');
+    if (!input) return;
+    if (senhaBloqueada) {
+        input.disabled = true;
+        btnGerar.disabled = true;
+        btnSalvar.disabled = true;
+        toggle.disabled = true;
+        status.innerText = '🔒 Bloqueada (fase iniciada)';
+        status.style.color = '#f87171';
+    } else {
+        input.disabled = false;
+        btnGerar.disabled = false;
+        btnSalvar.disabled = false;
+        toggle.disabled = false;
+        status.innerText = toggle.checked ? '✅ Ativa' : '⛔ Desativada';
+        status.style.color = toggle.checked ? '#4ade80' : '#f87171';
+    }
+}
+
+async function salvarSenha() {
+    if (senhaBloqueada) {
+        toast('❌ Senha bloqueada após iniciar a fase.');
         return;
     }
-
-    if (!liberado) {
-        msgDiv.innerText = estadoAtual.status === 'pausado' ? "⏸️ Fase pausada." : 
-                          (estadoAtual.status === 'finalizado' ? "🏆 Competição finalizada!" : "⏳ Aguardando liberação...");
-        btnJogar.classList.add('hidden');
-    } else if (encerrado) {
-        msgDiv.innerText = "⏰ TEMPO ESGOTADO!";
-        btnJogar.classList.add('hidden');
-        if (!sessionStorage.getItem('modalExibido_' + estadoAtual.fase)) {
-            sessionStorage.setItem('modalExibido_' + estadoAtual.fase, 'true');
-            exibirResultadoFinalParaAluno();
-        }
-    } else {
-        msgDiv.innerText = "✅ Fase liberada! Clique em JOGAR.";
-        btnJogar.classList.remove('hidden');
+    const input = document.getElementById('input-senha-fase1');
+    const senha = input.value.trim();
+    if (!/^\d{2}$/.test(senha)) {
+        toast('❌ Digite uma senha de 2 dígitos (ex: 42).');
+        return;
     }
-    const minhasPartidas = estadoAtual.resultados?.[estadoAtual.fase]?.[alunoId] || [];
-    const melhor = minhasPartidas.length ? Math.max(...minhasPartidas.map(p => p.pontos)) : 0;
-    document.getElementById('aluno-melhor-score').innerText = melhor;
-    let histHtml = '<ul>';
-    minhasPartidas.slice().reverse().forEach(p => histHtml += `<li>🏆 Pontos: ${p.pontos} | Acertos: ${p.acertos}</li>`);
-    histHtml += '</ul>';
-    document.getElementById('historico-aluno').innerHTML = histHtml;
-    if (estadoAtual.status === 'finalizado') renderPodioFinal('podium-aluno-container');
-    else {
-        const podiumAluno = document.getElementById('podium-aluno-container');
-        if (podiumAluno) podiumAluno.classList.add('hidden');
+    const exigir = document.getElementById('toggle-exigir-senha').checked;
+    try {
+        await db.ref('copaV2/configuracoes/senhaFase1').set(senha);
+        await db.ref('copaV2/configuracoes/exigirSenhaFase1').set(exigir);
+        toast('✅ Senha salva!');
+        const feedback = document.getElementById('feedback-senha');
+        feedback.style.display = 'block';
+        feedback.className = 'feedback-sucesso';
+        feedback.textContent = `✅ Senha ${senha} salva (exigir: ${exigir ? 'SIM' : 'NÃO'})`;
+        setTimeout(() => feedback.style.display = 'none', 5000);
+    } catch (e) {
+        toast('❌ Erro ao salvar senha.');
+        console.error(e);
     }
-    iniciarAtualizacaoTempoReal();
 }
 
-function atualizarExibicaoFase() {
-    if (!estadoAtual) return;
+function gerarSenhaAleatoria() {
+    if (senhaBloqueada) {
+        toast('❌ Senha bloqueada após iniciar a fase.');
+        return;
+    }
+    const num = Math.floor(Math.random() * 90) + 10; // 10 a 99
+    document.getElementById('input-senha-fase1').value = num;
+    toast(`🎲 Senha gerada: ${num}`);
+}
+
+// ---------- FUNÇÃO PARA LIBERAR ALUNO ----------
+async function liberarAluno() {
+    const nome = document.getElementById('input-liberar-nome').value.trim();
+    const turma = document.getElementById('input-liberar-turma').value.trim();
+    if (!nome || !turma) {
+        toast('❌ Preencha nome e turma.');
+        return;
+    }
     const faseAtual = estadoAtual.fase;
-    const texto = `${faseAtual}/${TOTAL_FASES}`;
-    const elementos = [
-        document.getElementById('fase-progresso'),
-        document.getElementById('prof-fase-info'),
-        document.getElementById('aluno-fase-info'),
-        document.getElementById('torcida-fase-info')
-    ];
-    elementos.forEach(el => { if (el) el.innerText = texto; });
-    const tituloFase = document.getElementById('fase-atual-titulo');
-    if (tituloFase) tituloFase.innerText = faseAtual;
+    // Procura o aluno nas fases anteriores (para pegar o id)
+    let idEncontrado = null;
+    for (let f = 1; f <= faseAtual; f++) {
+        const snap = await db.ref(`copaV2/participantes/${f}`).once('value');
+        const participantes = snap.val() || {};
+        for (const [id, dados] of Object.entries(participantes)) {
+            if (dados.nome === nome && dados.turma === turma) {
+                idEncontrado = id;
+                break;
+            }
+        }
+        if (idEncontrado) break;
+    }
+    if (!idEncontrado) {
+        toast('❌ Aluno não encontrado. Verifique nome e turma.');
+        return;
+    }
+    // Salva a liberação na fase atual
+    try {
+        await db.ref(`copaV2/participantes/${faseAtual}/${idEncontrado}/liberado`).set(true);
+        toast(`✅ ${nome} liberado para a Fase ${faseAtual}!`);
+        const feedback = document.getElementById('feedback-liberar');
+        feedback.style.display = 'block';
+        feedback.className = 'feedback-sucesso';
+        feedback.textContent = `✅ ${nome} (${turma}) liberado com sucesso!`;
+        setTimeout(() => feedback.style.display = 'none', 5000);
+        atualizarListaLiberados();
+    } catch (e) {
+        toast('❌ Erro ao liberar aluno.');
+        console.error(e);
+    }
 }
 
-function atualizarUI() {
-    if (!estadoAtual) return;
-    const modalidadeNome = MODALIDADE_CONFIG[estadoAtual.modalidade]?.nome || "Tabuada 2-5";
-    document.getElementById('modalidade-titulo').innerText = modalidadeNome;
-    if (document.getElementById('torcida-modalidade')) document.getElementById('torcida-modalidade').innerText = modalidadeNome;
-    document.getElementById('fase-atual-titulo').innerText = estadoAtual.fase;
-    atualizarExibicaoFase();
+async function atualizarListaLiberados() {
+    const container = document.getElementById('lista-liberados');
+    if (!container) return;
+    const faseAtual = estadoAtual?.fase || 1;
+    const snap = await db.ref(`copaV2/participantes/${faseAtual}`).once('value');
+    const participantes = snap.val() || {};
+    let liberados = [];
+    for (const [id, dados] of Object.entries(participantes)) {
+        if (dados.liberado === true) {
+            liberados.push(`${dados.nome} (${dados.turma})`);
+        }
+    }
+    if (liberados.length === 0) {
+        container.innerText = 'Nenhum aluno liberado.';
+        container.style.color = '#94a3b8';
+    } else {
+        container.innerText = liberados.join(', ');
+        container.style.color = '#4ade80';
+    }
+}
 
-    if (timerFase) { clearInterval(timerFase); timerFase = null; }
-    const timerDisplay = document.getElementById('timer-fase');
-    const torcidaTimer = document.getElementById('torcida-timer');
+// ============================================================
+// NOVO FLUXO DE LOGIN DO ALUNO (COM SENHA E LIBERAÇÃO)
+// ============================================================
+const DEVICE_ID_KEY = 'copa_device_id';
 
-    if (estadoAtual.status === 'em_andamento') {
-        const agora = Date.now();
-        let restante = Math.max(0, estadoAtual.fim - agora);
-        atualizarDisplayTimer(restante, timerDisplay, torcidaTimer);
-        timerFase = setInterval(() => {
-            const agora2 = Date.now();
-            let restante2 = Math.max(0, estadoAtual.fim - agora2);
-            if (restante2 <= 0) {
-                clearInterval(timerFase);
-                timerFase = null;
-                atualizarDisplayTimer(0, timerDisplay, torcidaTimer);
-                if (!tempoEsgotadoProcessado) {
-                    tempoEsgotadoProcessado = true;
-                    toast("⏰ TEMPO ESGOTADO! Fase finalizada.");
-                    avancarFase();
-                }
+function gerarDeviceId() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+async function verificarSenhaFase1() {
+    // Só pede senha se:
+    // - fase atual for 1
+    // - exigir senha estiver ativo
+    // - o aluno ainda não tiver deviceId (não está logado)
+    const snapExigir = await db.ref('copaV2/configuracoes/exigirSenhaFase1').once('value');
+    const exigir = snapExigir.val() !== undefined ? snapExigir.val() : true;
+    if (!exigir) return true;
+    if (estadoAtual.fase !== 1) return true;
+    // Verifica se já tem deviceId - se tiver, já está logado, não pede senha
+    const deviceId = localStorage.getItem(DEVICE_ID_KEY);
+    if (deviceId) {
+        // Tenta encontrar o participante com esse deviceId na fase 1
+        const snap = await db.ref(`copaV2/participantes/1`).once('value');
+        const participantes = snap.val() || {};
+        for (const [id, dados] of Object.entries(participantes)) {
+            if (dados.deviceId === deviceId) {
+                // Já está logado, pula a senha
+                return true;
+            }
+        }
+    }
+    // Se chegou aqui, pede a senha
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'modal-senha';
+        modal.innerHTML = `
+            <h2>🔑 Senha de Acesso</h2>
+            <p style="color: #94a3b8; font-size: 14px;">Digite a senha de 2 dígitos fornecida pelo professor para a Fase 1.</p>
+            <input type="password" id="input-senha-modal" maxlength="2" placeholder="Ex: 42" autofocus>
+            <div>
+                <button id="btn-confirmar-senha" class="btn-success">✅ Confirmar</button>
+                <button id="btn-cancelar-senha" class="btn-danger">❌ Cancelar</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        const input = document.getElementById('input-senha-modal');
+        input.focus();
+        const confirmar = async () => {
+            const senhaDigitada = input.value.trim();
+            if (!/^\d{2}$/.test(senhaDigitada)) {
+                toast('❌ Digite exatamente 2 dígitos.');
                 return;
             }
-            atualizarDisplayTimer(restante2, timerDisplay, torcidaTimer);
-        }, 1000);
-    } else if (estadoAtual.status === 'pausado') {
-        const tempoPausado = estadoAtual.tempoRestantePausa || 0;
-        atualizarDisplayTimer(tempoPausado, timerDisplay, torcidaTimer);
-    } else {
-        const texto = estadoAtual.status === 'finalizado' ? 'FIM' : 'PAUSADO';
-        if (timerDisplay) timerDisplay.innerText = texto;
-        if (torcidaTimer) torcidaTimer.innerText = texto;
+            const snap = await db.ref('copaV2/configuracoes/senhaFase1').once('value');
+            const senhaCorreta = snap.val() || '42';
+            if (senhaDigitada === senhaCorreta) {
+                modal.remove();
+                resolve(true);
+            } else {
+                toast('❌ Senha incorreta!');
+                input.value = '';
+                input.focus();
+            }
+        };
+        document.getElementById('btn-confirmar-senha').addEventListener('click', confirmar);
+        document.getElementById('btn-cancelar-senha').addEventListener('click', () => {
+            modal.remove();
+            resolve(false);
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') confirmar();
+        });
+    });
+}
+
+async function loginAlunoAutomatico() {
+    let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+    if (!deviceId) return false;
+
+    const faseAtual = estadoAtual.fase;
+    const fasesParaBuscar = [faseAtual];
+    if (faseAtual > 1) fasesParaBuscar.push(faseAtual - 1);
+
+    let encontrado = false;
+    let dadosJogador = null;
+
+    for (const fase of fasesParaBuscar) {
+        const snap = await db.ref(`copaV2/participantes/${fase}`).once('value');
+        const participantes = snap.val() || {};
+        for (const [id, dados] of Object.entries(participantes)) {
+            if (dados.deviceId === deviceId) {
+                encontrado = true;
+                dadosJogador = { id, nome: dados.nome, turma: dados.turma, fase: fase, liberado: dados.liberado === true };
+                break;
+            }
+        }
+        if (encontrado) break;
     }
 
-    const btnPararContinuar = document.getElementById('btn-continuar-parar-fase');
-    if (btnPararContinuar) {
-        if (estadoAtual.status === 'em_andamento') {
-            btnPararContinuar.innerText = "⏹️ Parar Fase";
-            btnPararContinuar.classList.remove('btn-success');
-            btnPararContinuar.classList.add('btn-danger');
-            btnPararContinuar.disabled = false;
-            btnPararContinuar.onclick = () => pausarFase();
-        } else if (estadoAtual.status === 'pausado') {
-            btnPararContinuar.innerText = "▶️ Continuar Fase";
-            btnPararContinuar.classList.remove('btn-danger');
-            btnPararContinuar.classList.add('btn-success');
-            btnPararContinuar.disabled = false;
-            btnPararContinuar.onclick = () => continuarFase();
-        } else {
-            btnPararContinuar.disabled = true;
-            btnPararContinuar.innerText = "⏹️ Parar Fase";
+    if (!encontrado) {
+        // Se não encontrou, pode ser deviceId antigo ou apagado - remove e pede novo cadastro
+        localStorage.removeItem(DEVICE_ID_KEY);
+        return false;
+    }
+
+    // Verifica se está classificado ou liberado
+    const faseAtualNum = estadoAtual.fase;
+    if (faseAtualNum > 1) {
+        const classificados = estadoAtual.classificados?.[faseAtualNum - 1] || [];
+        if (!classificados.includes(dadosJogador.id) && !dadosJogador.liberado) {
+            toast('❌ Você não está classificado para esta fase.');
+            // Não remove deviceId, pois ele ainda pode estar classificado para fases futuras?
+            // Mas se não está classificado, bloqueia.
+            return false;
+        }
+        // Se foi liberado, permite entrada
+        if (dadosJogador.liberado) {
+            toast(`🔓 Acesso liberado pelo professor para a Fase ${faseAtualNum}.`);
         }
     }
-    if (meuTipo === 'professor') {
-        renderRankingGeral();
-        if (estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) renderPodioFinal('podium-container');
-        else { const pd = document.getElementById('podium-container'); if(pd) pd.classList.add('hidden'); }
-        renderListaAlunosGerenciar();
-        if (document.getElementById('tab-ranking-turmas') && !document.getElementById('tab-ranking-turmas').classList.contains('hidden')) {
-            renderRanking(null, 'ranking-turmas-container', 'turmas', false);
+
+    // Loga automaticamente
+    alunoId = dadosJogador.id;
+    alunoNome = dadosJogador.nome;
+    alunoTurma = dadosJogador.turma;
+
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+
+    await db.ref(`online/${alunoId}`).set({ nome: alunoNome, turma: alunoTurma });
+    db.ref(`online/${alunoId}`).onDisconnect().remove();
+
+    meuTipo = 'aluno';
+    document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+    document.getElementById('tela-aluno').classList.remove('hidden');
+    document.getElementById('online-stats').classList.remove('hidden');
+    renderAluno();
+
+    toast(`🔄 Bem-vindo de volta, ${alunoNome}!`);
+    return true;
+}
+
+async function cadastrarNovoAluno(nome, turma) {
+    const faseAtual = estadoAtual.fase;
+    // Verifica se já existe um jogador com este nome e turma nas fases anteriores
+    let jogadorExistente = null;
+    let faseEncontrada = null;
+
+    for (let f = 1; f < faseAtual; f++) {
+        const snap = await db.ref(`copaV2/participantes/${f}`).once('value');
+        const participantes = snap.val() || {};
+        for (const [id, dados] of Object.entries(participantes)) {
+            if (dados.nome === nome && dados.turma === turma) {
+                jogadorExistente = { id, deviceId: dados.deviceId, nome: dados.nome, turma: dados.turma };
+                faseEncontrada = f;
+                break;
+            }
         }
-        popularSelectFases();
-        renderListaTurmas();
-    } else if (meuTipo === 'aluno') renderAluno();
-    else if (meuTipo === 'projecao') {
-        if (estadoAtual.status === 'finalizado' && estadoAtual.fase === 5) {
-            renderPodioFinal('podium-torcida-container');
-            if (modoTorcida === 'equipes') atualizarTorcidaEquipes();
-            else {
-                const select = document.getElementById('select-fase-torcida');
-                if (select) { select.value = 5; faseTorcidaSelecionada = 5; }
-                atualizarTorcidaIndividual();
+        if (jogadorExistente) break;
+    }
+
+    if (jogadorExistente) {
+        // Verifica se está classificado para fase atual
+        const classificados = estadoAtual.classificados?.[faseAtual - 1] || [];
+        if (classificados.includes(jogadorExistente.id)) {
+            // Se tem deviceId, bloqueia (já está em outro dispositivo)
+            if (jogadorExistente.deviceId) {
+                toast(`❌ O jogador ${nome} já está registrado em outro dispositivo. Use o mesmo aparelho.`);
+                return false;
+            } else {
+                // Migração: associa deviceId
+                const deviceId = gerarDeviceId();
+                localStorage.setItem(DEVICE_ID_KEY, deviceId);
+                await db.ref(`copaV2/participantes/${faseAtual}/${jogadorExistente.id}`).update({ deviceId });
+                alunoId = jogadorExistente.id;
+                alunoNome = jogadorExistente.nome;
+                alunoTurma = jogadorExistente.turma;
+                await db.ref(`online/${alunoId}`).set({ nome: alunoNome, turma: alunoTurma });
+                db.ref(`online/${alunoId}`).onDisconnect().remove();
+                meuTipo = 'aluno';
+                document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+                document.getElementById('tela-aluno').classList.remove('hidden');
+                document.getElementById('online-stats').classList.remove('hidden');
+                renderAluno();
+                toast(`✅ Bem-vindo, ${alunoNome}!`);
+                return true;
             }
         } else {
-            const pt = document.getElementById('podium-torcida-container');
-            if (pt) pt.classList.add('hidden');
-            const select = document.getElementById('select-fase-torcida');
-            if (select && estadoAtual) {
-                const faseAtual = estadoAtual.fase;
-                if (!atualizandoSeletorTorcida && parseInt(select.value) !== faseAtual) {
-                    if (document.activeElement !== select) {
-                        atualizandoSeletorTorcida = true;
-                        select.value = faseAtual;
-                        faseTorcidaSelecionada = faseAtual;
-                        atualizandoSeletorTorcida = false;
-                        if (modoTorcida === 'individual') atualizarTorcidaIndividual();
-                    }
-                }
+            // Não classificado, mas pode tentar se cadastrar novamente (senão tiver deviceId)
+            if (!jogadorExistente.deviceId) {
+                // Permite novo cadastro (caso de erro, ele pode recadastrar)
+                // Mas vamos deixar fluir para o cadastro normal
+            } else {
+                toast(`❌ O jogador ${nome} não está classificado para esta fase.`);
+                return false;
             }
-            if (!intervaloTorcidaIndividual && !intervaloTorcidaEquipes) iniciarAtualizacaoTorcida();
         }
     }
+
+    // Cadastro normal (novo jogador)
+    const novoId = btoa(nome.toLowerCase() + "|" + turma).slice(0,16);
+    const deviceId = gerarDeviceId();
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+
+    await db.ref(`copaV2/participantes/${faseAtual}/${novoId}`).set({ 
+        nome, 
+        turma, 
+        deviceId 
+    });
+
+    await db.ref(`online/${novoId}`).set({ nome, turma });
+    db.ref(`online/${novoId}`).onDisconnect().remove();
+
+    alunoId = novoId;
+    alunoNome = nome;
+    alunoTurma = turma;
+    meuTipo = 'aluno';
+    document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+    document.getElementById('tela-aluno').classList.remove('hidden');
+    document.getElementById('online-stats').classList.remove('hidden');
+    renderAluno();
+
+    toast(`✅ Cadastro realizado! Bem-vindo, ${nome}!`);
+    return true;
 }
 
 // ---------- LÓGICA DO JOGO ----------
@@ -2492,8 +2802,14 @@ async function iniciarNovaPartida() {
     if (estadoAtual.status !== 'em_andamento') { toast("Fase inativa!"); return; }
     if (Date.now() >= estadoAtual.fim) { toast("Tempo esgotado!"); return; }
     if (estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
-        toast("❌ Não classificado para esta fase!");
-        return;
+        // Verifica se está liberado
+        const snap = await db.ref(`copaV2/participantes/${estadoAtual.fase}/${alunoId}/liberado`).once('value');
+        if (!snap.val()) {
+            toast("❌ Você não está classificado para esta fase.");
+            return;
+        } else {
+            toast("🔓 Acesso liberado pelo professor.");
+        }
     }
     perguntas = gerarPerguntas(estadoAtual.modalidade, estadoAtual.fase);
     perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
@@ -2550,7 +2866,7 @@ async function finalizar() {
     renderAluno();
 }
 
-// ---------- INICIALIZAÇÃO ----------
+// ---------- INICIALIZAÇÃO (modificada para incluir novas funções) ----------
 async function init() {
     await carregarIntervalos();
     await carregarTurmas();
@@ -2559,6 +2875,24 @@ async function init() {
     setTimeout(atualizarDisplayVersao, 2000);
 
     iniciarListeners();
+
+    // Carrega senha
+    await carregarConfigSenha();
+
+    // Eventos da senha
+    document.getElementById('btn-gerar-senha')?.addEventListener('click', gerarSenhaAleatoria);
+    document.getElementById('btn-salvar-senha')?.addEventListener('click', salvarSenha);
+    document.getElementById('toggle-exigir-senha')?.addEventListener('change', () => {
+        if (!senhaBloqueada) {
+            salvarSenha();
+        } else {
+            document.getElementById('toggle-exigir-senha').checked = true;
+            toast('❌ Não é possível alterar após iniciar a fase.');
+        }
+    });
+
+    // Evento de liberar
+    document.getElementById('btn-liberar-aluno')?.addEventListener('click', liberarAluno);
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2620,11 +2954,17 @@ async function init() {
     const btnAplicarModalidade = document.getElementById('btn-aplicar-modalidade');
 
     if (btnIniciarFase) {
-        btnIniciarFase.addEventListener('click', debounce(() => {
+        btnIniciarFase.addEventListener('click', debounce(async () => {
             let duracao = estadoAtual.tempoFase||12;
             let fim = Date.now() + duracao*60000;
-            db.ref('copaV2').update({ status:'em_andamento', fim, tempoRestantePausa: null });
+            await db.ref('copaV2').update({ status:'em_andamento', fim, tempoRestantePausa: null });
             tempoEsgotadoProcessado = false;
+            // Bloqueia a senha após iniciar a fase 1
+            if (estadoAtual.fase === 1) {
+                senhaBloqueada = true;
+                atualizarStatusSenha();
+                toast('🔒 Senha bloqueada! Fase 1 iniciada.');
+            }
             tocarSom('inicio_fase');
         }, debounceDelay));
     }
@@ -2639,6 +2979,12 @@ async function init() {
     if (btnResetFase) {
         btnResetFase.addEventListener('click', debounce(async () => { 
             await resetarFase();
+            // Se resetar a fase 1, desbloqueia a senha
+            if (estadoAtual.fase === 1) {
+                senhaBloqueada = false;
+                atualizarStatusSenha();
+                toast('🔓 Senha desbloqueada.');
+            }
             tocarSom('clique');
         }, debounceDelay));
     }
@@ -2672,64 +3018,73 @@ async function init() {
         tocarSom('clique');
     });
 
-    document.getElementById('btn-professor')?.addEventListener('click', () => {
-        if (prompt("Senha:") === "......") {
-            meuTipo = 'professor';
-            document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-            document.getElementById('painel-professor').classList.remove('hidden');
-            document.getElementById('online-stats').classList.remove('hidden');
-            atualizarUI();
-            iniciarAtualizacaoProfessor();
-            tocarSom('clique');
-        }
-    });
-
+    // ============================================================
+    // BOTÃO ALUNO - NOVO FLUXO COM SENHA E LIBERAÇÃO
+    // ============================================================
     document.getElementById('btn-aluno')?.addEventListener('click', async () => {
         if (!estadoAtual || estadoAtual.status !== 'em_andamento' || Date.now() >= estadoAtual.fim) {
             toast("⏳ A fase não foi iniciada ou já terminou.");
             return;
         }
-        const nome = prompt("Seu nome completo:"); if (!nome) return;
-        alunoNome = nome.trim();
+
+        // 1. Verifica se precisa de senha (Fase 1)
+        const senhaOk = await verificarSenhaFase1();
+        if (!senhaOk) {
+            toast('❌ Senha incorreta ou cancelada.');
+            return;
+        }
+
+        // 2. Tenta login automático (deviceId)
+        const logado = await loginAlunoAutomatico();
+        if (logado) {
+            return;
+        }
+
+        // 3. Se não logou, pede nome e turma
+        const nome = prompt("Seu nome completo:");
+        if (!nome) return;
+        const nomeTrim = nome.trim();
+
         const turmas = await carregarTurmas();
-        if (turmas.length === 0) { toast("Nenhuma turma cadastrada. Aguarde o professor."); return; }
+        if (turmas.length === 0) {
+            toast("Nenhuma turma cadastrada. Aguarde o professor.");
+            return;
+        }
+
         const modalDiv = document.createElement('div');
         modalDiv.className = 'modal-turma';
-        modalDiv.innerHTML = `<h3>Selecione sua turma</h3><select id="select-turma-aluno">${turmas.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('')}</select><div><button id="btn-confirmar-turma" class="btn-success">Confirmar</button><button id="btn-cancelar-turma" class="btn-danger">Cancelar</button></div>`;
+        modalDiv.innerHTML = `
+            <h3>Selecione sua turma</h3>
+            <select id="select-turma-aluno">
+                ${turmas.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('')}
+            </select>
+            <div>
+                <button id="btn-confirmar-turma" class="btn-success">Confirmar</button>
+                <button id="btn-cancelar-turma" class="btn-danger">Cancelar</button>
+            </div>
+        `;
         document.body.appendChild(modalDiv);
-        const confirmar = () => {
+
+        const confirmar = async () => {
             const select = document.getElementById('select-turma-aluno');
             if (select) {
-                alunoTurma = select.value;
+                const turmaEscolhida = select.value;
                 modalDiv.remove();
-                finalizarLoginAluno();
+                const sucesso = await cadastrarNovoAluno(nomeTrim, turmaEscolhida);
+                if (!sucesso) {
+                    // Se falhou, exibe mensagem (já foi mostrada dentro da função)
+                }
                 tocarSom('clique');
             }
         };
-        const cancelar = () => { modalDiv.remove(); tocarSom('clique'); };
+
+        const cancelar = () => {
+            modalDiv.remove();
+            tocarSom('clique');
+        };
+
         document.getElementById('btn-confirmar-turma')?.addEventListener('click', confirmar);
         document.getElementById('btn-cancelar-turma')?.addEventListener('click', cancelar);
-
-        const finalizarLoginAluno = async () => {
-            alunoId = btoa(alunoNome.toLowerCase() + "|" + alunoTurma).slice(0,16);
-            if (estadoAtual && estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
-                alert("❌ Você NÃO foi classificado para esta fase.");
-                return;
-            }
-            const participantesAtual = estadoAtual.participantes?.[estadoAtual.fase] || {};
-            if (!participantesAtual[alunoId] && estadoAtual.fase > 1 && estadoAtual.participantes?.[estadoAtual.fase-1]?.[alunoId]) {
-                await db.ref(`copaV2/participantes/${estadoAtual.fase}/${alunoId}`).set(estadoAtual.participantes[estadoAtual.fase-1][alunoId]);
-            }
-            meuTipo = 'aluno';
-            document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-            document.getElementById('tela-aluno').classList.remove('hidden');
-            document.getElementById('online-stats').classList.remove('hidden');
-            await db.ref(`copaV2/participantes/${estadoAtual.fase}/${alunoId}`).set({ nome: alunoNome, turma: alunoTurma });
-            db.ref(`online/${alunoId}`).set({ nome: alunoNome, turma: alunoTurma });
-            db.ref(`online/${alunoId}`).onDisconnect().remove();
-            renderAluno();
-        };
-        tocarSom('clique');
     });
 
     document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
