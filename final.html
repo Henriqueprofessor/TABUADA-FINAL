@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo - HENRIQUE ANGELO DA SILVA</title>
+    <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo - HENRIQUE ANGELO DA SILVA - PROFESSOR DE MATEMÁTICA</title>
 
     <!-- ============================================================ -->
     <!-- CONTROLE DE VERSÃO -->
@@ -61,7 +61,7 @@
 
     <style>
         /* ============================================================
-           CSS completo
+           (CSS completo - igual ao que você tinha)
            ============================================================ */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: #0a0f1e; color: #eee; padding: 20px; }
@@ -499,7 +499,7 @@
             <div id="online-stats" class="online-badge hidden">Online: <span id="jogadores-online">0</span></div>
         </div>
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0;">
-            <button id="btn-professor" class="btn-primary">👨‍🏫 Professor</button>
+            <button id="btn-professor" class="btn-primary" onclick="entrarProfessor()">👨‍🏫 Professor</button>
             <button id="btn-aluno">🎮 Aluno</button>
             <button id="btn-projecao">📺 Torcida</button>
             <button id="btn-instalar-app" style="background: #9b59b6; color: white; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px;">📱 Instalar App</button>
@@ -2763,11 +2763,7 @@ let listenerOnline = null;
 function iniciarListeners() {
     if (listenerCopa) listenerCopa();
     listenerCopa = db.ref('copaV2').on('value', snap => {
-        if (!snap) {
-            estadoAtual = { fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: "2-5", classificados: {}, resultados: {}, participantes: {} };
-        } else {
-            estadoAtual = snap.val() || { fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: "2-5", classificados: {}, resultados: {}, participantes: {} };
-        }
+        estadoAtual = snap.val() || { fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: "2-5", classificados: {}, resultados: {}, participantes: {} };
         if (!estadoAtual.resultados) estadoAtual.resultados = {};
         if (!estadoAtual.participantes) estadoAtual.participantes = {};
         if (!estadoAtual.classificados) estadoAtual.classificados = {};
@@ -2805,7 +2801,6 @@ function iniciarListeners() {
 
     if (listenerOnline) listenerOnline();
     listenerOnline = db.ref('online').on('value', snap => {
-        if (!snap) return;
         let totalAlunos = 0, totalTorcida = 0;
         snap.forEach(child => {
             const val = child.val();
