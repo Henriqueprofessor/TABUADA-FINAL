@@ -95,7 +95,7 @@
         .progresso-tempo { width: 100%; height: 100%; background: #27ae60; transition: width 0.05s linear; }
 
         /* ================================================================
-           LAYOUT VERTICAL DAS OPÇÕES (NOVO)
+           LAYOUT VERTICAL DAS OPÇÕES
            ================================================================ */
         .opcoes-vertical {
             display: flex;
@@ -216,7 +216,7 @@
         input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
 
         /* ================================================================
-           BOLINHA ÚNICA - SEM ÍCONES, APENAS COR
+           BOLINHA ÚNICA
            ================================================================ */
         .evolucao-container {
             display: flex;
@@ -270,7 +270,7 @@
         .bolinha-mini-cinza    { background: #2c3e50; }
 
         /* ================================================================
-           PAINEL DE CONTROLE DE SOM (mantido igual)
+           PAINEL DE CONTROLE DE SOM
            ================================================================ */
         .som-card {
             background: #0f172a;
@@ -674,7 +674,7 @@
 
 <script>
 // ============================================================
-// SISTEMA DE SONS - COMPLETO (mantido)
+// SISTEMA DE SONS - COMPLETO
 // ============================================================
 const SONS_CONFIG = {
     acerto: { emoji: '✅', nome: 'Acerto', descricao: 'Quando o aluno acerta a pergunta', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' },
@@ -843,7 +843,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // ============================================================
-// VALOR DA PARTIDA (mantido)
+// VALOR DA PARTIDA
 // ============================================================
 let VALOR_PARTIDA = 2000;
 const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
@@ -909,7 +909,7 @@ document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
 });
 
 // ============================================================
-// BOLINHA ÚNICA (mantida)
+// BOLINHA ÚNICA
 // ============================================================
 function atualizarBolinhaUnica(cor) {
     const el = document.getElementById('bolinha-unica');
@@ -928,43 +928,27 @@ const MODALIDADE_CONFIG = {
     "0-10": { min: 0, max: 10, nome: "Tabuada 0️⃣➡️🔟 (Completa)" }
 };
 
-/**
- * Gera uma lista de 20 perguntas para a fase especificada.
- * @param {string} modalidade - "2-5", "6-9" ou "0-10"
- * @param {number} fase - 1 a 5
- * @returns {Array} Array de 20 objetos { a, b, opts, posicaoCorreta } onde opts já está ordenado.
- */
 function gerarPerguntas(modalidade, fase) {
     const config = MODALIDADE_CONFIG[modalidade];
     if (!config) return [];
 
-    // 1. Determinar a base B (fatores permitidos)
+    // 1. Determinar a base B
     let base;
     if (fase === 5) {
-        // Fase 5: exclui 0 e 1
         const min = Math.max(config.min, 2);
         const max = config.max;
         base = [];
         for (let i = min; i <= max; i++) base.push(i);
-        // Se a modalidade for 0-10, teremos {2,3,4,5,6,7,8,9,10}
-        // Se for 2-5, teremos {2,3,4,5}
-        // Se for 6-9, teremos {6,7,8,9}
     } else {
-        // Fases 1-4: usa a base completa (inclui 0 e 1 se existir)
         base = [];
         for (let i = config.min; i <= config.max; i++) base.push(i);
     }
 
-    // 2. Conjunto difícil H = {6,7,8,9} para fase 5, senão vazio
     const H = (fase === 5) ? [6,7,8,9] : [];
 
-    // 3. Construir o pool de perguntas
+    // 2. Pool de perguntas
     let pool = [];
     if (fase === 5) {
-        // Fase 5: combinações B × H e H × B (comutativas), mas evitando repetição de fatores iguais?
-        // Vamos gerar todas as combinações únicas de (a,b) onde a ∈ B, b ∈ H ou a ∈ H, b ∈ B.
-        // Para evitar duplicatas (ex: 2x6 e 6x2 são diferentes), vamos gerar ambas.
-        // No entanto, precisamos evitar que a mesma pergunta apareça duas vezes (mesmo a e b).
         const used = new Set();
         for (let a of base) {
             for (let b of H) {
@@ -975,7 +959,6 @@ function gerarPerguntas(modalidade, fase) {
                 }
             }
         }
-        // Também adicionamos as comutativas (H × B) que não estejam já na lista
         for (let a of H) {
             for (let b of base) {
                 const key = `${a}x${b}`;
@@ -986,7 +969,6 @@ function gerarPerguntas(modalidade, fase) {
             }
         }
     } else {
-        // Fases 1-4: todas as combinações dentro da base (incluindo comutativas)
         for (let a of base) {
             for (let b of base) {
                 pool.push({ a, b });
@@ -994,14 +976,11 @@ function gerarPerguntas(modalidade, fase) {
         }
     }
 
-    // Se o pool for menor que 20, repetimos perguntas (caso raro, ex: modalidade 6-9 na fase 5, base={6,7,8,9}, H={6,7,8,9} -> pool tem 16)
     while (pool.length < 20) {
-        // Duplica o pool (ou pega aleatórias)
         const extra = pool.slice(0, 20 - pool.length);
         pool = pool.concat(extra);
     }
 
-    // 4. Embaralhar o pool e selecionar 20 perguntas (sem repetição consecutiva)
     function shuffle(arr) {
         for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -1019,7 +998,6 @@ function gerarPerguntas(modalidade, fase) {
         let candidatas = [];
         for (let i = 0; i < copia.length && candidatas.length < 20; i++) {
             const p = copia[i];
-            // Evitar repetição consecutiva
             if (candidatas.length > 0) {
                 const ultima = candidatas[candidatas.length - 1];
                 if (ultima.a === p.a && ultima.b === p.b) continue;
@@ -1031,7 +1009,6 @@ function gerarPerguntas(modalidade, fase) {
             break;
         }
     }
-    // Se não conseguiu 20 sem repetição, força completar com qualquer uma
     while (selecionadas.length < 20) {
         const p = pool[Math.floor(Math.random() * pool.length)];
         if (selecionadas.length > 0) {
@@ -1041,86 +1018,43 @@ function gerarPerguntas(modalidade, fase) {
         selecionadas.push({ a: p.a, b: p.b });
     }
 
-    // 5. Distribuir posições corretas (25% cada posição) de forma aleatória
+    // 3. Distribuir posições corretas (25% cada)
     const posicoes = [];
     for (let i = 0; i < 5; i++) { posicoes.push(1,2,3,4); }
     shuffle(posicoes);
 
-    // 6. Para cada pergunta, gerar os distratores de modo que a resposta correta fique na posição definida
+    // 4. Gerar distratores sob medida para cada posição
     const resultado = selecionadas.map((p, idx) => {
         const correta = p.a * p.b;
-        const posAlvo = posicoes[idx]; // 1 a 4
+        const posAlvo = posicoes[idx];
 
-        // Gerar 3 distratores (números diferentes da correta e entre 0 e 100 para não fugir muito)
-        let distratores = [];
-        let tentativasDist = 0;
-        while (distratores.length < 3 && tentativasDist < 100) {
-            tentativasDist++;
-            // Gera um número próximo: correta +- (1 a 15)
-            let offset = Math.floor(Math.random() * 15) + 1;
-            let sinal = Math.random() < 0.5 ? 1 : -1;
-            let d = correta + sinal * offset;
-            // Evita números negativos e repetidos
-            if (d < 0) d = correta + offset;
-            if (d !== correta && !distratores.includes(d) && d >= 0) {
-                distratores.push(d);
-            }
-        }
-        // Se faltar, completa com números aleatórios
-        while (distratores.length < 3) {
-            let d = Math.floor(Math.random() * 100);
-            if (d !== correta && !distratores.includes(d) && d >= 0) distratores.push(d);
-        }
-
-        // Montar array com correta + distratores
-        let opcoes = [correta, ...distratores];
-        // Ordenar crescente
-        opcoes.sort((a,b) => a - b);
-        // Descobrir em qual posição ficou a correta
-        const posReal = opcoes.indexOf(correta) + 1; // 1 a 4
-
-        // Se a posição real não for a posAlvo, precisamos rearranjar os distratores
-        // para que a correta fique exatamente na posAlvo.
-        // Estratégia: construir um array de tamanho 4, colocar a correta na posAlvo-1,
-        // e preencher as outras com distratores (garantindo ordem crescente).
-        // Para manter a ordem crescente, os distratores devem ser escolhidos de forma apropriada.
-        // Vamos gerar novos distratores sob medida.
         function gerarDistratoresParaPos(correta, pos) {
-            // pos = 1..4
             const min = 0, max = 150;
             let menores = [], maiores = [];
-            // Gerar números menores que correta
             for (let i = 0; i < 20; i++) {
                 let d = Math.floor(Math.random() * correta);
                 if (d !== correta && d >= 0 && !menores.includes(d)) menores.push(d);
             }
-            menores.sort((a,b) => b - a); // maiores primeiro
-            // Gerar números maiores que correta
+            menores.sort((a,b) => b - a);
             for (let i = 0; i < 20; i++) {
                 let d = correta + Math.floor(Math.random() * 30) + 1;
                 if (d !== correta && !maiores.includes(d)) maiores.push(d);
             }
             maiores.sort((a,b) => a - b);
-            // Montar
             let escolhidos = [];
             if (pos === 1) {
-                // precisa de 3 maiores que correta
                 escolhidos = maiores.slice(0,3);
             } else if (pos === 4) {
-                // precisa de 3 menores que correta
                 escolhidos = menores.slice(0,3);
             } else if (pos === 2) {
-                // 1 menor e 2 maiores
                 let umMenor = menores.length > 0 ? menores[0] : Math.max(0, correta - 5);
                 let doisMaiores = maiores.slice(0,2);
                 escolhidos = [umMenor, ...doisMaiores];
             } else if (pos === 3) {
-                // 2 menores e 1 maior
                 let doisMenores = menores.slice(0,2);
                 let umMaior = maiores.length > 0 ? maiores[0] : correta + 5;
                 escolhidos = [...doisMenores, umMaior];
             }
-            // Garantir que temos exatamente 3 números diferentes e diferentes de correta
             while (escolhidos.length < 3) {
                 let d = Math.floor(Math.random() * 100);
                 if (d !== correta && !escolhidos.includes(d) && d >= 0) escolhidos.push(d);
@@ -1131,28 +1065,19 @@ function gerarPerguntas(modalidade, fase) {
         let novosDistratores = gerarDistratoresParaPos(correta, posAlvo);
         let novasOpcoes = [correta, ...novosDistratores];
         novasOpcoes.sort((a,b) => a - b);
-        // Verifica se a correta está na posição certa (deve estar)
-        const posFinal = novasOpcoes.indexOf(correta) + 1;
-        if (posFinal !== posAlvo) {
-            // Fallback: força a posição trocando manualmente (mas a ordenação deve ser mantida)
-            // Isso é raro, mas se acontecer, fazemos um ajuste grosseiro.
-            // Simplesmente recolocamos a correta na posição e ordenamos novamente? Isso quebra a ordem.
-            // Vamos tentar novamente com novos distratores.
-            let tentativa = 0;
-            while (posFinal !== posAlvo && tentativa < 20) {
-                tentativa++;
-                novosDistratores = gerarDistratoresParaPos(correta, posAlvo);
-                novasOpcoes = [correta, ...novosDistratores];
-                novasOpcoes.sort((a,b) => a - b);
-                if (novasOpcoes.indexOf(correta) + 1 === posAlvo) break;
-            }
+        // Verificação final (se falhar, tenta novamente)
+        let tentativa = 0;
+        while (novasOpcoes.indexOf(correta) + 1 !== posAlvo && tentativa < 20) {
+            tentativa++;
+            novosDistratores = gerarDistratoresParaPos(correta, posAlvo);
+            novasOpcoes = [correta, ...novosDistratores];
+            novasOpcoes.sort((a,b) => a - b);
         }
-
         return {
             a: p.a,
             b: p.b,
             opts: novasOpcoes,
-            posicaoCorreta: posAlvo // para depuração
+            posicaoCorreta: posAlvo
         };
     });
 
@@ -1160,7 +1085,7 @@ function gerarPerguntas(modalidade, fase) {
 }
 
 // ============================================================
-// ATUALIZAR INFO DO ALUNO (mantido)
+// ATUALIZAR INFO DO ALUNO
 // ============================================================
 let posicaoAnteriorAluno = null;
 
@@ -1193,7 +1118,6 @@ async function atualizarInfoAluno() {
             else if (posicaoAtual === 3) posSpan.style.color = '#cd7f32';
             else posSpan.style.color = '#ffffff';
         }
-        // Projeção
         let cor = 'cinza';
         let projetado = false;
         if (dadosTemp && dadosTemp.perguntas > 0 && dadosTemp.pontos > 0) {
@@ -1220,7 +1144,6 @@ async function atualizarInfoAluno() {
         }
         if (!projetado) cor = 'cinza';
         atualizarBolinhaUnica(cor);
-        // Velocidade
         let velocidadeMedia = 0;
         if (dadosTemp && dadosTemp.acertos > 0 && dadosTemp.tempo > 0) {
             velocidadeMedia = dadosTemp.tempo / dadosTemp.acertos;
@@ -1251,7 +1174,7 @@ async function atualizarInfoAluno() {
 }
 
 // ============================================================
-// ATUALIZAÇÃO EM TEMPO REAL (mantido)
+// ATUALIZAÇÃO EM TEMPO REAL
 // ============================================================
 let intervaloTempoReal = null;
 function iniciarAtualizacaoTempoReal() {
@@ -1289,9 +1212,6 @@ const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
 
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 
-// ---------- CACHE DE PERGUNTAS (NOVO) ----------
-// Não precisamos mais de pool global, pois geramos sob demanda com a função gerarPerguntas.
-
 // ---------- FUNÇÕES AUXILIARES ----------
 function updateLastSyncTime() {
     const span = document.getElementById('last-sync-time');
@@ -1328,7 +1248,7 @@ function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer) {
     if (torcidaTimer) torcidaTimer.innerText = timeStr;
 }
 
-// ---------- LISTENERS (mantido) ----------
+// ---------- LISTENERS ----------
 let listenerCopa = null;
 let listenerOnline = null;
 
@@ -1402,7 +1322,7 @@ function iniciarListeners() {
     });
 }
 
-// ---------- CARREGAR DADOS ESTÁTICOS (mantido) ----------
+// ---------- CARREGAR DADOS ESTÁTICOS ----------
 async function carregarTurmas() {
     const snap = await db.ref('copaV2/turmas').once('value');
     let turmas = snap.val();
@@ -1429,7 +1349,7 @@ async function carregarIntervalos() {
 }
 
 // ============================================================
-// RANKING UNIFICADO (mantido, pois não afeta as perguntas)
+// RANKING UNIFICADO (com correção: fut.pos = — para finalizados)
 // ============================================================
 let cacheRanking = {};
 async function renderRanking(faseNum, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -1650,20 +1570,28 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         } else {
             deltaVelocidadeHtml = "—";
         }
+        // ============================================================
+        // CORREÇÃO: Se o jogador já finalizou, não exibe projeção
+        // ============================================================
         let futPosHtml = "";
-        const posProjetada = posProjetadaMap.get(j.id);
-        if (posAtual === 1) {
+        if (j.status === 'finalizado' || j.progresso >= 20 || (j.perguntas && j.perguntas >= 20)) {
             futPosHtml = "—";
-        } else if (posProjetada !== undefined && posProjetada > 0) {
-            let icone = "", classe = "";
-            if (posProjetada < posAtual) { icone = "🟢"; classe = "fut-sobe"; }
-            else if (posProjetada === posAtual) { icone = "⚪"; classe = "fut-mantem"; }
-            else { icone = "🔴"; classe = "fut-desce"; }
-            futPosHtml = `<span class="${classe}">${posProjetada}° ${icone}</span>`;
         } else {
-            futPosHtml = "—";
+            const posProjetada = posProjetadaMap.get(j.id);
+            if (posAtual === 1) {
+                futPosHtml = "—";
+            } else if (posProjetada !== undefined && posProjetada > 0) {
+                let icone = "", classe = "";
+                if (posProjetada < posAtual) { icone = "🟢"; classe = "fut-sobe"; }
+                else if (posProjetada === posAtual) { icone = "⚪"; classe = "fut-mantem"; }
+                else { icone = "🔴"; classe = "fut-desce"; }
+                futPosHtml = `<span class="${classe}">${posProjetada}° ${icone}</span>`;
+            } else {
+                futPosHtml = "—";
+            }
+            if ((j.perguntas || 0) === 0) futPosHtml = "—";
         }
-        if ((j.perguntas || 0) === 0) futPosHtml = "—";
+
         let progressoHtml = "";
         if (j.status === 'em_jogo') progressoHtml = `${j.progresso}/20`;
         else if (j.status === 'finalizado') progressoHtml = `✅ Finalizado`;
@@ -1786,7 +1714,7 @@ async function renderRankingTurmas(containerId) {
     document.getElementById(containerId).innerHTML = html;
 }
 
-// ---------- ATUALIZAÇÃO DOS RANKINGS (mantido) ----------
+// ---------- ATUALIZAÇÃO DOS RANKINGS ----------
 async function atualizarRankingProfessor() {
     if (meuTipo === 'professor' && atualizacaoRankingAuto && document.getElementById('tab-ranking-fase') && !document.getElementById('tab-ranking-fase').classList.contains('hidden')) {
         const faseSelecionada = document.getElementById('select-fase-ranking').value;
@@ -1861,7 +1789,7 @@ function pararAtualizacaoTorcida() {
     intervaloTorcidaEquipes = null;
 }
 
-// ---------- GERENCIAMENTO DE TURMAS (mantido) ----------
+// ---------- GERENCIAMENTO DE TURMAS ----------
 async function adicionarTurma(novaTurma) {
     const turmas = await carregarTurmas();
     if (!turmas.includes(novaTurma)) {
@@ -1924,7 +1852,7 @@ async function renderListaTurmas() {
     });
 }
 
-// ---------- CONTROLE DE INTERVALOS (mantido) ----------
+// ---------- CONTROLE DE INTERVALOS ----------
 async function atualizarIntervaloIndividual(segundos) {
     intervaloIndividualSegundos = segundos;
     await db.ref('copaV2/configuracoes/intervalos/individual').set(segundos);
@@ -1938,7 +1866,7 @@ async function atualizarIntervaloEquipes(segundos) {
     toast(`Intervalo por equipes alterado para ${segundos} segundos`);
 }
 
-// ---------- RANKING GERAL (mantido) ----------
+// ---------- RANKING GERAL ----------
 function renderRankingGeral() {
     if (!estadoAtual) return;
     const todasFases = estadoAtual.resultados || {};
@@ -2013,7 +1941,7 @@ function renderRankingGeral() {
     document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
 }
 
-// ---------- PÓDIO (mantido) ----------
+// ---------- PÓDIO ----------
 function renderPodioFinal(containerId) {
     if (!estadoAtual || estadoAtual.fase !== 5) return;
     const resultadosFase5 = estadoAtual.resultados?.[5] || {};
@@ -2050,7 +1978,7 @@ function renderPodioFinal(containerId) {
     container.classList.remove('hidden');
 }
 
-// ---------- CONTROLE DE FASE (mantido) ----------
+// ---------- CONTROLE DE FASE ----------
 async function pausarFase() {
     if (!estadoAtual || estadoAtual.status !== 'em_andamento') return;
     if (timerFase) { clearInterval(timerFase); timerFase = null; }
@@ -2158,7 +2086,7 @@ async function verificarTempoEsgotado() {
     return false;
 }
 
-// ---------- EXIBIÇÃO DE RESULTADO FINAL PARA ALUNO (mantido) ----------
+// ---------- EXIBIÇÃO DE RESULTADO FINAL PARA ALUNO ----------
 async function exibirResultadoFinalParaAluno() {
     if (!alunoId || !estadoAtual) return;
     const faseAtual = estadoAtual.fase;
@@ -2199,7 +2127,7 @@ async function obterRankingCompleto(fase) {
     return lista;
 }
 
-// ---------- GERENCIAR ALUNOS (mantido) ----------
+// ---------- GERENCIAR ALUNOS ----------
 function renderListaAlunosGerenciar() {
     if (!estadoAtual) return;
     const faseAtual = estadoAtual.fase;
@@ -2240,7 +2168,7 @@ function renderListaAlunosGerenciar() {
     });
 }
 
-// ---------- SELECTS (mantido) ----------
+// ---------- SELECTS ----------
 function popularSelectFasesTorcida() {
     const select = document.getElementById('select-fase-torcida');
     if (!select) return;
@@ -2272,7 +2200,7 @@ function popularSelectFases() {
     select.value = faseSelecionadaProf;
 }
 
-// ---------- ATUALIZAÇÃO DA UI (mantido, apenas ajuste no gerador de perguntas) ----------
+// ---------- ATUALIZAÇÃO DA UI ----------
 function renderAluno() {
     if (!estadoAtual) return;
     const agora = Date.now();
@@ -2437,7 +2365,7 @@ function atualizarUI() {
     }
 }
 
-// ---------- LÓGICA DO JOGO (atualizada para usar o novo gerador) ----------
+// ---------- LÓGICA DO JOGO ----------
 let animFrameId = null;
 
 function startTimer() {
@@ -2567,7 +2495,6 @@ async function iniciarNovaPartida() {
         toast("❌ Não classificado para esta fase!");
         return;
     }
-    // Usa o novo gerador de perguntas
     perguntas = gerarPerguntas(estadoAtual.modalidade, estadoAtual.fase);
     perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
     document.getElementById('pontuacao-acumulada').innerText = "0";
@@ -2623,7 +2550,7 @@ async function finalizar() {
     renderAluno();
 }
 
-// ---------- INICIALIZAÇÃO (mantido, com ajustes) ----------
+// ---------- INICIALIZAÇÃO ----------
 async function init() {
     await carregarIntervalos();
     await carregarTurmas();
