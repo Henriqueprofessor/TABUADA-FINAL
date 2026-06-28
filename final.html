@@ -180,7 +180,7 @@
         input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
 
         /* ================================================================
-           ESTILOS DA BOLINHA ÚNICA DE EVOLUÇÃO
+           BOLINHA ÚNICA - SEM ÍCONES, APENAS COR
            ================================================================ */
         .evolucao-container {
             display: flex;
@@ -203,49 +203,43 @@
             width: 64px;
             height: 64px;
             border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            font-weight: bold;
+            display: inline-block;
             transition: all 0.4s ease;
             border: 3px solid transparent;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            background: #2c3e50; /* cor padrão cinza */
+            opacity: 0.6;
         }
         .bolinha-unica.vermelha {
             background: #e74c3c;
-            color: white;
             border-color: #ff6b6b;
             box-shadow: 0 0 30px rgba(231,76,60,0.7);
+            opacity: 1;
         }
         .bolinha-unica.laranja {
             background: #f39c12;
-            color: white;
             border-color: #ffbe76;
             box-shadow: 0 0 30px rgba(243,156,18,0.7);
+            opacity: 1;
         }
         .bolinha-unica.branca {
             background: #7f8c8d;
-            color: white;
             border-color: #bdc3c7;
             box-shadow: 0 0 30px rgba(127,140,141,0.5);
+            opacity: 1;
         }
         .bolinha-unica.azul {
             background: #3498db;
-            color: white;
             border-color: #74b9ff;
             box-shadow: 0 0 30px rgba(52,152,219,0.7);
+            opacity: 1;
         }
         .bolinha-unica.cinza {
             background: #2c3e50;
-            color: #7f8c8d;
             border-color: #34495e;
             opacity: 0.6;
         }
-        .bolinha-unica .emoji {
-            font-size: 32px;
-            line-height: 1;
-        }
+
         .evolucao-legenda {
             display: flex;
             gap: 16px;
@@ -613,13 +607,11 @@
                 </div>
 
                 <!-- ============================================================
-                     BOLINHA ÚNICA DE EVOLUÇÃO
+                     BOLINHA ÚNICA - SEM ÍCONES, APENAS COR
                      ============================================================ -->
                 <div class="evolucao-container">
                     <span class="label">📊 DESEMPENHO:</span>
-                    <span class="bolinha-unica cinza" id="bolinha-unica">
-                        <span class="emoji">⚡</span>
-                    </span>
+                    <span class="bolinha-unica cinza" id="bolinha-unica"></span>
                 </div>
                 <div class="evolucao-legenda">
                     <span class="item"><span class="bolinha-mini bolinha-mini-vermelha"></span> Campeão</span>
@@ -1052,9 +1044,9 @@ document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
 });
 
 // ============================================================
-// BOLINHA ÚNICA - FUNÇÃO DE ATUALIZAÇÃO
+// BOLINHA ÚNICA - FUNÇÃO DE ATUALIZAÇÃO (SEM ÍCONES)
 // ============================================================
-function atualizarBolinhaUnica(cor, label) {
+function atualizarBolinhaUnica(cor) {
     const el = document.getElementById('bolinha-unica');
     if (!el) return;
     
@@ -1065,23 +1057,13 @@ function atualizarBolinhaUnica(cor, label) {
     } else {
         el.classList.add('cinza');
     }
-    
-    // Atualiza o conteúdo (emoji ou texto)
-    const spanEmoji = el.querySelector('.emoji');
-    if (spanEmoji) {
-        if (label) {
-            spanEmoji.textContent = label;
-        } else {
-            spanEmoji.textContent = '⚡';
-        }
-    } else {
-        el.textContent = label || '⚡';
-    }
 }
 
 // ============================================================
 // ATUALIZAR INFO DO ALUNO (POSIÇÃO, VELOCIDADE E BOLINHA)
 // ============================================================
+let posicaoAnteriorAluno = null; // para controle de subida de ranking
+
 async function atualizarInfoAluno() {
     if (!alunoId || !estadoAtual) return;
     
@@ -1104,6 +1086,13 @@ async function atualizarInfoAluno() {
         }
         lista.sort((a, b) => b.pontos - a.pontos);
         const posicaoAtual = lista.findIndex(p => p.id === alunoId) + 1;
+        
+        // Verificar se subiu de ranking (posição melhorou)
+        if (posicaoAnteriorAluno !== null && posicaoAtual > 0 && posicaoAtual < posicaoAnteriorAluno) {
+            // Tocar som de subida
+            tocarSom('subiu_ranking');
+        }
+        posicaoAnteriorAluno = posicaoAtual;
         
         const posSpan = document.getElementById('posicao-numero');
         if (posSpan) {
@@ -1145,37 +1134,26 @@ async function atualizarInfoAluno() {
         const perguntaAtual = dadosTemp?.perguntas || 0;
         
         // ============================================================
-        // DETERMINAR COR DA BOLINHA ÚNICA
+        // DETERMINAR COR DA BOLINHA ÚNICA (APENAS COR, SEM ÍCONE)
         // ============================================================
         let cor = 'cinza';
-        let label = '⚡';
         
         // Só mostra a bolinha com dados se tiver pelo menos 4 perguntas respondidas
         if (perguntaAtual >= 4 && projetado && posicaoAtual > 0) {
             if (posicaoAtual === 1) {
                 cor = 'vermelha';
-                label = '🏆';
             } else if (posicaoProjetada < posicaoAtual) {
                 cor = 'laranja';
-                label = '📈';
             } else if (posicaoProjetada === posicaoAtual) {
                 cor = 'branca';
-                label = '➖';
             } else {
                 cor = 'azul';
-                label = '📉';
             }
-        } else if (perguntaAtual >= 4 && !projetado) {
-            // Tem perguntas mas não há projeção (talvez porque a pontuação é zero)
-            cor = 'cinza';
-            label = '⚡';
         } else {
-            // Menos de 4 perguntas
             cor = 'cinza';
-            label = '⚡';
         }
         
-        atualizarBolinhaUnica(cor, label);
+        atualizarBolinhaUnica(cor);
         
         // Velocidade média
         let velocidadeMedia = 0;
