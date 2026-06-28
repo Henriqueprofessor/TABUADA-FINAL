@@ -575,7 +575,7 @@
         </div>
 
         <!-- ============================================================ -->
-        <!-- NOVO: SENHA DE ACESSO PARA FASE 1 -->
+        <!-- SENHA DE ACESSO PARA FASE 1 -->
         <!-- ============================================================ -->
         <div class="config-card senha-card">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
@@ -608,7 +608,7 @@
         </div>
 
         <!-- ============================================================ -->
-        <!-- NOVO: LIBERAR CADASTRO EMERGENCIAL -->
+        <!-- LIBERAR CADASTRO EMERGENCIAL -->
         <!-- ============================================================ -->
         <div class="config-card liberar-card">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
@@ -796,25 +796,91 @@
 <div id="toast" class="toast hidden"></div>
 
 <div style="text-align: center; margin-top: 30px; padding: 15px; color: #666; font-size: 14px; border-top: 1px solid #2c3e50;">
-    🏆 Copa Tabuada CEIB 2026 - Desenvolvido por <strong style="color: #ffd966;">HENRIQUE ANGELO DA SILVA</strong>
+    🏆 Copa Tabuada CEIB 2026 - Desenvolvido por <strong style="color: #ffd966;">HENRIQUE ANGELO DA SILVA - PROFESSOR DE MATEMÁTICA</strong>
 </div>
 
 <script>
 // ============================================================
-// SISTEMA DE SONS (mantido)
+// SISTEMA DE SONS - ATUALIZADO COM SUAS ESCOLHAS
 // ============================================================
 const SONS_CONFIG = {
-    acerto: { emoji: '✅', nome: 'Acerto', descricao: 'Quando o aluno acerta a pergunta', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' },
-    erro: { emoji: '❌', nome: 'Erro', descricao: 'Quando o aluno erra a pergunta', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3' },
-    tempo_esgotado: { emoji: '⏰', nome: 'Tempo Esgotado', descricao: 'Quando o tempo da pergunta acaba', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3' },
-    inicio_fase: { emoji: '🏁', nome: 'Início da Fase', descricao: 'Quando a fase é iniciada pelo professor', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2774/2774-preview.mp3' },
-    fim_fase: { emoji: '⏹️', nome: 'Fim da Fase', descricao: 'Quando o tempo da fase acaba', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2773/2773-preview.mp3' },
-    nova_fase: { emoji: '🚀', nome: 'Nova Fase', descricao: 'Ao passar para a próxima fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2726/2726-preview.mp3' },
-    top3: { emoji: '🏆', nome: 'Pódio / Vitória', descricao: 'Ao mostrar o pódio final', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2754/2754-preview.mp3' },
-    subiu_ranking: { emoji: '📈', nome: 'Subiu no Ranking', descricao: 'Quando o jogador sobe de posição', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2709/2709-preview.mp3' },
-    classificado: { emoji: '🔔', nome: 'Classificado!', descricao: 'Tocado ao finalizar a fase e classificar os alunos', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2754/2754-preview.mp3' },
-    clique: { emoji: '🖱️', nome: 'Clique', descricao: 'Ao clicar em qualquer botão', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2706/2706-preview.mp3' },
-    notificacao: { emoji: '📢', nome: 'Notificação', descricao: 'Quando aparece uma notificação (toast)', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2579/2579-preview.mp3' }
+    acerto: { 
+        emoji: '✅', 
+        nome: 'Acerto', 
+        descricao: 'Quando o aluno acerta a pergunta', 
+        enabled: true, 
+        url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'  // mantido (ding curto)
+    },
+    erro: { 
+        emoji: '❌', 
+        nome: 'Erro', 
+        descricao: 'Quando o aluno erra a pergunta', 
+        enabled: true, 
+        url: 'https://assets.mixkit.co/active_storage/sfx/2710/2710-preview.mp3'  // NOVO: apito curto de falta
+    },
+    tempo_esgotado: { 
+        emoji: '⏰', 
+        nome: 'Tempo Esgotado', 
+        descricao: 'Quando o tempo da pergunta acaba', 
+        enabled: true, 
+        url: 'https://assets.mixkit.co/active_storage/sfx/2715/2715-preview.mp3'  // NOVO: relógio zerando
+    },
+    inicio_fase: { 
+        emoji: '🏁', 
+        nome: 'Início da Fase', 
+        descricao: 'Quando a fase é iniciada pelo professor', 
+        enabled: true, 
+        url: 'https://assets.mixkit.co/active_storage/sfx/2774/2774-preview.mp3'  // mantido (largada)
+    },
+    fim_fase: { 
+        emoji: '⏹️', 
+        nome: 'Fim da Fase', 
+        descricao: 'Quando o tempo da fase acaba', 
+        enabled: true, 
+        url: 'https://assets.mixkit.co/active_storage/sfx/2773/2773-preview.mp3'  // mantido (tambor militar / narrador)
+    },
+    nova_fase: { 
+        emoji: '🚀', 
+        nome: 'Nova Fase', 
+        descricao: 'Ao passar para a próxima fase', 
+        enabled: true, 
+        url: 'https://assets.mixkit.co/active_storage/sfx/2764/2764-preview.mp3'  // NOVO: torcida animada
+    },
+    top3: { 
+        emoji: '🏆', 
+        nome: 'Pódio / Vitória', 
+        descricao: 'Ao mostrar o pódio final', 
+        enabled: true, 
+        url: 'https://assets.mixkit.co/active_storage/sfx/2754/2754-preview.mp3'  // mantido (batucada + fogos)
+    },
+    subiu_ranking: { 
+        emoji: '📈', 
+        nome: 'Subiu no Ranking', 
+        descricao: 'Quando o jogador sobe de posição', 
+        enabled: true, 
+        url: 'https://assets.mixkit.co/active_storage/sfx/2709/2709-preview.mp3'  // NOVO: apito curto + torcida
+    },
+    classificado: { 
+        emoji: '🔔', 
+        nome: 'Classificado!', 
+        descricao: 'Tocado ao finalizar a fase e classificar os alunos', 
+        enabled: true, 
+        url: 'https://assets.mixkit.co/active_storage/sfx/2787/2787-preview.mp3'  // NOVO: narração + torcida em êxtase
+    },
+    clique: { 
+        emoji: '🖱️', 
+        nome: 'Clique', 
+        descricao: 'Ao clicar em qualquer botão', 
+        enabled: true, 
+        url: 'https://assets.mixkit.co/active_storage/sfx/2706/2706-preview.mp3'  // mantido
+    },
+    notificacao: { 
+        emoji: '📢', 
+        nome: 'Notificação', 
+        descricao: 'Quando aparece uma notificação (toast)', 
+        enabled: true, 
+        url: 'https://assets.mixkit.co/active_storage/sfx/2579/2579-preview.mp3'  // NOVO: ding suave
+    }
 };
 
 const audioCache = new Map();
@@ -1384,7 +1450,6 @@ function iniciarListeners() {
             }
             popularSelectFases();
             renderListaTurmas();
-            // Atualiza status da senha e botão liberar
             atualizarStatusSenha();
             atualizarListaLiberados();
         }
@@ -2299,8 +2364,8 @@ function popularSelectFases() {
     select.value = faseSelecionadaProf;
 }
 
-// ---------- SENHA E LIBERAR (NOVAS FUNÇÕES) ----------
-let senhaBloqueada = false; // torna true quando a fase 1 for iniciada
+// ---------- SENHA E LIBERAR ----------
+let senhaBloqueada = false;
 
 async function carregarConfigSenha() {
     try {
@@ -2310,7 +2375,6 @@ async function carregarConfigSenha() {
         const snapExigir = await db.ref('copaV2/configuracoes/exigirSenhaFase1').once('value');
         const exigir = snapExigir.val() !== undefined ? snapExigir.val() : true;
         document.getElementById('toggle-exigir-senha').checked = exigir;
-        // Verifica se a fase 1 já foi iniciada
         if (estadoAtual && estadoAtual.fase === 1 && estadoAtual.status === 'em_andamento') {
             senhaBloqueada = true;
         } else {
@@ -2378,12 +2442,11 @@ function gerarSenhaAleatoria() {
         toast('❌ Senha bloqueada após iniciar a fase.');
         return;
     }
-    const num = Math.floor(Math.random() * 90) + 10; // 10 a 99
+    const num = Math.floor(Math.random() * 90) + 10;
     document.getElementById('input-senha-fase1').value = num;
     toast(`🎲 Senha gerada: ${num}`);
 }
 
-// ---------- FUNÇÃO PARA LIBERAR ALUNO ----------
 async function liberarAluno() {
     const nome = document.getElementById('input-liberar-nome').value.trim();
     const turma = document.getElementById('input-liberar-turma').value.trim();
@@ -2392,7 +2455,6 @@ async function liberarAluno() {
         return;
     }
     const faseAtual = estadoAtual.fase;
-    // Procura o aluno nas fases anteriores (para pegar o id)
     let idEncontrado = null;
     for (let f = 1; f <= faseAtual; f++) {
         const snap = await db.ref(`copaV2/participantes/${f}`).once('value');
@@ -2409,7 +2471,6 @@ async function liberarAluno() {
         toast('❌ Aluno não encontrado. Verifique nome e turma.');
         return;
     }
-    // Salva a liberação na fase atual
     try {
         await db.ref(`copaV2/participantes/${faseAtual}/${idEncontrado}/liberado`).set(true);
         toast(`✅ ${nome} liberado para a Fase ${faseAtual}!`);
@@ -2447,7 +2508,7 @@ async function atualizarListaLiberados() {
 }
 
 // ============================================================
-// NOVO FLUXO DE LOGIN DO ALUNO (COM SENHA E LIBERAÇÃO)
+// FLUXO DE LOGIN DO ALUNO (COM SENHA E DEVICE ID)
 // ============================================================
 const DEVICE_ID_KEY = 'copa_device_id';
 
@@ -2460,28 +2521,20 @@ function gerarDeviceId() {
 }
 
 async function verificarSenhaFase1() {
-    // Só pede senha se:
-    // - fase atual for 1
-    // - exigir senha estiver ativo
-    // - o aluno ainda não tiver deviceId (não está logado)
     const snapExigir = await db.ref('copaV2/configuracoes/exigirSenhaFase1').once('value');
     const exigir = snapExigir.val() !== undefined ? snapExigir.val() : true;
     if (!exigir) return true;
     if (estadoAtual.fase !== 1) return true;
-    // Verifica se já tem deviceId - se tiver, já está logado, não pede senha
     const deviceId = localStorage.getItem(DEVICE_ID_KEY);
     if (deviceId) {
-        // Tenta encontrar o participante com esse deviceId na fase 1
         const snap = await db.ref(`copaV2/participantes/1`).once('value');
         const participantes = snap.val() || {};
         for (const [id, dados] of Object.entries(participantes)) {
             if (dados.deviceId === deviceId) {
-                // Já está logado, pula a senha
                 return true;
             }
         }
     }
-    // Se chegou aqui, pede a senha
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'modal-senha';
@@ -2550,28 +2603,22 @@ async function loginAlunoAutomatico() {
     }
 
     if (!encontrado) {
-        // Se não encontrou, pode ser deviceId antigo ou apagado - remove e pede novo cadastro
         localStorage.removeItem(DEVICE_ID_KEY);
         return false;
     }
 
-    // Verifica se está classificado ou liberado
     const faseAtualNum = estadoAtual.fase;
     if (faseAtualNum > 1) {
         const classificados = estadoAtual.classificados?.[faseAtualNum - 1] || [];
         if (!classificados.includes(dadosJogador.id) && !dadosJogador.liberado) {
             toast('❌ Você não está classificado para esta fase.');
-            // Não remove deviceId, pois ele ainda pode estar classificado para fases futuras?
-            // Mas se não está classificado, bloqueia.
             return false;
         }
-        // Se foi liberado, permite entrada
         if (dadosJogador.liberado) {
             toast(`🔓 Acesso liberado pelo professor para a Fase ${faseAtualNum}.`);
         }
     }
 
-    // Loga automaticamente
     alunoId = dadosJogador.id;
     alunoNome = dadosJogador.nome;
     alunoTurma = dadosJogador.turma;
@@ -2593,7 +2640,6 @@ async function loginAlunoAutomatico() {
 
 async function cadastrarNovoAluno(nome, turma) {
     const faseAtual = estadoAtual.fase;
-    // Verifica se já existe um jogador com este nome e turma nas fases anteriores
     let jogadorExistente = null;
     let faseEncontrada = null;
 
@@ -2611,15 +2657,12 @@ async function cadastrarNovoAluno(nome, turma) {
     }
 
     if (jogadorExistente) {
-        // Verifica se está classificado para fase atual
         const classificados = estadoAtual.classificados?.[faseAtual - 1] || [];
         if (classificados.includes(jogadorExistente.id)) {
-            // Se tem deviceId, bloqueia (já está em outro dispositivo)
             if (jogadorExistente.deviceId) {
                 toast(`❌ O jogador ${nome} já está registrado em outro dispositivo. Use o mesmo aparelho.`);
                 return false;
             } else {
-                // Migração: associa deviceId
                 const deviceId = gerarDeviceId();
                 localStorage.setItem(DEVICE_ID_KEY, deviceId);
                 await db.ref(`copaV2/participantes/${faseAtual}/${jogadorExistente.id}`).update({ deviceId });
@@ -2637,10 +2680,8 @@ async function cadastrarNovoAluno(nome, turma) {
                 return true;
             }
         } else {
-            // Não classificado, mas pode tentar se cadastrar novamente (senão tiver deviceId)
             if (!jogadorExistente.deviceId) {
-                // Permite novo cadastro (caso de erro, ele pode recadastrar)
-                // Mas vamos deixar fluir para o cadastro normal
+                // permite recadastro
             } else {
                 toast(`❌ O jogador ${nome} não está classificado para esta fase.`);
                 return false;
@@ -2648,7 +2689,6 @@ async function cadastrarNovoAluno(nome, turma) {
         }
     }
 
-    // Cadastro normal (novo jogador)
     const novoId = btoa(nome.toLowerCase() + "|" + turma).slice(0,16);
     const deviceId = gerarDeviceId();
     localStorage.setItem(DEVICE_ID_KEY, deviceId);
@@ -2802,7 +2842,6 @@ async function iniciarNovaPartida() {
     if (estadoAtual.status !== 'em_andamento') { toast("Fase inativa!"); return; }
     if (Date.now() >= estadoAtual.fim) { toast("Tempo esgotado!"); return; }
     if (estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
-        // Verifica se está liberado
         const snap = await db.ref(`copaV2/participantes/${estadoAtual.fase}/${alunoId}/liberado`).once('value');
         if (!snap.val()) {
             toast("❌ Você não está classificado para esta fase.");
@@ -2866,7 +2905,7 @@ async function finalizar() {
     renderAluno();
 }
 
-// ---------- INICIALIZAÇÃO (modificada para incluir novas funções) ----------
+// ---------- INICIALIZAÇÃO ----------
 async function init() {
     await carregarIntervalos();
     await carregarTurmas();
@@ -2876,10 +2915,8 @@ async function init() {
 
     iniciarListeners();
 
-    // Carrega senha
     await carregarConfigSenha();
 
-    // Eventos da senha
     document.getElementById('btn-gerar-senha')?.addEventListener('click', gerarSenhaAleatoria);
     document.getElementById('btn-salvar-senha')?.addEventListener('click', salvarSenha);
     document.getElementById('toggle-exigir-senha')?.addEventListener('change', () => {
@@ -2891,7 +2928,6 @@ async function init() {
         }
     });
 
-    // Evento de liberar
     document.getElementById('btn-liberar-aluno')?.addEventListener('click', liberarAluno);
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -2959,7 +2995,6 @@ async function init() {
             let fim = Date.now() + duracao*60000;
             await db.ref('copaV2').update({ status:'em_andamento', fim, tempoRestantePausa: null });
             tempoEsgotadoProcessado = false;
-            // Bloqueia a senha após iniciar a fase 1
             if (estadoAtual.fase === 1) {
                 senhaBloqueada = true;
                 atualizarStatusSenha();
@@ -2979,7 +3014,6 @@ async function init() {
     if (btnResetFase) {
         btnResetFase.addEventListener('click', debounce(async () => { 
             await resetarFase();
-            // Se resetar a fase 1, desbloqueia a senha
             if (estadoAtual.fase === 1) {
                 senhaBloqueada = false;
                 atualizarStatusSenha();
@@ -3018,29 +3052,23 @@ async function init() {
         tocarSom('clique');
     });
 
-    // ============================================================
-    // BOTÃO ALUNO - NOVO FLUXO COM SENHA E LIBERAÇÃO
-    // ============================================================
     document.getElementById('btn-aluno')?.addEventListener('click', async () => {
         if (!estadoAtual || estadoAtual.status !== 'em_andamento' || Date.now() >= estadoAtual.fim) {
             toast("⏳ A fase não foi iniciada ou já terminou.");
             return;
         }
 
-        // 1. Verifica se precisa de senha (Fase 1)
         const senhaOk = await verificarSenhaFase1();
         if (!senhaOk) {
             toast('❌ Senha incorreta ou cancelada.');
             return;
         }
 
-        // 2. Tenta login automático (deviceId)
         const logado = await loginAlunoAutomatico();
         if (logado) {
             return;
         }
 
-        // 3. Se não logou, pede nome e turma
         const nome = prompt("Seu nome completo:");
         if (!nome) return;
         const nomeTrim = nome.trim();
@@ -3072,7 +3100,6 @@ async function init() {
                 modalDiv.remove();
                 const sucesso = await cadastrarNovoAluno(nomeTrim, turmaEscolhida);
                 if (!sucesso) {
-                    // Se falhou, exibe mensagem (já foi mostrada dentro da função)
                 }
                 tocarSom('clique');
             }
