@@ -2866,6 +2866,187 @@ async function finalizar() {
     renderAluno();
 }
 
+// ============================================================
+// ATUALIZAÇÃO DA INTERFACE (PRINCIPAL)
+// ============================================================
+function atualizarUI() {
+    if (!estadoAtual) return;
+
+    // --- Título da modalidade ---
+    const modalidadeTitulo = document.getElementById('modalidade-titulo');
+    if (modalidadeTitulo) {
+        const config = MODALIDADE_CONFIG[estadoAtual.modalidade];
+        modalidadeTitulo.innerText = config ? config.nome : estadoAtual.modalidade;
+    }
+
+    // --- Informações de fase ---
+    const faseAtualTitulo = document.getElementById('fase-atual-titulo');
+    if (faseAtualTitulo) faseAtualTitulo.innerText = `Fase ${estadoAtual.fase} de ${TOTAL_FASES}`;
+    const faseProgresso = document.getElementById('fase-progresso');
+    if (faseProgresso) faseProgresso.innerText = `${estadoAtual.fase}/${TOTAL_FASES}`;
+
+    // --- Timer da fase ---
+    if (estadoAtual.status === 'em_andamento' && estadoAtual.fim > 0) {
+        const agora = Date.now();
+        const restante = estadoAtual.fim - agora;
+        if (restante > 0) {
+            atualizarDisplayTimer(restante, document.getElementById('timer-fase'), document.getElementById('torcida-timer'));
+            if (!timerFase) {
+                timerFase = setInterval(() => {
+                    const agora2 = Date.now();
+                    const rest = estadoAtual.fim - agora2;
+                    if (rest <= 0) {
+                        clearInterval(timerFase);
+                        timerFase = null;
+                        atualizarDisplayTimer(0, document.getElementById('timer-fase'), document.getElementById('torcida-timer'));
+                        verificarTempoEsgotado();
+                    } else {
+                        atualizarDisplayTimer(rest, document.getElementById('timer-fase'), document.getElementById('torcida-timer'));
+                    }
+                }, 1000);
+            }
+        } else {
+            verificarTempoEsgotado();
+        }
+    } else if (estadoAtual.status === 'pausado' && estadoAtual.tempoRestantePausa) {
+        if (timerFase) { clearInterval(timerFase); timerFase = null; }
+        atualizarDisplayTimer(estadoAtual.tempoRestantePausa, document.getElementById('timer-fase'), document.getElementById('torcida-timer'));
+    } else {
+        if (timerFase) { clearInterval(timerFase); timerFase = null; }
+        document.getElementById('timer-fase') && (document.getElementById('timer-fase').innerText = '00:00');
+        document.getElementById('torcida-timer') && (document.getElementById('torcida-timer').innerText = '00:00');
+    }
+
+    // --- Atualizações específicas do professor ---
+    if (meuTipo === 'professor') {
+        const profFaseInfo = document.getElementById('prof-fase-info');
+        if (profFaseInfo) profFaseInfo.innerText = `Fase ${estadoAtual.fase}`;
+        const inputTempo = document.getElementById('input-tempo-fase');
+        if (inputTempo) inputTempo.value = estadoAtual.tempoFase || 12;
+        // Atualiza selects de fase
+        popularSelectFases();
+        popularSelectFasesTorcida();
+    }
+
+    // --- Atualizações da torcida ---
+    if (meuTipo === 'projecao') {
+        const torcidaModalidade = document.getElementById('torcida-modalidade');
+        if (torcidaModalidade) {
+            const config = MODALIDADE_CONFIG[estadoAtual.modalidade];
+            torcidaModalidade.innerText = config ? config.nome : estadoAtual.modalidade;
+        }
+        const torcidaFaseInfo = document.getElementById('torcida-fase-info');
+        if (torcidaFaseInfo) torcidaFaseInfo.innerText = `${estadoAtual.fase}/${TOTAL_FASES}`;
+    }
+
+    // --- Atualizações do aluno ---
+    if (meuTipo === 'aluno') {
+        renderAluno();
+    }
+
+    // --- Pódio se fase 5 finalizada ---
+    if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
+        renderPodioFinal('podium-container');
+        renderPodioFinal('podium-torcida-container');
+        renderPodioFinal('podium-aluno-container');
+    }
+}
+
+// ============================================================
+// RENDERIZA A TELA DO ALUNO
+// ============================================================
+function renderAluno() {
+    if (!alunoId || !estadoAtual) return;
+
+    document.getElementById('aluno-nome-display') && (document.getElementById('aluno-nome-display').innerText = alunoNome);
+    document.getElementById('aluno-turma-display') && (document.getElementById('aluno-turma-display').innerText = alunoTurma);
+    const config = MODALIDADE_CONFIG[estadoAtual.modalidade];
+    document.getElementById('aluno-modalidade') && (document.getElementById('aluno-modalidade').innerText = config ? config.nome : estadoAtual.modalidade);
+    document.getElementById('aluno-fase-info') && (document.getElementById('aluno-fase-info').innerText = `Fase ${estadoAtual.fase}/${TOTAL_FASES}`);
+
+    const msgStatus = document.getElementById('msg-status-aluno');
+    const btnJogar = document.getElementById('btn-iniciar-partida');
+    const jogoArea = document.getElementById('jogo-area');
+    const aguardandoArea = document.getElementById('aguardando-aluno');
+
+    // Verifica classificação
+    let podeJogar = true;
+    if (estadoAtual.fase > 1) {
+        const classificados = estadoAtual.classificados?.[estadoAtual.fase - 1] || [];
+        const liberado = estadoAtual.participantes?.[estadoAtual.fase]?.[alunoId]?.liberado === true;
+        if (!classificados.includes(alunoId) && !liberado) {
+            podeJogar = false;
+            if (msgStatus) msgStatus.innerText = '❌ Você não está classificado para esta fase.';
+            if (btnJogar) btnJogar.classList.add('hidden');
+            return;
+        }
+        if (liberado && !classificados.includes(alunoId)) {
+            if (msgStatus) msgStatus.innerText = '🔓 Acesso liberado pelo professor. Clique em JOGAR!';
+        }
+    }
+
+    if (estadoAtual.status === 'em_andamento' && Date.now() < estadoAtual.fim) {
+        if (!jogoAtivo) {
+            if (jogoArea) jogoArea.classList.add('hidden');
+            if (aguardandoArea) aguardandoArea.classList.remove('hidden');
+            if (msgStatus && podeJogar) msgStatus.innerText = '⏳ Fase em andamento! Clique para jogar.';
+            if (btnJogar) btnJogar.classList.remove('hidden');
+        }
+    } else if (estadoAtual.status === 'aguardando') {
+        if (jogoArea) jogoArea.classList.add('hidden');
+        if (aguardandoArea) aguardandoArea.classList.remove('hidden');
+        if (msgStatus) msgStatus.innerText = '⏳ Aguardando o professor iniciar a fase...';
+        if (btnJogar) btnJogar.classList.add('hidden');
+    } else if (estadoAtual.status === 'pausado') {
+        if (jogoArea) jogoArea.classList.add('hidden');
+        if (aguardandoArea) aguardandoArea.classList.remove('hidden');
+        if (msgStatus) msgStatus.innerText = '⏸️ Fase pausada pelo professor. Aguarde...';
+        if (btnJogar) btnJogar.classList.add('hidden');
+    } else {
+        if (jogoArea) jogoArea.classList.add('hidden');
+        if (aguardandoArea) aguardandoArea.classList.remove('hidden');
+        if (msgStatus) msgStatus.innerText = '⏹️ Fase encerrada.';
+        if (btnJogar) btnJogar.classList.add('hidden');
+    }
+
+    // Melhor resultado
+    const melhorScoreEl = document.getElementById('aluno-melhor-score');
+    if (melhorScoreEl && alunoId && estadoAtual.fase) {
+        db.ref(`copaV2/resultados/${estadoAtual.fase}/${alunoId}`).once('value').then(snap => {
+            const partidas = snap.val();
+            if (partidas && partidas.length) {
+                const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+                melhorScoreEl.innerText = `${melhor.pontos} pts (${melhor.acertos} acertos)`;
+            } else {
+                melhorScoreEl.innerText = 'Nenhum resultado ainda';
+            }
+        });
+    }
+
+    // Histórico
+    const historicoEl = document.getElementById('historico-aluno');
+    if (historicoEl && alunoId && estadoAtual.fase) {
+        db.ref(`copaV2/resultados/${estadoAtual.fase}/${alunoId}`).once('value').then(snap => {
+            const partidas = snap.val();
+            if (partidas && partidas.length) {
+                let html = '<h4>📜 Histórico de Partidas</h4><ul>';
+                partidas.forEach((p, i) => {
+                    html += `<li>Partida ${i+1}: ${p.pontos} pts, ${p.acertos} acertos</li>`;
+                });
+                html += '</ul>';
+                historicoEl.innerHTML = html;
+            } else {
+                historicoEl.innerHTML = '<p>Nenhuma partida jogada.</p>';
+            }
+        });
+    }
+
+    // Pódio se fase 5 finalizada
+    if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
+        renderPodioFinal('podium-aluno-container');
+    }
+}
+
 // ---------- INICIALIZAÇÃO (modificada para incluir novas funções) ----------
 async function init() {
     await carregarIntervalos();
