@@ -1387,6 +1387,8 @@ function iniciarListeners() {
             // Atualiza status da senha e botão liberar
             atualizarStatusSenha();
             atualizarListaLiberados();
+            // Atualiza texto do botão Parar/Continuar
+            atualizarBotaoContinuarParar();
         }
     });
 
@@ -2077,6 +2079,22 @@ function renderPodioFinal(containerId) {
 }
 
 // ---------- CONTROLE DE FASE ----------
+function atualizarBotaoContinuarParar() {
+    const btn = document.getElementById('btn-continuar-parar-fase');
+    if (!btn) return;
+    if (estadoAtual?.status === 'em_andamento') {
+        btn.innerText = '⏹️ Parar Fase';
+        btn.className = 'btn-danger';
+    } else if (estadoAtual?.status === 'pausado') {
+        btn.innerText = '▶️ Continuar Fase';
+        btn.className = 'btn-success';
+    } else {
+        btn.innerText = '⏹️ Parar Fase';
+        btn.className = 'btn-danger';
+        btn.disabled = true;
+    }
+}
+
 async function pausarFase() {
     if (!estadoAtual || estadoAtual.status !== 'em_andamento') return;
     if (timerFase) { clearInterval(timerFase); timerFase = null; }
@@ -2926,6 +2944,7 @@ function atualizarUI() {
         // Atualiza selects de fase
         popularSelectFases();
         popularSelectFasesTorcida();
+        atualizarBotaoContinuarParar();
     }
 
     // --- Atualizações da torcida ---
@@ -3047,7 +3066,7 @@ function renderAluno() {
     }
 }
 
-// ---------- INICIALIZAÇÃO (modificada para incluir novas funções) ----------
+// ---------- INICIALIZAÇÃO ----------
 async function init() {
     await carregarIntervalos();
     await carregarTurmas();
@@ -3059,6 +3078,18 @@ async function init() {
 
     // Carrega senha
     await carregarConfigSenha();
+
+    // ============================================================
+    // EVENTO: BOTÃO PROFESSOR
+    // ============================================================
+    document.getElementById('btn-professor')?.addEventListener('click', () => {
+        meuTipo = 'professor';
+        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.getElementById('painel-professor').classList.remove('hidden');
+        iniciarAtualizacaoProfessor();
+        atualizarUI();
+        tocarSom('clique');
+    });
 
     // Eventos da senha
     document.getElementById('btn-gerar-senha')?.addEventListener('click', gerarSenhaAleatoria);
@@ -3133,6 +3164,7 @@ async function init() {
     const btnResetFase = document.getElementById('btn-reset-fase');
     const btnResetTotal = document.getElementById('btn-reset-total');
     const btnAplicarModalidade = document.getElementById('btn-aplicar-modalidade');
+    const btnContinuarParar = document.getElementById('btn-continuar-parar-fase');
 
     if (btnIniciarFase) {
         btnIniciarFase.addEventListener('click', debounce(async () => {
@@ -3140,7 +3172,6 @@ async function init() {
             let fim = Date.now() + duracao*60000;
             await db.ref('copaV2').update({ status:'em_andamento', fim, tempoRestantePausa: null });
             tempoEsgotadoProcessado = false;
-            // Bloqueia a senha após iniciar a fase 1
             if (estadoAtual.fase === 1) {
                 senhaBloqueada = true;
                 atualizarStatusSenha();
@@ -3157,10 +3188,19 @@ async function init() {
             }
         }, debounceDelay));
     }
+    if (btnContinuarParar) {
+        btnContinuarParar.addEventListener('click', debounce(async () => {
+            if (estadoAtual?.status === 'em_andamento') {
+                await pausarFase();
+            } else if (estadoAtual?.status === 'pausado') {
+                await continuarFase();
+            }
+            tocarSom('clique');
+        }, debounceDelay));
+    }
     if (btnResetFase) {
         btnResetFase.addEventListener('click', debounce(async () => { 
             await resetarFase();
-            // Se resetar a fase 1, desbloqueia a senha
             if (estadoAtual.fase === 1) {
                 senhaBloqueada = false;
                 atualizarStatusSenha();
@@ -3208,20 +3248,15 @@ async function init() {
             return;
         }
 
-        // 1. Verifica se precisa de senha (Fase 1)
         const senhaOk = await verificarSenhaFase1();
         if (!senhaOk) {
             toast('❌ Senha incorreta ou cancelada.');
             return;
         }
 
-        // 2. Tenta login automático (deviceId)
         const logado = await loginAlunoAutomatico();
-        if (logado) {
-            return;
-        }
+        if (logado) return;
 
-        // 3. Se não logou, pede nome e turma
         const nome = prompt("Seu nome completo:");
         if (!nome) return;
         const nomeTrim = nome.trim();
@@ -3251,21 +3286,16 @@ async function init() {
             if (select) {
                 const turmaEscolhida = select.value;
                 modalDiv.remove();
-                const sucesso = await cadastrarNovoAluno(nomeTrim, turmaEscolhida);
-                if (!sucesso) {
-                    // Se falhou, exibe mensagem (já foi mostrada dentro da função)
-                }
+                await cadastrarNovoAluno(nomeTrim, turmaEscolhida);
                 tocarSom('clique');
             }
         };
 
-        const cancelar = () => {
+        document.getElementById('btn-confirmar-turma')?.addEventListener('click', confirmar);
+        document.getElementById('btn-cancelar-turma')?.addEventListener('click', () => {
             modalDiv.remove();
             tocarSom('clique');
-        };
-
-        document.getElementById('btn-confirmar-turma')?.addEventListener('click', confirmar);
-        document.getElementById('btn-cancelar-turma')?.addEventListener('click', cancelar);
+        });
     });
 
     document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
