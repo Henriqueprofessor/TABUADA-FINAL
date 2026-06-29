@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo - HENRIQUE ANGELO DA SILVA</title>
 
-    <!-- ============================================================ -->
     <!-- CONTROLE DE VERSÃO -->
-    <!-- ============================================================ -->
     <script>
     (function() {
         if (!window.location.search.includes('v=')) {
@@ -466,10 +464,31 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+
+        /* MODAL DE LOGIN */
+        .modal-login {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #0f172a; border-radius: 32px; padding: 24px;
+            width: 90%; max-width: 400px; z-index: 10010;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+            border: 2px solid #ffd966; text-align: center;
+        }
+        .modal-login input[type="email"],
+        .modal-login input[type="password"] {
+            width: 100%; padding: 12px; margin: 8px 0; border-radius: 20px;
+            background: #1f3a4b; color: white; border: none; font-size: 16px;
+        }
+        .modal-login .btn-group {
+            display: flex; gap: 10px; justify-content: center; margin-top: 15px;
+        }
+        .erro-auth {
+            color: #f87171; margin-top: 10px; font-size: 14px;
+        }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 </head>
 <body>
 
@@ -508,13 +527,11 @@
             <h2>🔧 Painel do Professor <span id="prof-fase-info" class="fase-info"></span></h2>
             <div>
                 <button id="btn-sync-prof" class="btn-warning">🔄 Sincronizar</button>
-                <button id="btn-voltar-menu-prof" class="btn-danger">🏠 Voltar ao Menu</button>
+                <button id="btn-logout-prof" class="btn-danger">🚪 Sair</button>
+                <button id="btn-voltar-menu-prof" class="btn-secondary">🏠 Menu</button>
             </div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- PAINEL DE CONTROLE DE SOM -->
-        <!-- ============================================================ -->
         <div id="bloco-controle-som" class="config-card">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <span style="font-size: 28px;">🔊</span>
@@ -574,9 +591,6 @@
             </div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- NOVO: SENHA DE ACESSO PARA FASE 1 -->
-        <!-- ============================================================ -->
         <div class="config-card senha-card">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <span style="font-size: 28px;">🔑</span>
@@ -607,9 +621,6 @@
             </p>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- NOVO: LIBERAR CADASTRO EMERGENCIAL -->
-        <!-- ============================================================ -->
         <div class="config-card liberar-card">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <span style="font-size: 28px;">🚪</span>
@@ -795,13 +806,27 @@
 
 <div id="toast" class="toast hidden"></div>
 
+<!-- MODAL DE LOGIN DO PROFESSOR -->
+<div id="modal-login-professor" class="modal-login hidden">
+    <h2>🔐 Acesso do Professor</h2>
+    <p style="color: #94a3b8; margin-bottom: 15px;">Faça login com seu e-mail e senha</p>
+    <input type="email" id="input-email-prof" placeholder="E-mail" autocomplete="email">
+    <input type="password" id="input-senha-prof" placeholder="Senha" autocomplete="current-password">
+    <div class="btn-group">
+        <button id="btn-entrar-prof" class="btn-success">Entrar</button>
+        <button id="btn-criar-conta-prof" class="btn-primary">Criar Conta</button>
+    </div>
+    <div id="erro-auth-prof" class="erro-auth"></div>
+    <button id="btn-cancelar-login-prof" class="btn-secondary" style="margin-top: 15px; width: 100%;">Cancelar</button>
+</div>
+
 <div style="text-align: center; margin-top: 30px; padding: 15px; color: #666; font-size: 14px; border-top: 1px solid #2c3e50;">
     🏆 Copa Tabuada CEIB 2026 - Desenvolvido por <strong style="color: #ffd966;">HENRIQUE ANGELO DA SILVA</strong>
 </div>
 
 <script>
 // ============================================================
-// SISTEMA DE SONS (mantido)
+// SISTEMA DE SONS
 // ============================================================
 const SONS_CONFIG = {
     acerto: { emoji: '✅', nome: 'Acerto', descricao: 'Quando o aluno acerta a pergunta', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' },
@@ -968,6 +993,65 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const auth = firebase.auth();
+
+// ============================================================
+// AUTENTICAÇÃO DO PROFESSOR
+// ============================================================
+function mostrarModalLogin() {
+    document.getElementById('modal-login-professor').classList.remove('hidden');
+    document.getElementById('input-email-prof').value = '';
+    document.getElementById('input-senha-prof').value = '';
+    document.getElementById('erro-auth-prof').innerText = '';
+}
+function esconderModalLogin() {
+    document.getElementById('modal-login-professor').classList.add('hidden');
+}
+function traduzirErroAuth(codigo) {
+    switch (codigo) {
+        case 'auth/invalid-email': return 'E-mail inválido.';
+        case 'auth/user-disabled': return 'Usuário desativado.';
+        case 'auth/user-not-found': return 'Usuário não encontrado.';
+        case 'auth/wrong-password': return 'Senha incorreta.';
+        case 'auth/email-already-in-use': return 'Este e-mail já está em uso.';
+        case 'auth/weak-password': return 'A senha deve ter pelo menos 6 caracteres.';
+        default: return 'Erro de autenticação. Tente novamente.';
+    }
+}
+async function loginProfessor(email, senha) {
+    try {
+        await auth.signInWithEmailAndPassword(email, senha);
+        esconderModalLogin();
+        abrirPainelProfessor();
+    } catch (error) {
+        console.error(error);
+        document.getElementById('erro-auth-prof').innerText = '❌ ' + traduzirErroAuth(error.code);
+    }
+}
+async function criarContaProfessor(email, senha) {
+    try {
+        await auth.createUserWithEmailAndPassword(email, senha);
+        esconderModalLogin();
+        abrirPainelProfessor();
+    } catch (error) {
+        console.error(error);
+        document.getElementById('erro-auth-prof').innerText = '❌ ' + traduzirErroAuth(error.code);
+    }
+}
+function abrirPainelProfessor() {
+    meuTipo = 'professor';
+    document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+    document.getElementById('painel-professor').classList.remove('hidden');
+    iniciarAtualizacaoProfessor();
+    atualizarUI();
+    tocarSom('clique');
+}
+function logoutProfessor() {
+    auth.signOut().then(() => {
+        meuTipo = null;
+        location.reload();
+    });
+}
 
 // ============================================================
 // VALOR DA PARTIDA
@@ -1036,7 +1120,7 @@ document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
 });
 
 // ============================================================
-// BOLINHA ÚNICA (mantida)
+// BOLINHA ÚNICA
 // ============================================================
 function atualizarBolinhaUnica(cor) {
     const el = document.getElementById('bolinha-unica');
@@ -1047,7 +1131,7 @@ function atualizarBolinhaUnica(cor) {
 }
 
 // ============================================================
-// GERADOR DE PERGUNTAS (mantido)
+// GERADOR DE PERGUNTAS
 // ============================================================
 const MODALIDADE_CONFIG = {
     "2-5": { min: 2, max: 5, nome: "Tabuada 2️⃣➡️5️⃣" },
@@ -1184,7 +1268,7 @@ function gerarPerguntas(modalidade, fase) {
 }
 
 // ============================================================
-// ATUALIZAR INFO DO ALUNO (mantido)
+// ATUALIZAR INFO DO ALUNO
 // ============================================================
 let posicaoAnteriorAluno = null;
 async function atualizarInfoAluno() {
@@ -1384,10 +1468,8 @@ function iniciarListeners() {
             }
             popularSelectFases();
             renderListaTurmas();
-            // Atualiza status da senha e botão liberar
             atualizarStatusSenha();
             atualizarListaLiberados();
-            // Atualiza texto do botão Parar/Continuar
             atualizarBotaoContinuarParar();
         }
     });
@@ -1452,7 +1534,7 @@ async function carregarIntervalos() {
 }
 
 // ============================================================
-// RANKING UNIFICADO (mantido)
+// RANKING UNIFICADO
 // ============================================================
 let cacheRanking = {};
 async function renderRanking(faseNum, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -2317,8 +2399,8 @@ function popularSelectFases() {
     select.value = faseSelecionadaProf;
 }
 
-// ---------- SENHA E LIBERAR (NOVAS FUNÇÕES) ----------
-let senhaBloqueada = false; // torna true quando a fase 1 for iniciada
+// ---------- SENHA E LIBERAR ----------
+let senhaBloqueada = false;
 
 async function carregarConfigSenha() {
     try {
@@ -2328,7 +2410,6 @@ async function carregarConfigSenha() {
         const snapExigir = await db.ref('copaV2/configuracoes/exigirSenhaFase1').once('value');
         const exigir = snapExigir.val() !== undefined ? snapExigir.val() : true;
         document.getElementById('toggle-exigir-senha').checked = exigir;
-        // Verifica se a fase 1 já foi iniciada
         if (estadoAtual && estadoAtual.fase === 1 && estadoAtual.status === 'em_andamento') {
             senhaBloqueada = true;
         } else {
@@ -2396,12 +2477,11 @@ function gerarSenhaAleatoria() {
         toast('❌ Senha bloqueada após iniciar a fase.');
         return;
     }
-    const num = Math.floor(Math.random() * 90) + 10; // 10 a 99
+    const num = Math.floor(Math.random() * 90) + 10;
     document.getElementById('input-senha-fase1').value = num;
     toast(`🎲 Senha gerada: ${num}`);
 }
 
-// ---------- FUNÇÃO PARA LIBERAR ALUNO ----------
 async function liberarAluno() {
     const nome = document.getElementById('input-liberar-nome').value.trim();
     const turma = document.getElementById('input-liberar-turma').value.trim();
@@ -2410,7 +2490,6 @@ async function liberarAluno() {
         return;
     }
     const faseAtual = estadoAtual.fase;
-    // Procura o aluno nas fases anteriores (para pegar o id)
     let idEncontrado = null;
     for (let f = 1; f <= faseAtual; f++) {
         const snap = await db.ref(`copaV2/participantes/${f}`).once('value');
@@ -2427,7 +2506,6 @@ async function liberarAluno() {
         toast('❌ Aluno não encontrado. Verifique nome e turma.');
         return;
     }
-    // Salva a liberação na fase atual
     try {
         await db.ref(`copaV2/participantes/${faseAtual}/${idEncontrado}/liberado`).set(true);
         toast(`✅ ${nome} liberado para a Fase ${faseAtual}!`);
@@ -2465,7 +2543,7 @@ async function atualizarListaLiberados() {
 }
 
 // ============================================================
-// NOVO FLUXO DE LOGIN DO ALUNO (COM SENHA E LIBERAÇÃO)
+// FLUXO DE LOGIN DO ALUNO
 // ============================================================
 const DEVICE_ID_KEY = 'copa_device_id';
 
@@ -2478,28 +2556,20 @@ function gerarDeviceId() {
 }
 
 async function verificarSenhaFase1() {
-    // Só pede senha se:
-    // - fase atual for 1
-    // - exigir senha estiver ativo
-    // - o aluno ainda não tiver deviceId (não está logado)
     const snapExigir = await db.ref('copaV2/configuracoes/exigirSenhaFase1').once('value');
     const exigir = snapExigir.val() !== undefined ? snapExigir.val() : true;
     if (!exigir) return true;
     if (estadoAtual.fase !== 1) return true;
-    // Verifica se já tem deviceId - se tiver, já está logado, não pede senha
     const deviceId = localStorage.getItem(DEVICE_ID_KEY);
     if (deviceId) {
-        // Tenta encontrar o participante com esse deviceId na fase 1
         const snap = await db.ref(`copaV2/participantes/1`).once('value');
         const participantes = snap.val() || {};
         for (const [id, dados] of Object.entries(participantes)) {
             if (dados.deviceId === deviceId) {
-                // Já está logado, pula a senha
                 return true;
             }
         }
     }
-    // Se chegou aqui, pede a senha
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'modal-senha';
@@ -2568,28 +2638,22 @@ async function loginAlunoAutomatico() {
     }
 
     if (!encontrado) {
-        // Se não encontrou, pode ser deviceId antigo ou apagado - remove e pede novo cadastro
         localStorage.removeItem(DEVICE_ID_KEY);
         return false;
     }
 
-    // Verifica se está classificado ou liberado
     const faseAtualNum = estadoAtual.fase;
     if (faseAtualNum > 1) {
         const classificados = estadoAtual.classificados?.[faseAtualNum - 1] || [];
         if (!classificados.includes(dadosJogador.id) && !dadosJogador.liberado) {
             toast('❌ Você não está classificado para esta fase.');
-            // Não remove deviceId, pois ele ainda pode estar classificado para fases futuras?
-            // Mas se não está classificado, bloqueia.
             return false;
         }
-        // Se foi liberado, permite entrada
         if (dadosJogador.liberado) {
             toast(`🔓 Acesso liberado pelo professor para a Fase ${faseAtualNum}.`);
         }
     }
 
-    // Loga automaticamente
     alunoId = dadosJogador.id;
     alunoNome = dadosJogador.nome;
     alunoTurma = dadosJogador.turma;
@@ -2611,7 +2675,6 @@ async function loginAlunoAutomatico() {
 
 async function cadastrarNovoAluno(nome, turma) {
     const faseAtual = estadoAtual.fase;
-    // Verifica se já existe um jogador com este nome e turma nas fases anteriores
     let jogadorExistente = null;
     let faseEncontrada = null;
 
@@ -2629,15 +2692,12 @@ async function cadastrarNovoAluno(nome, turma) {
     }
 
     if (jogadorExistente) {
-        // Verifica se está classificado para fase atual
         const classificados = estadoAtual.classificados?.[faseAtual - 1] || [];
         if (classificados.includes(jogadorExistente.id)) {
-            // Se tem deviceId, bloqueia (já está em outro dispositivo)
             if (jogadorExistente.deviceId) {
                 toast(`❌ O jogador ${nome} já está registrado em outro dispositivo. Use o mesmo aparelho.`);
                 return false;
             } else {
-                // Migração: associa deviceId
                 const deviceId = gerarDeviceId();
                 localStorage.setItem(DEVICE_ID_KEY, deviceId);
                 await db.ref(`copaV2/participantes/${faseAtual}/${jogadorExistente.id}`).update({ deviceId });
@@ -2655,10 +2715,7 @@ async function cadastrarNovoAluno(nome, turma) {
                 return true;
             }
         } else {
-            // Não classificado, mas pode tentar se cadastrar novamente (senão tiver deviceId)
             if (!jogadorExistente.deviceId) {
-                // Permite novo cadastro (caso de erro, ele pode recadastrar)
-                // Mas vamos deixar fluir para o cadastro normal
             } else {
                 toast(`❌ O jogador ${nome} não está classificado para esta fase.`);
                 return false;
@@ -2666,7 +2723,6 @@ async function cadastrarNovoAluno(nome, turma) {
         }
     }
 
-    // Cadastro normal (novo jogador)
     const novoId = btoa(nome.toLowerCase() + "|" + turma).slice(0,16);
     const deviceId = gerarDeviceId();
     localStorage.setItem(DEVICE_ID_KEY, deviceId);
@@ -2820,7 +2876,6 @@ async function iniciarNovaPartida() {
     if (estadoAtual.status !== 'em_andamento') { toast("Fase inativa!"); return; }
     if (Date.now() >= estadoAtual.fim) { toast("Tempo esgotado!"); return; }
     if (estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
-        // Verifica se está liberado
         const snap = await db.ref(`copaV2/participantes/${estadoAtual.fase}/${alunoId}/liberado`).once('value');
         if (!snap.val()) {
             toast("❌ Você não está classificado para esta fase.");
@@ -2890,20 +2945,17 @@ async function finalizar() {
 function atualizarUI() {
     if (!estadoAtual) return;
 
-    // --- Título da modalidade ---
     const modalidadeTitulo = document.getElementById('modalidade-titulo');
     if (modalidadeTitulo) {
         const config = MODALIDADE_CONFIG[estadoAtual.modalidade];
         modalidadeTitulo.innerText = config ? config.nome : estadoAtual.modalidade;
     }
 
-    // --- Informações de fase ---
     const faseAtualTitulo = document.getElementById('fase-atual-titulo');
     if (faseAtualTitulo) faseAtualTitulo.innerText = `Fase ${estadoAtual.fase} de ${TOTAL_FASES}`;
     const faseProgresso = document.getElementById('fase-progresso');
     if (faseProgresso) faseProgresso.innerText = `${estadoAtual.fase}/${TOTAL_FASES}`;
 
-    // --- Timer da fase ---
     if (estadoAtual.status === 'em_andamento' && estadoAtual.fim > 0) {
         const agora = Date.now();
         const restante = estadoAtual.fim - agora;
@@ -2935,19 +2987,16 @@ function atualizarUI() {
         document.getElementById('torcida-timer') && (document.getElementById('torcida-timer').innerText = '00:00');
     }
 
-    // --- Atualizações específicas do professor ---
     if (meuTipo === 'professor') {
         const profFaseInfo = document.getElementById('prof-fase-info');
         if (profFaseInfo) profFaseInfo.innerText = `Fase ${estadoAtual.fase}`;
         const inputTempo = document.getElementById('input-tempo-fase');
         if (inputTempo) inputTempo.value = estadoAtual.tempoFase || 12;
-        // Atualiza selects de fase
         popularSelectFases();
         popularSelectFasesTorcida();
         atualizarBotaoContinuarParar();
     }
 
-    // --- Atualizações da torcida ---
     if (meuTipo === 'projecao') {
         const torcidaModalidade = document.getElementById('torcida-modalidade');
         if (torcidaModalidade) {
@@ -2958,12 +3007,10 @@ function atualizarUI() {
         if (torcidaFaseInfo) torcidaFaseInfo.innerText = `${estadoAtual.fase}/${TOTAL_FASES}`;
     }
 
-    // --- Atualizações do aluno ---
     if (meuTipo === 'aluno') {
         renderAluno();
     }
 
-    // --- Pódio se fase 5 finalizada ---
     if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
         renderPodioFinal('podium-container');
         renderPodioFinal('podium-torcida-container');
@@ -2988,7 +3035,6 @@ function renderAluno() {
     const jogoArea = document.getElementById('jogo-area');
     const aguardandoArea = document.getElementById('aguardando-aluno');
 
-    // Verifica classificação
     let podeJogar = true;
     if (estadoAtual.fase > 1) {
         const classificados = estadoAtual.classificados?.[estadoAtual.fase - 1] || [];
@@ -3028,7 +3074,6 @@ function renderAluno() {
         if (btnJogar) btnJogar.classList.add('hidden');
     }
 
-    // Melhor resultado
     const melhorScoreEl = document.getElementById('aluno-melhor-score');
     if (melhorScoreEl && alunoId && estadoAtual.fase) {
         db.ref(`copaV2/resultados/${estadoAtual.fase}/${alunoId}`).once('value').then(snap => {
@@ -3042,7 +3087,6 @@ function renderAluno() {
         });
     }
 
-    // Histórico
     const historicoEl = document.getElementById('historico-aluno');
     if (historicoEl && alunoId && estadoAtual.fase) {
         db.ref(`copaV2/resultados/${estadoAtual.fase}/${alunoId}`).once('value').then(snap => {
@@ -3060,7 +3104,6 @@ function renderAluno() {
         });
     }
 
-    // Pódio se fase 5 finalizada
     if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
         renderPodioFinal('podium-aluno-container');
     }
@@ -3076,22 +3119,48 @@ async function init() {
 
     iniciarListeners();
 
-    // Carrega senha
     await carregarConfigSenha();
 
-    // ============================================================
-    // EVENTO: BOTÃO PROFESSOR
-    // ============================================================
     document.getElementById('btn-professor')?.addEventListener('click', () => {
-        meuTipo = 'professor';
-        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-        document.getElementById('painel-professor').classList.remove('hidden');
-        iniciarAtualizacaoProfessor();
-        atualizarUI();
-        tocarSom('clique');
+        if (auth.currentUser) {
+            abrirPainelProfessor();
+        } else {
+            mostrarModalLogin();
+        }
     });
 
-    // Eventos da senha
+    document.getElementById('btn-entrar-prof')?.addEventListener('click', () => {
+        const email = document.getElementById('input-email-prof').value.trim();
+        const senha = document.getElementById('input-senha-prof').value;
+        if (!email || !senha) {
+            document.getElementById('erro-auth-prof').innerText = 'Preencha todos os campos.';
+            return;
+        }
+        loginProfessor(email, senha);
+    });
+
+    document.getElementById('btn-criar-conta-prof')?.addEventListener('click', () => {
+        const email = document.getElementById('input-email-prof').value.trim();
+        const senha = document.getElementById('input-senha-prof').value;
+        if (!email || !senha) {
+            document.getElementById('erro-auth-prof').innerText = 'Preencha todos os campos.';
+            return;
+        }
+        if (senha.length < 6) {
+            document.getElementById('erro-auth-prof').innerText = 'A senha deve ter pelo menos 6 caracteres.';
+            return;
+        }
+        criarContaProfessor(email, senha);
+    });
+
+    document.getElementById('btn-cancelar-login-prof')?.addEventListener('click', () => {
+        esconderModalLogin();
+    });
+
+    document.getElementById('btn-logout-prof')?.addEventListener('click', () => {
+        logoutProfessor();
+    });
+
     document.getElementById('btn-gerar-senha')?.addEventListener('click', gerarSenhaAleatoria);
     document.getElementById('btn-salvar-senha')?.addEventListener('click', salvarSenha);
     document.getElementById('toggle-exigir-senha')?.addEventListener('change', () => {
@@ -3103,7 +3172,6 @@ async function init() {
         }
     });
 
-    // Evento de liberar
     document.getElementById('btn-liberar-aluno')?.addEventListener('click', liberarAluno);
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -3159,79 +3227,65 @@ async function init() {
     }
 
     const debounceDelay = 300;
-    const btnIniciarFase = document.getElementById('btn-iniciar-fase');
-    const btnAvancarFase = document.getElementById('btn-avancar-fase');
-    const btnResetFase = document.getElementById('btn-reset-fase');
-    const btnResetTotal = document.getElementById('btn-reset-total');
-    const btnAplicarModalidade = document.getElementById('btn-aplicar-modalidade');
-    const btnContinuarParar = document.getElementById('btn-continuar-parar-fase');
+    document.getElementById('btn-iniciar-fase')?.addEventListener('click', debounce(async () => {
+        let duracao = estadoAtual.tempoFase||12;
+        let fim = Date.now() + duracao*60000;
+        await db.ref('copaV2').update({ status:'em_andamento', fim, tempoRestantePausa: null });
+        tempoEsgotadoProcessado = false;
+        if (estadoAtual.fase === 1) {
+            senhaBloqueada = true;
+            atualizarStatusSenha();
+            toast('🔒 Senha bloqueada! Fase 1 iniciada.');
+        }
+        tocarSom('inicio_fase');
+    }, debounceDelay));
 
-    if (btnIniciarFase) {
-        btnIniciarFase.addEventListener('click', debounce(async () => {
-            let duracao = estadoAtual.tempoFase||12;
-            let fim = Date.now() + duracao*60000;
-            await db.ref('copaV2').update({ status:'em_andamento', fim, tempoRestantePausa: null });
-            tempoEsgotadoProcessado = false;
-            if (estadoAtual.fase === 1) {
-                senhaBloqueada = true;
-                atualizarStatusSenha();
-                toast('🔒 Senha bloqueada! Fase 1 iniciada.');
-            }
-            tocarSom('inicio_fase');
-        }, debounceDelay));
-    }
-    if (btnAvancarFase) {
-        btnAvancarFase.addEventListener('click', debounce(async () => {
-            if (confirm("Finalizar fase?")) {
-                await avancarFase();
-                tocarSom('fim_fase');
-            }
-        }, debounceDelay));
-    }
-    if (btnContinuarParar) {
-        btnContinuarParar.addEventListener('click', debounce(async () => {
-            if (estadoAtual?.status === 'em_andamento') {
-                await pausarFase();
-            } else if (estadoAtual?.status === 'pausado') {
-                await continuarFase();
-            }
-            tocarSom('clique');
-        }, debounceDelay));
-    }
-    if (btnResetFase) {
-        btnResetFase.addEventListener('click', debounce(async () => { 
-            await resetarFase();
-            if (estadoAtual.fase === 1) {
-                senhaBloqueada = false;
-                atualizarStatusSenha();
-                toast('🔓 Senha desbloqueada.');
-            }
-            tocarSom('clique');
-        }, debounceDelay));
-    }
-    if (btnResetTotal) {
-        btnResetTotal.addEventListener('click', debounce(() => {
-            if (confirm("Reset total?")) {
-                db.ref('copaV2').set({ fase:1, status:'aguardando', tempoFase:12, fim:0, modalidade: estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} });
-                db.ref('online').remove();
-                location.reload();
-            }
-            tocarSom('clique');
-        }, debounceDelay));
-    }
-    if (btnAplicarModalidade) {
-        btnAplicarModalidade.addEventListener('click', debounce(async () => {
-            const novaModalidade = document.getElementById('select-modalidade').value;
-            if (novaModalidade === estadoAtual.modalidade) { toast("Já está nesta modalidade."); return; }
-            if (confirm(`⚠️ Mudar para ${MODALIDADE_CONFIG[novaModalidade].nome} irá REINICIAR toda a competição. Continuar?`)) {
-                await db.ref('copaV2').set({ fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: novaModalidade, resultados: {}, participantes: {}, classificados: {} });
-                await db.ref('online').remove();
-                toast(`Modalidade alterada. Competição reiniciada.`);
-                setTimeout(() => location.reload(), 1500);
-            }
-            tocarSom('clique');
-        }, debounceDelay));
-    }
+    document.getElementById('btn-avancar-fase')?.addEventListener('click', debounce(async () => {
+        if (confirm("Finalizar fase?")) {
+            await avancarFase();
+            tocarSom('fim_fase');
+        }
+    }, debounceDelay));
+
+    document.getElementById('btn-continuar-parar-fase')?.addEventListener('click', debounce(async () => {
+        if (estadoAtual?.status === 'em_andamento') {
+            await pausarFase();
+        } else if (estadoAtual?.status === 'pausado') {
+            await continuarFase();
+        }
+        tocarSom('clique');
+    }, debounceDelay));
+
+    document.getElementById('btn-reset-fase')?.addEventListener('click', debounce(async () => { 
+        await resetarFase();
+        if (estadoAtual.fase === 1) {
+            senhaBloqueada = false;
+            atualizarStatusSenha();
+            toast('🔓 Senha desbloqueada.');
+        }
+        tocarSom('clique');
+    }, debounceDelay));
+
+    document.getElementById('btn-reset-total')?.addEventListener('click', debounce(() => {
+        if (confirm("Reset total?")) {
+            db.ref('copaV2').set({ fase:1, status:'aguardando', tempoFase:12, fim:0, modalidade: estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} });
+            db.ref('online').remove();
+            location.reload();
+        }
+        tocarSom('clique');
+    }, debounceDelay));
+
+    document.getElementById('btn-aplicar-modalidade')?.addEventListener('click', debounce(async () => {
+        const novaModalidade = document.getElementById('select-modalidade').value;
+        if (novaModalidade === estadoAtual.modalidade) { toast("Já está nesta modalidade."); return; }
+        if (confirm(`⚠️ Mudar para ${MODALIDADE_CONFIG[novaModalidade].nome} irá REINICIAR toda a competição. Continuar?`)) {
+            await db.ref('copaV2').set({ fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: novaModalidade, resultados: {}, participantes: {}, classificados: {} });
+            await db.ref('online').remove();
+            toast(`Modalidade alterada. Competição reiniciada.`);
+            setTimeout(() => location.reload(), 1500);
+        }
+        tocarSom('clique');
+    }, debounceDelay));
 
     document.getElementById('btn-salvar-tempo')?.addEventListener('click', () => {
         let t = parseInt(document.getElementById('input-tempo-fase').value);
@@ -3239,9 +3293,6 @@ async function init() {
         tocarSom('clique');
     });
 
-    // ============================================================
-    // BOTÃO ALUNO - NOVO FLUXO COM SENHA E LIBERAÇÃO
-    // ============================================================
     document.getElementById('btn-aluno')?.addEventListener('click', async () => {
         if (!estadoAtual || estadoAtual.status !== 'em_andamento' || Date.now() >= estadoAtual.fim) {
             toast("⏳ A fase não foi iniciada ou já terminou.");
@@ -3413,5 +3464,6 @@ async function init() {
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
+
 </body>
 </html>
