@@ -1183,7 +1183,7 @@ let modoTorcida = 'individual';
 let torcidaId = null;
 let faseTorcidaSelecionada = 1;
 let atualizandoSeletorTorcida = false;
-let intervaloRankingAluno = null; // para atualização do ranking no modal do aluno
+let intervaloRankingAluno = null;
 
 const TOTAL_FASES = 5;
 let intervaloIndividualSegundos = 4;
@@ -1234,13 +1234,11 @@ function fecharModalLogin() {
 
 // Evento do botão "Professor"
 document.getElementById('btn-professor')?.addEventListener('click', () => {
-    // Verifica se já está logado
     const user = auth.currentUser;
     if (user) {
         entrarModoProfessor();
         return;
     }
-    // Senão, mostra o modal
     mostrarModalLogin();
     tocarSom('clique');
 });
@@ -1286,14 +1284,10 @@ document.getElementById('btn-logout-professor')?.addEventListener('click', async
     }
 });
 
-// Observador de autenticação (persistência)
 auth.onAuthStateChanged((user) => {
     if (user) {
-        // Se o painel já estiver aberto, mantém; senão, só guarda o estado.
-        // Se o usuário clicar em "Professor", ele entra direto.
         console.log('Usuário logado:', user.email);
     } else {
-        // Se estava no modo professor, volta para o menu
         if (meuTipo === 'professor') {
             location.reload();
         }
@@ -1525,7 +1519,6 @@ function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer, alunoT
     if (torcidaTimer) torcidaTimer.innerText = timeStr;
     if (alunoTimer) {
         alunoTimer.innerText = `⏱️ Tempo: ${timeStr}`;
-        // Cor vermelha se faltar menos de 1 minuto
         if (segundos < 60) {
             alunoTimer.classList.add('urgente');
         } else {
@@ -1589,7 +1582,6 @@ function iniciarListeners() {
             atualizarListaLiberados();
             atualizarBotaoContinuarParar();
         }
-        // Se o modal de ranking do aluno estiver aberto, atualiza o ranking
         const modalRanking = document.getElementById('modal-ranking-aluno');
         if (modalRanking && modalRanking.style.display === 'flex') {
             atualizarRankingAluno();
@@ -1630,7 +1622,7 @@ function iniciarListeners() {
 }
 
 // ============================================================
-// RANKING (funções principais)
+// RANKING (função principal com alterações)
 // ============================================================
 let cacheRanking = {};
 
@@ -1649,6 +1641,7 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     const snapTemp = await db.ref(`copaV2/resultados_temp/${faseNum}`).once('value');
     const participantes = estadoAtual.participantes?.[faseNum] || {};
     const statusMap = new Map();
+    // Mapeia status e progresso dos jogadores em andamento
     snapTemp.forEach(child => {
         const data = child.val();
         if (data) {
@@ -1656,7 +1649,8 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 status: 'em_jogo',
                 progresso: data.perguntas || 0,
                 nome: data.nome || "Anônimo",
-                turma: data.turma || "?"
+                turma: data.turma || "?",
+                pontosTemp: data.pontos || 0
             });
         }
     });
@@ -1669,10 +1663,12 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                     status: 'finalizado',
                     progresso: 20,
                     nome: "Anônimo",
-                    turma: "?"
+                    turma: "?",
+                    pontosTemp: null
                 });
             } else if (existente.status === 'em_jogo' && existente.progresso >= 20) {
                 existente.status = 'finalizado';
+                existente.pontosTemp = null;
             }
         }
     });
@@ -1707,6 +1703,15 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             if (statusInfo.status === 'aguardando') progresso = 0;
             const ultimaPartida = partidas[partidas.length - 1];
             const ultimaPosicao = ultimaPartida?.posicao || null;
+            // Pontuação da última partida
+            let pontuacaoPartida = null;
+            if (statusInfo.status === 'em_jogo' && statusInfo.pontosTemp !== null && statusInfo.pontosTemp !== undefined) {
+                pontuacaoPartida = statusInfo.pontosTemp;
+            } else {
+                // Última partida finalizada
+                const ultima = partidas[partidas.length - 1];
+                pontuacaoPartida = ultima ? ultima.pontos : null;
+            }
             mapa.set(child.key, {
                 nome, turma,
                 pontos: melhor.pontos,
@@ -1718,14 +1723,15 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 velocidadeAtual: velocidadeAtual,
                 status: statusInfo.status,
                 progresso: progresso,
-                ultimaPosicao: ultimaPosicao
+                ultimaPosicao: ultimaPosicao,
+                pontuacaoPartida: pontuacaoPartida
             });
         }
     });
     snapTemp.forEach(child => {
         const data = child.val();
         const existente = mapa.get(child.key);
-        const statusInfo = statusMap.get(child.key) || { status: 'em_jogo', progresso: data.perguntas || 0 };
+        const statusInfo = statusMap.get(child.key) || { status: 'em_jogo', progresso: data.perguntas || 0, pontosTemp: data.pontos || 0 };
         if (!existente) {
             const velocidadeAtual = (data.acertos > 0) ? (data.tempo / data.acertos) : null;
             mapa.set(child.key, {
@@ -1740,7 +1746,8 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 velocidadeAtual: velocidadeAtual,
                 status: statusInfo.status,
                 progresso: statusInfo.progresso,
-                ultimaPosicao: null
+                ultimaPosicao: null,
+                pontuacaoPartida: (statusInfo.status === 'em_jogo' && statusInfo.pontosTemp !== null) ? statusInfo.pontosTemp : data.pontos
             });
         } else {
             existente.partidas = (existente.partidas || 0) + 1;
@@ -1756,6 +1763,16 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             if (statusInfo) {
                 existente.status = statusInfo.status;
                 existente.progresso = statusInfo.progresso;
+                if (statusInfo.status === 'em_jogo' && statusInfo.pontosTemp !== null) {
+                    existente.pontuacaoPartida = statusInfo.pontosTemp;
+                } else {
+                    // Se finalizou, usa a última partida
+                    const snapPartidas = await db.ref(`copaV2/resultados/${faseNum}/${child.key}`).once('value');
+                    const partidas = snapPartidas.val() || [];
+                    if (partidas.length > 0) {
+                        existente.pontuacaoPartida = partidas[partidas.length - 1].pontos;
+                    }
+                }
             }
         }
     });
@@ -1811,9 +1828,8 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     const mostrarClassificacao = (containerId === 'ranking-torcida-container' || containerId === 'ranking-aluno-container') ? true : exibirClassificacao;
 
     let html = `<table class="ranking-table"><thead><tr>
-        <th>Pos</th><th>Nome</th><th>Fut. Pos.</th><th>Pontuação</th><th>Delta Líder</th>
-        <th>Veloc.<br>Média</th><th>Veloc.<br>Recorde</th><th>Δ Veloc.</th>
-        <th>Progresso</th>${mostrarClassificacao ? '<th>Classificação</th>' : ''}<th>Partidas</th><th>Turma</th>
+        <th>Pos</th><th>Nome</th><th>Fut. Pos.</th><th>Pontuação</th><th>Pont. Partida</th><th>Delta Líder</th>
+        <th>Veloc.<br>Recorde</th><th>Progresso</th>${mostrarClassificacao ? '<th>Classificação</th>' : ''}<th>Partidas</th><th>Turma</th>
      </tr></thead><tbody>`;
     for (let idx = 0; idx < listaComId.length; idx++) {
         const j = listaComId[idx];
@@ -1826,31 +1842,10 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         }
         const deltaLider = maxPontos - j.pontos;
         const deltaText = deltaLider === 0 ? "🏆 Líder" : `+${deltaLider}`;
-        let velocidadeAtualStr = "-", velocidadeAtualNum = null;
-        if (j.velocidadeAtual !== null && j.velocidadeAtual !== undefined) {
-            velocidadeAtualNum = j.velocidadeAtual;
-            velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
-        } else if (j.acertos > 0 && j.tempo > 0) {
-            velocidadeAtualNum = j.tempo / j.acertos;
-            velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
-        }
         let recordeStr = "-";
         let recordeNum = j.recordeVelocidade;
         if (recordeNum !== null && recordeNum > 0) {
             recordeStr = recordeNum.toFixed(2) + " s";
-        }
-        let deltaVelocidadeHtml = "";
-        if (velocidadeAtualNum !== null && recordeNum !== null && recordeNum > 0) {
-            const diff = velocidadeAtualNum - recordeNum;
-            const diffAbs = Math.abs(diff);
-            const diffStr = diffAbs.toFixed(2);
-            let icon = "", classe = "";
-            if (diff < -0.01) { icon = "🟢"; classe = "veloc-melhor"; }
-            else if (diff > 0.01) { icon = "🔴"; classe = "veloc-pior"; }
-            else { icon = "⚪"; classe = "veloc-igual"; }
-            deltaVelocidadeHtml = `<span class="${classe}">${icon} ${diffStr}s</span>`;
-        } else {
-            deltaVelocidadeHtml = "—";
         }
         let futPosHtml = "";
         if (j.status === 'finalizado' || j.progresso >= 20 || (j.perguntas && j.perguntas >= 20)) {
@@ -1885,15 +1880,24 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 colunaStatus = classificado ? `<td class="classificado-sim">Top${vagas}</td>` : `<td class="classificado-nao">Eliminado</td>`;
             }
         }
+        // Pontuação da partida
+        let pontPartidaStr = "-";
+        if (j.pontuacaoPartida !== null && j.pontuacaoPartida !== undefined) {
+            pontPartidaStr = j.pontuacaoPartida;
+            // Se estiver em jogo, destacar com ícone
+            if (j.status === 'em_jogo') {
+                pontPartidaStr += ' 🟢';
+            }
+        }
+
         html += `<tr>
             <td class="${classePos}">${idx+1}º</td>
             <td>${escapeHtml(j.nome)}</td>
             <td>${futPosHtml}</td>
             <td>${j.pontos}</td>
+            <td>${pontPartidaStr}</td>
             <td>${deltaText}</td>
-            <td>${velocidadeAtualStr}</td>
             <td>${recordeStr}</td>
-            <td>${deltaVelocidadeHtml}</td>
             <td>${progressoHtml}</td>
             ${mostrarClassificacao ? colunaStatus : ''}
             <td>${j.partidas}</td>
@@ -1994,7 +1998,7 @@ async function renderRankingTurmas(containerId) {
 }
 
 // ============================================================
-// ATUALIZAÇÃO DOS RANKINGS (Professor e Torcida)
+// ATUALIZAÇÃO DOS RANKINGS (Professor e Torcida) - mantido
 // ============================================================
 async function atualizarRankingProfessor() {
     if (meuTipo === 'professor' && atualizacaoRankingAuto && document.getElementById('tab-ranking-fase') && !document.getElementById('tab-ranking-fase').classList.contains('hidden')) {
@@ -2071,7 +2075,7 @@ function pararAtualizacaoTorcida() {
 }
 
 // ============================================================
-// GERENCIAMENTO DE TURMAS
+// GERENCIAMENTO DE TURMAS (mantido)
 // ============================================================
 async function carregarTurmas() {
     const snap = await db.ref('copaV2/turmas').once('value');
@@ -2292,7 +2296,7 @@ function renderPodioFinal(containerId) {
 }
 
 // ============================================================
-// CONTROLE DE FASE
+// CONTROLE DE FASE (mantido)
 // ============================================================
 function atualizarBotaoContinuarParar() {
     const btn = document.getElementById('btn-continuar-parar-fase');
@@ -2544,7 +2548,7 @@ function popularSelectFases() {
 }
 
 // ============================================================
-// SENHA E LIBERAR (para alunos)
+// SENHA E LIBERAR
 // ============================================================
 let senhaBloqueada = false;
 
@@ -2684,7 +2688,7 @@ async function atualizarListaLiberados() {
 }
 
 // ============================================================
-// LOGIN DO ALUNO (com senha e liberação)
+// LOGIN DO ALUNO
 // ============================================================
 function gerarDeviceId() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -2890,7 +2894,7 @@ async function cadastrarNovoAluno(nome, turma) {
 }
 
 // ============================================================
-// LÓGICA DO JOGO
+// LÓGICA DO JOGO (mantida)
 // ============================================================
 let posicaoAnteriorAluno = null;
 let animFrameId = null;
@@ -3379,7 +3383,6 @@ async function atualizarRankingAluno() {
 function abrirModalRanking() {
     const modal = document.getElementById('modal-ranking-aluno');
     modal.style.display = 'flex';
-    // Inicia atualização periódica se não estiver rodando
     if (!intervaloRankingAluno) {
         intervaloRankingAluno = setInterval(() => {
             if (modal.style.display === 'flex') {
@@ -3414,9 +3417,6 @@ async function init() {
     iniciarListeners();
     await carregarConfigSenha();
 
-    // ============================================================
-    // EVENTOS DOS BOTÕES (além do Professor já tratado acima)
-    // ============================================================
     document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
         window.open('tutorial-instalacao.html', '_blank');
         toast('📱 Abrindo tutorial de instalação...');
@@ -3567,9 +3567,6 @@ async function init() {
         tocarSom('clique');
     });
 
-    // ============================================================
-    // BOTÃO ALUNO
-    // ============================================================
     document.getElementById('btn-aluno')?.addEventListener('click', async () => {
         if (!estadoAtual || estadoAtual.status !== 'em_andamento' || Date.now() >= estadoAtual.fim) {
             toast("⏳ A fase não foi iniciada ou já terminou.");
@@ -3628,25 +3625,18 @@ async function init() {
 
     document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
 
-    // ============================================================
-    // BOTÃO RANKING DO ALUNO
-    // ============================================================
     document.getElementById('btn-ranking-aluno')?.addEventListener('click', abrirModalRanking);
 
-    // Fechar modal ao clicar fora
     document.getElementById('modal-ranking-aluno')?.addEventListener('click', (e) => {
         if (e.target === e.currentTarget) {
             fecharModalRanking();
         }
     });
 
-    // Botão "Voltar ao Jogo"
     document.getElementById('btn-fechar-modal-ranking')?.addEventListener('click', fecharModalRanking);
 
-    // Botão "Sair" no modal
     document.getElementById('btn-sair-modal-ranking')?.addEventListener('click', () => {
         fecharModalRanking();
-        // Executa a mesma ação do botão "Sair" do aluno
         pararAtualizacaoTempoReal();
         if (alunoId) {
             db.ref(`online/${alunoId}`).remove();
@@ -3656,9 +3646,6 @@ async function init() {
         tocarSom('clique');
     });
 
-    // ============================================================
-    // BOTÃO TORCIDA
-    // ============================================================
     document.getElementById('btn-projecao')?.addEventListener('click', () => {
         torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
         const torcidaRef = db.ref(`online/${torcidaId}`);
@@ -3764,7 +3751,6 @@ async function init() {
                 if (inputInd) inputInd.value = intervaloIndividualSegundos;
                 if (inputEq) inputEq.value = intervaloEquipesSegundos;
             }
-            // Se o modal de ranking do aluno estiver aberto, reinicia o intervalo
             if (meuTipo === 'aluno' && document.getElementById('modal-ranking-aluno').style.display === 'flex') {
                 if (intervaloRankingAluno) {
                     clearInterval(intervaloRankingAluno);
@@ -3782,7 +3768,6 @@ async function init() {
     setTimeout(carregarValorPartida, 500);
 }
 
-// Aguarda o DOM carregar
 document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
