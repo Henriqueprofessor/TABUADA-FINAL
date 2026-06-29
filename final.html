@@ -523,6 +523,52 @@
             margin-top: 10px;
             font-size: 14px;
         }
+
+        /* Modal de Ranking para o Aluno */
+        .modal-ranking {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 20000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-ranking-content {
+            background: #0f172a;
+            border-radius: 32px;
+            padding: 24px;
+            width: 95%;
+            max-width: 1000px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid #ffd966;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.7);
+            position: relative;
+        }
+        .modal-ranking-content .fechar-modal {
+            background: #e67e22;
+            margin: 10px 5px;
+        }
+        .modal-ranking-content .btn-sair-modal {
+            background: #c0392b;
+            margin: 10px 5px;
+        }
+        .modal-ranking-content .btn-fechar {
+            background: #34495e;
+            margin: 10px 5px;
+        }
+        .modal-ranking-content .acoes-modal {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
     </style>
 
     <!-- Firebase SDKs -->
@@ -833,6 +879,7 @@
     <div id="tela-aluno" class="card hidden">
         <div class="header-actions">
             <h2 id="aluno-nome-display">Aluno</h2>
+            <button id="btn-ranking-aluno" class="btn-info" style="margin-left: 10px;">📊 Ranking</button>
             <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
         </div>
         <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</span> <span id="aluno-fase-info" class="fase-info"></span></p>
@@ -874,6 +921,20 @@
             <div id="historico-aluno"></div>
         </div>
         <div id="podium-aluno-container" class="status-box hidden"></div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODAL DE RANKING PARA O ALUNO                              -->
+    <!-- ========================================================= -->
+    <div id="modal-ranking-aluno" class="modal-ranking">
+        <div class="modal-ranking-content">
+            <h2 style="color: #ffd966; text-align: center;">📊 Ranking da Fase Atual</h2>
+            <div id="ranking-aluno-container" class="status-box" style="max-height: 60vh; overflow-y: auto;">Carregando...</div>
+            <div class="acoes-modal">
+                <button id="btn-fechar-modal-ranking" class="btn-fechar">🔙 Voltar ao Jogo</button>
+                <button id="btn-sair-modal-ranking" class="btn-sair-modal">🚪 Sair</button>
+            </div>
+        </div>
     </div>
 
     <!-- ========================================================= -->
@@ -1101,6 +1162,7 @@ let modoTorcida = 'individual';
 let torcidaId = null;
 let faseTorcidaSelecionada = 1;
 let atualizandoSeletorTorcida = false;
+let intervaloRankingAluno = null; // para atualização do ranking no modal do aluno
 
 const TOTAL_FASES = 5;
 let intervaloIndividualSegundos = 4;
@@ -1497,6 +1559,11 @@ function iniciarListeners() {
             atualizarListaLiberados();
             atualizarBotaoContinuarParar();
         }
+        // Se o modal de ranking do aluno estiver aberto, atualiza o ranking
+        const modalRanking = document.getElementById('modal-ranking-aluno');
+        if (modalRanking && modalRanking.style.display === 'flex') {
+            atualizarRankingAluno();
+        }
     });
 
     if (listenerOnline) listenerOnline();
@@ -1711,7 +1778,7 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     }
     const maxPontos = listaComId[0].pontos;
     const vagas = VAGAS_POR_FASE[faseNum] || 30;
-    const mostrarClassificacao = (containerId === 'ranking-torcida-container') ? true : exibirClassificacao;
+    const mostrarClassificacao = (containerId === 'ranking-torcida-container' || containerId === 'ranking-aluno-container') ? true : exibirClassificacao;
 
     let html = `<table class="ranking-table"><thead><tr>
         <th>Pos</th><th>Nome</th><th>Fut. Pos.</th><th>Pontuação</th><th>Delta Líder</th>
@@ -3247,6 +3314,41 @@ function renderAluno() {
 }
 
 // ============================================================
+// RANKING DO ALUNO (modal)
+// ============================================================
+async function atualizarRankingAluno() {
+    if (meuTipo !== 'aluno') return;
+    if (!estadoAtual) return;
+    const faseAtual = estadoAtual.fase;
+    await renderRanking(faseAtual, 'ranking-aluno-container', 'individual', true);
+}
+
+function abrirModalRanking() {
+    const modal = document.getElementById('modal-ranking-aluno');
+    modal.style.display = 'flex';
+    // Inicia atualização periódica se não estiver rodando
+    if (!intervaloRankingAluno) {
+        intervaloRankingAluno = setInterval(() => {
+            if (modal.style.display === 'flex') {
+                atualizarRankingAluno();
+            }
+        }, intervaloIndividualSegundos * 1000);
+    }
+    atualizarRankingAluno();
+    tocarSom('clique');
+}
+
+function fecharModalRanking() {
+    const modal = document.getElementById('modal-ranking-aluno');
+    modal.style.display = 'none';
+    if (intervaloRankingAluno) {
+        clearInterval(intervaloRankingAluno);
+        intervaloRankingAluno = null;
+    }
+    tocarSom('clique');
+}
+
+// ============================================================
 // INICIALIZAÇÃO
 // ============================================================
 async function init() {
@@ -3474,6 +3576,34 @@ async function init() {
     document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
 
     // ============================================================
+    // BOTÃO RANKING DO ALUNO
+    // ============================================================
+    document.getElementById('btn-ranking-aluno')?.addEventListener('click', abrirModalRanking);
+
+    // Fechar modal ao clicar fora
+    document.getElementById('modal-ranking-aluno')?.addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) {
+            fecharModalRanking();
+        }
+    });
+
+    // Botão "Voltar ao Jogo"
+    document.getElementById('btn-fechar-modal-ranking')?.addEventListener('click', fecharModalRanking);
+
+    // Botão "Sair" no modal
+    document.getElementById('btn-sair-modal-ranking')?.addEventListener('click', () => {
+        fecharModalRanking();
+        // Executa a mesma ação do botão "Sair" do aluno
+        pararAtualizacaoTempoReal();
+        if (alunoId) {
+            db.ref(`online/${alunoId}`).remove();
+        }
+        sessionStorage.removeItem('ultimaFase');
+        location.reload();
+        tocarSom('clique');
+    });
+
+    // ============================================================
     // BOTÃO TORCIDA
     // ============================================================
     document.getElementById('btn-projecao')?.addEventListener('click', () => {
@@ -3580,6 +3710,18 @@ async function init() {
                 const inputEq = document.getElementById('intervalo-equipes');
                 if (inputInd) inputInd.value = intervaloIndividualSegundos;
                 if (inputEq) inputEq.value = intervaloEquipesSegundos;
+            }
+            // Se o modal de ranking do aluno estiver aberto, reinicia o intervalo
+            if (meuTipo === 'aluno' && document.getElementById('modal-ranking-aluno').style.display === 'flex') {
+                if (intervaloRankingAluno) {
+                    clearInterval(intervaloRankingAluno);
+                    intervaloRankingAluno = null;
+                }
+                intervaloRankingAluno = setInterval(() => {
+                    if (document.getElementById('modal-ranking-aluno').style.display === 'flex') {
+                        atualizarRankingAluno();
+                    }
+                }, intervaloIndividualSegundos * 1000);
             }
         }
     });
