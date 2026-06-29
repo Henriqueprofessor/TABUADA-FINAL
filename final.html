@@ -466,8 +466,66 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+
+        /* Estilos para o modal de login */
+        .modal-login {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 10050;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-login-content {
+            background: #0f172a;
+            border-radius: 32px;
+            padding: 32px;
+            width: 90%;
+            max-width: 400px;
+            border: 2px solid #ffd966;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .modal-login-content h2 {
+            color: #ffd966;
+            margin-top: 0;
+        }
+        .modal-login-content input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 10px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #f1f5f9;
+            font-size: 16px;
+        }
+        .modal-login-content .btn-login {
+            background: #27ae60;
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+        }
+        .modal-login-content .btn-login:hover { background: #2ecc71; }
+        .modal-login-content .btn-cancelar {
+            background: #c0392b;
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+        }
+        .modal-login-content .btn-cancelar:hover { background: #e74c3c; }
+        .modal-login-content .erro-msg {
+            color: #f87171;
+            margin-top: 10px;
+            font-size: 14px;
+        }
     </style>
 
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
@@ -475,6 +533,25 @@
 <body>
 
 <div class="container">
+
+    <!-- ========================================================= -->
+    <!-- MODAL DE LOGIN DO PROFESSOR (autenticação Firebase)        -->
+    <!-- ========================================================= -->
+    <div id="modalLoginProfessor" class="modal-login">
+        <div class="modal-login-content">
+            <h2>🔐 Acesso do Professor</h2>
+            <p style="color: #94a3b8; margin: 10px 0 20px;">Digite seu e-mail e senha cadastrados.</p>
+            <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="email">
+            <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password">
+            <button id="btnLoginProfessor" class="btn-login">✅ Entrar</button>
+            <button id="btnCancelarLogin" class="btn-cancelar">❌ Cancelar</button>
+            <div id="loginErro" class="erro-msg"></div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- CABEÇALHO PRINCIPAL                                        -->
+    <!-- ========================================================= -->
     <div class="card">
         <div class="header-title">
             <h1>🏆 COPA TABUADA CEIB 2026 <span id="modalidade-titulo" class="modalidade-badge">Carregando...</span></h1>
@@ -504,18 +581,20 @@
         </div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- PAINEL DO PROFESSOR                                        -->
+    <!-- ========================================================= -->
     <div id="painel-professor" class="card hidden">
         <div class="header-actions">
             <h2>🔧 Painel do Professor <span id="prof-fase-info" class="fase-info"></span></h2>
             <div>
                 <button id="btn-sync-prof" class="btn-warning">🔄 Sincronizar</button>
+                <button id="btn-logout-professor" class="btn-danger">🚪 Sair</button>
                 <button id="btn-voltar-menu-prof" class="btn-danger">🏠 Voltar ao Menu</button>
             </div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- PAINEL DE CONTROLE DE SOM -->
-        <!-- ============================================================ -->
+        <!-- Bloco de Som -->
         <div id="bloco-controle-som" class="config-card">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <span style="font-size: 28px;">🔊</span>
@@ -541,6 +620,7 @@
             </div>
         </div>
 
+        <!-- Valor da Partida -->
         <div id="bloco-valor-partida" class="config-card">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <span style="font-size: 28px;">💰</span>
@@ -575,9 +655,7 @@
             </div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- NOVO: SENHA DE ACESSO PARA FASE 1 -->
-        <!-- ============================================================ -->
+        <!-- Senha de Acesso Fase 1 -->
         <div class="config-card senha-card">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <span style="font-size: 28px;">🔑</span>
@@ -608,9 +686,7 @@
             </p>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- NOVO: LIBERAR CADASTRO EMERGENCIAL -->
-        <!-- ============================================================ -->
+        <!-- Liberar Cadastro Emergencial -->
         <div class="config-card liberar-card">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <span style="font-size: 28px;">🚪</span>
@@ -634,6 +710,7 @@
             </div>
         </div>
 
+        <!-- Abas do Professor -->
         <div class="tab-buttons">
             <div class="tab-btn active" data-tab="controle">🎮 Controle</div>
             <div class="tab-btn" data-tab="ranking-geral">🏆 Ranking Geral</div>
@@ -643,6 +720,7 @@
             <div class="tab-btn" data-tab="gerenciar-turmas">🏷️ Gerenciar Turmas</div>
         </div>
 
+        <!-- Conteúdo das Abas -->
         <div id="tab-controle" class="tab-content">
             <div class="flex-grid">
                 <div>
@@ -690,10 +768,12 @@
             </div>
             <div id="podium-container" class="status-box hidden"></div>
         </div>
+
         <div id="tab-ranking-geral" class="tab-content hidden">
             <h3>📊 Classificação Geral - Todos os Participantes</h3>
             <div id="ranking-geral-container" class="status-box">Processando ranking geral...</div>
         </div>
+
         <div id="tab-ranking-fase" class="tab-content hidden">
             <h3>Ranking por Fase (Atualização automática)</h3>
             <div class="fase-selector">
@@ -703,6 +783,7 @@
             </div>
             <div id="ranking-parcial" class="status-box">Aguardando dados...</div>
         </div>
+
         <div id="tab-ranking-turmas" class="tab-content hidden">
             <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
             <div style="margin-bottom: 15px;">
@@ -710,11 +791,13 @@
             </div>
             <div id="ranking-turmas-container" class="status-box">Carregando...</div>
         </div>
+
         <div id="tab-gerenciar-alunos" class="tab-content hidden">
             <h3>📝 Gerenciar Alunos da Fase Atual</h3>
             <div id="lista-alunos-gerenciavel" class="status-box scroll-list">Carregando...</div>
             <button id="btn-atualizar-lista-alunos" class="btn-secondary">🔄 Recarregar</button>
         </div>
+
         <div id="tab-gerenciar-turmas" class="tab-content hidden">
             <h3>🏷️ Gerenciar Turmas Disponíveis</h3>
             <button id="btn-adicionar-turma" class="btn-success">➕ Adicionar Nova Turma</button>
@@ -722,6 +805,9 @@
         </div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- TELA DO ALUNO                                               -->
+    <!-- ========================================================= -->
     <div id="tela-aluno" class="card hidden">
         <div class="header-actions">
             <h2 id="aluno-nome-display">Aluno</h2>
@@ -768,6 +854,9 @@
         <div id="podium-aluno-container" class="status-box hidden"></div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- TELA DA TORCIDA                                            -->
+    <!-- ========================================================= -->
     <div id="tela-torcida" class="card hidden">
         <div class="header-actions">
             <h2>📺 RANKING EM TEMPO REAL <span class="live-badge">AO VIVO</span></h2>
@@ -794,12 +883,17 @@
     </div>
 </div>
 
+<!-- Toast de notificações -->
 <div id="toast" class="toast hidden"></div>
 
+<!-- Rodapé -->
 <div style="text-align: center; margin-top: 30px; padding: 15px; color: #666; font-size: 14px; border-top: 1px solid #2c3e50;">
     🏆 Copa Tabuada CEIB 2026 - Desenvolvido por <strong style="color: #ffd966;">HENRIQUE ANGELO DA SILVA</strong>
 </div>
 
+<!-- ============================================================ -->
+<!-- JAVASCRIPT COMPLETO                                           -->
+<!-- ============================================================ -->
 <script>
 // ============================================================
 // SISTEMA DE SONS (mantido)
@@ -952,12 +1046,9 @@ async function atualizarDisplayVersao() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    inicializarSons();
-    setTimeout(atualizarDisplayVersao, 1500);
-});
-
-// ---------- CONFIGURAÇÃO DO FIREBASE ----------
+// ============================================================
+// CONFIGURAÇÃO DO FIREBASE (com seus dados)
+// ============================================================
 const firebaseConfig = {
     apiKey: "AIzaSyAA_5rBa-eQ4611y3Kg8B-VBz0-o2HVhEE",
     authDomain: "final-copa-tabuada.firebaseapp.com",
@@ -969,12 +1060,143 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const auth = firebase.auth();
+
+// ============================================================
+// VARIÁVEIS GLOBAIS
+// ============================================================
+let meuTipo = null, alunoId = null, alunoNome = null, alunoTurma = null;
+let estadoAtual = null, jogoAtivo = false;
+let perguntas = [], perguntaIdx = 0, pontosPartida = 0, acertosPartida = 0, tempoTotalPartida = 0;
+let timerPergunta = null, tempoRestantePergunta = 10, timerFase = null;
+let intervaloTorcidaIndividual = null;
+let intervaloTorcidaEquipes = null;
+let intervaloRankingProfessor = null;
+let atualizacaoRankingAuto = true;
+let faseSelecionadaProf = 1;
+let modoTorcida = 'individual';
+let torcidaId = null;
+let faseTorcidaSelecionada = 1;
+let atualizandoSeletorTorcida = false;
+
+const TOTAL_FASES = 5;
+let intervaloIndividualSegundos = 4;
+let intervaloEquipesSegundos = 60;
+let tempoEsgotadoProcessado = false;
+let VALOR_PARTIDA = 2000;
+const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
+const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
+const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
+const DEVICE_ID_KEY = 'copa_device_id';
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(m) {
+    const t = document.getElementById('toast');
+    if (t) { t.innerText = m; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
+    tocarSom('notificacao');
+}
+
+// ============================================================
+// AUTENTICAÇÃO DO PROFESSOR (Firebase Auth)
+// ============================================================
+function entrarModoProfessor() {
+    meuTipo = 'professor';
+    document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+    document.getElementById('painel-professor').classList.remove('hidden');
+    iniciarAtualizacaoProfessor();
+    atualizarUI();
+    toast('👨‍🏫 Bem-vindo, Professor!');
+    tocarSom('clique');
+}
+
+// Exibe o modal de login
+function mostrarModalLogin() {
+    const modal = document.getElementById('modalLoginProfessor');
+    modal.style.display = 'flex';
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginSenha').value = '';
+    document.getElementById('loginErro').textContent = '';
+    document.getElementById('loginEmail').focus();
+}
+
+// Fecha o modal
+function fecharModalLogin() {
+    document.getElementById('modalLoginProfessor').style.display = 'none';
+}
+
+// Evento do botão "Professor"
+document.getElementById('btn-professor')?.addEventListener('click', () => {
+    // Verifica se já está logado
+    const user = auth.currentUser;
+    if (user) {
+        entrarModoProfessor();
+        return;
+    }
+    // Senão, mostra o modal
+    mostrarModalLogin();
+    tocarSom('clique');
+});
+
+// Login
+document.getElementById('btnLoginProfessor')?.addEventListener('click', async () => {
+    const email = document.getElementById('loginEmail').value.trim();
+    const senha = document.getElementById('loginSenha').value.trim();
+    const erroEl = document.getElementById('loginErro');
+
+    if (!email || !senha) {
+        erroEl.textContent = 'Preencha e-mail e senha.';
+        return;
+    }
+
+    try {
+        await auth.signInWithEmailAndPassword(email, senha);
+        fecharModalLogin();
+        entrarModoProfessor();
+    } catch (error) {
+        erroEl.textContent = '❌ ' + error.message;
+        console.error('Erro no login:', error);
+    }
+});
+
+// Cancelar login
+document.getElementById('btnCancelarLogin')?.addEventListener('click', () => {
+    fecharModalLogin();
+    tocarSom('clique');
+});
+
+// Fechar modal clicando fora
+document.getElementById('modalLoginProfessor')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) fecharModalLogin();
+});
+
+// Logout do professor
+document.getElementById('btn-logout-professor')?.addEventListener('click', async () => {
+    if (confirm('Deseja realmente sair?')) {
+        await auth.signOut();
+        toast('👋 Até logo, Professor!');
+        location.reload();
+    }
+});
+
+// Observador de autenticação (persistência)
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        // Se o painel já estiver aberto, mantém; senão, só guarda o estado.
+        // Se o usuário clicar em "Professor", ele entra direto.
+        console.log('Usuário logado:', user.email);
+    } else {
+        // Se estava no modo professor, volta para o menu
+        if (meuTipo === 'professor') {
+            location.reload();
+        }
+    }
+});
 
 // ============================================================
 // VALOR DA PARTIDA
 // ============================================================
-let VALOR_PARTIDA = 2000;
-const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
 async function carregarValorPartida() {
     try {
         const snap = await db.ref(VALOR_PARTIDA_KEY).once('value');
@@ -1021,34 +1243,9 @@ window.atualizarValorPartida = async function() {
     const novoValor = parseInt(input.value);
     await salvarValorPartida(novoValor);
 };
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(carregarValorPartida, 1000);
-});
-
-// ---------- FUNÇÃO TOAST ----------
-function toast(m) {
-    const t = document.getElementById('toast');
-    if (t) { t.innerText = m; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3000); }
-    tocarSom('notificacao');
-}
-document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
-    window.open('tutorial-instalacao.html', '_blank');
-    toast('📱 Abrindo tutorial de instalação...');
-});
 
 // ============================================================
-// BOLINHA ÚNICA (mantida)
-// ============================================================
-function atualizarBolinhaUnica(cor) {
-    const el = document.getElementById('bolinha-unica');
-    if (!el) return;
-    el.classList.remove('vermelha', 'laranja', 'branca', 'azul', 'cinza');
-    if (cor) el.classList.add(cor);
-    else el.classList.add('cinza');
-}
-
-// ============================================================
-// GERADOR DE PERGUNTAS (mantido)
+// GERADOR DE PERGUNTAS
 // ============================================================
 const MODALIDADE_CONFIG = {
     "2-5": { min: 2, max: 5, nome: "Tabuada 2️⃣➡️5️⃣" },
@@ -1185,133 +1382,8 @@ function gerarPerguntas(modalidade, fase) {
 }
 
 // ============================================================
-// ATUALIZAR INFO DO ALUNO (mantido)
+// FUNÇÕES AUXILIARES
 // ============================================================
-let posicaoAnteriorAluno = null;
-async function atualizarInfoAluno() {
-    if (!alunoId || !estadoAtual) return;
-    const faseAtual = estadoAtual.fase;
-    try {
-        const snap = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
-        const resultados = snap.val() || {};
-        const snapTemp = await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).once('value');
-        const dadosTemp = snapTemp.val();
-        let lista = [];
-        for (const [id, partidas] of Object.entries(resultados)) {
-            if (partidas && partidas.length > 0) {
-                const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
-                lista.push({ id, pontos: melhor.pontos });
-            }
-        }
-        lista.sort((a, b) => b.pontos - a.pontos);
-        const posicaoAtual = lista.findIndex(p => p.id === alunoId) + 1;
-        if (posicaoAnteriorAluno !== null && posicaoAtual > 0 && posicaoAtual < posicaoAnteriorAluno) {
-            tocarSom('subiu_ranking');
-        }
-        posicaoAnteriorAluno = posicaoAtual;
-        const posSpan = document.getElementById('posicao-numero');
-        if (posSpan) {
-            posSpan.innerText = posicaoAtual > 0 ? posicaoAtual : '--';
-            if (posicaoAtual === 1) posSpan.style.color = '#ffd700';
-            else if (posicaoAtual === 2) posSpan.style.color = '#c0c0c0';
-            else if (posicaoAtual === 3) posSpan.style.color = '#cd7f32';
-            else posSpan.style.color = '#ffffff';
-        }
-        let cor = 'cinza';
-        let projetado = false;
-        if (dadosTemp && dadosTemp.perguntas > 0 && dadosTemp.pontos > 0) {
-            const ritmo = dadosTemp.pontos / dadosTemp.perguntas;
-            const projecao = ritmo * 20;
-            let listaProjecao = [];
-            for (const [id, partidas] of Object.entries(resultados)) {
-                if (id === alunoId) {
-                    listaProjecao.push({ id, pontos: projecao, isProjecao: true });
-                } else if (partidas && partidas.length > 0) {
-                    const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
-                    listaProjecao.push({ id, pontos: melhor.pontos, isProjecao: false });
-                }
-            }
-            listaProjecao.sort((a, b) => b.pontos - a.pontos);
-            const posProjetada = listaProjecao.findIndex(p => p.id === alunoId) + 1;
-            if (posProjetada > 0 && posicaoAtual > 0) {
-                projetado = true;
-                if (posicaoAtual === 1) cor = 'vermelha';
-                else if (posProjetada < posicaoAtual) cor = 'laranja';
-                else if (posProjetada === posicaoAtual) cor = 'branca';
-                else cor = 'azul';
-            }
-        }
-        if (!projetado) cor = 'cinza';
-        atualizarBolinhaUnica(cor);
-        let velocidadeMedia = 0;
-        if (dadosTemp && dadosTemp.acertos > 0 && dadosTemp.tempo > 0) {
-            velocidadeMedia = dadosTemp.tempo / dadosTemp.acertos;
-        } else {
-            const partidasAluno = resultados[alunoId] || [];
-            if (partidasAluno.length > 0) {
-                const melhor = partidasAluno.sort((a, b) => b.pontos - a.pontos)[0];
-                if (melhor.acertos > 0 && melhor.tempo > 0) {
-                    velocidadeMedia = melhor.tempo / melhor.acertos;
-                }
-            }
-        }
-        const velSpan = document.getElementById('velocidade-media');
-        if (velSpan) {
-            if (velocidadeMedia > 0) {
-                velSpan.innerText = velocidadeMedia.toFixed(2) + 's';
-                if (velocidadeMedia < 1.5) velSpan.style.color = '#2ecc71';
-                else if (velocidadeMedia < 2.5) velSpan.style.color = '#f39c12';
-                else velSpan.style.color = '#e74c3c';
-            } else {
-                velSpan.innerText = '--';
-                velSpan.style.color = '#ffffff';
-            }
-        }
-    } catch (e) {
-        console.warn('Erro ao atualizar info do aluno:', e);
-    }
-}
-
-// ============================================================
-// ATUALIZAÇÃO EM TEMPO REAL
-// ============================================================
-let intervaloTempoReal = null;
-function iniciarAtualizacaoTempoReal() {
-    if (intervaloTempoReal) clearInterval(intervaloTempoReal);
-    const intervalo = intervaloIndividualSegundos || 4;
-    intervaloTempoReal = setInterval(() => {
-        if (meuTipo === 'aluno' && jogoAtivo) atualizarInfoAluno();
-    }, intervalo * 1000);
-}
-function pararAtualizacaoTempoReal() {
-    if (intervaloTempoReal) { clearInterval(intervaloTempoReal); intervaloTempoReal = null; }
-}
-
-// ---------- VARIÁVEIS GLOBAIS ----------
-let meuTipo = null, alunoId = null, alunoNome = null, alunoTurma = null;
-let estadoAtual = null, jogoAtivo = false;
-let perguntas = [], perguntaIdx = 0, pontosPartida = 0, acertosPartida = 0, tempoTotalPartida = 0;
-let timerPergunta = null, tempoRestantePergunta = 10, timerFase = null;
-let intervaloTorcidaIndividual = null;
-let intervaloTorcidaEquipes = null;
-let intervaloRankingProfessor = null;
-let atualizacaoRankingAuto = true;
-let faseSelecionadaProf = 1;
-let modoTorcida = 'individual';
-let torcidaId = null;
-let faseTorcidaSelecionada = 1;
-let atualizandoSeletorTorcida = false;
-
-const TOTAL_FASES = 5;
-let intervaloIndividualSegundos = 4;
-let intervaloEquipesSegundos = 60;
-let tempoEsgotadoProcessado = false;
-
-const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
-
-const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
-
-// ---------- FUNÇÕES AUXILIARES ----------
 function updateLastSyncTime() {
     const span = document.getElementById('last-sync-time');
     if (span) span.innerText = new Date().toLocaleString('pt-BR');
@@ -1347,7 +1419,20 @@ function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer) {
     if (torcidaTimer) torcidaTimer.innerText = timeStr;
 }
 
-// ---------- LISTENERS ----------
+// ============================================================
+// ATUALIZAÇÃO DA BOLINHA
+// ============================================================
+function atualizarBolinhaUnica(cor) {
+    const el = document.getElementById('bolinha-unica');
+    if (!el) return;
+    el.classList.remove('vermelha', 'laranja', 'branca', 'azul', 'cinza');
+    if (cor) el.classList.add(cor);
+    else el.classList.add('cinza');
+}
+
+// ============================================================
+// LISTENERS DO FIREBASE
+// ============================================================
 let listenerCopa = null;
 let listenerOnline = null;
 
@@ -1385,10 +1470,8 @@ function iniciarListeners() {
             }
             popularSelectFases();
             renderListaTurmas();
-            // Atualiza status da senha e botão liberar
             atualizarStatusSenha();
             atualizarListaLiberados();
-            // Atualiza texto do botão Parar/Continuar
             atualizarBotaoContinuarParar();
         }
     });
@@ -1426,36 +1509,11 @@ function iniciarListeners() {
     });
 }
 
-// ---------- CARREGAR DADOS ESTÁTICOS ----------
-async function carregarTurmas() {
-    const snap = await db.ref('copaV2/turmas').once('value');
-    let turmas = snap.val();
-    if (!turmas || !Array.isArray(turmas) || turmas.length === 0) {
-        await db.ref('copaV2/turmas').set(TURMAS_PADRAO);
-        return TURMAS_PADRAO;
-    }
-    return turmas;
-}
-async function carregarIntervalos() {
-    const snap = await db.ref('copaV2/configuracoes/intervalos').once('value');
-    const config = snap.val();
-    if (config) {
-        intervaloIndividualSegundos = config.individual || 4;
-        intervaloEquipesSegundos = config.equipes || 60;
-    } else {
-        await db.ref('copaV2/configuracoes/intervalos').set({ individual: 4, equipes: 60 });
-    }
-    const inputInd = document.getElementById('intervalo-individual');
-    const inputEq = document.getElementById('intervalo-equipes');
-    if (inputInd) inputInd.value = intervaloIndividualSegundos;
-    if (inputEq) inputEq.value = intervaloEquipesSegundos;
-    if (meuTipo === 'projecao') reiniciarIntervalosTorcida();
-}
-
 // ============================================================
-// RANKING UNIFICADO (mantido)
+// RANKING (funções principais)
 // ============================================================
 let cacheRanking = {};
+
 async function renderRanking(faseNum, containerId, tipo = 'individual', exibirClassificacao = false) {
     if (!estadoAtual) return;
     const cacheKey = `${faseNum}_${tipo}_${exibirClassificacao}`;
@@ -1815,7 +1873,9 @@ async function renderRankingTurmas(containerId) {
     document.getElementById(containerId).innerHTML = html;
 }
 
-// ---------- ATUALIZAÇÃO DOS RANKINGS ----------
+// ============================================================
+// ATUALIZAÇÃO DOS RANKINGS (Professor e Torcida)
+// ============================================================
 async function atualizarRankingProfessor() {
     if (meuTipo === 'professor' && atualizacaoRankingAuto && document.getElementById('tab-ranking-fase') && !document.getElementById('tab-ranking-fase').classList.contains('hidden')) {
         const faseSelecionada = document.getElementById('select-fase-ranking').value;
@@ -1890,7 +1950,18 @@ function pararAtualizacaoTorcida() {
     intervaloTorcidaEquipes = null;
 }
 
-// ---------- GERENCIAMENTO DE TURMAS ----------
+// ============================================================
+// GERENCIAMENTO DE TURMAS
+// ============================================================
+async function carregarTurmas() {
+    const snap = await db.ref('copaV2/turmas').once('value');
+    let turmas = snap.val();
+    if (!turmas || !Array.isArray(turmas) || turmas.length === 0) {
+        await db.ref('copaV2/turmas').set(TURMAS_PADRAO);
+        return TURMAS_PADRAO;
+    }
+    return turmas;
+}
 async function adicionarTurma(novaTurma) {
     const turmas = await carregarTurmas();
     if (!turmas.includes(novaTurma)) {
@@ -1953,7 +2024,24 @@ async function renderListaTurmas() {
     });
 }
 
-// ---------- CONTROLE DE INTERVALOS ----------
+// ============================================================
+// CONTROLE DE INTERVALOS
+// ============================================================
+async function carregarIntervalos() {
+    const snap = await db.ref('copaV2/configuracoes/intervalos').once('value');
+    const config = snap.val();
+    if (config) {
+        intervaloIndividualSegundos = config.individual || 4;
+        intervaloEquipesSegundos = config.equipes || 60;
+    } else {
+        await db.ref('copaV2/configuracoes/intervalos').set({ individual: 4, equipes: 60 });
+    }
+    const inputInd = document.getElementById('intervalo-individual');
+    const inputEq = document.getElementById('intervalo-equipes');
+    if (inputInd) inputInd.value = intervaloIndividualSegundos;
+    if (inputEq) inputEq.value = intervaloEquipesSegundos;
+    if (meuTipo === 'projecao') reiniciarIntervalosTorcida();
+}
 async function atualizarIntervaloIndividual(segundos) {
     intervaloIndividualSegundos = segundos;
     await db.ref('copaV2/configuracoes/intervalos/individual').set(segundos);
@@ -1967,7 +2055,9 @@ async function atualizarIntervaloEquipes(segundos) {
     toast(`Intervalo por equipes alterado para ${segundos} segundos`);
 }
 
-// ---------- RANKING GERAL ----------
+// ============================================================
+// RANKING GERAL
+// ============================================================
 function renderRankingGeral() {
     if (!estadoAtual) return;
     const todasFases = estadoAtual.resultados || {};
@@ -2042,7 +2132,9 @@ function renderRankingGeral() {
     document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
 }
 
-// ---------- PÓDIO ----------
+// ============================================================
+// PÓDIO
+// ============================================================
 function renderPodioFinal(containerId) {
     if (!estadoAtual || estadoAtual.fase !== 5) return;
     const resultadosFase5 = estadoAtual.resultados?.[5] || {};
@@ -2079,7 +2171,9 @@ function renderPodioFinal(containerId) {
     container.classList.remove('hidden');
 }
 
-// ---------- CONTROLE DE FASE ----------
+// ============================================================
+// CONTROLE DE FASE
+// ============================================================
 function atualizarBotaoContinuarParar() {
     const btn = document.getElementById('btn-continuar-parar-fase');
     if (!btn) return;
@@ -2204,7 +2298,9 @@ async function verificarTempoEsgotado() {
     return false;
 }
 
-// ---------- EXIBIÇÃO DE RESULTADO FINAL PARA ALUNO ----------
+// ============================================================
+// EXIBIÇÃO DE RESULTADO FINAL PARA ALUNO
+// ============================================================
 async function exibirResultadoFinalParaAluno() {
     if (!alunoId || !estadoAtual) return;
     const faseAtual = estadoAtual.fase;
@@ -2245,7 +2341,9 @@ async function obterRankingCompleto(fase) {
     return lista;
 }
 
-// ---------- GERENCIAR ALUNOS ----------
+// ============================================================
+// GERENCIAR ALUNOS
+// ============================================================
 function renderListaAlunosGerenciar() {
     if (!estadoAtual) return;
     const faseAtual = estadoAtual.fase;
@@ -2286,7 +2384,9 @@ function renderListaAlunosGerenciar() {
     });
 }
 
-// ---------- SELECTS ----------
+// ============================================================
+// SELECTS
+// ============================================================
 function popularSelectFasesTorcida() {
     const select = document.getElementById('select-fase-torcida');
     if (!select) return;
@@ -2318,8 +2418,10 @@ function popularSelectFases() {
     select.value = faseSelecionadaProf;
 }
 
-// ---------- SENHA E LIBERAR (NOVAS FUNÇÕES) ----------
-let senhaBloqueada = false; // torna true quando a fase 1 for iniciada
+// ============================================================
+// SENHA E LIBERAR (para alunos)
+// ============================================================
+let senhaBloqueada = false;
 
 async function carregarConfigSenha() {
     try {
@@ -2329,7 +2431,6 @@ async function carregarConfigSenha() {
         const snapExigir = await db.ref('copaV2/configuracoes/exigirSenhaFase1').once('value');
         const exigir = snapExigir.val() !== undefined ? snapExigir.val() : true;
         document.getElementById('toggle-exigir-senha').checked = exigir;
-        // Verifica se a fase 1 já foi iniciada
         if (estadoAtual && estadoAtual.fase === 1 && estadoAtual.status === 'em_andamento') {
             senhaBloqueada = true;
         } else {
@@ -2340,7 +2441,6 @@ async function carregarConfigSenha() {
         console.warn('Erro ao carregar senha:', e);
     }
 }
-
 function atualizarStatusSenha() {
     const input = document.getElementById('input-senha-fase1');
     const btnGerar = document.getElementById('btn-gerar-senha');
@@ -2364,7 +2464,6 @@ function atualizarStatusSenha() {
         status.style.color = toggle.checked ? '#4ade80' : '#f87171';
     }
 }
-
 async function salvarSenha() {
     if (senhaBloqueada) {
         toast('❌ Senha bloqueada após iniciar a fase.');
@@ -2391,18 +2490,15 @@ async function salvarSenha() {
         console.error(e);
     }
 }
-
 function gerarSenhaAleatoria() {
     if (senhaBloqueada) {
         toast('❌ Senha bloqueada após iniciar a fase.');
         return;
     }
-    const num = Math.floor(Math.random() * 90) + 10; // 10 a 99
+    const num = Math.floor(Math.random() * 90) + 10;
     document.getElementById('input-senha-fase1').value = num;
     toast(`🎲 Senha gerada: ${num}`);
 }
-
-// ---------- FUNÇÃO PARA LIBERAR ALUNO ----------
 async function liberarAluno() {
     const nome = document.getElementById('input-liberar-nome').value.trim();
     const turma = document.getElementById('input-liberar-turma').value.trim();
@@ -2411,7 +2507,6 @@ async function liberarAluno() {
         return;
     }
     const faseAtual = estadoAtual.fase;
-    // Procura o aluno nas fases anteriores (para pegar o id)
     let idEncontrado = null;
     for (let f = 1; f <= faseAtual; f++) {
         const snap = await db.ref(`copaV2/participantes/${f}`).once('value');
@@ -2428,7 +2523,6 @@ async function liberarAluno() {
         toast('❌ Aluno não encontrado. Verifique nome e turma.');
         return;
     }
-    // Salva a liberação na fase atual
     try {
         await db.ref(`copaV2/participantes/${faseAtual}/${idEncontrado}/liberado`).set(true);
         toast(`✅ ${nome} liberado para a Fase ${faseAtual}!`);
@@ -2443,7 +2537,6 @@ async function liberarAluno() {
         console.error(e);
     }
 }
-
 async function atualizarListaLiberados() {
     const container = document.getElementById('lista-liberados');
     if (!container) return;
@@ -2466,10 +2559,8 @@ async function atualizarListaLiberados() {
 }
 
 // ============================================================
-// NOVO FLUXO DE LOGIN DO ALUNO (COM SENHA E LIBERAÇÃO)
+// LOGIN DO ALUNO (com senha e liberação)
 // ============================================================
-const DEVICE_ID_KEY = 'copa_device_id';
-
 function gerarDeviceId() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         const r = Math.random() * 16 | 0;
@@ -2479,28 +2570,20 @@ function gerarDeviceId() {
 }
 
 async function verificarSenhaFase1() {
-    // Só pede senha se:
-    // - fase atual for 1
-    // - exigir senha estiver ativo
-    // - o aluno ainda não tiver deviceId (não está logado)
     const snapExigir = await db.ref('copaV2/configuracoes/exigirSenhaFase1').once('value');
     const exigir = snapExigir.val() !== undefined ? snapExigir.val() : true;
     if (!exigir) return true;
     if (estadoAtual.fase !== 1) return true;
-    // Verifica se já tem deviceId - se tiver, já está logado, não pede senha
     const deviceId = localStorage.getItem(DEVICE_ID_KEY);
     if (deviceId) {
-        // Tenta encontrar o participante com esse deviceId na fase 1
         const snap = await db.ref(`copaV2/participantes/1`).once('value');
         const participantes = snap.val() || {};
         for (const [id, dados] of Object.entries(participantes)) {
             if (dados.deviceId === deviceId) {
-                // Já está logado, pula a senha
                 return true;
             }
         }
     }
-    // Se chegou aqui, pede a senha
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'modal-senha';
@@ -2569,28 +2652,22 @@ async function loginAlunoAutomatico() {
     }
 
     if (!encontrado) {
-        // Se não encontrou, pode ser deviceId antigo ou apagado - remove e pede novo cadastro
         localStorage.removeItem(DEVICE_ID_KEY);
         return false;
     }
 
-    // Verifica se está classificado ou liberado
     const faseAtualNum = estadoAtual.fase;
     if (faseAtualNum > 1) {
         const classificados = estadoAtual.classificados?.[faseAtualNum - 1] || [];
         if (!classificados.includes(dadosJogador.id) && !dadosJogador.liberado) {
             toast('❌ Você não está classificado para esta fase.');
-            // Não remove deviceId, pois ele ainda pode estar classificado para fases futuras?
-            // Mas se não está classificado, bloqueia.
             return false;
         }
-        // Se foi liberado, permite entrada
         if (dadosJogador.liberado) {
             toast(`🔓 Acesso liberado pelo professor para a Fase ${faseAtualNum}.`);
         }
     }
 
-    // Loga automaticamente
     alunoId = dadosJogador.id;
     alunoNome = dadosJogador.nome;
     alunoTurma = dadosJogador.turma;
@@ -2612,7 +2689,6 @@ async function loginAlunoAutomatico() {
 
 async function cadastrarNovoAluno(nome, turma) {
     const faseAtual = estadoAtual.fase;
-    // Verifica se já existe um jogador com este nome e turma nas fases anteriores
     let jogadorExistente = null;
     let faseEncontrada = null;
 
@@ -2630,15 +2706,12 @@ async function cadastrarNovoAluno(nome, turma) {
     }
 
     if (jogadorExistente) {
-        // Verifica se está classificado para fase atual
         const classificados = estadoAtual.classificados?.[faseAtual - 1] || [];
         if (classificados.includes(jogadorExistente.id)) {
-            // Se tem deviceId, bloqueia (já está em outro dispositivo)
             if (jogadorExistente.deviceId) {
                 toast(`❌ O jogador ${nome} já está registrado em outro dispositivo. Use o mesmo aparelho.`);
                 return false;
             } else {
-                // Migração: associa deviceId
                 const deviceId = gerarDeviceId();
                 localStorage.setItem(DEVICE_ID_KEY, deviceId);
                 await db.ref(`copaV2/participantes/${faseAtual}/${jogadorExistente.id}`).update({ deviceId });
@@ -2656,10 +2729,8 @@ async function cadastrarNovoAluno(nome, turma) {
                 return true;
             }
         } else {
-            // Não classificado, mas pode tentar se cadastrar novamente (senão tiver deviceId)
             if (!jogadorExistente.deviceId) {
-                // Permite novo cadastro (caso de erro, ele pode recadastrar)
-                // Mas vamos deixar fluir para o cadastro normal
+                // permite novo cadastro
             } else {
                 toast(`❌ O jogador ${nome} não está classificado para esta fase.`);
                 return false;
@@ -2667,7 +2738,6 @@ async function cadastrarNovoAluno(nome, turma) {
         }
     }
 
-    // Cadastro normal (novo jogador)
     const novoId = btoa(nome.toLowerCase() + "|" + turma).slice(0,16);
     const deviceId = gerarDeviceId();
     localStorage.setItem(DEVICE_ID_KEY, deviceId);
@@ -2694,8 +2764,107 @@ async function cadastrarNovoAluno(nome, turma) {
     return true;
 }
 
-// ---------- LÓGICA DO JOGO ----------
+// ============================================================
+// LÓGICA DO JOGO
+// ============================================================
+let posicaoAnteriorAluno = null;
 let animFrameId = null;
+
+async function atualizarInfoAluno() {
+    if (!alunoId || !estadoAtual) return;
+    const faseAtual = estadoAtual.fase;
+    try {
+        const snap = await db.ref(`copaV2/resultados/${faseAtual}`).once('value');
+        const resultados = snap.val() || {};
+        const snapTemp = await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).once('value');
+        const dadosTemp = snapTemp.val();
+        let lista = [];
+        for (const [id, partidas] of Object.entries(resultados)) {
+            if (partidas && partidas.length > 0) {
+                const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+                lista.push({ id, pontos: melhor.pontos });
+            }
+        }
+        lista.sort((a, b) => b.pontos - a.pontos);
+        const posicaoAtual = lista.findIndex(p => p.id === alunoId) + 1;
+        if (posicaoAnteriorAluno !== null && posicaoAtual > 0 && posicaoAtual < posicaoAnteriorAluno) {
+            tocarSom('subiu_ranking');
+        }
+        posicaoAnteriorAluno = posicaoAtual;
+        const posSpan = document.getElementById('posicao-numero');
+        if (posSpan) {
+            posSpan.innerText = posicaoAtual > 0 ? posicaoAtual : '--';
+            if (posicaoAtual === 1) posSpan.style.color = '#ffd700';
+            else if (posicaoAtual === 2) posSpan.style.color = '#c0c0c0';
+            else if (posicaoAtual === 3) posSpan.style.color = '#cd7f32';
+            else posSpan.style.color = '#ffffff';
+        }
+        let cor = 'cinza';
+        let projetado = false;
+        if (dadosTemp && dadosTemp.perguntas > 0 && dadosTemp.pontos > 0) {
+            const ritmo = dadosTemp.pontos / dadosTemp.perguntas;
+            const projecao = ritmo * 20;
+            let listaProjecao = [];
+            for (const [id, partidas] of Object.entries(resultados)) {
+                if (id === alunoId) {
+                    listaProjecao.push({ id, pontos: projecao, isProjecao: true });
+                } else if (partidas && partidas.length > 0) {
+                    const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+                    listaProjecao.push({ id, pontos: melhor.pontos, isProjecao: false });
+                }
+            }
+            listaProjecao.sort((a, b) => b.pontos - a.pontos);
+            const posProjetada = listaProjecao.findIndex(p => p.id === alunoId) + 1;
+            if (posProjetada > 0 && posicaoAtual > 0) {
+                projetado = true;
+                if (posicaoAtual === 1) cor = 'vermelha';
+                else if (posProjetada < posicaoAtual) cor = 'laranja';
+                else if (posProjetada === posicaoAtual) cor = 'branca';
+                else cor = 'azul';
+            }
+        }
+        if (!projetado) cor = 'cinza';
+        atualizarBolinhaUnica(cor);
+        let velocidadeMedia = 0;
+        if (dadosTemp && dadosTemp.acertos > 0 && dadosTemp.tempo > 0) {
+            velocidadeMedia = dadosTemp.tempo / dadosTemp.acertos;
+        } else {
+            const partidasAluno = resultados[alunoId] || [];
+            if (partidasAluno.length > 0) {
+                const melhor = partidasAluno.sort((a, b) => b.pontos - a.pontos)[0];
+                if (melhor.acertos > 0 && melhor.tempo > 0) {
+                    velocidadeMedia = melhor.tempo / melhor.acertos;
+                }
+            }
+        }
+        const velSpan = document.getElementById('velocidade-media');
+        if (velSpan) {
+            if (velocidadeMedia > 0) {
+                velSpan.innerText = velocidadeMedia.toFixed(2) + 's';
+                if (velocidadeMedia < 1.5) velSpan.style.color = '#2ecc71';
+                else if (velocidadeMedia < 2.5) velSpan.style.color = '#f39c12';
+                else velSpan.style.color = '#e74c3c';
+            } else {
+                velSpan.innerText = '--';
+                velSpan.style.color = '#ffffff';
+            }
+        }
+    } catch (e) {
+        console.warn('Erro ao atualizar info do aluno:', e);
+    }
+}
+
+function iniciarAtualizacaoTempoReal() {
+    if (intervaloTempoReal) clearInterval(intervaloTempoReal);
+    const intervalo = intervaloIndividualSegundos || 4;
+    intervaloTempoReal = setInterval(() => {
+        if (meuTipo === 'aluno' && jogoAtivo) atualizarInfoAluno();
+    }, intervalo * 1000);
+}
+let intervaloTempoReal = null;
+function pararAtualizacaoTempoReal() {
+    if (intervaloTempoReal) { clearInterval(intervaloTempoReal); intervaloTempoReal = null; }
+}
 
 function startTimer() {
     tempoRestantePergunta = 10;
@@ -2821,7 +2990,6 @@ async function iniciarNovaPartida() {
     if (estadoAtual.status !== 'em_andamento') { toast("Fase inativa!"); return; }
     if (Date.now() >= estadoAtual.fim) { toast("Tempo esgotado!"); return; }
     if (estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
-        // Verifica se está liberado
         const snap = await db.ref(`copaV2/participantes/${estadoAtual.fase}/${alunoId}/liberado`).once('value');
         if (!snap.val()) {
             toast("❌ Você não está classificado para esta fase.");
@@ -2886,25 +3054,22 @@ async function finalizar() {
 }
 
 // ============================================================
-// ATUALIZAÇÃO DA INTERFACE (PRINCIPAL)
+// ATUALIZAÇÃO DA INTERFACE PRINCIPAL
 // ============================================================
 function atualizarUI() {
     if (!estadoAtual) return;
 
-    // --- Título da modalidade ---
     const modalidadeTitulo = document.getElementById('modalidade-titulo');
     if (modalidadeTitulo) {
         const config = MODALIDADE_CONFIG[estadoAtual.modalidade];
         modalidadeTitulo.innerText = config ? config.nome : estadoAtual.modalidade;
     }
 
-    // --- Informações de fase ---
     const faseAtualTitulo = document.getElementById('fase-atual-titulo');
     if (faseAtualTitulo) faseAtualTitulo.innerText = `Fase ${estadoAtual.fase} de ${TOTAL_FASES}`;
     const faseProgresso = document.getElementById('fase-progresso');
     if (faseProgresso) faseProgresso.innerText = `${estadoAtual.fase}/${TOTAL_FASES}`;
 
-    // --- Timer da fase ---
     if (estadoAtual.status === 'em_andamento' && estadoAtual.fim > 0) {
         const agora = Date.now();
         const restante = estadoAtual.fim - agora;
@@ -2936,19 +3101,16 @@ function atualizarUI() {
         document.getElementById('torcida-timer') && (document.getElementById('torcida-timer').innerText = '00:00');
     }
 
-    // --- Atualizações específicas do professor ---
     if (meuTipo === 'professor') {
         const profFaseInfo = document.getElementById('prof-fase-info');
         if (profFaseInfo) profFaseInfo.innerText = `Fase ${estadoAtual.fase}`;
         const inputTempo = document.getElementById('input-tempo-fase');
         if (inputTempo) inputTempo.value = estadoAtual.tempoFase || 12;
-        // Atualiza selects de fase
         popularSelectFases();
         popularSelectFasesTorcida();
         atualizarBotaoContinuarParar();
     }
 
-    // --- Atualizações da torcida ---
     if (meuTipo === 'projecao') {
         const torcidaModalidade = document.getElementById('torcida-modalidade');
         if (torcidaModalidade) {
@@ -2959,12 +3121,10 @@ function atualizarUI() {
         if (torcidaFaseInfo) torcidaFaseInfo.innerText = `${estadoAtual.fase}/${TOTAL_FASES}`;
     }
 
-    // --- Atualizações do aluno ---
     if (meuTipo === 'aluno') {
         renderAluno();
     }
 
-    // --- Pódio se fase 5 finalizada ---
     if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
         renderPodioFinal('podium-container');
         renderPodioFinal('podium-torcida-container');
@@ -2973,7 +3133,7 @@ function atualizarUI() {
 }
 
 // ============================================================
-// RENDERIZA A TELA DO ALUNO
+// RENDERIZA TELA DO ALUNO
 // ============================================================
 function renderAluno() {
     if (!alunoId || !estadoAtual) return;
@@ -2989,7 +3149,6 @@ function renderAluno() {
     const jogoArea = document.getElementById('jogo-area');
     const aguardandoArea = document.getElementById('aguardando-aluno');
 
-    // Verifica classificação
     let podeJogar = true;
     if (estadoAtual.fase > 1) {
         const classificados = estadoAtual.classificados?.[estadoAtual.fase - 1] || [];
@@ -3029,7 +3188,6 @@ function renderAluno() {
         if (btnJogar) btnJogar.classList.add('hidden');
     }
 
-    // Melhor resultado
     const melhorScoreEl = document.getElementById('aluno-melhor-score');
     if (melhorScoreEl && alunoId && estadoAtual.fase) {
         db.ref(`copaV2/resultados/${estadoAtual.fase}/${alunoId}`).once('value').then(snap => {
@@ -3043,7 +3201,6 @@ function renderAluno() {
         });
     }
 
-    // Histórico
     const historicoEl = document.getElementById('historico-aluno');
     if (historicoEl && alunoId && estadoAtual.fase) {
         db.ref(`copaV2/resultados/${estadoAtual.fase}/${alunoId}`).once('value').then(snap => {
@@ -3061,13 +3218,14 @@ function renderAluno() {
         });
     }
 
-    // Pódio se fase 5 finalizada
     if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
         renderPodioFinal('podium-aluno-container');
     }
 }
 
-// ---------- INICIALIZAÇÃO ----------
+// ============================================================
+// INICIALIZAÇÃO
+// ============================================================
 async function init() {
     await carregarIntervalos();
     await carregarTurmas();
@@ -3076,34 +3234,16 @@ async function init() {
     setTimeout(atualizarDisplayVersao, 2000);
 
     iniciarListeners();
-
-    // Carrega senha
     await carregarConfigSenha();
 
     // ============================================================
-    // EVENTO: BOTÃO PROFESSOR
+    // EVENTOS DOS BOTÕES (além do Professor já tratado acima)
     // ============================================================
-    document.getElementById('btn-professor')?.addEventListener('click', () => {
-        const senha = prompt("Digite a senha do professor:");
-        
-        if (!senha) return;
-
-        // Verificação de senha local para evitar problemas com a API Key do Firebase Auth
-        if (senha === "040199") {
-            meuTipo = 'professor';
-            document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-            document.getElementById('painel-professor').classList.remove('hidden');
-            iniciarAtualizacaoProfessor();
-            atualizarUI();
-            tocarSom('clique');
-            toast("✅ Acesso concedido!");
-        } else {
-            toast("❌ Senha incorreta!");
-            tocarSom('erro');
-        }
+    document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
+        window.open('tutorial-instalacao.html', '_blank');
+        toast('📱 Abrindo tutorial de instalação...');
     });
 
-    // Eventos da senha
     document.getElementById('btn-gerar-senha')?.addEventListener('click', gerarSenhaAleatoria);
     document.getElementById('btn-salvar-senha')?.addEventListener('click', salvarSenha);
     document.getElementById('toggle-exigir-senha')?.addEventListener('change', () => {
@@ -3114,8 +3254,6 @@ async function init() {
             toast('❌ Não é possível alterar após iniciar a fase.');
         }
     });
-
-    // Evento de liberar
     document.getElementById('btn-liberar-aluno')?.addEventListener('click', liberarAluno);
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -3252,7 +3390,7 @@ async function init() {
     });
 
     // ============================================================
-    // BOTÃO ALUNO - NOVO FLUXO COM SENHA E LIBERAÇÃO
+    // BOTÃO ALUNO
     // ============================================================
     document.getElementById('btn-aluno')?.addEventListener('click', async () => {
         if (!estadoAtual || estadoAtual.status !== 'em_andamento' || Date.now() >= estadoAtual.fim) {
@@ -3312,6 +3450,9 @@ async function init() {
 
     document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
 
+    // ============================================================
+    // BOTÃO TORCIDA
+    // ============================================================
     document.getElementById('btn-projecao')?.addEventListener('click', () => {
         torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
         const torcidaRef = db.ref(`online/${torcidaId}`);
@@ -3423,6 +3564,7 @@ async function init() {
     setTimeout(carregarValorPartida, 500);
 }
 
+// Aguarda o DOM carregar
 document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
