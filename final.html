@@ -992,7 +992,7 @@
 
 <!-- Rodapé -->
 <div style="text-align: center; margin-top: 30px; padding: 15px; color: #666; font-size: 14px; border-top: 1px solid #2c3e50;">
-    🏆 Copa Tabuada CEIB 2026 - Desenvolvido por <strong style="color: #ffd966;">HENRIQUE ANGELO DA SILVA - PROFESSOR DE MATEMÁTICA</strong>
+    🏆 Copa Tabuada CEIB 2026 - Desenvolvido por <strong style="color: #ffd966;">HENRIQUE ANGELO DA SILVA</strong>
 </div>
 
 <!-- ============================================================ -->
@@ -1151,10 +1151,10 @@ async function atualizarDisplayVersao() {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DO FIREBASE (com seus dados)
+// CONFIGURAÇÃO DO FIREBASE
 // ============================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyBkoL3Zn-YkGUy6RAWZYVhWtIbcfL8h-J8", // deve começar com AIzaSy
+  apiKey: "AIzaSyBkoL3Zn-YkGUy6RAWZYVhWtIbcfL8h-J8",
   authDomain: "final-copa-tabuada.firebaseapp.com",
   databaseURL: "https://final-copa-tabuada-default-rtdb.firebaseio.com",
   projectId: "final-copa-tabuada",
@@ -1205,7 +1205,7 @@ function toast(m) {
 }
 
 // ============================================================
-// AUTENTICAÇÃO DO PROFESSOR (Firebase Auth)
+// AUTENTICAÇÃO DO PROFESSOR
 // ============================================================
 function entrarModoProfessor() {
     meuTipo = 'professor';
@@ -1217,22 +1217,18 @@ function entrarModoProfessor() {
     tocarSom('clique');
 }
 
-// Exibe o modal de login
 function mostrarModalLogin() {
-    const modal = document.getElementById('modalLoginProfessor');
-    modal.style.display = 'flex';
+    document.getElementById('modalLoginProfessor').style.display = 'flex';
     document.getElementById('loginEmail').value = '';
     document.getElementById('loginSenha').value = '';
     document.getElementById('loginErro').textContent = '';
     document.getElementById('loginEmail').focus();
 }
 
-// Fecha o modal
 function fecharModalLogin() {
     document.getElementById('modalLoginProfessor').style.display = 'none';
 }
 
-// Evento do botão "Professor"
 document.getElementById('btn-professor')?.addEventListener('click', () => {
     const user = auth.currentUser;
     if (user) {
@@ -1243,7 +1239,6 @@ document.getElementById('btn-professor')?.addEventListener('click', () => {
     tocarSom('clique');
 });
 
-// Login
 document.getElementById('btnLoginProfessor')?.addEventListener('click', async () => {
     const email = document.getElementById('loginEmail').value.trim();
     const senha = document.getElementById('loginSenha').value.trim();
@@ -1264,18 +1259,15 @@ document.getElementById('btnLoginProfessor')?.addEventListener('click', async ()
     }
 });
 
-// Cancelar login
 document.getElementById('btnCancelarLogin')?.addEventListener('click', () => {
     fecharModalLogin();
     tocarSom('clique');
 });
 
-// Fechar modal clicando fora
 document.getElementById('modalLoginProfessor')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) fecharModalLogin();
 });
 
-// Logout do professor
 document.getElementById('btn-logout-professor')?.addEventListener('click', async () => {
     if (confirm('Deseja realmente sair?')) {
         await auth.signOut();
@@ -1998,7 +1990,7 @@ async function renderRankingTurmas(containerId) {
 }
 
 // ============================================================
-// ATUALIZAÇÃO DOS RANKINGS (Professor e Torcida) - mantido
+// ATUALIZAÇÃO DOS RANKINGS (Professor e Torcida)
 // ============================================================
 async function atualizarRankingProfessor() {
     if (meuTipo === 'professor' && atualizacaoRankingAuto && document.getElementById('tab-ranking-fase') && !document.getElementById('tab-ranking-fase').classList.contains('hidden')) {
@@ -2075,7 +2067,7 @@ function pararAtualizacaoTorcida() {
 }
 
 // ============================================================
-// GERENCIAMENTO DE TURMAS (mantido)
+// GERENCIAMENTO DE TURMAS
 // ============================================================
 async function carregarTurmas() {
     const snap = await db.ref('copaV2/turmas').once('value');
@@ -2296,7 +2288,7 @@ function renderPodioFinal(containerId) {
 }
 
 // ============================================================
-// CONTROLE DE FASE (mantido)
+// CONTROLE DE FASE
 // ============================================================
 function atualizarBotaoContinuarParar() {
     const btn = document.getElementById('btn-continuar-parar-fase');
@@ -2894,7 +2886,7 @@ async function cadastrarNovoAluno(nome, turma) {
 }
 
 // ============================================================
-// LÓGICA DO JOGO (mantida)
+// LÓGICA DO JOGO
 // ============================================================
 let posicaoAnteriorAluno = null;
 let animFrameId = null;
