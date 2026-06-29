@@ -569,6 +569,26 @@
             flex-wrap: wrap;
             margin-top: 20px;
         }
+
+        /* Timer da fase para o aluno */
+        .timer-fase-aluno {
+            font-size: 20px;
+            font-weight: bold;
+            background: #000000aa;
+            padding: 6px 18px;
+            border-radius: 40px;
+            display: inline-block;
+            color: #ffd966;
+            transition: color 0.3s;
+        }
+        .timer-fase-aluno.urgente {
+            color: #e74c3c !important;
+            animation: pisca 1s infinite;
+        }
+        @keyframes pisca {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
     </style>
 
     <!-- Firebase SDKs -->
@@ -877,9 +897,10 @@
     <!-- TELA DO ALUNO                                               -->
     <!-- ========================================================= -->
     <div id="tela-aluno" class="card hidden">
-        <div class="header-actions">
-            <h2 id="aluno-nome-display">Aluno</h2>
-            <button id="btn-ranking-aluno" class="btn-info" style="margin-left: 10px;">📊 Ranking</button>
+        <div class="header-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+            <h2 id="aluno-nome-display" style="margin: 0;">Aluno</h2>
+            <div class="timer-fase-aluno" id="timer-fase-aluno">⏱️ Tempo: --:--</div>
+            <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;">📊 Ranking</button>
             <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
         </div>
         <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</span> <span id="aluno-fase-info" class="fase-info"></span></p>
@@ -1495,13 +1516,22 @@ function isClassificado(fase, alunoId) {
     const classificados = estadoAtual?.classificados?.[fase-1] || [];
     return classificados.includes(alunoId);
 }
-function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer) {
+function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer, alunoTimer) {
     const segundos = Math.floor(milissegundos / 1000);
     const min = Math.floor(segundos / 60);
     const sec = segundos % 60;
     const timeStr = `${min}:${sec.toString().padStart(2, '0')}`;
     if (timerDisplay) timerDisplay.innerText = timeStr;
     if (torcidaTimer) torcidaTimer.innerText = timeStr;
+    if (alunoTimer) {
+        alunoTimer.innerText = `⏱️ Tempo: ${timeStr}`;
+        // Cor vermelha se faltar menos de 1 minuto
+        if (segundos < 60) {
+            alunoTimer.classList.add('urgente');
+        } else {
+            alunoTimer.classList.remove('urgente');
+        }
+    }
 }
 
 // ============================================================
@@ -2378,8 +2408,13 @@ async function verificarTempoEsgotado() {
             if (timerFase) { clearInterval(timerFase); timerFase = null; }
             const timerDisplay = document.getElementById('timer-fase');
             const torcidaTimer = document.getElementById('torcida-timer');
+            const alunoTimer = document.getElementById('timer-fase-aluno');
             if (timerDisplay) timerDisplay.innerText = '00:00';
             if (torcidaTimer) torcidaTimer.innerText = '00:00';
+            if (alunoTimer) {
+                alunoTimer.innerText = '⏱️ Tempo: 00:00';
+                alunoTimer.classList.remove('urgente');
+            }
             toast("⏰ TEMPO ESGOTADO! Fase finalizada.");
             await avancarFase();
         }
@@ -3164,7 +3199,10 @@ function atualizarUI() {
         const agora = Date.now();
         const restante = estadoAtual.fim - agora;
         if (restante > 0) {
-            atualizarDisplayTimer(restante, document.getElementById('timer-fase'), document.getElementById('torcida-timer'));
+            const timerDisplay = document.getElementById('timer-fase');
+            const torcidaTimer = document.getElementById('torcida-timer');
+            const alunoTimer = document.getElementById('timer-fase-aluno');
+            atualizarDisplayTimer(restante, timerDisplay, torcidaTimer, alunoTimer);
             if (!timerFase) {
                 timerFase = setInterval(() => {
                     const agora2 = Date.now();
@@ -3172,10 +3210,17 @@ function atualizarUI() {
                     if (rest <= 0) {
                         clearInterval(timerFase);
                         timerFase = null;
-                        atualizarDisplayTimer(0, document.getElementById('timer-fase'), document.getElementById('torcida-timer'));
+                        const timerDisplay2 = document.getElementById('timer-fase');
+                        const torcidaTimer2 = document.getElementById('torcida-timer');
+                        const alunoTimer2 = document.getElementById('timer-fase-aluno');
+                        atualizarDisplayTimer(0, timerDisplay2, torcidaTimer2, alunoTimer2);
+                        if (alunoTimer2) alunoTimer2.classList.remove('urgente');
                         verificarTempoEsgotado();
                     } else {
-                        atualizarDisplayTimer(rest, document.getElementById('timer-fase'), document.getElementById('torcida-timer'));
+                        const timerDisplay2 = document.getElementById('timer-fase');
+                        const torcidaTimer2 = document.getElementById('torcida-timer');
+                        const alunoTimer2 = document.getElementById('timer-fase-aluno');
+                        atualizarDisplayTimer(rest, timerDisplay2, torcidaTimer2, alunoTimer2);
                     }
                 }, 1000);
             }
@@ -3184,11 +3229,19 @@ function atualizarUI() {
         }
     } else if (estadoAtual.status === 'pausado' && estadoAtual.tempoRestantePausa) {
         if (timerFase) { clearInterval(timerFase); timerFase = null; }
-        atualizarDisplayTimer(estadoAtual.tempoRestantePausa, document.getElementById('timer-fase'), document.getElementById('torcida-timer'));
+        const timerDisplay = document.getElementById('timer-fase');
+        const torcidaTimer = document.getElementById('torcida-timer');
+        const alunoTimer = document.getElementById('timer-fase-aluno');
+        atualizarDisplayTimer(estadoAtual.tempoRestantePausa, timerDisplay, torcidaTimer, alunoTimer);
     } else {
         if (timerFase) { clearInterval(timerFase); timerFase = null; }
         document.getElementById('timer-fase') && (document.getElementById('timer-fase').innerText = '00:00');
         document.getElementById('torcida-timer') && (document.getElementById('torcida-timer').innerText = '00:00');
+        const alunoTimer = document.getElementById('timer-fase-aluno');
+        if (alunoTimer) {
+            alunoTimer.innerText = '⏱️ Tempo: --:--';
+            alunoTimer.classList.remove('urgente');
+        }
     }
 
     if (meuTipo === 'professor') {
