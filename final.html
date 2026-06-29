@@ -1025,7 +1025,13 @@ async function loginProfessor(email, senha) {
         abrirPainelProfessor();
     } catch (error) {
         console.error(error);
-        document.getElementById('erro-auth-prof').innerText = '❌ ' + traduzirErroAuth(error.code);
+        let mensagem = 'Erro de autenticação.';
+        if (error.code === 'auth/api-key-not-valid') {
+            mensagem = '❌ Chave de API inválida. Verifique a configuração do Firebase.';
+        } else {
+            mensagem = '❌ ' + traduzirErroAuth(error.code);
+        }
+        document.getElementById('erro-auth-prof').innerText = mensagem;
     }
 }
 async function criarContaProfessor(email, senha) {
