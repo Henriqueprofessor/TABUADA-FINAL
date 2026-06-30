@@ -1706,10 +1706,15 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             let progresso = statusInfo.progresso;
             if (statusInfo.status === 'aguardando') progresso = 0;
             const ultimaPosicao = ultima?.posicao || null;
+            // Soma dos tempos de todas as partidas finalizadas
+            let somaTempo = 0;
+            for (let p of partidas) {
+                somaTempo += p.tempo || 0;
+            }
             mapa.set(child.key, {
                 nome, turma,
-                melhorPontuacao: melhor.pontos,   // renomeado
-                ultimaPontuacao: ultima.pontos,   // pontuação da última partida finalizada
+                melhorPontuacao: melhor.pontos,
+                ultimaPontuacao: ultima.pontos,
                 acertos: melhor.acertos,
                 tempo: melhor.tempo,
                 perguntas: 20,
@@ -1719,8 +1724,8 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 progresso: progresso,
                 ultimaPosicao: ultimaPosicao,
                 recordeVelocidade: recordeVelocMap.get(child.key) || null,
-                // Para jogadores sem dados temp, a pontuacaoAtual será a ultimaPontuacao (se houver)
-                pontuacaoAtual: ultima.pontos
+                pontuacaoAtual: ultima.pontos,
+                somaTempo: somaTempo  // tempo total na fase
             });
         }
     });
@@ -1730,32 +1735,30 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         const statusInfo = statusMap.get(child.key) || { status: 'em_jogo', progresso: data.perguntas || 0 };
         if (!existente) {
             // Jogador só tem dados temporários (ainda não finalizou nenhuma partida)
+            // Neste caso, não tem tempo finalizado, então somaTempo = 0
             mapa.set(child.key, {
                 nome: data.nome,
                 turma: data.turma,
-                melhorPontuacao: data.pontos,   // enquanto não finaliza, a melhor é a atual
-                ultimaPontuacao: null,          // não tem finalizadas
+                melhorPontuacao: data.pontos,
+                ultimaPontuacao: null,
                 acertos: data.acertos,
                 tempo: data.tempo,
                 perguntas: data.perguntas || 0,
                 isTemp: true,
-                partidas: 1,
+                partidas: 0,  // não tem partidas finalizadas
                 status: statusInfo.status,
                 progresso: statusInfo.progresso,
                 ultimaPosicao: null,
                 recordeVelocidade: null,
-                pontuacaoAtual: data.pontos
+                pontuacaoAtual: data.pontos,
+                somaTempo: 0
             });
         } else {
             // Já tem partidas finalizadas
             // Atualiza a pontuação atual com a temporária
             existente.pontuacaoAtual = data.pontos;
-            // Se a pontuação temporária for maior que a melhor, atualiza a melhor? 
-            // Melhor só deve ser atualizada quando finalizar, então não.
-            // Mantém a melhorPontuacao das finalizadas.
-            // Mas se o jogador não tiver finalizadas (caso raro), já tratamos acima.
+            // Não atualiza somaTempo porque a partida em andamento não conta
             existente.isTemp = true;
-            // Atualiza status e progresso
             if (statusInfo) {
                 existente.status = statusInfo.status;
                 existente.progresso = statusInfo.progresso;
@@ -1793,7 +1796,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     if (estadoAtual.status !== 'finalizado') {
         let projecaoValida = false;
         for (let item of listaComId) {
-            // Usa a pontuação atual para projetar, se disponível
             const pontuacaoBase = item.pontuacaoAtual || item.melhorPontuacao;
             const perguntasResp = item.perguntas || 0;
             if (perguntasResp > 0 && pontuacaoBase > 0) {
@@ -1828,6 +1830,7 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         <th>Progresso</th>
         ${mostrarClassificacao ? '<th>Classificação</th>' : ''}
         <th>Partidas</th>
+        <th>Tempo</th>
         <th>Turma</th>
      </tr></thead><tbody>`;
     for (let idx = 0; idx < listaComId.length; idx++) {
@@ -1851,6 +1854,13 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         let pontuacaoAtualStr = "–";
         if (j.pontuacaoAtual !== undefined && j.pontuacaoAtual !== null) {
             pontuacaoAtualStr = j.pontuacaoAtual;
+        }
+        // Tempo total (soma dos tempos das partidas finalizadas)
+        let tempoStr = "–";
+        if (j.somaTempo !== undefined && j.somaTempo > 0) {
+            tempoStr = j.somaTempo.toFixed(1) + "s";
+        } else if (j.partidas > 0 && j.somaTempo === 0) {
+            tempoStr = "0.0s"; // partidas sem tempo? (caso raro)
         }
         // Fut. Pos.
         let futPosHtml = "";
@@ -1898,6 +1908,7 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             <td>${progressoHtml}</td>
             ${mostrarClassificacao ? colunaStatus : ''}
             <td>${j.partidas}</td>
+            <td>${tempoStr}</td>
             <td>${escapeHtml(j.turma)}</td>
          </tr>`;
     }
@@ -2207,7 +2218,9 @@ function renderRankingGeral() {
                     ultimaFase: fase,
                     faseEliminacao: null,
                     totalPartidas: partidas.length,
-                    melhorVelocidade: null
+                    melhorVelocidade: null,
+                    // Soma do tempo total em todas as fases
+                    tempoTotal: 0
                 });
             } else {
                 const existente = jogadores.get(id);
@@ -2220,7 +2233,10 @@ function renderRankingGeral() {
                 existente.totalPartidas += partidas.length;
             }
             const jogador = jogadores.get(id);
+            // Soma os tempos de todas as partidas dessa fase
+            let somaTempoFase = 0;
             for (let partida of partidas) {
+                somaTempoFase += partida.tempo || 0;
                 if (partida.acertos > 0) {
                     const velocidade = partida.tempo / partida.acertos;
                     if (jogador.melhorVelocidade === null || velocidade < jogador.melhorVelocidade) {
@@ -2228,6 +2244,7 @@ function renderRankingGeral() {
                     }
                 }
             }
+            jogador.tempoTotal += somaTempoFase;
         }
     }
     for (let [id, info] of jogadores.entries()) {
@@ -2241,14 +2258,21 @@ function renderRankingGeral() {
         return b.melhorPontuacao - a.melhorPontuacao || b.melhorAcertos - a.melhorAcertos || a.melhorTempo - b.melhorTempo;
     });
     if (rankingArray.length === 0) { document.getElementById('ranking-geral-container').innerHTML = '<p>Nenhum dado ainda.</p>'; return; }
-    let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Melhor Velocidade</th><th>Fase Máxima</th><th>Status</th><th>Turma</th><th>Total Partidas</th></tr></thead><tbody>';
+    let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Melhor Velocidade</th><th>Fase Máxima</th><th>Status</th><th>Turma</th><th>Total Partidas</th><th>Tempo Total</th></tr></thead><tbody>';
     rankingArray.forEach((r, i) => {
         let status = `🎯 Fase ${r.ultimaFase}`;
         if (r.faseEliminacao) status += ` (Eliminado na Fase ${r.faseEliminacao})`;
         else if (r.ultimaFase === 5) status = "🏆 Finalista";
         else status += ` (Classificado para Fase ${r.ultimaFase+1})`;
         const vel = r.melhorVelocidade !== null ? r.melhorVelocidade.toFixed(2) + " s" : "-";
-        html += `<tr><td>${i+1}º</td><td>${escapeHtml(r.nome)}</td><td>${r.melhorPontuacao}</td><td>${vel}</td><td>${r.ultimaFase}</td><td>${status}</td><td>${escapeHtml(r.turma)}</td><td>${r.totalPartidas}</td></tr>`;
+        // Tempo total
+        let tempoTotalStr = "–";
+        if (r.tempoTotal > 0) {
+            tempoTotalStr = r.tempoTotal.toFixed(1) + "s";
+        } else if (r.totalPartidas > 0 && r.tempoTotal === 0) {
+            tempoTotalStr = "0.0s";
+        }
+        html += `<tr><td>${i+1}º</td><td>${escapeHtml(r.nome)}</td><td>${r.melhorPontuacao}</td><td>${vel}</td><td>${r.ultimaFase}</td><td>${status}</td><td>${escapeHtml(r.turma)}</td><td>${r.totalPartidas}</td><td>${tempoTotalStr}</td></tr>`;
     });
     document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
 }
