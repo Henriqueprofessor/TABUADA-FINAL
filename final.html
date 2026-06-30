@@ -1698,27 +1698,29 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         const partidas = child.val();
         if (partidas && partidas.length) {
             const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
+            const ultima = partidas[partidas.length - 1]; // última partida
             let info = participantes[child.key];
             const nome = info?.nome || melhor.nome || "Anônimo";
             const turma = info?.turma || melhor.turma || "?";
-            const velocidadeAtual = (melhor.acertos > 0) ? (melhor.tempo / melhor.acertos) : null;
             const statusInfo = statusMap.get(child.key) || { status: 'aguardando', progresso: 0 };
             let progresso = statusInfo.progresso;
             if (statusInfo.status === 'aguardando') progresso = 0;
-            const ultimaPartida = partidas[partidas.length - 1];
-            const ultimaPosicao = ultimaPartida?.posicao || null;
+            const ultimaPosicao = ultima?.posicao || null;
             mapa.set(child.key, {
                 nome, turma,
-                pontos: melhor.pontos,
+                melhorPontuacao: melhor.pontos,   // renomeado
+                ultimaPontuacao: ultima.pontos,   // pontuação da última partida finalizada
                 acertos: melhor.acertos,
                 tempo: melhor.tempo,
                 perguntas: 20,
                 isTemp: false,
                 partidas: partidas.length,
-                velocidadeAtual: velocidadeAtual,
                 status: statusInfo.status,
                 progresso: progresso,
-                ultimaPosicao: ultimaPosicao
+                ultimaPosicao: ultimaPosicao,
+                recordeVelocidade: recordeVelocMap.get(child.key) || null,
+                // Para jogadores sem dados temp, a pontuacaoAtual será a ultimaPontuacao (se houver)
+                pontuacaoAtual: ultima.pontos
             });
         }
     });
@@ -1727,32 +1729,33 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         const existente = mapa.get(child.key);
         const statusInfo = statusMap.get(child.key) || { status: 'em_jogo', progresso: data.perguntas || 0 };
         if (!existente) {
-            const velocidadeAtual = (data.acertos > 0) ? (data.tempo / data.acertos) : null;
+            // Jogador só tem dados temporários (ainda não finalizou nenhuma partida)
             mapa.set(child.key, {
                 nome: data.nome,
                 turma: data.turma,
-                pontos: data.pontos,
+                melhorPontuacao: data.pontos,   // enquanto não finaliza, a melhor é a atual
+                ultimaPontuacao: null,          // não tem finalizadas
                 acertos: data.acertos,
                 tempo: data.tempo,
                 perguntas: data.perguntas || 0,
                 isTemp: true,
                 partidas: 1,
-                velocidadeAtual: velocidadeAtual,
                 status: statusInfo.status,
                 progresso: statusInfo.progresso,
-                ultimaPosicao: null
+                ultimaPosicao: null,
+                recordeVelocidade: null,
+                pontuacaoAtual: data.pontos
             });
         } else {
-            existente.partidas = (existente.partidas || 0) + 1;
-            if (data.pontos > existente.pontos) {
-                existente.pontos = data.pontos;
-                existente.acertos = data.acertos;
-                existente.tempo = data.tempo;
-                existente.perguntas = data.perguntas || 0;
-                existente.isTemp = true;
-                const velAtual = (data.acertos > 0) ? (data.tempo / data.acertos) : null;
-                if (velAtual !== null) existente.velocidadeAtual = velAtual;
-            }
+            // Já tem partidas finalizadas
+            // Atualiza a pontuação atual com a temporária
+            existente.pontuacaoAtual = data.pontos;
+            // Se a pontuação temporária for maior que a melhor, atualiza a melhor? 
+            // Melhor só deve ser atualizada quando finalizar, então não.
+            // Mantém a melhorPontuacao das finalizadas.
+            // Mas se o jogador não tiver finalizadas (caso raro), já tratamos acima.
+            existente.isTemp = true;
+            // Atualiza status e progresso
             if (statusInfo) {
                 existente.status = statusInfo.status;
                 existente.progresso = statusInfo.progresso;
@@ -1761,19 +1764,20 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     });
     let listaComId = [];
     for (let [id, dados] of mapa.entries()) {
-        dados.recordeVelocidade = recordeVelocMap.get(id) || null;
         listaComId.push({ id, ...dados });
     }
-    listaComId.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
+    // Ordenar pela melhor pontuação (decrescente), depois acertos, depois tempo
+    listaComId.sort((a,b) => b.melhorPontuacao - a.melhorPontuacao || b.acertos - a.acertos || a.tempo - b.tempo);
     if (listaComId.length === 0) {
         const html = '<p>⏳ Nenhum resultado registrado ainda. Aguarde os primeiros jogadores...</p>';
         document.getElementById(containerId).innerHTML = html;
         cacheRanking[cacheKey] = { html, timestamp: Date.now() };
         return;
     }
+    // Atualizar ultimaPosicao para quem não tem (caso exista)
     for (let i = 0; i < listaComId.length; i++) {
         const jogador = listaComId[i];
-        if (jogador.ultimaPosicao === null) {
+        if (jogador.ultimaPosicao === null && jogador.partidas > 0) {
             const snapPartidas = await db.ref(`copaV2/resultados/${faseNum}/${jogador.id}`).once('value');
             const partidas = snapPartidas.val() || [];
             if (partidas.length > 0) {
@@ -1784,13 +1788,16 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             }
         }
     }
+    // Projeção de posição (Fut. Pos.) - baseada na pontuação atual
     let posProjetadaMap = new Map();
     if (estadoAtual.status !== 'finalizado') {
         let projecaoValida = false;
         for (let item of listaComId) {
+            // Usa a pontuação atual para projetar, se disponível
+            const pontuacaoBase = item.pontuacaoAtual || item.melhorPontuacao;
             const perguntasResp = item.perguntas || 0;
-            if (perguntasResp > 0) {
-                const ritmo = item.pontos / perguntasResp;
+            if (perguntasResp > 0 && pontuacaoBase > 0) {
+                const ritmo = pontuacaoBase / perguntasResp;
                 const proj = ritmo * 20;
                 item.projecao = proj;
                 if (proj > 0) projecaoValida = true;
@@ -1806,14 +1813,22 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             });
         }
     }
-    const maxPontos = listaComId[0].pontos;
+    const maxMelhor = listaComId[0].melhorPontuacao;
     const vagas = VAGAS_POR_FASE[faseNum] || 30;
     const mostrarClassificacao = (containerId === 'ranking-torcida-container' || containerId === 'ranking-aluno-container') ? true : exibirClassificacao;
 
     let html = `<table class="ranking-table"><thead><tr>
-        <th>Pos</th><th>Nome</th><th>Fut. Pos.</th><th>Pontuação</th><th>Delta Líder</th>
-        <th>Veloc.<br>Média</th><th>Veloc.<br>Recorde</th><th>Δ Veloc.</th>
-        <th>Progresso</th>${mostrarClassificacao ? '<th>Classificação</th>' : ''}<th>Partidas</th><th>Turma</th>
+        <th>Pos</th>
+        <th>Nome</th>
+        <th>Fut. Pos.</th>
+        <th>Melhor Pontuação</th>
+        <th>Pontuação Atual</th>
+        <th>Delta Líder</th>
+        <th>Veloc. Recorde</th>
+        <th>Progresso</th>
+        ${mostrarClassificacao ? '<th>Classificação</th>' : ''}
+        <th>Partidas</th>
+        <th>Turma</th>
      </tr></thead><tbody>`;
     for (let idx = 0; idx < listaComId.length; idx++) {
         const j = listaComId[idx];
@@ -1824,34 +1839,20 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             if (posAtual < posAnterior) classePos = 'posicao-subiu';
             else if (posAtual > posAnterior) classePos = 'posicao-desceu';
         }
-        const deltaLider = maxPontos - j.pontos;
-        const deltaText = deltaLider === 0 ? "🏆 Líder" : `+${deltaLider}`;
-        let velocidadeAtualStr = "-", velocidadeAtualNum = null;
-        if (j.velocidadeAtual !== null && j.velocidadeAtual !== undefined) {
-            velocidadeAtualNum = j.velocidadeAtual;
-            velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
-        } else if (j.acertos > 0 && j.tempo > 0) {
-            velocidadeAtualNum = j.tempo / j.acertos;
-            velocidadeAtualStr = velocidadeAtualNum.toFixed(2) + " s";
-        }
+        const deltaLider = maxMelhor - j.melhorPontuacao;
+        const deltaText = deltaLider === 0 ? "🏆 Líder" : `${deltaLider}`;
+        // Velocidade recorde
         let recordeStr = "-";
         let recordeNum = j.recordeVelocidade;
         if (recordeNum !== null && recordeNum > 0) {
             recordeStr = recordeNum.toFixed(2) + " s";
         }
-        let deltaVelocidadeHtml = "";
-        if (velocidadeAtualNum !== null && recordeNum !== null && recordeNum > 0) {
-            const diff = velocidadeAtualNum - recordeNum;
-            const diffAbs = Math.abs(diff);
-            const diffStr = diffAbs.toFixed(2);
-            let icon = "", classe = "";
-            if (diff < -0.01) { icon = "🟢"; classe = "veloc-melhor"; }
-            else if (diff > 0.01) { icon = "🔴"; classe = "veloc-pior"; }
-            else { icon = "⚪"; classe = "veloc-igual"; }
-            deltaVelocidadeHtml = `<span class="${classe}">${icon} ${diffStr}s</span>`;
-        } else {
-            deltaVelocidadeHtml = "—";
+        // Pontuação atual
+        let pontuacaoAtualStr = "–";
+        if (j.pontuacaoAtual !== undefined && j.pontuacaoAtual !== null) {
+            pontuacaoAtualStr = j.pontuacaoAtual;
         }
+        // Fut. Pos.
         let futPosHtml = "";
         if (j.status === 'finalizado' || j.progresso >= 20 || (j.perguntas && j.perguntas >= 20)) {
             futPosHtml = "—";
@@ -1870,12 +1871,13 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             }
             if ((j.perguntas || 0) === 0) futPosHtml = "—";
         }
-
+        // Progresso
         let progressoHtml = "";
         if (j.status === 'em_jogo') progressoHtml = `${j.progresso}/20`;
         else if (j.status === 'finalizado') progressoHtml = `✅ Finalizado`;
         else progressoHtml = `—`;
         if (!j.status) progressoHtml = `—`;
+        // Classificação
         let colunaStatus = "";
         if (mostrarClassificacao) {
             const classificado = idx < vagas;
@@ -1889,11 +1891,10 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             <td class="${classePos}">${idx+1}º</td>
             <td>${escapeHtml(j.nome)}</td>
             <td>${futPosHtml}</td>
-            <td>${j.pontos}</td>
+            <td>${j.melhorPontuacao}</td>
+            <td>${pontuacaoAtualStr}</td>
             <td>${deltaText}</td>
-            <td>${velocidadeAtualStr}</td>
             <td>${recordeStr}</td>
-            <td>${deltaVelocidadeHtml}</td>
             <td>${progressoHtml}</td>
             ${mostrarClassificacao ? colunaStatus : ''}
             <td>${j.partidas}</td>
