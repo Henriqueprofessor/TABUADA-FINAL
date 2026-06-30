@@ -589,6 +589,40 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+
+        /* Configurações de colunas */
+        .colunas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #2d3a4f;
+        }
+        .colunas-grid .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #e2e8f0;
+            font-size: 14px;
+        }
+        .colunas-grid .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #27ae60;
+            cursor: pointer;
+        }
+        .colunas-grid .checkbox-item label {
+            cursor: pointer;
+            color: #e2e8f0;
+        }
+        .colunas-grid .checkbox-item.disabled {
+            opacity: 0.6;
+        }
+        .colunas-grid .checkbox-item.disabled input {
+            cursor: not-allowed;
+        }
     </style>
 
     <!-- Firebase SDKs -->
@@ -857,6 +891,27 @@
                 <div id="feedback-min-partidas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
 
+            <!-- Visibilidade das Colunas (Aluno e Torcida) -->
+            <div id="bloco-visibilidade-colunas" class="config-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">👁️</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Visibilidade das Colunas</h4>
+                    <span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Selecione quais colunas serão exibidas no ranking para <strong>alunos</strong> e para a <strong>torcida</strong>.
+                    As colunas com <strong>*</strong> são obrigatórias e sempre visíveis.
+                </p>
+                <div class="colunas-grid" id="colunas-visiveis-container">
+                    <!-- Preenchido dinamicamente -->
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+                    <button id="btn-salvar-colunas" class="btn-success">💾 Salvar configurações</button>
+                    <button id="btn-restaurar-colunas" class="btn-warning">🔄 Restaurar Padrões</button>
+                </div>
+                <div id="feedback-colunas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
             <!-- Senha de Acesso Fase 1 -->
             <div class="config-card senha-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
@@ -924,7 +979,7 @@
         <div class="header-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
             <h2 id="aluno-nome-display" style="margin: 0;">Aluno</h2>
             <div class="timer-fase-aluno" id="timer-fase-aluno">⏱️ Tempo: --:--</div>
-            <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;">📊 Ranking</button>
+            <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking</button>
             <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
         </div>
         <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</span> <span id="aluno-fase-info" class="fase-info"></span></p>
@@ -1208,6 +1263,7 @@ let torcidaId = null;
 let faseTorcidaSelecionada = 1;
 let atualizandoSeletorTorcida = false;
 let intervaloRankingAluno = null; // para atualização do ranking no modal do aluno
+let colunasVisiveis = null; // cache das colunas visíveis
 
 const TOTAL_FASES = 5;
 let intervaloIndividualSegundos = 4;
@@ -1216,9 +1272,33 @@ let tempoEsgotadoProcessado = false;
 let VALOR_PARTIDA = 2000;
 const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
 const MIN_PARTIDAS_KEY = 'copaV2/configuracoes/minPartidasPorFase';
+const COLUNAS_KEY = 'copaV2/configuracoes/colunasVisiveis';
 const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 const DEVICE_ID_KEY = 'copa_device_id';
+
+// Definição das colunas (opcionais e obrigatórias)
+const COLUNAS_DEF = {
+    // Obrigatórias (sempre visíveis)
+    obrigatorias: [
+        { id: 'posicao', label: 'Posição' },
+        { id: 'nome', label: 'Nome' },
+        { id: 'melhorPontuacao', label: 'Melhor Pontuação' },
+        { id: 'classificacao', label: 'Classificação' }
+    ],
+    // Opcionais (controláveis)
+    opcionais: [
+        { id: 'futPos', label: 'Fut. Pos.' },
+        { id: 'pontuacaoAtual', label: 'Pontuação Atual' },
+        { id: 'deltaLider', label: 'Delta Líder' },
+        { id: 'velocRecorde', label: 'Veloc. Recorde' },
+        { id: 'progresso', label: 'Progresso' },
+        { id: 'partidas', label: 'Partidas' },
+        { id: 'tempo', label: 'Tempo' },
+        { id: 'mediaTempo', label: 'Méd. Temp. Part.' },
+        { id: 'turma', label: 'Turma' }
+    ]
+};
 
 // ============================================================
 // TOAST
@@ -1314,11 +1394,8 @@ document.getElementById('btn-logout-professor')?.addEventListener('click', async
 // Observador de autenticação (persistência)
 auth.onAuthStateChanged((user) => {
     if (user) {
-        // Se o painel já estiver aberto, mantém; senão, só guarda o estado.
-        // Se o usuário clicar em "Professor", ele entra direto.
         console.log('Usuário logado:', user.email);
     } else {
-        // Se estava no modo professor, volta para o menu
         if (meuTipo === 'professor') {
             location.reload();
         }
@@ -1383,14 +1460,12 @@ async function carregarMinPartidas() {
         const snap = await db.ref(MIN_PARTIDAS_KEY).once('value');
         let config = snap.val();
         if (config === null || config === undefined) {
-            // Inicializa com 1 para todas as fases
             config = {};
             for (let i = 1; i <= TOTAL_FASES; i++) config[i] = 1;
             await db.ref(MIN_PARTIDAS_KEY).set(config);
         }
         return config;
     } catch (e) { 
-        // fallback
         const config = {};
         for (let i = 1; i <= TOTAL_FASES; i++) config[i] = 1;
         return config;
@@ -1442,6 +1517,109 @@ async function salvarMinPartidas() {
         toast('❌ Erro ao salvar mínimo de partidas.');
         console.error(e);
     }
+}
+
+// ============================================================
+// VISIBILIDADE DAS COLUNAS
+// ============================================================
+async function carregarColunasVisiveis() {
+    try {
+        const snap = await db.ref(COLUNAS_KEY).once('value');
+        let config = snap.val();
+        if (config === null || config === undefined) {
+            // Padrão: todas as opcionais ativas
+            config = {};
+            for (const col of COLUNAS_DEF.opcionais) {
+                config[col.id] = true;
+            }
+            await db.ref(COLUNAS_KEY).set(config);
+        }
+        colunasVisiveis = config;
+        return config;
+    } catch (e) {
+        // Fallback: todas ativas
+        const config = {};
+        for (const col of COLUNAS_DEF.opcionais) {
+            config[col.id] = true;
+        }
+        colunasVisiveis = config;
+        return config;
+    }
+}
+
+function renderizarConfigColunas(colunasConfig) {
+    const container = document.getElementById('colunas-visiveis-container');
+    if (!container) return;
+    const obrigatorias = COLUNAS_DEF.obrigatorias;
+    const opcionais = COLUNAS_DEF.opcionais;
+    let html = '';
+    // Obrigatórias (sempre visíveis, com checkbox desabilitado e marcado)
+    for (const col of obrigatorias) {
+        html += `
+            <div class="checkbox-item disabled">
+                <input type="checkbox" checked disabled>
+                <label>${col.label} *</label>
+            </div>
+        `;
+    }
+    // Opcionais (com checkbox controlável)
+    for (const col of opcionais) {
+        const checked = colunasConfig[col.id] !== undefined ? colunasConfig[col.id] : true;
+        html += `
+            <div class="checkbox-item">
+                <input type="checkbox" id="col-${col.id}" ${checked ? 'checked' : ''}>
+                <label for="col-${col.id}">${col.label}</label>
+            </div>
+        `;
+    }
+    container.innerHTML = html;
+}
+
+async function salvarColunasVisiveis() {
+    const config = {};
+    for (const col of COLUNAS_DEF.opcionais) {
+        const checkbox = document.getElementById(`col-${col.id}`);
+        if (checkbox) {
+            config[col.id] = checkbox.checked;
+        } else {
+            config[col.id] = true;
+        }
+    }
+    try {
+        await db.ref(COLUNAS_KEY).set(config);
+        colunasVisiveis = config;
+        // Invalida cache de ranking para aluno/torcida
+        cacheRanking = {};
+        const feedback = document.getElementById('feedback-colunas');
+        feedback.style.display = 'block';
+        feedback.className = 'feedback-sucesso';
+        feedback.textContent = '✅ Configuração de colunas salva com sucesso!';
+        setTimeout(() => feedback.style.display = 'none', 5000);
+        toast('✅ Colunas atualizadas!');
+        // Se a torcida estiver aberta, atualiza
+        if (meuTipo === 'projecao') {
+            if (modoTorcida === 'individual') atualizarTorcidaIndividual();
+            else atualizarTorcidaEquipes();
+        }
+        // Se o modal de ranking do aluno estiver aberto, atualiza
+        if (meuTipo === 'aluno') {
+            const modal = document.getElementById('modal-ranking-aluno');
+            if (modal && modal.style.display === 'flex') {
+                atualizarRankingAluno();
+            }
+        }
+    } catch (e) {
+        toast('❌ Erro ao salvar colunas.');
+        console.error(e);
+    }
+}
+
+function restaurarColunasPadrao() {
+    for (const col of COLUNAS_DEF.opcionais) {
+        const checkbox = document.getElementById(`col-${col.id}`);
+        if (checkbox) checkbox.checked = true;
+    }
+    toast('✅ Configurações restauradas para o padrão (todas ativas).');
 }
 
 // ============================================================
@@ -1619,7 +1797,6 @@ function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer, alunoT
     if (torcidaTimer) torcidaTimer.innerText = timeStr;
     if (alunoTimer) {
         alunoTimer.innerText = `⏱️ Tempo: ${timeStr}`;
-        // Cor vermelha se faltar menos de 1 minuto
         if (segundos < 60) {
             alunoTimer.classList.add('urgente');
         } else {
@@ -1682,8 +1859,8 @@ function iniciarListeners() {
             atualizarStatusSenha();
             atualizarListaLiberados();
             atualizarBotaoContinuarParar();
-            // Carrega configuração de min partidas e renderiza
             carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
+            carregarColunasVisiveis().then(config => renderizarConfigColunas(config));
         }
         // Se o modal de ranking do aluno estiver aberto, atualiza o ranking
         const modalRanking = document.getElementById('modal-ranking-aluno');
@@ -1730,9 +1907,164 @@ function iniciarListeners() {
 // ============================================================
 let cacheRanking = {};
 
+// Função auxiliar para obter a lista de colunas ativas para aluno/torcida
+function getColunasAtivas() {
+    if (!colunasVisiveis) {
+        // Fallback: todas ativas
+        const config = {};
+        for (const col of COLUNAS_DEF.opcionais) config[col.id] = true;
+        return config;
+    }
+    return colunasVisiveis;
+}
+
+// Gera o cabeçalho e as células da tabela com base nas colunas ativas
+function gerarLinhaCabecalho(colunasAtivas, mostrarClassificacao) {
+    let html = '<tr>';
+    // Obrigatórias
+    html += '<th>Pos</th><th>Nome</th><th>Melhor Pontuação</th>';
+    if (mostrarClassificacao) html += '<th>Classificação</th>';
+    // Opcionais (na ordem definida)
+    for (const col of COLUNAS_DEF.opcionais) {
+        if (colunasAtivas[col.id]) {
+            if (col.id === 'futPos') html += '<th>Fut. Pos.</th>';
+            else if (col.id === 'pontuacaoAtual') html += '<th>Pontuação Atual</th>';
+            else if (col.id === 'deltaLider') html += '<th>Delta Líder</th>';
+            else if (col.id === 'velocRecorde') html += '<th>Veloc. Recorde</th>';
+            else if (col.id === 'progresso') html += '<th>Progresso</th>';
+            else if (col.id === 'partidas') html += '<th>Partidas</th>';
+            else if (col.id === 'tempo') html += '<th>Tempo</th>';
+            else if (col.id === 'mediaTempo') html += '<th>Méd. Temp. Part.</th>';
+            else if (col.id === 'turma') html += '<th>Turma</th>';
+        }
+    }
+    html += '</tr>';
+    return html;
+}
+
+function gerarLinhaDados(j, idx, colunasAtivas, mostrarClassificacao, faseNum, minPartidas, posProjetadaMap, maxMelhor, vagas) {
+    let html = `<tr>`;
+    // Obrigatórias
+    const posAtual = idx + 1;
+    const posAnterior = j.ultimaPosicao || null;
+    let classePos = '';
+    if (posAnterior !== null && posAnterior > 0) {
+        if (posAtual < posAnterior) classePos = 'posicao-subiu';
+        else if (posAtual > posAnterior) classePos = 'posicao-desceu';
+    }
+    html += `<td class="${classePos}">${posAtual}º</td>`;
+    html += `<td>${escapeHtml(j.nome)}</td>`;
+    html += `<td>${j.melhorPontuacao}</td>`;
+    if (mostrarClassificacao) {
+        const classificado = (idx < vagas) && (j.partidas >= minPartidas);
+        if (faseNum === 5) {
+            html += classificado ? `<td class="classificado-sim">🏆 Finalista</td>` : `<td class="classificado-nao">Eliminado</td>`;
+        } else {
+            html += classificado ? `<td class="classificado-sim">Top${vagas}</td>` : `<td class="classificado-nao">Eliminado</td>`;
+        }
+    }
+    // Opcionais
+    for (const col of COLUNAS_DEF.opcionais) {
+        if (colunasAtivas[col.id]) {
+            let valor = '';
+            switch(col.id) {
+                case 'futPos':
+                    // Fut. Pos.
+                    let futPosHtml = "";
+                    if (j.status === 'finalizado' || j.progresso >= 20 || (j.perguntas && j.perguntas >= 20)) {
+                        futPosHtml = "—";
+                    } else {
+                        const posProjetada = posProjetadaMap.get(j.id);
+                        if (posAtual === 1) {
+                            futPosHtml = "—";
+                        } else if (posProjetada !== undefined && posProjetada > 0) {
+                            let icone = "", classe = "";
+                            if (posProjetada < posAtual) { icone = "🟢"; classe = "fut-sobe"; }
+                            else if (posProjetada === posAtual) { icone = "⚪"; classe = "fut-mantem"; }
+                            else { icone = "🔴"; classe = "fut-desce"; }
+                            futPosHtml = `<span class="${classe}">${posProjetada}° ${icone}</span>`;
+                        } else {
+                            futPosHtml = "—";
+                        }
+                        if ((j.perguntas || 0) === 0) futPosHtml = "—";
+                    }
+                    html += `<td>${futPosHtml}</td>`;
+                    break;
+                case 'pontuacaoAtual':
+                    let pontuacaoAtualStr = "–";
+                    if (j.pontuacaoAtual !== undefined && j.pontuacaoAtual !== null) {
+                        pontuacaoAtualStr = j.pontuacaoAtual;
+                    }
+                    html += `<td>${pontuacaoAtualStr}</td>`;
+                    break;
+                case 'deltaLider':
+                    const deltaLider = maxMelhor - j.melhorPontuacao;
+                    const deltaText = deltaLider === 0 ? "🏆 Líder" : `${deltaLider}`;
+                    html += `<td>${deltaText}</td>`;
+                    break;
+                case 'velocRecorde':
+                    let recordeStr = "-";
+                    let recordeNum = j.recordeVelocidade;
+                    if (recordeNum !== null && recordeNum > 0) {
+                        recordeStr = recordeNum.toFixed(2) + " s";
+                    }
+                    html += `<td>${recordeStr}</td>`;
+                    break;
+                case 'progresso':
+                    let progressoHtml = "";
+                    if (j.status === 'em_jogo') progressoHtml = `${j.progresso}/20`;
+                    else if (j.status === 'finalizado') progressoHtml = `✅ Finalizado`;
+                    else progressoHtml = `—`;
+                    if (!j.status) progressoHtml = `—`;
+                    html += `<td>${progressoHtml}</td>`;
+                    break;
+                case 'partidas':
+                    html += `<td>${j.partidas}</td>`;
+                    break;
+                case 'tempo':
+                    let tempoStr = "–";
+                    if (j.somaTempo !== undefined && j.somaTempo > 0) {
+                        tempoStr = j.somaTempo.toFixed(1) + "s";
+                    } else if (j.partidas > 0 && j.somaTempo === 0) {
+                        tempoStr = "0.0s";
+                    }
+                    html += `<td>${tempoStr}</td>`;
+                    break;
+                case 'mediaTempo':
+                    let mediaStr = "–";
+                    if (j.mediaTempo !== null && j.mediaTempo > 0) {
+                        mediaStr = j.mediaTempo.toFixed(1) + "s";
+                    } else if (j.partidas > 0) {
+                        mediaStr = "0.0s";
+                    }
+                    html += `<td>${mediaStr}</td>`;
+                    break;
+                case 'turma':
+                    html += `<td>${escapeHtml(j.turma)}</td>`;
+                    break;
+                default:
+                    html += '<td>–</td>';
+            }
+        }
+    }
+    html += '</tr>';
+    return html;
+}
+
 async function renderRanking(faseNum, containerId, tipo = 'individual', exibirClassificacao = false) {
     if (!estadoAtual) return;
-    const cacheKey = `${faseNum}_${tipo}_${exibirClassificacao}`;
+    // Determina se deve aplicar filtro de colunas (apenas para aluno e torcida)
+    const isAluno = containerId === 'ranking-aluno-container';
+    const isTorcida = containerId === 'ranking-torcida-container';
+    const aplicarFiltroColunas = isAluno || isTorcida;
+
+    // Se for aluno e estiver jogando, NÃO atualiza o ranking (evita congelamento)
+    if (isAluno && jogoAtivo) {
+        // Mantém o conteúdo atual, não faz nada
+        return;
+    }
+
+    const cacheKey = `${faseNum}_${tipo}_${exibirClassificacao}_${aplicarFiltroColunas ? 'filtrado' : 'completo'}`;
     if (cacheRanking[cacheKey] && (Date.now() - cacheRanking[cacheKey].timestamp < 2000)) {
         document.getElementById(containerId).innerHTML = cacheRanking[cacheKey].html;
         return;
@@ -1789,16 +2121,30 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             }
         }
     }
-    // Carrega configuração de mínimo de partidas para esta fase
     const minConfig = await carregarMinPartidas();
     const minPartidas = minConfig[faseNum] || 1;
+
+    // Carrega colunas ativas (se aplicável)
+    let colunasAtivas = {};
+    if (aplicarFiltroColunas) {
+        const config = await carregarColunasVisiveis();
+        colunasAtivas = config;
+        // Garante que as obrigatórias estão sempre ativas
+        for (const col of COLUNAS_DEF.obrigatorias) {
+            colunasAtivas[col.id] = true;
+        }
+    } else {
+        // Professor vê todas as colunas
+        for (const col of COLUNAS_DEF.obrigatorias) colunasAtivas[col.id] = true;
+        for (const col of COLUNAS_DEF.opcionais) colunasAtivas[col.id] = true;
+    }
 
     let mapa = new Map();
     snapFinal.forEach(child => {
         const partidas = child.val();
         if (partidas && partidas.length) {
             const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
-            const ultima = partidas[partidas.length - 1]; // última partida
+            const ultima = partidas[partidas.length - 1];
             let info = participantes[child.key];
             const nome = info?.nome || melhor.nome || "Anônimo";
             const turma = info?.turma || melhor.turma || "?";
@@ -1806,12 +2152,10 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             let progresso = statusInfo.progresso;
             if (statusInfo.status === 'aguardando') progresso = 0;
             const ultimaPosicao = ultima?.posicao || null;
-            // Soma dos tempos de todas as partidas finalizadas
             let somaTempo = 0;
             for (let p of partidas) {
                 somaTempo += p.tempo || 0;
             }
-            // Cálculo da média de tempo por partida
             let mediaTempo = null;
             if (partidas.length > 0 && somaTempo > 0) {
                 mediaTempo = somaTempo / partidas.length;
@@ -1840,7 +2184,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         const existente = mapa.get(child.key);
         const statusInfo = statusMap.get(child.key) || { status: 'em_jogo', progresso: data.perguntas || 0 };
         if (!existente) {
-            // Jogador só tem dados temporários (ainda não finalizou nenhuma partida)
             mapa.set(child.key, {
                 nome: data.nome,
                 turma: data.turma,
@@ -1872,7 +2215,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     for (let [id, dados] of mapa.entries()) {
         listaComId.push({ id, ...dados });
     }
-    // Ordenar pela melhor pontuação (decrescente), depois acertos, depois tempo
     listaComId.sort((a,b) => b.melhorPontuacao - a.melhorPontuacao || b.acertos - a.acertos || a.tempo - b.tempo);
     if (listaComId.length === 0) {
         const html = '<p>⏳ Nenhum resultado registrado ainda. Aguarde os primeiros jogadores...</p>';
@@ -1880,7 +2222,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         cacheRanking[cacheKey] = { html, timestamp: Date.now() };
         return;
     }
-    // Atualizar ultimaPosicao para quem não tem (caso exista)
     for (let i = 0; i < listaComId.length; i++) {
         const jogador = listaComId[i];
         if (jogador.ultimaPosicao === null && jogador.partidas > 0) {
@@ -1894,7 +2235,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             }
         }
     }
-    // Projeção de posição (Fut. Pos.) - baseada na pontuação atual
     let posProjetadaMap = new Map();
     if (estadoAtual.status !== 'finalizado') {
         let projecaoValida = false;
@@ -1922,110 +2262,19 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     const vagas = VAGAS_POR_FASE[faseNum] || 30;
     const mostrarClassificacao = (containerId === 'ranking-torcida-container' || containerId === 'ranking-aluno-container') ? true : exibirClassificacao;
 
-    let html = `<table class="ranking-table"><thead><tr>
-        <th>Pos</th>
-        <th>Nome</th>
-        <th>Fut. Pos.</th>
-        <th>Melhor Pontuação</th>
-        <th>Pontuação Atual</th>
-        <th>Delta Líder</th>
-        <th>Veloc. Recorde</th>
-        <th>Progresso</th>
-        ${mostrarClassificacao ? '<th>Classificação</th>' : ''}
-        <th>Partidas</th>
-        <th>Tempo</th>
-        <th>Méd. Temp. Part.</th>
-        <th>Turma</th>
-     </tr></thead><tbody>`;
+    // Construção da tabela com colunas dinâmicas
+    let html = `<table class="ranking-table"><thead>`;
+    html += gerarLinhaCabecalho(colunasAtivas, mostrarClassificacao);
+    html += '</thead><tbody>';
     for (let idx = 0; idx < listaComId.length; idx++) {
         const j = listaComId[idx];
-        const posAtual = idx + 1;
-        const posAnterior = j.ultimaPosicao || null;
-        let classePos = '';
-        if (posAnterior !== null && posAnterior > 0) {
-            if (posAtual < posAnterior) classePos = 'posicao-subiu';
-            else if (posAtual > posAnterior) classePos = 'posicao-desceu';
-        }
-        const deltaLider = maxMelhor - j.melhorPontuacao;
-        const deltaText = deltaLider === 0 ? "🏆 Líder" : `${deltaLider}`;
-        // Velocidade recorde
-        let recordeStr = "-";
-        let recordeNum = j.recordeVelocidade;
-        if (recordeNum !== null && recordeNum > 0) {
-            recordeStr = recordeNum.toFixed(2) + " s";
-        }
-        // Pontuação atual
-        let pontuacaoAtualStr = "–";
-        if (j.pontuacaoAtual !== undefined && j.pontuacaoAtual !== null) {
-            pontuacaoAtualStr = j.pontuacaoAtual;
-        }
-        // Tempo total (soma dos tempos das partidas finalizadas)
-        let tempoStr = "–";
-        if (j.somaTempo !== undefined && j.somaTempo > 0) {
-            tempoStr = j.somaTempo.toFixed(1) + "s";
-        } else if (j.partidas > 0 && j.somaTempo === 0) {
-            tempoStr = "0.0s";
-        }
-        // Média de tempo por partida
-        let mediaStr = "–";
-        if (j.mediaTempo !== null && j.mediaTempo > 0) {
-            mediaStr = j.mediaTempo.toFixed(1) + "s";
-        } else if (j.partidas > 0) {
-            mediaStr = "0.0s";
-        }
-        // Fut. Pos.
-        let futPosHtml = "";
-        if (j.status === 'finalizado' || j.progresso >= 20 || (j.perguntas && j.perguntas >= 20)) {
-            futPosHtml = "—";
-        } else {
-            const posProjetada = posProjetadaMap.get(j.id);
-            if (posAtual === 1) {
-                futPosHtml = "—";
-            } else if (posProjetada !== undefined && posProjetada > 0) {
-                let icone = "", classe = "";
-                if (posProjetada < posAtual) { icone = "🟢"; classe = "fut-sobe"; }
-                else if (posProjetada === posAtual) { icone = "⚪"; classe = "fut-mantem"; }
-                else { icone = "🔴"; classe = "fut-desce"; }
-                futPosHtml = `<span class="${classe}">${posProjetada}° ${icone}</span>`;
-            } else {
-                futPosHtml = "—";
-            }
-            if ((j.perguntas || 0) === 0) futPosHtml = "—";
-        }
-        // Progresso
-        let progressoHtml = "";
-        if (j.status === 'em_jogo') progressoHtml = `${j.progresso}/20`;
-        else if (j.status === 'finalizado') progressoHtml = `✅ Finalizado`;
-        else progressoHtml = `—`;
-        if (!j.status) progressoHtml = `—`;
-        // Classificação: só é classificado se atender ambos os critérios
-        let colunaStatus = "";
-        if (mostrarClassificacao) {
-            const classificado = (idx < vagas) && (j.partidas >= minPartidas);
-            if (faseNum === 5) {
-                colunaStatus = classificado ? `<td class="classificado-sim">🏆 Finalista</td>` : `<td class="classificado-nao">Eliminado</td>`;
-            } else {
-                colunaStatus = classificado ? `<td class="classificado-sim">Top${vagas}</td>` : `<td class="classificado-nao">Eliminado</td>`;
-            }
-        }
-        html += `<tr>
-            <td class="${classePos}">${idx+1}º</td>
-            <td>${escapeHtml(j.nome)}</td>
-            <td>${futPosHtml}</td>
-            <td>${j.melhorPontuacao}</td>
-            <td>${pontuacaoAtualStr}</td>
-            <td>${deltaText}</td>
-            <td>${recordeStr}</td>
-            <td>${progressoHtml}</td>
-            ${mostrarClassificacao ? colunaStatus : ''}
-            <td>${j.partidas}</td>
-            <td>${tempoStr}</td>
-            <td>${mediaStr}</td>
-            <td>${escapeHtml(j.turma)}</td>
-         </tr>`;
+        html += gerarLinhaDados(j, idx, colunasAtivas, mostrarClassificacao, faseNum, minPartidas, posProjetadaMap, maxMelhor, vagas);
     }
     html += '</tbody></table>';
-    document.getElementById(containerId).innerHTML = html;
+    // Usa requestAnimationFrame para suavizar a atualização do DOM
+    requestAnimationFrame(() => {
+        document.getElementById(containerId).innerHTML = html;
+    });
     if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
         document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
     }
@@ -2114,7 +2363,9 @@ async function renderRankingTurmas(containerId) {
          </tr>`;
     });
     html += '</tbody></table>';
-    document.getElementById(containerId).innerHTML = html;
+    requestAnimationFrame(() => {
+        document.getElementById(containerId).innerHTML = html;
+    });
 }
 
 // ============================================================
@@ -2345,7 +2596,6 @@ function renderRankingGeral() {
                 existente.totalPartidas += partidas.length;
             }
             const jogador = jogadores.get(id);
-            // Soma os tempos de todas as partidas dessa fase e calcula melhor velocidade
             let somaTempoFase = 0;
             for (let partida of partidas) {
                 somaTempoFase += partida.tempo || 0;
@@ -2359,7 +2609,6 @@ function renderRankingGeral() {
             jogador.tempoTotal += somaTempoFase;
         }
     }
-    // Calcular média de tempo por partida (geral)
     for (let [id, info] of jogadores.entries()) {
         if (info.totalPartidas > 0 && info.tempoTotal > 0) {
             info.mediaTempoGeral = info.tempoTotal / info.totalPartidas;
@@ -2492,7 +2741,6 @@ async function avancarFase() {
     const faseAtual = estadoAtual.fase;
     if (faseAtual > TOTAL_FASES) { toast("Competição já finalizada!"); return; }
 
-    // Carrega mínimo de partidas para esta fase
     const minConfig = await carregarMinPartidas();
     const minPartidas = minConfig[faseAtual] || 1;
 
@@ -2501,7 +2749,6 @@ async function avancarFase() {
     for (let id in res) {
         const partidas = res[id];
         if (partidas?.length) {
-            // Só considera jogadores que atenderam ao mínimo de partidas
             if (partidas.length < minPartidas) continue;
             const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
             lista.push({ id, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo });
@@ -3283,6 +3530,8 @@ async function iniciarNovaPartida() {
     document.getElementById('pontuacao-acumulada').innerText = "0";
     document.getElementById('velocidade-media').innerText = "--";
     jogoAtivo = true;
+    // Desabilita o botão de ranking durante o jogo
+    document.getElementById('btn-ranking-aluno').disabled = true;
     document.getElementById('jogo-area').classList.remove('hidden');
     document.getElementById('aguardando-aluno').classList.add('hidden');
     iniciarAtualizacaoTempoReal();
@@ -3291,6 +3540,8 @@ async function iniciarNovaPartida() {
 
 async function finalizar() {
     jogoAtivo = false;
+    // Reabilita o botão de ranking
+    document.getElementById('btn-ranking-aluno').disabled = false;
     document.getElementById('jogo-area').classList.add('hidden');
     document.getElementById('aguardando-aluno').classList.remove('hidden');
 
@@ -3447,6 +3698,10 @@ function renderAluno() {
     const jogoArea = document.getElementById('jogo-area');
     const aguardandoArea = document.getElementById('aguardando-aluno');
 
+    // Se estiver jogando, o botão de ranking já está desabilitado (definido em iniciarNovaPartida)
+    // Mas caso o estado mude, garantimos que ele esteja correto
+    document.getElementById('btn-ranking-aluno').disabled = jogoAtivo;
+
     let podeJogar = true;
     if (estadoAtual.fase > 1) {
         const classificados = estadoAtual.classificados?.[estadoAtual.fase - 1] || [];
@@ -3527,17 +3782,23 @@ function renderAluno() {
 async function atualizarRankingAluno() {
     if (meuTipo !== 'aluno') return;
     if (!estadoAtual) return;
+    // Se estiver jogando, não atualiza (já bloqueado pelo renderRanking)
+    if (jogoAtivo) return;
     const faseAtual = estadoAtual.fase;
     await renderRanking(faseAtual, 'ranking-aluno-container', 'individual', true);
 }
 
 function abrirModalRanking() {
+    // Se estiver jogando, não permite abrir
+    if (jogoAtivo) {
+        toast('⛔ Você não pode ver o ranking durante a partida.');
+        return;
+    }
     const modal = document.getElementById('modal-ranking-aluno');
     modal.style.display = 'flex';
-    // Inicia atualização periódica se não estiver rodando
     if (!intervaloRankingAluno) {
         intervaloRankingAluno = setInterval(() => {
-            if (modal.style.display === 'flex') {
+            if (modal.style.display === 'flex' && !jogoAtivo) {
                 atualizarRankingAluno();
             }
         }, intervaloIndividualSegundos * 1000);
@@ -3592,6 +3853,10 @@ async function init() {
     // Salvar mínimo de partidas
     document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', salvarMinPartidas);
 
+    // Salvar colunas
+    document.getElementById('btn-salvar-colunas')?.addEventListener('click', salvarColunasVisiveis);
+    document.getElementById('btn-restaurar-colunas')?.addEventListener('click', restaurarColunasPadrao);
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -3605,8 +3870,8 @@ async function init() {
             if (tab === 'gerenciar-alunos') renderListaAlunosGerenciar();
             if (tab === 'gerenciar-turmas') renderListaTurmas();
             if (tab === 'configuracoes') {
-                // Recarrega configuração de min partidas
                 carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
+                carregarColunasVisiveis().then(config => renderizarConfigColunas(config));
             }
             tocarSom('clique');
         });
@@ -3724,7 +3989,6 @@ async function init() {
         }, debounceDelay));
     }
 
-    // Adicionar tempo extra
     if (btnAdicionarTempoExtra) {
         btnAdicionarTempoExtra.addEventListener('click', debounce(async () => {
             if (estadoAtual.status !== 'em_andamento') {
@@ -3828,7 +4092,6 @@ async function init() {
     // Botão "Sair" no modal
     document.getElementById('btn-sair-modal-ranking')?.addEventListener('click', () => {
         fecharModalRanking();
-        // Executa a mesma ação do botão "Sair" do aluno
         pararAtualizacaoTempoReal();
         if (alunoId) {
             db.ref(`online/${alunoId}`).remove();
@@ -3946,14 +4209,13 @@ async function init() {
                 if (inputInd) inputInd.value = intervaloIndividualSegundos;
                 if (inputEq) inputEq.value = intervaloEquipesSegundos;
             }
-            // Se o modal de ranking do aluno estiver aberto, reinicia o intervalo
             if (meuTipo === 'aluno' && document.getElementById('modal-ranking-aluno').style.display === 'flex') {
                 if (intervaloRankingAluno) {
                     clearInterval(intervaloRankingAluno);
                     intervaloRankingAluno = null;
                 }
                 intervaloRankingAluno = setInterval(() => {
-                    if (document.getElementById('modal-ranking-aluno').style.display === 'flex') {
+                    if (document.getElementById('modal-ranking-aluno').style.display === 'flex' && !jogoAtivo) {
                         atualizarRankingAluno();
                     }
                 }, intervaloIndividualSegundos * 1000);
@@ -3964,7 +4226,6 @@ async function init() {
     setTimeout(carregarValorPartida, 500);
 }
 
-// Aguarda o DOM carregar
 document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
