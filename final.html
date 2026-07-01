@@ -730,7 +730,7 @@
         }
 
         /* ========================================================= */
-        /* ESTILOS DO TUTORIAL DO ALUNO */
+        /* ESTILOS DO TUTORIAL (aluno e torcida) */
         /* ========================================================= */
         .tutorial-content {
             max-height: 55vh;
@@ -771,6 +771,26 @@
             border-radius: 30px;
             font-size: 13px;
             margin: 2px 4px;
+        }
+        .tutorial-content table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin: 10px 0;
+        }
+        .tutorial-content table th {
+            background: #1f3a4b;
+            color: #ffd966;
+            padding: 6px 8px;
+            text-align: left;
+            border-bottom: 2px solid #ffd966;
+        }
+        .tutorial-content table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #2c3e50;
+        }
+        .tutorial-content table tr:hover td {
+            background: #1f3a4b;
         }
     </style>
 
@@ -826,9 +846,6 @@
             <button id="btn-professor" class="btn-primary">👨‍🏫 Professor</button>
             <button id="btn-aluno">🎮 Aluno</button>
             <button id="btn-projecao">📺 Torcida</button>
-            <!-- ===================================================== -->
-            <!-- BOTÃO TUTORIAL ADICIONADO NA TELA INICIAL             -->
-            <!-- ===================================================== -->
             <button id="btn-tutorial-inicial" class="btn-info">📘 Tutorial</button>
             <button id="btn-instalar-app" style="background: #9b59b6; color: white; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px;">📱 Instalar App</button>
         </div>
@@ -1172,7 +1189,6 @@
             <div class="timer-fase-aluno" id="timer-fase-aluno">⏱️ Tempo: --:--</div>
             <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking Fase</button>
             <button id="btn-ranking-pontos-aluno" class="btn-info" style="margin-left: 5px;">🏆 Ranking Pontos</button>
-            <!-- Botão Tutorial também mantido na tela do aluno -->
             <button id="btn-tutorial-aluno" class="btn-info" style="margin-left: 5px;">📘 Tutorial</button>
             <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
         </div>
@@ -1236,16 +1252,13 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- MODAL DE TUTORIAL DO ALUNO                                 -->
+    <!-- MODAL DE TUTORIAL (compartilhado entre aluno e torcida)    -->
     <!-- ========================================================= -->
     <div id="modal-tutorial" class="modal-ranking" style="display:none;">
         <div class="modal-ranking-content" style="max-width: 800px;">
-            <h2 style="color:#ffd966; text-align:center;">📘 Tutorial - Copa Tabuada CEIB 2026</h2>
-            <div class="modal-sub-tabs">
-                <div class="sub-tab active" data-tab-tut="objetivo">🎯 Objetivo</div>
-                <div class="sub-tab" data-tab-tut="pontuacao">📊 Pontuação</div>
-                <div class="sub-tab" data-tab-tut="dicas">⚡ Dicas</div>
-                <div class="sub-tab" data-tab-tut="faq">❓ FAQ</div>
+            <h2 style="color:#ffd966; text-align:center;" id="tutorial-titulo">📘 Tutorial</h2>
+            <div class="modal-sub-tabs" id="tutorial-tabs">
+                <!-- As abas serão carregadas dinamicamente conforme o tipo de usuário -->
             </div>
             <div id="tut-conteudo" class="tutorial-content">
                 <!-- Carregado via JavaScript -->
@@ -1264,6 +1277,7 @@
             <h2>📺 RANKING EM TEMPO REAL <span class="live-badge">AO VIVO</span></h2>
             <div>
                 <button id="btn-sync-torcida" class="btn-warning">🔄 Sincronizar</button>
+                <button id="btn-tutorial-torcida" class="btn-info">📘 Tutorial</button>
                 <button id="btn-sair-torcida" class="btn-danger">🏠 Voltar</button>
             </div>
         </div>
@@ -1541,9 +1555,9 @@ function toast(m) {
 }
 
 // ============================================================
-// TUTORIAL DO ALUNO
+// TUTORIAL (compartilhado entre aluno e torcida)
 // ============================================================
-const CONTEUDO_TUTORIAL = {
+const CONTEUDO_TUTORIAL_ALUNO = {
     objetivo: `
         <h3>🎯 Seja o grande campeão da Copa Tabuada CEIB 2026!</h3>
         <div class="destaque">
@@ -1646,12 +1660,126 @@ const CONTEUDO_TUTORIAL = {
     `
 };
 
-function abrirTutorial() {
+const CONTEUDO_TUTORIAL_TORCIDA = {
+    visao: `
+        <h3>📺 Acompanhe a Copa Tabuada CEIB 2026 ao vivo!</h3>
+        <div class="destaque">
+            <p>A tela da torcida mostra os <strong>rankings atualizados em tempo real</strong>.</p>
+            <p>Você pode alternar entre:</p>
+            <ul>
+                <li><strong>👤 Ranking Individual</strong>: posição de cada jogador na fase atual (ou em fases anteriores).</li>
+                <li><strong>👥 Ranking por Equipes</strong>: média das melhores pontuações dos alunos de cada turma.</li>
+            </ul>
+            <p>Além disso, há duas <strong>sub-abas</strong>:</p>
+            <ul>
+                <li><strong>📊 Fase</strong>: mostra o ranking da fase selecionada (com projeção de pontos, se ativado).</li>
+                <li><strong>🏆 Pontos</strong>: mostra o ranking geral de pontos acumulados (se o professor ativar essa funcionalidade).</li>
+            </ul>
+            <p>Os dados são atualizados automaticamente a cada <strong>4 segundos</strong> (ranking individual) e a cada <strong>60 segundos</strong> (ranking por equipes).</p>
+        </div>
+    `,
+    colunas: `
+        <h3>📊 Como ler o Ranking da Fase</h3>
+        <p><strong>Entenda cada coluna do ranking individual:</strong></p>
+        <table>
+            <thead><tr><th>Coluna</th><th>O que significa</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Pos</strong></td><td>Posição atual do jogador na fase.</td></tr>
+                <tr><td><strong>Nome</strong></td><td>Nome do aluno.</td></tr>
+                <tr><td><strong>Melhor Pontuação</strong></td><td>A maior pontuação que o aluno obteve em <strong>uma única partida</strong> dentro da fase.</td></tr>
+                <tr><td><strong>Classificação</strong></td><td>Indica se o jogador está dentro da zona de classificação para a próxima fase (ex: "Top 30").</td></tr>
+                <tr><td><strong>Fut. Pos.</strong></td><td>Projeção da posição futura com base no ritmo atual de pontuação (se o jogador estiver em andamento).</td></tr>
+                <tr><td><strong>Pontuação Atual</strong></td><td>Pontuação da partida em andamento (se houver).</td></tr>
+                <tr><td><strong>Delta Líder</strong></td><td>Diferença de pontos entre o jogador e o líder da fase.</td></tr>
+                <tr><td><strong>Veloc. Recorde</strong></td><td>Melhor tempo médio por acerto (quanto menor, melhor).</td></tr>
+                <tr><td><strong>Progresso</strong></td><td>Quantas perguntas o jogador já respondeu na partida atual (de 20).</td></tr>
+                <tr><td><strong>Partidas</strong></td><td>Número total de partidas completas pelo jogador na fase.</td></tr>
+                <tr><td><strong>Tempo</strong></td><td>Tempo total gasto nas partidas.</td></tr>
+                <tr><td><strong>Méd. Temp. Part.</strong></td><td>Tempo médio por partida.</td></tr>
+                <tr><td><strong>Turma</strong></td><td>Turma do aluno.</td></tr>
+                <tr><td><strong>Projeção</strong></td><td>(se o Ranking de Pontos estiver ativado) Quantos pontos o jogador ganharia se a fase terminasse agora, com base na posição atual.</td></tr>
+            </tbody>
+        </table>
+    `,
+    pontos: `
+        <h3>🏆 Ranking de Pontos (se ativado)</h3>
+        <div class="destaque">
+            <p>Se o professor ativar o <strong>Ranking de Pontos</strong>, a torcida terá acesso a uma aba extra.</p>
+            <p>Nela, você verá:</p>
+            <ul>
+                <li><strong>Posição</strong> geral.</li>
+                <li><strong>Nome</strong> do jogador.</li>
+                <li><strong>Pontuação Geral</strong> (soma de todas as fases).</li>
+                <li><strong>Fase 5</strong> a <strong>Fase 1</strong> – a pontuação que o jogador obteve em cada fase.</li>
+            </ul>
+            <p>O campeão da Copa será o jogador com a <strong>maior pontuação geral</strong>.</p>
+            <p>Em caso de empate, vence quem teve a <strong>melhor posição na Fase 5</strong>.</p>
+            <p>💡 <em>Esta aba só aparece se o professor ativar a funcionalidade no painel de controle.</em></p>
+        </div>
+    `,
+    faq: `
+        <h3>❓ FAQ da Torcida</h3>
+
+        <p><strong>Como saber se a atualização está funcionando?</strong></p>
+        <p>Observe o campo <strong>"Última atualização"</strong> no topo da tela. Ele mostra o horário da última sincronização.</p>
+
+        <p><strong>O que significa a "Projeção" na coluna?</strong></p>
+        <p>É uma previsão de quantos pontos o jogador ganharia no Ranking de Pontos <strong>se a fase terminasse agora</strong>, com base na posição atual.</p>
+
+        <p><strong>Por que alguns jogadores têm "—" em algumas colunas?</strong></p>
+        <p>Significa que o dado ainda não está disponível (ex: o jogador não completou nenhuma partida ou não está em jogo no momento).</p>
+
+        <p><strong>Posso ver rankings de fases anteriores?</strong></p>
+        <p>Sim! No modo "Ranking Individual", você pode selecionar qualquer fase (1 a 5) no seletor superior.</p>
+
+        <p><strong>O que é o "Ranking por Equipes"?</strong></p>
+        <p>Ele calcula a <strong>média das melhores pontuações</strong> de todos os alunos de cada turma, mostrando qual turma está com o melhor desempenho geral.</p>
+
+        <p><strong>O ranking de pontos é obrigatório?</strong></p>
+        <p>Não. Ele só aparece se o professor ativar a opção no painel de controle. Se estiver desativado, a aba "🏆 Pontos" não será exibida.</p>
+    `
+};
+
+// Funções do tutorial
+function abrirTutorial(tipo) {
+    // tipo: 'aluno' ou 'torcida'
     const modal = document.getElementById('modal-tutorial');
+    const titulo = document.getElementById('tutorial-titulo');
+    const tabsContainer = document.getElementById('tutorial-tabs');
+    
+    if (tipo === 'aluno') {
+        titulo.innerText = '📘 Tutorial - Aluno';
+        // Define as abas para aluno
+        tabsContainer.innerHTML = `
+            <div class="sub-tab active" data-tab-tut="objetivo">🎯 Objetivo</div>
+            <div class="sub-tab" data-tab-tut="pontuacao">📊 Pontuação</div>
+            <div class="sub-tab" data-tab-tut="dicas">⚡ Dicas</div>
+            <div class="sub-tab" data-tab-tut="faq">❓ FAQ</div>
+        `;
+        // Carrega a primeira aba
+        mostrarAbaTutorial('objetivo', CONTEUDO_TUTORIAL_ALUNO);
+    } else if (tipo === 'torcida') {
+        titulo.innerText = '📘 Tutorial - Torcida';
+        tabsContainer.innerHTML = `
+            <div class="sub-tab active" data-tab-tut="visao">📺 Visão Geral</div>
+            <div class="sub-tab" data-tab-tut="colunas">📊 Colunas</div>
+            <div class="sub-tab" data-tab-tut="pontos">🏆 Pontos</div>
+            <div class="sub-tab" data-tab-tut="faq">❓ FAQ</div>
+        `;
+        mostrarAbaTutorial('visao', CONTEUDO_TUTORIAL_TORCIDA);
+    }
+    
     modal.style.display = 'flex';
-    // Carrega a primeira aba (objetivo)
-    mostrarAbaTutorial('objetivo');
     tocarSom('clique');
+    
+    // Reatribui eventos das abas
+    document.querySelectorAll('[data-tab-tut]').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const aba = this.dataset.tabTut;
+            const conteudo = tipo === 'aluno' ? CONTEUDO_TUTORIAL_ALUNO : CONTEUDO_TUTORIAL_TORCIDA;
+            mostrarAbaTutorial(aba, conteudo);
+        });
+    });
 }
 
 function fecharTutorial() {
@@ -1659,9 +1787,9 @@ function fecharTutorial() {
     tocarSom('clique');
 }
 
-function mostrarAbaTutorial(aba) {
+function mostrarAbaTutorial(aba, conteudo) {
     const container = document.getElementById('tut-conteudo');
-    container.innerHTML = CONTEUDO_TUTORIAL[aba] || '<p>Conteúdo não encontrado.</p>';
+    container.innerHTML = conteudo[aba] || '<p>Conteúdo não encontrado.</p>';
     // Marca a aba como ativa
     document.querySelectorAll('[data-tab-tut]').forEach(el => {
         el.classList.remove('active');
@@ -1671,20 +1799,30 @@ function mostrarAbaTutorial(aba) {
     });
 }
 
-// Eventos do tutorial
+// Eventos do tutorial (serão configurados no DOMContentLoaded)
 document.addEventListener('DOMContentLoaded', function() {
-    // Botão na tela inicial
-    document.getElementById('btn-tutorial-inicial')?.addEventListener('click', abrirTutorial);
-    // Botão na tela do aluno (mantido)
-    document.getElementById('btn-tutorial-aluno')?.addEventListener('click', abrirTutorial);
+    // Botão tutorial na tela inicial
+    document.getElementById('btn-tutorial-inicial')?.addEventListener('click', function() {
+        // Pergunta se é para aluno ou torcida (ou só abre o do aluno por padrão)
+        // Como estamos na tela inicial, podemos abrir o do aluno ou perguntar.
+        // Vou abrir o do aluno por padrão.
+        abrirTutorial('aluno');
+    });
+    
+    // Botão tutorial na tela do aluno
+    document.getElementById('btn-tutorial-aluno')?.addEventListener('click', function() {
+        abrirTutorial('aluno');
+    });
+    
+    // Botão tutorial na tela da torcida
+    document.getElementById('btn-tutorial-torcida')?.addEventListener('click', function() {
+        abrirTutorial('torcida');
+    });
+    
+    // Fechar tutorial
     document.getElementById('btn-fechar-tutorial')?.addEventListener('click', fecharTutorial);
     document.getElementById('modal-tutorial')?.addEventListener('click', function(e) {
         if (e.target === this) fecharTutorial();
-    });
-    document.querySelectorAll('[data-tab-tut]').forEach(tab => {
-        tab.addEventListener('click', function() {
-            mostrarAbaTutorial(this.dataset.tabTut);
-        });
     });
 });
 
