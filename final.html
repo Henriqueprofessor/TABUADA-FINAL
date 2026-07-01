@@ -85,13 +85,6 @@
         .classificado-nao { color: #e74c3c; font-weight: bold; }
         .posicao-subiu { color: #2ecc71; font-weight: bold; }
         .posicao-desceu { color: #e74c3c; font-weight: bold; }
-        .podium { display: flex; justify-content: center; align-items: flex-end; gap: 30px; margin: 30px 0; flex-wrap: wrap; }
-        .podium-card { text-align: center; padding: 20px; background: #1f3a4b; border-radius: 20px; min-width: 150px; }
-        .podium-1 { background: linear-gradient(135deg, #ffd700, #ffb347); color: #000; }
-        .podium-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #000; }
-        .podium-3 { background: linear-gradient(135deg, #cd7f32, #b87333); color: #000; }
-        .podium-4, .podium-5 { background: #2c5a6e; }
-        .medalha { font-size: 40px; }
         .barra-tempo { width: 100%; height: 12px; background: #2c3e50; border-radius: 6px; overflow: hidden; margin: 15px 0; }
         .progresso-tempo { width: 100%; height: 100%; background: #27ae60; transition: width 0.05s linear; }
 
@@ -792,6 +785,36 @@
         .tutorial-content table tr:hover td {
             background: #1f3a4b;
         }
+
+        /* Estilo do card de competição finalizada */
+        .competicao-finalizada {
+            background: linear-gradient(135deg, #1a3a1a, #0f2a0f);
+            border: 3px solid #ffd700;
+            border-radius: 28px;
+            padding: 30px 20px;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 0 40px rgba(255,215,0,0.2);
+        }
+        .competicao-finalizada h2 {
+            color: #ffd700;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(255,215,0,0.3);
+        }
+        .competicao-finalizada p {
+            font-size: 1.1rem;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+        .competicao-finalizada .destaque {
+            background: rgba(255,215,0,0.15);
+            padding: 12px 20px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 10px;
+            border: 1px solid rgba(255,215,0,0.3);
+        }
     </style>
 
     <!-- Firebase SDKs -->
@@ -906,8 +929,6 @@
                         <button id="btn-reset-fase" class="btn-warning" style="margin-top: 10px; width: 100%;">🔄 Resetar Fase (apagar dados atuais)</button>
                         <button id="btn-reset-total" class="btn-danger" style="margin-top: 10px; width: 100%;">⚠️ Resetar Competição</button>
                         <hr>
-                        <button id="btn-recarregar-podio" class="btn-info" style="width:100%;">🔄 Recarregar Pódio</button>
-                        <hr>
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <label for="input-tempo-extra" style="color: #ffd966;">➕ Adicionar tempo extra (min):</label>
                             <input type="number" id="input-tempo-extra" value="5" min="1" style="width: 80px; padding: 5px; border-radius: 5px;">
@@ -936,7 +957,15 @@
                 </div>
                 <p style="font-size: 12px;">* Os intervalos são salvos no Firebase e aplicados a todos os usuários em tempo real.</p>
             </div>
-            <div id="podium-container" class="status-box hidden"></div>
+            <!-- Card de competição finalizada (aparece apenas quando fase 5 finalizada) -->
+            <div id="competicao-finalizada-prof" class="competicao-finalizada hidden">
+                <h2>🏆 COPA FINALIZADA!</h2>
+                <p>A competição chegou ao fim.</p>
+                <div class="destaque">
+                    <p>📊 Consulte o <strong>Ranking de Pontos</strong> (na aba ao lado) para ver a classificação final e o grande campeão.</p>
+                    <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 5px;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
+                </div>
+            </div>
         </div>
 
         <!-- Aba Ranking Geral -->
@@ -1232,7 +1261,7 @@
             <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
             <div id="historico-aluno"></div>
         </div>
-        <div id="podium-aluno-container" class="status-box hidden"></div>
+        <!-- O container do pódio do aluno foi removido -->
     </div>
 
     <!-- ========================================================= -->
@@ -1302,7 +1331,15 @@
             <p><small>Individual: atualização a cada <span id="torcida-individual-intervalo">4</span>s | Equipes: atualização a cada <span id="torcida-equipes-intervalo">60</span>s | Última atualização: <span id="torcida-last-update">--</span></small></p>
         </div>
         <div id="ranking-torcida-container" class="status-box">Carregando ranking ao vivo...</div>
-        <div id="podium-torcida-container" class="status-box hidden"></div>
+        <!-- Card de competição finalizada para a torcida -->
+        <div id="competicao-finalizada-torcida" class="competicao-finalizada hidden">
+            <h2>🏆 COPA FINALIZADA!</h2>
+            <p>A competição chegou ao fim.</p>
+            <div class="destaque">
+                <p>📊 Consulte o <strong>Ranking de Pontos</strong> (aba ao lado) para ver a classificação final e o grande campeão.</p>
+                <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 5px;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -2738,50 +2775,6 @@ async function processarPontuacaoFase(fase) {
 let listenerCopa = null;
 let listenerOnline = null;
 
-// Listeners específicos para o pódio (observadores)
-let listenerPontuacaoGlobal = null;
-let listenerPos5 = null;
-
-function iniciarListenerPodium() {
-    // Remove listeners antigos se existirem
-    if (listenerPontuacaoGlobal) {
-        db.ref('copaV2/pontuacaoGlobal').off('value', listenerPontuacaoGlobal);
-        listenerPontuacaoGlobal = null;
-    }
-    if (listenerPos5) {
-        db.ref('copaV2/pontuacaoPosicao/5').off('value', listenerPos5);
-        listenerPos5 = null;
-    }
-
-    // Só cria listeners se o Ranking de Pontos estiver ativo
-    if (!rankingPontosAtivo) return;
-
-    // Escuta mudanças na pontuação global
-    listenerPontuacaoGlobal = db.ref('copaV2/pontuacaoGlobal').on('value', () => {
-        renderPodioFinal('podium-container');
-        renderPodioFinal('podium-torcida-container');
-        renderPodioFinal('podium-aluno-container');
-    });
-
-    // Também escuta mudanças na posição da Fase 5 (critério de desempate)
-    listenerPos5 = db.ref('copaV2/pontuacaoPosicao/5').on('value', () => {
-        renderPodioFinal('podium-container');
-        renderPodioFinal('podium-torcida-container');
-        renderPodioFinal('podium-aluno-container');
-    });
-}
-
-function removerListenerPodium() {
-    if (listenerPontuacaoGlobal) {
-        db.ref('copaV2/pontuacaoGlobal').off('value', listenerPontuacaoGlobal);
-        listenerPontuacaoGlobal = null;
-    }
-    if (listenerPos5) {
-        db.ref('copaV2/pontuacaoPosicao/5').off('value', listenerPos5);
-        listenerPos5 = null;
-    }
-}
-
 function iniciarListeners() {
     if (listenerCopa) listenerCopa();
     listenerCopa = db.ref('copaV2').on('value', snap => {
@@ -2871,9 +2864,6 @@ function iniciarListeners() {
             if (listaDiv) listaDiv.innerHTML = html;
         }
     });
-
-    // Inicia o listener do pódio (observadores)
-    iniciarListenerPodium();
 }
 
 // ============================================================
@@ -3672,123 +3662,6 @@ function renderRankingGeral() {
 }
 
 // ============================================================
-// PÓDIO (CORRIGIDO)
-// ============================================================
-async function renderPodioFinal(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    // Recarregar a configuração para garantir que 'rankingPontosAtivo' esteja atualizado
-    await carregarConfigRankingPontos();
-
-    console.log('[Pódio] rankingPontosAtivo =', rankingPontosAtivo);
-
-    // Se o ranking de pontos estiver ativo, usar a pontuação global
-    if (rankingPontosAtivo) {
-        try {
-            const [snapGlobal, snapPos5] = await Promise.all([
-                db.ref('copaV2/pontuacaoGlobal').once('value'),
-                db.ref('copaV2/pontuacaoPosicao/5').once('value')
-            ]);
-            const globais = snapGlobal.val() || {};
-            const pos5 = snapPos5.val() || {};
-
-            console.log('[Pódio] Dados globais:', globais);
-            console.log('[Pódio] Posições Fase 5:', pos5);
-
-            // Buscar nome e turma para todos os IDs
-            let lista = Object.keys(globais).map(id => {
-                let nome = 'Anônimo', turma = '?';
-                for (let f = 1; f <= TOTAL_FASES; f++) {
-                    if (estadoAtual?.participantes?.[f]?.[id]) {
-                        nome = estadoAtual.participantes[f][id].nome || nome;
-                        turma = estadoAtual.participantes[f][id].turma || turma;
-                        break;
-                    }
-                }
-                return {
-                    id,
-                    nome,
-                    turma,
-                    total: globais[id] || 0,
-                    pos5: pos5[id] !== undefined ? pos5[id] : 999
-                };
-            });
-
-            // Ordenar: primeiro por total decrescente, depois pos5 crescente (menor posição = melhor)
-            lista.sort((a, b) => {
-                if (b.total !== a.total) return b.total - a.total;
-                return a.pos5 - b.pos5;
-            });
-
-            console.log('[Pódio] Lista ordenada:', lista);
-
-            const top5 = lista.slice(0, 5);
-            if (top5.length === 0) {
-                container.innerHTML = '<p>Nenhum dado para o pódio.</p>';
-                container.classList.remove('hidden');
-                return;
-            }
-
-            let podiumHtml = '<h3>🏆 PÓDIO FINAL - COPA TABUADA CEIB 2026 🏆</h3><div class="podium">';
-            const medals = ['🥇', '🥈', '🥉', '4º', '5º'];
-            top5.forEach((jogador, idx) => {
-                podiumHtml += `<div class="podium-card podium-${idx+1}">
-                                <div class="medalha">${medals[idx]}</div>
-                                <strong>${escapeHtml(jogador.nome)}</strong><br>${escapeHtml(jogador.turma)}<br>${jogador.total} pts<br><small>${jogador.pos5 <= 5 ? 'Finalista' : '—'}</small>
-                               </div>`;
-            });
-            podiumHtml += '</div>';
-            container.innerHTML = podiumHtml;
-            container.classList.remove('hidden');
-            return;
-        } catch (e) {
-            console.error('[Pódio] Erro:', e);
-            container.innerHTML = '<p>Erro ao carregar pódio.</p>';
-            container.classList.remove('hidden');
-            return;
-        }
-    }
-
-    // Caso contrário, usar o ranking da fase 5 (comportamento antigo)
-    console.log('[Pódio] Usando ranking da Fase 5 (modo antigo)');
-    if (!estadoAtual || estadoAtual.fase !== 5) {
-        container.classList.add('hidden');
-        return;
-    }
-    const resultadosFase5 = estadoAtual.resultados?.[5] || {};
-    const participantesFase5 = estadoAtual.participantes?.[5] || {};
-    let lista = [];
-    for (let id in resultadosFase5) {
-        const partidas = resultadosFase5[id];
-        if (partidas && partidas.length) {
-            const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
-            let nome = participantesFase5[id]?.nome;
-            if (!nome && estadoAtual.participantes?.[4]?.[id]) nome = estadoAtual.participantes[4][id].nome;
-            if (!nome) nome = "Anônimo";
-            let turma = participantesFase5[id]?.turma;
-            if (!turma && estadoAtual.participantes?.[4]?.[id]) turma = estadoAtual.participantes[4][id].turma;
-            if (!turma) turma = "?";
-            lista.push({ id, nome, turma, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo, partidas: partidas.length });
-        }
-    }
-    lista.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
-    const top5 = lista.slice(0,5);
-    if (top5.length === 0) { container.classList.add('hidden'); return; }
-    let podiumHtml = '<h3>🏆 PÓDIO FINAL - COPA TABUADA CEIB 2026 🏆</h3><div class="podium">';
-    const medals = ['🥇', '🥈', '🥉', '4º', '5º'];
-    top5.forEach((jogador, idx) => {
-        podiumHtml += `<div class="podium-card podium-${idx+1}">
-                        <div class="medalha">${medals[idx]}</div>
-                        <strong>${escapeHtml(jogador.nome)}</strong><br>${escapeHtml(jogador.turma)}<br>${jogador.pontos} pts<br><small>${jogador.partidas} partidas</small>
-                       </div>`;
-    });
-    podiumHtml += '</div>';
-    container.innerHTML = podiumHtml;
-    container.classList.remove('hidden');
-}
-
-// ============================================================
 // CONTROLE DE FASE
 // ============================================================
 function atualizarBotaoContinuarParar() {
@@ -3884,9 +3757,8 @@ async function avancarFase() {
     if (faseAtual === TOTAL_FASES) {
         toast("🏆 COMPETIÇÃO FINALIZADA!");
         await db.ref('copaV2').update({ status: 'finalizado', fim: 0, tempoRestantePausa: null });
-        // O pódio será renderizado automaticamente pelos listeners
-        // (não precisa de setTimeout aqui)
-        if (meuTipo === 'projecao' && modoTorcida === 'equipes') setTimeout(() => atualizarTorcidaEquipes(), 500);
+        // Exibe os cards de finalização
+        mostrarFinalizacao();
         forcarAlunosParaMenu();
         return;
     }
@@ -3902,8 +3774,49 @@ async function avancarFase() {
     }
     forcarAlunosParaMenu();
 }
+
+// Função para mostrar os cards de finalização
+function mostrarFinalizacao() {
+    // Professor
+    const cardProf = document.getElementById('competicao-finalizada-prof');
+    if (cardProf) cardProf.classList.remove('hidden');
+    
+    // Torcida
+    const cardTorcida = document.getElementById('competicao-finalizada-torcida');
+    if (cardTorcida) cardTorcida.classList.remove('hidden');
+    
+    // Aluno (modal)
+    exibirModalFinalizacaoAluno();
+}
+
+function exibirModalFinalizacaoAluno() {
+    if (meuTipo !== 'aluno') return;
+    const modalHtml = `
+        <div class="modal-resultados" id="modal-finalizacao">
+            <h2>🏆 COPA FINALIZADA!</h2>
+            <div style="font-size: 64px; margin: 15px 0;">🎉</div>
+            <p>A competição chegou ao fim.</p>
+            <div class="dica">
+                <p>📊 Consulte o <strong>Ranking de Pontos</strong> para ver sua classificação final.</p>
+                <p style="font-size: 0.9rem; opacity: 0.7;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
+            </div>
+            <button class="fechar" id="btn-fechar-finalizacao">Voltar ao Menu</button>
+        </div>
+    `;
+    const modalExistente = document.getElementById('modal-finalizacao');
+    if (modalExistente) modalExistente.remove();
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.getElementById('btn-fechar-finalizacao')?.addEventListener('click', () => {
+        document.getElementById('modal-finalizacao')?.remove();
+        location.reload();
+    });
+}
+
 function forcarAlunosParaMenu() {
-    if (meuTipo === 'aluno') location.reload();
+    if (meuTipo === 'aluno') {
+        // Se o aluno estiver na tela, exibir o modal de finalização
+        exibirModalFinalizacaoAluno();
+    }
 }
 async function verificarTempoEsgotado() {
     if (!estadoAtual) return;
@@ -3929,46 +3842,11 @@ async function verificarTempoEsgotado() {
 }
 
 // ============================================================
-// EXIBIÇÃO DE RESULTADO FINAL PARA ALUNO
+// EXIBIÇÃO DE RESULTADO FINAL PARA ALUNO (substituído pelo modal de finalização)
 // ============================================================
+// Mantido apenas para compatibilidade, mas não será usado
 async function exibirResultadoFinalParaAluno() {
-    if (!alunoId || !estadoAtual) return;
-    const faseAtual = estadoAtual.fase;
-    if (estadoAtual.status !== 'em_andamento' || (estadoAtual.fim && Date.now() >= estadoAtual.fim)) {
-        const ranking = await obterRankingCompleto(faseAtual);
-        const posicao = ranking.findIndex(r => r.id === alunoId) + 1;
-        const vagas = VAGAS_POR_FASE[faseAtual];
-        const classificado = posicao > 0 && posicao <= vagas;
-        let modalHtml = `
-            <div class="modal-resultados ${classificado ? 'modal-classificado' : 'modal-eliminado'}" id="modal-fim-tempo">
-                <h2>${classificado ? '✅ PARABÉNS! VOCÊ CLASSIFICOU!' : '❌ VOCÊ FOI ELIMINADO'}</h2>
-                <div style="font-size: 48px; margin: 15px 0;">${classificado ? '🏆' : '😢'}</div>
-                <div>Sua posição final: <strong>${posicao}º lugar</strong></div>
-                <div class="dica">${classificado ? 'Prepare-se para a próxima fase!' : 'Continue treinando e tente novamente na próxima competição.'}</div>
-                <button class="fechar" id="btn-fechar-modal-fim">Voltar ao Menu</button>
-            </div>
-        `;
-        const modalExistente = document.getElementById('modal-fim-tempo');
-        if (modalExistente) modalExistente.remove();
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        document.getElementById('btn-fechar-modal-fim')?.addEventListener('click', () => {
-            document.getElementById('modal-fim-tempo')?.remove();
-            location.reload();
-        });
-    }
-}
-async function obterRankingCompleto(fase) {
-    const snapFinal = await db.ref(`copaV2/resultados/${fase}`).once('value');
-    let lista = [];
-    snapFinal.forEach(child => {
-        const partidas = child.val();
-        if (partidas && partidas.length) {
-            const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-            lista.push({ id: child.key, pontos: melhor.pontos });
-        }
-    });
-    lista.sort((a,b) => b.pontos - a.pontos);
-    return lista;
+    // Substituído pela função exibirModalFinalizacaoAluno
 }
 
 // ============================================================
@@ -4761,6 +4639,14 @@ function atualizarUI() {
         popularSelectFases();
         popularSelectFasesTorcida();
         atualizarBotaoContinuarParar();
+        // Mostrar card de finalização se a fase 5 estiver finalizada
+        if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
+            const card = document.getElementById('competicao-finalizada-prof');
+            if (card) card.classList.remove('hidden');
+        } else {
+            const card = document.getElementById('competicao-finalizada-prof');
+            if (card) card.classList.add('hidden');
+        }
     }
 
     if (meuTipo === 'projecao') {
@@ -4771,20 +4657,21 @@ function atualizarUI() {
         }
         const torcidaFaseInfo = document.getElementById('torcida-fase-info');
         if (torcidaFaseInfo) torcidaFaseInfo.innerText = `${estadoAtual.fase}/${TOTAL_FASES}`;
+        // Mostrar card de finalização na torcida
+        if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
+            const card = document.getElementById('competicao-finalizada-torcida');
+            if (card) card.classList.remove('hidden');
+        } else {
+            const card = document.getElementById('competicao-finalizada-torcida');
+            if (card) card.classList.add('hidden');
+        }
     }
 
     if (meuTipo === 'aluno') {
         renderAluno();
-    }
-
-    // O pódio agora é atualizado via listeners, não precisa de setTimeout aqui
-    if (estadoAtual.fase === 5 && (estadoAtual.status === 'finalizado' || estadoAtual.status === 'aguardando')) {
-        // Os listeners já vão chamar renderPodioFinal automaticamente quando os dados mudarem.
-        // Mas se por algum motivo o listener não estiver ativo, chamamos uma vez aqui.
-        if (!listenerPontuacaoGlobal && !listenerPos5) {
-            renderPodioFinal('podium-container');
-            renderPodioFinal('podium-torcida-container');
-            renderPodioFinal('podium-aluno-container');
+        // Se a fase 5 estiver finalizada, exibir modal
+        if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado' && alunoId) {
+            exibirModalFinalizacaoAluno();
         }
     }
 }
@@ -4878,10 +4765,10 @@ function renderAluno() {
         });
     }
 
-    if (estadoAtual.fase === 5 && (estadoAtual.status === 'finalizado' || estadoAtual.status === 'aguardando')) {
-        if (!listenerPontuacaoGlobal && !listenerPos5) {
-            renderPodioFinal('podium-aluno-container');
-        }
+    // Se a fase 5 estiver finalizada, não exibe mais botão de jogar
+    if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
+        if (btnJogar) btnJogar.classList.add('hidden');
+        if (msgStatus) msgStatus.innerText = '🏆 Copa finalizada! Consulte o ranking.';
     }
 }
 
@@ -5084,16 +4971,6 @@ async function init() {
         tocarSom('clique');
     });
 
-    // Botão recarregar pódio (professor)
-    document.getElementById('btn-recarregar-podio')?.addEventListener('click', async () => {
-        await carregarConfigRankingPontos(); // recarrega a configuração
-        renderPodioFinal('podium-container');
-        renderPodioFinal('podium-torcida-container');
-        renderPodioFinal('podium-aluno-container');
-        toast('🔄 Pódio recarregado!');
-        tocarSom('clique');
-    });
-
     const btnIndiv = document.getElementById('btn-modo-individual');
     const btnEquipes = document.getElementById('btn-modo-equipes');
     if (btnIndiv && btnEquipes) {
@@ -5199,7 +5076,6 @@ async function init() {
             if (confirm("Reset total?")) {
                 db.ref('copaV2').set({ fase:1, status:'aguardando', tempoFase:12, fim:0, modalidade: estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} });
                 db.ref('online').remove();
-                removerListenerPodium();
                 location.reload();
             }
             tocarSom('clique');
@@ -5212,7 +5088,6 @@ async function init() {
             if (confirm(`⚠️ Mudar para ${MODALIDADE_CONFIG[novaModalidade].nome} irá REINICIAR toda a competição. Continuar?`)) {
                 await db.ref('copaV2').set({ fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: novaModalidade, resultados: {}, participantes: {}, classificados: {} });
                 await db.ref('online').remove();
-                removerListenerPodium();
                 toast(`Modalidade alterada. Competição reiniciada.`);
                 setTimeout(() => location.reload(), 1500);
             }
@@ -5460,9 +5335,6 @@ async function init() {
             }
         }
     });
-
-    // Inicia os listeners do pódio
-    iniciarListenerPodium();
 
     setTimeout(carregarValorPartida, 500);
     setTimeout(carregarConfigRankingPontos, 600);
