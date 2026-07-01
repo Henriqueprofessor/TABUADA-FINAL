@@ -1987,6 +1987,36 @@ function formatPontuacaoText(obj) {
     return keys.map(k => `${k}:${obj[k]}`).join(', ');
 }
 
+// Função para controlar visibilidade das abas de "Pontos" em torcida e aluno
+function atualizarVisibilidadeRankingPontos() {
+    const visivel = rankingPontosAtivo;
+    
+    // Torcida
+    const btnPontosTorcida = document.getElementById('btn-torcida-sub-pontos');
+    if (btnPontosTorcida) {
+        btnPontosTorcida.style.display = visivel ? 'inline-block' : 'none';
+        if (!visivel && btnPontosTorcida.classList.contains('ativo')) {
+            // Força ativação da aba "Fase"
+            document.getElementById('btn-torcida-sub-fase').click();
+        }
+    }
+    
+    // Aluno - no modal
+    const subTabPontos = document.querySelector('.modal-sub-tabs .sub-tab[data-subtab="pontos"]');
+    if (subTabPontos) {
+        subTabPontos.style.display = visivel ? 'inline-block' : 'none';
+        if (!visivel && subTabPontos.classList.contains('active')) {
+            document.querySelector('.modal-sub-tabs .sub-tab[data-subtab="fase"]').click();
+        }
+    }
+    
+    // Aluno - botão na tela principal
+    const btnPontosAluno = document.getElementById('btn-ranking-pontos-aluno');
+    if (btnPontosAluno) {
+        btnPontosAluno.style.display = visivel ? 'inline-block' : 'none';
+    }
+}
+
 async function carregarConfigRankingPontos() {
     try {
         const snapAtivo = await db.ref('copaV2/configuracoes/rankingPontos/ativo').once('value');
@@ -2010,6 +2040,9 @@ async function carregarConfigRankingPontos() {
         if (textPadrao) textPadrao.value = formatPontuacaoText(tabelaPontosPadrao);
         if (textFase5) textFase5.value = formatPontuacaoText(tabelaPontosFase5);
 
+        // Atualiza visibilidade das abas
+        atualizarVisibilidadeRankingPontos();
+
         // Atualiza visualizações
         if (meuTipo === 'professor') renderizarRankingPontos();
         if (meuTipo === 'projecao') {
@@ -2023,6 +2056,7 @@ async function carregarConfigRankingPontos() {
         console.warn('Erro carregar config pontos:', e);
         tabelaPontosPadrao = getPontuacaoDefault();
         tabelaPontosFase5 = getPontuacaoDefault();
+        atualizarVisibilidadeRankingPontos();
     }
 }
 
@@ -2044,6 +2078,7 @@ async function salvarConfigRankingPontos(ativo, tabelaPadrao, tabelaFase5) {
             setTimeout(() => feedback.style.display = 'none', 5000);
         }
         toast('✅ Configuração de pontos salva!');
+        atualizarVisibilidadeRankingPontos();
         // Recarrega visualizações
         if (meuTipo === 'professor') renderizarRankingPontos();
         if (meuTipo === 'projecao') {
@@ -2075,10 +2110,8 @@ function calcularRankingFase(fase) {
     const participantes = estadoAtual?.participantes?.[fase] || {};
     const resultadosTemp = estadoAtual?.resultados_temp?.[fase] || {};
 
-    // Primeiro, monta um mapa com todos os jogadores que têm dados
     const mapa = new Map();
 
-    // Adiciona os que já finalizaram partidas (resultados finais)
     for (const id in resultados) {
         const partidas = resultados[id];
         if (!partidas || partidas.length === 0) continue;
@@ -2087,7 +2120,6 @@ function calcularRankingFase(fase) {
         const mediaTempo = partidas.length > 0 ? somaTempo / partidas.length : Infinity;
         let nome = participantes[id]?.nome || 'Anônimo';
         let turma = participantes[id]?.turma || '?';
-        // Busca nome/turma em fases anteriores se não encontrado
         if (!participantes[id]) {
             for (let f = fase-1; f >= 1; f--) {
                 if (estadoAtual?.participantes?.[f]?.[id]) {
@@ -2108,24 +2140,17 @@ function calcularRankingFase(fase) {
         });
     }
 
-    // Adiciona ou atualiza com dados temporários (jogadores em andamento)
     for (const id in resultadosTemp) {
         const data = resultadosTemp[id];
         if (!data) continue;
         const existente = mapa.get(id);
         if (existente) {
-            // Atualiza a pontuação temporária (mas não altera a melhor se já tiver uma maior)
-            // Para o ranking ao vivo, usamos a pontuação atual (data.pontos) como referência
-            // Mas a ordenação final deve considerar a melhor pontuação (que pode ser maior)
-            // Então mantemos a melhor pontuação se já existir
-            // Se não tiver partida finalizada, usa a temporária
             if (!existente.partidas || existente.partidas.length === 0) {
                 existente.melhorPontuacao = data.pontos;
                 existente.totalPartidas = 0;
                 existente.mediaTempo = data.tempo / (data.acertos || 1);
             }
         } else {
-            // Novo jogador em andamento
             const nome = data.nome || 'Anônimo';
             const turma = data.turma || '?';
             mapa.set(id, {
@@ -2140,7 +2165,6 @@ function calcularRankingFase(fase) {
         }
     }
 
-    // Converte para array e ordena
     let lista = Array.from(mapa.values());
     lista.sort((a,b) => {
         if (a.melhorPontuacao !== b.melhorPontuacao) return b.melhorPontuacao - a.melhorPontuacao;
@@ -2162,31 +2186,22 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
     }
 
     try {
-        // Buscar todos os IDs que têm pelo menos uma pontuação em alguma fase (histórico ou projeção)
         const faseAtual = estadoAtual?.fase || 1;
         const statusFase = estadoAtual?.status || 'aguardando';
 
-        // Mapa para acumular pontos por jogador
         const jogadores = new Map();
 
-        // Para cada fase, obter a pontuação (histórico para fases já finalizadas, ou projeção para a atual)
         for (let f = 1; f <= TOTAL_FASES; f++) {
-            // Se a fase já passou (f < faseAtual) OU se a fase atual já foi finalizada (status === 'finalizado' ou 'aguardando' e faseAtual já passou?),
-            // usamos o histórico salvo.
-            // Caso contrário, usamos a projeção ao vivo.
             let pontosPorJogador = {};
 
             if (f < faseAtual || (f === faseAtual && (statusFase === 'finalizado' || statusFase === 'aguardando'))) {
-                // Fase já finalizada: buscar do histórico
                 const snap = await db.ref(`copaV2/pontuacaoHistorico/${f}`).once('value');
                 const historico = snap.val() || {};
                 for (const [id, pts] of Object.entries(historico)) {
                     pontosPorJogador[id] = pts;
                 }
             } else if (f === faseAtual && statusFase === 'em_andamento') {
-                // Fase atual em andamento: calcular projeção baseada no ranking atual
                 const ranking = calcularRankingFase(faseAtual);
-                // Para cada posição, atribuir os pontos conforme a tabela
                 ranking.forEach((jogador, idx) => {
                     const pos = idx + 1;
                     const pts = getPontosPorPosicao(pos, f);
@@ -2195,11 +2210,9 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
                     }
                 });
             } else {
-                // Fases futuras: 0 pontos
                 continue;
             }
 
-            // Acumula os pontos para cada jogador
             for (const [id, pts] of Object.entries(pontosPorJogador)) {
                 if (!jogadores.has(id)) {
                     jogadores.set(id, { id, fases: {}, total: 0 });
@@ -2210,14 +2223,12 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
             }
         }
 
-        // Agora, para cada jogador, garantir que as fases que faltam sejam 0
         for (const [id, jog] of jogadores) {
             for (let f = 1; f <= TOTAL_FASES; f++) {
                 if (!jog.fases[f]) jog.fases[f] = 0;
             }
         }
 
-        // Buscar nomes e turmas
         const participantes = estadoAtual?.participantes || {};
         for (const [id, jog] of jogadores) {
             let nome = 'Anônimo', turma = '?';
@@ -2232,22 +2243,9 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
             jog.turma = turma;
         }
 
-        // Ordenar: total decrescente, e em caso de empate, posição na fase 5 (desempate)
-        // Para fase 5, se não tiver pontuação, considerar posição 999
-        const lista = Array.from(jogadores.values());
-        lista.sort((a,b) => {
-            if (a.total !== b.total) return b.total - a.total;
-            const posA = a.fases[5] || 0;
-            const posB = b.fases[5] || 0;
-            // Quem tem mais pontos na fase 5 (não confundir com posição) - na verdade, o desempate é pela melhor posição na fase 5,
-            // mas a posição não está armazenada aqui. Vamos usar a pontuação da fase 5 como proxy? Melhor: usar a posição salva em pontuacaoPosicao/5
-            // Vamos buscar a posição na fase 5 para cada jogador.
-            return 0; // será resolvido abaixo
-        });
-
-        // Buscar posição na fase 5 para desempate
         const snapPos5 = await db.ref('copaV2/pontuacaoPosicao/5').once('value');
         const pos5Map = snapPos5.val() || {};
+        const lista = Array.from(jogadores.values());
         for (const item of lista) {
             item.pos5 = pos5Map[item.id] || 999;
         }
@@ -2261,7 +2259,6 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
             return;
         }
 
-        // Montar a tabela com as colunas solicitadas
         let html = `<table class="ranking-table"><thead><tr>
             <th>Pos</th>
             <th>Nome</th>
@@ -2294,12 +2291,6 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
         html += '</tbody></table>';
         container.innerHTML = html;
 
-        // Adicionar evento de clique para histórico (apenas no professor, se desejar)
-        if (containerId === 'ranking-pontos-container') {
-            // Já temos o histórico via clique no nome na versão anterior, mas mantemos como opcional
-            // Aqui podemos adicionar um clique para mostrar detalhes se quiser
-        }
-
     } catch (e) {
         container.innerHTML = '<p>❌ Erro ao carregar ranking de pontos.</p>';
         console.error(e);
@@ -2313,23 +2304,19 @@ async function processarPontuacaoFase(fase) {
     const minPartidas = minConfig[fase] || 1;
     const ranking = calcularRankingFase(fase);
     
-    // Para fase 5, filtra quem não atingiu o mínimo
     let filtrados = ranking;
     if (fase === 5) {
         filtrados = ranking.filter(j => {
-            // Verifica se o jogador tem partidas finalizadas (já que no mapa pode ter só temporário)
             const resultados = estadoAtual?.resultados?.[fase] || {};
             const partidas = resultados[j.id] || [];
             return partidas.length >= minPartidas;
         });
     }
 
-    // Atribui pontos
     const pontosPorFaseRef = db.ref(`copaV2/pontuacaoHistorico/${fase}`);
     const globalRef = db.ref('copaV2/pontuacaoGlobal');
     const posicaoRef = db.ref(`copaV2/pontuacaoPosicao/${fase}`);
 
-    // Busca pontos globais atuais
     const snapGlobal = await globalRef.once('value');
     const globais = snapGlobal.val() || {};
 
@@ -2348,12 +2335,10 @@ async function processarPontuacaoFase(fase) {
         }
     });
 
-    // Atualiza Firebase
     await pontosPorFaseRef.update(updatesHistorico);
     await globalRef.update(updatesGlobal);
     await posicaoRef.update(updatesPosicao);
 
-    // Se for fase 5, aplica critério de desempate global (melhor posição na fase 5)
     if (fase === 5) {
         const snapPos5 = await db.ref('copaV2/pontuacaoPosicao/5').once('value');
         const pos5 = snapPos5.val() || {};
@@ -2417,7 +2402,6 @@ function iniciarListeners() {
             atualizarBotaoContinuarParar();
             carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
             carregarColunasVisiveis().then(config => renderizarConfigColunas(config));
-            // Atualiza ranking de pontos se a aba estiver visível
             const tabPontos = document.getElementById('tab-ranking-pontos');
             if (tabPontos && !tabPontos.classList.contains('hidden')) {
                 renderizarRankingPontos();
@@ -2427,7 +2411,6 @@ function iniciarListeners() {
         if (modalRanking && modalRanking.style.display === 'flex') {
             atualizarRankingAluno();
         }
-        // Atualiza torcida se estiver visível
         if (meuTipo === 'projecao') {
             if (modoTorcida === 'individual') atualizarTorcidaIndividual();
             else atualizarTorcidaEquipes();
@@ -4367,7 +4350,6 @@ async function atualizarRankingAluno() {
         const faseAtual = estadoAtual.fase;
         await renderRanking(faseAtual, 'ranking-aluno-container', 'individual', true);
     } else {
-        // Ranking de pontos - usar a mesma função, mas passando o container do modal
         await renderizarRankingPontos('ranking-aluno-container');
     }
 }
@@ -4578,7 +4560,6 @@ async function init() {
         this.classList.add('ativo');
         document.getElementById('btn-torcida-sub-fase').classList.remove('ativo');
         document.getElementById('torcida-fase-selector').style.display = 'none';
-        // Exibe ranking de pontos na torcida
         await renderizarRankingPontos('ranking-torcida-container');
         document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
         tocarSom('clique');
@@ -4789,6 +4770,7 @@ async function init() {
         popularSelectFasesTorcida();
         atualizarUI();
         iniciarAtualizacaoTorcida();
+        atualizarVisibilidadeRankingPontos(); // Garante que a aba "Pontos" fique invisível se desativado
         tocarSom('clique');
     });
 
