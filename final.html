@@ -3678,6 +3678,11 @@ async function renderPodioFinal(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    // Recarregar a configuração para garantir que 'rankingPontosAtivo' esteja atualizado
+    await carregarConfigRankingPontos();
+
+    console.log('[Pódio] rankingPontosAtivo =', rankingPontosAtivo);
+
     // Se o ranking de pontos estiver ativo, usar a pontuação global
     if (rankingPontosAtivo) {
         try {
@@ -3688,8 +3693,8 @@ async function renderPodioFinal(containerId) {
             const globais = snapGlobal.val() || {};
             const pos5 = snapPos5.val() || {};
 
-            console.log('Dados do pódio (global):', globais);
-            console.log('Posição na Fase 5:', pos5);
+            console.log('[Pódio] Dados globais:', globais);
+            console.log('[Pódio] Posições Fase 5:', pos5);
 
             // Buscar nome e turma para todos os IDs
             let lista = Object.keys(globais).map(id => {
@@ -3716,9 +3721,12 @@ async function renderPodioFinal(containerId) {
                 return a.pos5 - b.pos5;
             });
 
+            console.log('[Pódio] Lista ordenada:', lista);
+
             const top5 = lista.slice(0, 5);
             if (top5.length === 0) {
-                container.classList.add('hidden');
+                container.innerHTML = '<p>Nenhum dado para o pódio.</p>';
+                container.classList.remove('hidden');
                 return;
             }
 
@@ -3735,7 +3743,7 @@ async function renderPodioFinal(containerId) {
             container.classList.remove('hidden');
             return;
         } catch (e) {
-            console.error('Erro ao renderizar pódio de pontos:', e);
+            console.error('[Pódio] Erro:', e);
             container.innerHTML = '<p>Erro ao carregar pódio.</p>';
             container.classList.remove('hidden');
             return;
@@ -3743,6 +3751,7 @@ async function renderPodioFinal(containerId) {
     }
 
     // Caso contrário, usar o ranking da fase 5 (comportamento antigo)
+    console.log('[Pódio] Usando ranking da Fase 5 (modo antigo)');
     if (!estadoAtual || estadoAtual.fase !== 5) {
         container.classList.add('hidden');
         return;
@@ -5076,7 +5085,8 @@ async function init() {
     });
 
     // Botão recarregar pódio (professor)
-    document.getElementById('btn-recarregar-podio')?.addEventListener('click', () => {
+    document.getElementById('btn-recarregar-podio')?.addEventListener('click', async () => {
+        await carregarConfigRankingPontos(); // recarrega a configuração
         renderPodioFinal('podium-container');
         renderPodioFinal('podium-torcida-container');
         renderPodioFinal('podium-aluno-container');
