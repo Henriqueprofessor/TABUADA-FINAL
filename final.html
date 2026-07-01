@@ -1003,7 +1003,7 @@
 
             <div class="toggle-ativo">
                 <label for="toggle-ranking-pontos">📌 Habilitar Ranking de Pontos</label>
-                <input type="checkbox" id="toggle-ranking-pontos">
+                <input type="checkbox" id="toggle-ranking-pontos" checked>
                 <span id="status-ranking-pontos" style="color: #94a3b8; font-size: 14px;">Desativado</span>
             </div>
 
@@ -1261,7 +1261,6 @@
             <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
             <div id="historico-aluno"></div>
         </div>
-        <!-- O container do pódio do aluno foi removido -->
     </div>
 
     <!-- ========================================================= -->
@@ -1998,7 +1997,7 @@ window.atualizarValorPartida = async function() {
 };
 
 // ============================================================
-// MÍNIMO DE PARTIDAS POR FASE
+// MÍNIMO DE PARTIDAS POR FASE (PADRÃO = 5)
 // ============================================================
 async function carregarMinPartidas() {
     try {
@@ -2006,13 +2005,13 @@ async function carregarMinPartidas() {
         let config = snap.val();
         if (config === null || config === undefined) {
             config = {};
-            for (let i = 1; i <= TOTAL_FASES; i++) config[i] = 1;
+            for (let i = 1; i <= TOTAL_FASES; i++) config[i] = 5; // PADRÃO 5
             await db.ref(MIN_PARTIDAS_KEY).set(config);
         }
         return config;
     } catch (e) { 
         const config = {};
-        for (let i = 1; i <= TOTAL_FASES; i++) config[i] = 1;
+        for (let i = 1; i <= TOTAL_FASES; i++) config[i] = 5;
         return config;
     }
 }
@@ -2022,7 +2021,7 @@ function renderizarConfigMinPartidas(minConfig) {
     if (!container) return;
     let html = '';
     for (let i = 1; i <= TOTAL_FASES; i++) {
-        const valor = minConfig[i] !== undefined ? minConfig[i] : 1;
+        const valor = minConfig[i] !== undefined ? minConfig[i] : 5;
         html += `
             <div style="display: flex; align-items: center; gap: 15px; background: #0f172a; padding: 8px 16px; border-radius: 8px; border: 1px solid #2d3a4f;">
                 <label style="color: #f1f5f9; font-weight: 500; min-width: 70px;">Fase ${i}</label>
@@ -2047,7 +2046,7 @@ async function salvarMinPartidas() {
             }
             config[i] = val;
         } else {
-            config[i] = 1;
+            config[i] = 5;
         }
     }
     try {
@@ -2355,7 +2354,7 @@ function atualizarBolinhaUnica(cor) {
 }
 
 // ============================================================
-// RANKING DE PONTOS (NOVO)
+// RANKING DE PONTOS (NOVO) - PADRÃO ATIVADO
 // ============================================================
 function getPontuacaoDefault() {
     const obj = {};
@@ -2418,8 +2417,15 @@ function atualizarVisibilidadeRankingPontos() {
 
 async function carregarConfigRankingPontos() {
     try {
+        // Ranking de Pontos - Ativado por padrão
         const snapAtivo = await db.ref('copaV2/configuracoes/rankingPontos/ativo').once('value');
-        rankingPontosAtivo = snapAtivo.val() === true;
+        if (snapAtivo.val() === null || snapAtivo.val() === undefined) {
+            rankingPontosAtivo = true;
+            await db.ref('copaV2/configuracoes/rankingPontos/ativo').set(true);
+        } else {
+            rankingPontosAtivo = snapAtivo.val() === true;
+        }
+
         const snapPadrao = await db.ref('copaV2/configuracoes/rankingPontos/tabelaPadrao').once('value');
         const snapFase5 = await db.ref('copaV2/configuracoes/rankingPontos/tabelaFase5').once('value');
         
@@ -2459,6 +2465,7 @@ async function carregarConfigRankingPontos() {
         console.warn('Erro carregar config pontos:', e);
         tabelaPontosPadrao = getPontuacaoDefault();
         tabelaPontosFase5 = getPontuacaoDefault();
+        rankingPontosAtivo = true;
         atualizarVisibilidadeRankingPontos();
     }
 }
@@ -3842,103 +3849,30 @@ async function verificarTempoEsgotado() {
 }
 
 // ============================================================
-// EXIBIÇÃO DE RESULTADO FINAL PARA ALUNO (substituído pelo modal de finalização)
-// ============================================================
-// Mantido apenas para compatibilidade, mas não será usado
-async function exibirResultadoFinalParaAluno() {
-    // Substituído pela função exibirModalFinalizacaoAluno
-}
-
-// ============================================================
-// GERENCIAR ALUNOS
-// ============================================================
-function renderListaAlunosGerenciar() {
-    if (!estadoAtual) return;
-    const faseAtual = estadoAtual.fase;
-    const participantes = estadoAtual.participantes?.[faseAtual] || {};
-    const container = document.getElementById('lista-alunos-gerenciavel');
-    if (!container) return;
-    const ids = Object.keys(participantes);
-    if (ids.length === 0) { container.innerHTML = '<p>📭 Nenhum aluno cadastrado.</p>'; return; }
-    let html = '';
-    for (let id of ids) {
-        const aluno = participantes[id];
-        html += `<div class="aluno-item"><div class="aluno-info"><strong>${escapeHtml(aluno.nome)}</strong> (${escapeHtml(aluno.turma)})<br><small>ID: ${id.substring(0,8)}...</small></div>
-                <div class="aluno-actions"><button class="btn-editar-aluno btn-warning" data-id="${id}" data-nome="${aluno.nome}" data-turma="${aluno.turma}">✏️ Editar</button>
-                <button class="btn-excluir-aluno btn-danger" data-id="${id}">🗑️ Excluir</button></div></div>`;
-    }
-    container.innerHTML = html;
-    document.querySelectorAll('.btn-editar-aluno').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const id = btn.getAttribute('data-id');
-            const novoNome = prompt("Novo nome:", btn.getAttribute('data-nome'));
-            if (novoNome) {
-                const novaTurma = prompt("Nova turma:", btn.getAttribute('data-turma'));
-                if (novaTurma) await db.ref(`copaV2/participantes/${faseAtual}/${id}`).update({ nome: novoNome, turma: novaTurma });
-                renderListaAlunosGerenciar();
-            }
-        });
-    });
-    document.querySelectorAll('.btn-excluir-aluno').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const id = btn.getAttribute('data-id');
-            if (confirm("Excluir aluno?")) {
-                await db.ref(`copaV2/participantes/${faseAtual}/${id}`).remove();
-                await db.ref(`copaV2/resultados/${faseAtual}/${id}`).remove();
-                await db.ref(`copaV2/resultados_temp/${faseAtual}/${id}`).remove();
-                renderListaAlunosGerenciar();
-            }
-        });
-    });
-}
-
-// ============================================================
-// SELECTS
-// ============================================================
-function popularSelectFasesTorcida() {
-    const select = document.getElementById('select-fase-torcida');
-    if (!select) return;
-    let options = '';
-    for (let i = 1; i <= TOTAL_FASES; i++) options += `<option value="${i}">Fase ${i}</option>`;
-    select.innerHTML = options;
-    if (estadoAtual) {
-        select.value = estadoAtual.fase;
-        faseTorcidaSelecionada = estadoAtual.fase;
-    }
-    select.removeEventListener('change', onSelectFaseTorcidaChange);
-    select.addEventListener('change', onSelectFaseTorcidaChange);
-}
-function onSelectFaseTorcidaChange() {
-    if (meuTipo !== 'projecao' || modoTorcida !== 'individual' || abaTorcidaAtiva !== 'fase') return;
-    const select = document.getElementById('select-fase-torcida');
-    const fase = parseInt(select.value);
-    if (!isNaN(fase) && fase >= 1 && fase <= TOTAL_FASES) {
-        faseTorcidaSelecionada = fase;
-        atualizarTorcidaIndividual();
-    }
-}
-function popularSelectFases() {
-    const select = document.getElementById('select-fase-ranking');
-    if (!select) return;
-    let options = '';
-    for (let i = 1; i <= TOTAL_FASES; i++) options += `<option value="${i}">Fase ${i}</option>`;
-    select.innerHTML = options;
-    select.value = faseSelecionadaProf;
-}
-
-// ============================================================
-// SENHA E LIBERAR (para alunos)
+// SENHA DE ACESSO (PADRÃO ATIVADO)
 // ============================================================
 let senhaBloqueada = false;
 
 async function carregarConfigSenha() {
     try {
-        const snap = await db.ref('copaV2/configuracoes/senhaFase1').once('value');
-        const senha = snap.val() || '42';
+        // Senha numérica
+        const snapSenha = await db.ref('copaV2/configuracoes/senhaFase1').once('value');
+        let senha = snapSenha.val();
+        if (senha === null || senha === undefined) {
+            senha = '42';
+            await db.ref('copaV2/configuracoes/senhaFase1').set(senha);
+        }
         document.getElementById('input-senha-fase1').value = senha;
+
+        // Exigir senha (sempre ativo por padrão)
         const snapExigir = await db.ref('copaV2/configuracoes/exigirSenhaFase1').once('value');
-        const exigir = snapExigir.val() !== undefined ? snapExigir.val() : true;
+        let exigir = snapExigir.val();
+        if (exigir === null || exigir === undefined) {
+            exigir = true;
+            await db.ref('copaV2/configuracoes/exigirSenhaFase1').set(true);
+        }
         document.getElementById('toggle-exigir-senha').checked = exigir;
+
         if (estadoAtual && estadoAtual.fase === 1 && estadoAtual.status === 'em_andamento') {
             senhaBloqueada = true;
         } else {
