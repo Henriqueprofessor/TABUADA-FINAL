@@ -4154,10 +4154,17 @@ async function loginAlunoAutomatico() {
     alunoNome = dadosJogador.nome;
     alunoTurma = dadosJogador.turma;
 
+    // Salva ultimaFase imediatamente para evitar reload
+    sessionStorage.setItem('ultimaFase', estadoAtual.fase);
+
     localStorage.setItem(DEVICE_ID_KEY, deviceId);
 
     await db.ref(`online/${alunoId}`).set({ nome: alunoNome, turma: alunoTurma });
     db.ref(`online/${alunoId}`).onDisconnect().remove();
+
+    // Resetar estados do jogo
+    jogoAtivo = false;
+    partidaFinalizada = false;
 
     meuTipo = 'aluno';
     document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
@@ -4200,8 +4207,13 @@ async function cadastrarNovoAluno(nome, turma) {
                 alunoId = jogadorExistente.id;
                 alunoNome = jogadorExistente.nome;
                 alunoTurma = jogadorExistente.turma;
+                // Salva ultimaFase imediatamente
+                sessionStorage.setItem('ultimaFase', estadoAtual.fase);
                 await db.ref(`online/${alunoId}`).set({ nome: alunoNome, turma: alunoTurma });
                 db.ref(`online/${alunoId}`).onDisconnect().remove();
+                // Resetar estados do jogo
+                jogoAtivo = false;
+                partidaFinalizada = false;
                 meuTipo = 'aluno';
                 document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
                 document.getElementById('tela-aluno').classList.remove('hidden');
@@ -4230,12 +4242,18 @@ async function cadastrarNovoAluno(nome, turma) {
         deviceId 
     });
 
+    // Salva ultimaFase imediatamente
+    sessionStorage.setItem('ultimaFase', estadoAtual.fase);
+
     await db.ref(`online/${novoId}`).set({ nome, turma });
     db.ref(`online/${novoId}`).onDisconnect().remove();
 
     alunoId = novoId;
     alunoNome = nome;
     alunoTurma = turma;
+    // Resetar estados do jogo
+    jogoAtivo = false;
+    partidaFinalizada = false;
     meuTipo = 'aluno';
     document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
     document.getElementById('tela-aluno').classList.remove('hidden');
@@ -4252,7 +4270,18 @@ async function cadastrarNovoAluno(nome, turma) {
 let posicaoAnteriorAluno = null;
 let animFrameId = null;
 let partidaFinalizada = false;
-let posicaoAntesPartida = null; // armazena a posição antes de iniciar a partida
+let posicaoAntesPartida = null;
+
+async function obterMelhorPontuacaoAluno(id, fase) {
+    const snap = await db.ref(`copaV2/resultados/${fase}/${id}`).once('value');
+    const partidas = snap.val() || [];
+    if (partidas.length === 0) return 0;
+    let maxPts = 0;
+    for (const p of partidas) {
+        if (p.pontos > maxPts) maxPts = p.pontos;
+    }
+    return maxPts;
+}
 
 async function atualizarInfoAluno() {
     if (!alunoId || !estadoAtual) return;
@@ -4285,6 +4314,7 @@ async function atualizarInfoAluno() {
         }
         let cor = 'cinza';
         let projetado = false;
+        // Cor da bolinha – lógica refinada
         if (dadosTemp && dadosTemp.perguntas > 0 && dadosTemp.pontos > 0) {
             const ritmo = dadosTemp.pontos / dadosTemp.perguntas;
             const projecao = ritmo * 20;
@@ -4301,10 +4331,21 @@ async function atualizarInfoAluno() {
             const posProjetada = listaProjecao.findIndex(p => p.id === alunoId) + 1;
             if (posProjetada > 0 && posicaoAtual > 0) {
                 projetado = true;
-                if (posicaoAtual === 1) cor = 'vermelha';
-                else if (posProjetada < posicaoAtual) cor = 'laranja';
-                else if (posProjetada === posicaoAtual) cor = 'branca';
-                else cor = 'azul';
+                if (posicaoAtual === 1) {
+                    // Primeiro lugar: só fica vermelho se a projeção superar a melhor pontuação
+                    const melhorPts = await obterMelhorPontuacaoAluno(alunoId, faseAtual);
+                    if (projecao > melhorPts) {
+                        cor = 'vermelha';
+                    } else {
+                        cor = 'branca';
+                    }
+                } else if (posProjetada < posicaoAtual) {
+                    cor = 'laranja';
+                } else if (posProjetada === posicaoAtual) {
+                    cor = 'branca';
+                } else {
+                    cor = 'azul';
+                }
             }
         }
         if (!projetado) cor = 'cinza';
@@ -4389,13 +4430,11 @@ function proxima() {
     startTimer();
 }
 
-// CORREÇÃO: função responder com proteção contra múltiplos cliques
 window.responder = async function(idx) {
     if (!jogoAtivo || partidaFinalizada) return;
     if (timerPergunta) { clearInterval(timerPergunta); timerPergunta = null; }
     if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
 
-    // Desabilita os botões imediatamente
     const btns = document.querySelectorAll('.opcao-vertical');
     btns.forEach(b => b.disabled = true);
 
@@ -4452,7 +4491,6 @@ function exibirModalResultadosSimples(posicao, pontos, posicaoAnterior) {
     else if (posicao === 3) posEmoji = "🥉";
     else posEmoji = "🏆";
 
-    // Calcular variação de posição
     let variacaoHtml = '';
     if (posicaoAnterior !== null && posicaoAnterior > 0) {
         const delta = posicaoAnterior - posicao;
@@ -4497,11 +4535,15 @@ function exibirModalResultadosSimples(posicao, pontos, posicaoAnterior) {
 }
 
 async function iniciarNovaPartida() {
-    // Fecha qualquer modal de resultado que esteja aberto
+    // Remove qualquer modal de resultado aberto
     const modalResultado = document.getElementById('modal-pos-jogo');
     if (modalResultado) modalResultado.remove();
 
     if (jogoAtivo) return;
+    if (!alunoId || !estadoAtual) {
+        toast('❌ Dados do aluno não disponíveis.');
+        return;
+    }
     if (estadoAtual.status !== 'em_andamento') { toast("Fase inativa!"); return; }
     if (Date.now() >= estadoAtual.fim) { toast("Tempo esgotado!"); return; }
     if (estadoAtual.fase > 1 && !isClassificado(estadoAtual.fase, alunoId)) {
@@ -4514,8 +4556,7 @@ async function iniciarNovaPartida() {
         }
     }
 
-    // Captura a posição atual ANTES de iniciar a partida
-    // Primeiro, obtém o ranking atual
+    // Captura posição atual
     const snapRanking = await db.ref(`copaV2/resultados/${estadoAtual.fase}`).once('value');
     let rankingPosicoes = [];
     snapRanking.forEach(child => {
@@ -4529,7 +4570,6 @@ async function iniciarNovaPartida() {
     const posAtual = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
     posicaoAntesPartida = posAtual > 0 ? posAtual : null;
 
-    // Resetar flag
     partidaFinalizada = false;
 
     perguntas = gerarPerguntas(estadoAtual.modalidade, estadoAtual.fase);
@@ -4590,7 +4630,6 @@ async function finalizar() {
         });
     }
 
-    // Exibe o modal com a variação de posição
     exibirModalResultadosSimples(posicao, pontosPartida, posicaoAntesPartida);
     renderAluno();
 }
@@ -4868,7 +4907,7 @@ async function init() {
     iniciarListeners();
     await carregarConfigSenha();
 
-    // Eventos dos botões
+    // Eventos dos botões (mantidos)
     document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
         window.open('tutorial-instalacao.html', '_blank');
         toast('📱 Abrindo tutorial de instalação...');
