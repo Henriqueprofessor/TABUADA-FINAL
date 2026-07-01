@@ -826,6 +826,10 @@
             <button id="btn-professor" class="btn-primary">👨‍🏫 Professor</button>
             <button id="btn-aluno">🎮 Aluno</button>
             <button id="btn-projecao">📺 Torcida</button>
+            <!-- ===================================================== -->
+            <!-- BOTÃO TUTORIAL ADICIONADO NA TELA INICIAL             -->
+            <!-- ===================================================== -->
+            <button id="btn-tutorial-inicial" class="btn-info">📘 Tutorial</button>
             <button id="btn-instalar-app" style="background: #9b59b6; color: white; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px;">📱 Instalar App</button>
         </div>
     </div>
@@ -1168,6 +1172,7 @@
             <div class="timer-fase-aluno" id="timer-fase-aluno">⏱️ Tempo: --:--</div>
             <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking Fase</button>
             <button id="btn-ranking-pontos-aluno" class="btn-info" style="margin-left: 5px;">🏆 Ranking Pontos</button>
+            <!-- Botão Tutorial também mantido na tela do aluno -->
             <button id="btn-tutorial-aluno" class="btn-info" style="margin-left: 5px;">📘 Tutorial</button>
             <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
         </div>
@@ -1668,6 +1673,9 @@ function mostrarAbaTutorial(aba) {
 
 // Eventos do tutorial
 document.addEventListener('DOMContentLoaded', function() {
+    // Botão na tela inicial
+    document.getElementById('btn-tutorial-inicial')?.addEventListener('click', abrirTutorial);
+    // Botão na tela do aluno (mantido)
     document.getElementById('btn-tutorial-aluno')?.addEventListener('click', abrirTutorial);
     document.getElementById('btn-fechar-tutorial')?.addEventListener('click', fecharTutorial);
     document.getElementById('modal-tutorial')?.addEventListener('click', function(e) {
