@@ -3625,20 +3625,20 @@ function renderRankingGeral() {
 // ============================================================
 // PÓDIO (CORRIGIDO)
 // ============================================================
-function renderPodioFinal(containerId) {
+async function renderPodioFinal(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // Se o ranking de pontos estiver ativo, usar a pontuação geral
+    // Se o ranking de pontos estiver ativo, usar a pontuação global
     if (rankingPontosAtivo) {
-        // Buscar dados de pontuação global e posição na fase 5
-        const snapGlobal = db.ref('copaV2/pontuacaoGlobal').once('value');
-        const snapPos5 = db.ref('copaV2/pontuacaoPosicao/5').once('value');
-        Promise.all([snapGlobal, snapPos5]).then(([snapGlobal, snapPos5]) => {
+        try {
+            const [snapGlobal, snapPos5] = await Promise.all([
+                db.ref('copaV2/pontuacaoGlobal').once('value'),
+                db.ref('copaV2/pontuacaoPosicao/5').once('value')
+            ]);
             const globais = snapGlobal.val() || {};
             const pos5 = snapPos5.val() || {};
             let lista = Object.keys(globais).map(id => {
-                // Buscar nome e turma dos participantes de qualquer fase
                 let nome = 'Anônimo', turma = '?';
                 for (let f = 1; f <= TOTAL_FASES; f++) {
                     if (estadoAtual?.participantes?.[f]?.[id]) {
@@ -3649,7 +3649,7 @@ function renderPodioFinal(containerId) {
                 }
                 return { id, nome, turma, total: globais[id] || 0, pos5: pos5[id] || 999 };
             });
-            // Ordenar por total decrescente, depois pos5 crescente
+            // Ordenar: primeiro por total decrescente, depois pos5 crescente
             lista.sort((a,b) => b.total - a.total || a.pos5 - b.pos5);
             const top5 = lista.slice(0,5);
             if (top5.length === 0) { container.classList.add('hidden'); return; }
@@ -3664,7 +3664,11 @@ function renderPodioFinal(containerId) {
             podiumHtml += '</div>';
             container.innerHTML = podiumHtml;
             container.classList.remove('hidden');
-        });
+        } catch (e) {
+            console.error('Erro ao renderizar pódio de pontos:', e);
+            container.innerHTML = '<p>Erro ao carregar pódio.</p>';
+            container.classList.remove('hidden');
+        }
         return;
     }
 
@@ -3801,9 +3805,12 @@ async function avancarFase() {
     if (faseAtual === TOTAL_FASES) {
         toast("🏆 COMPETIÇÃO FINALIZADA!");
         await db.ref('copaV2').update({ status: 'finalizado', fim: 0, tempoRestantePausa: null });
-        renderPodioFinal('podium-container');
-        renderPodioFinal('podium-torcida-container');
-        renderPodioFinal('podium-aluno-container');
+        // Aguarda um pouco para o Firebase propagar os dados e renderiza o pódio
+        setTimeout(() => {
+            renderPodioFinal('podium-container');
+            renderPodioFinal('podium-torcida-container');
+            renderPodioFinal('podium-aluno-container');
+        }, 500);
         if (meuTipo === 'projecao' && modoTorcida === 'equipes') setTimeout(() => atualizarTorcidaEquipes(), 500);
         forcarAlunosParaMenu();
         return;
@@ -4696,9 +4703,12 @@ function atualizarUI() {
     }
 
     if (estadoAtual.fase === 5 && (estadoAtual.status === 'finalizado' || estadoAtual.status === 'aguardando')) {
-        renderPodioFinal('podium-container');
-        renderPodioFinal('podium-torcida-container');
-        renderPodioFinal('podium-aluno-container');
+        // O pódio é renderizado com um pequeno atraso para garantir que os dados estejam salvos
+        setTimeout(() => {
+            renderPodioFinal('podium-container');
+            renderPodioFinal('podium-torcida-container');
+            renderPodioFinal('podium-aluno-container');
+        }, 200);
     }
 }
 
@@ -4792,7 +4802,7 @@ function renderAluno() {
     }
 
     if (estadoAtual.fase === 5 && (estadoAtual.status === 'finalizado' || estadoAtual.status === 'aguardando')) {
-        renderPodioFinal('podium-aluno-container');
+        setTimeout(() => renderPodioFinal('podium-aluno-container'), 200);
     }
 }
 
