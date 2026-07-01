@@ -1541,7 +1541,7 @@ const COLUNAS_DEF = {
         { id: 'tempo', label: 'Tempo' },
         { id: 'mediaTempo', label: 'Méd. Temp. Part.' },
         { id: 'turma', label: 'Turma' },
-        { id: 'projecaoPontos', label: 'Projeção' } // Nova coluna
+        { id: 'projecaoPontos', label: 'Projeção' }
     ]
 };
 
@@ -3026,23 +3026,30 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             }
         }
     });
-    const todasFases = estadoAtual.resultados || {};
+
+    // ============================================================
+    // NOVO CÁLCULO DA VELOCIDADE RECORDE – SOMENTE NA FASE ATUAL
+    // ============================================================
     const recordeVelocMap = new Map();
-    for (let fase = 1; fase <= TOTAL_FASES; fase++) {
-        const resultados = todasFases[fase] || {};
-        for (let id in resultados) {
-            const partidas = resultados[id];
-            if (!partidas || partidas.length === 0) continue;
-            for (let partida of partidas) {
-                if (partida.acertos > 0) {
-                    const vel = partida.tempo / partida.acertos;
-                    if (!recordeVelocMap.has(id) || vel < recordeVelocMap.get(id)) {
-                        recordeVelocMap.set(id, vel);
-                    }
-                }
+    const resultadosFase = estadoAtual.resultados?.[faseNum] || {};
+    for (const id in resultadosFase) {
+        const partidas = resultadosFase[id];
+        if (!partidas || partidas.length === 0) continue;
+        // Encontra a partida com maior pontuação
+        let melhorPartida = null;
+        let maxPontos = -1;
+        for (const partida of partidas) {
+            if (partida.pontos > maxPontos) {
+                maxPontos = partida.pontos;
+                melhorPartida = partida;
             }
         }
+        if (melhorPartida && melhorPartida.acertos > 0) {
+            const vel = melhorPartida.tempo / melhorPartida.acertos;
+            recordeVelocMap.set(id, vel);
+        }
     }
+
     const minConfig = await carregarMinPartidas();
     const minPartidas = minConfig[faseNum] || 1;
 
@@ -3616,10 +3623,56 @@ function renderRankingGeral() {
 }
 
 // ============================================================
-// PÓDIO
+// PÓDIO (CORRIGIDO)
 // ============================================================
 function renderPodioFinal(containerId) {
-    if (!estadoAtual || estadoAtual.fase !== 5) return;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Se o ranking de pontos estiver ativo, usar a pontuação geral
+    if (rankingPontosAtivo) {
+        // Buscar dados de pontuação global e posição na fase 5
+        const snapGlobal = db.ref('copaV2/pontuacaoGlobal').once('value');
+        const snapPos5 = db.ref('copaV2/pontuacaoPosicao/5').once('value');
+        Promise.all([snapGlobal, snapPos5]).then(([snapGlobal, snapPos5]) => {
+            const globais = snapGlobal.val() || {};
+            const pos5 = snapPos5.val() || {};
+            let lista = Object.keys(globais).map(id => {
+                // Buscar nome e turma dos participantes de qualquer fase
+                let nome = 'Anônimo', turma = '?';
+                for (let f = 1; f <= TOTAL_FASES; f++) {
+                    if (estadoAtual?.participantes?.[f]?.[id]) {
+                        nome = estadoAtual.participantes[f][id].nome || nome;
+                        turma = estadoAtual.participantes[f][id].turma || turma;
+                        break;
+                    }
+                }
+                return { id, nome, turma, total: globais[id] || 0, pos5: pos5[id] || 999 };
+            });
+            // Ordenar por total decrescente, depois pos5 crescente
+            lista.sort((a,b) => b.total - a.total || a.pos5 - b.pos5);
+            const top5 = lista.slice(0,5);
+            if (top5.length === 0) { container.classList.add('hidden'); return; }
+            let podiumHtml = '<h3>🏆 PÓDIO FINAL - COPA TABUADA CEIB 2026 🏆</h3><div class="podium">';
+            const medals = ['🥇', '🥈', '🥉', '4º', '5º'];
+            top5.forEach((jogador, idx) => {
+                podiumHtml += `<div class="podium-card podium-${idx+1}">
+                                <div class="medalha">${medals[idx]}</div>
+                                <strong>${escapeHtml(jogador.nome)}</strong><br>${escapeHtml(jogador.turma)}<br>${jogador.total} pts<br><small>${jogador.pos5 <= 5 ? 'Finalista' : '—'}</small>
+                               </div>`;
+            });
+            podiumHtml += '</div>';
+            container.innerHTML = podiumHtml;
+            container.classList.remove('hidden');
+        });
+        return;
+    }
+
+    // Caso contrário, usar o ranking da fase 5 (comportamento antigo)
+    if (!estadoAtual || estadoAtual.fase !== 5) {
+        container.classList.add('hidden');
+        return;
+    }
     const resultadosFase5 = estadoAtual.resultados?.[5] || {};
     const participantesFase5 = estadoAtual.participantes?.[5] || {};
     let lista = [];
@@ -3638,8 +3691,6 @@ function renderPodioFinal(containerId) {
     }
     lista.sort((a,b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
     const top5 = lista.slice(0,5);
-    const container = document.getElementById(containerId);
-    if (!container) return;
     if (top5.length === 0) { container.classList.add('hidden'); return; }
     let podiumHtml = '<h3>🏆 PÓDIO FINAL - COPA TABUADA CEIB 2026 🏆</h3><div class="podium">';
     const medals = ['🥇', '🥈', '🥉', '4º', '5º'];
@@ -4644,7 +4695,7 @@ function atualizarUI() {
         renderAluno();
     }
 
-    if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
+    if (estadoAtual.fase === 5 && (estadoAtual.status === 'finalizado' || estadoAtual.status === 'aguardando')) {
         renderPodioFinal('podium-container');
         renderPodioFinal('podium-torcida-container');
         renderPodioFinal('podium-aluno-container');
@@ -4740,7 +4791,7 @@ function renderAluno() {
         });
     }
 
-    if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
+    if (estadoAtual.fase === 5 && (estadoAtual.status === 'finalizado' || estadoAtual.status === 'aguardando')) {
         renderPodioFinal('podium-aluno-container');
     }
 }
