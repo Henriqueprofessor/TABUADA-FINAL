@@ -2069,52 +2069,241 @@ function getPontosPorPosicao(posicao, fase) {
     return tabela[posicao] || 0;
 }
 
-// Calcula o ranking da fase com critérios de desempate
-function calcularRankingFase(fase, apenasClassificados = false) {
+// Calcula o ranking da fase com critérios de desempate (mesma lógica usada no renderRanking)
+function calcularRankingFase(fase) {
     const resultados = estadoAtual?.resultados?.[fase] || {};
     const participantes = estadoAtual?.participantes?.[fase] || {};
-    const minConfig = carregarMinPartidas(); // assíncrono, usaremos Promise
-    return new Promise(async (resolve) => {
-        const minPartidas = (await minConfig)[fase] || 1;
-        let lista = [];
-        for (const id in resultados) {
-            const partidas = resultados[id];
-            if (!partidas || partidas.length === 0) continue;
-            if (apenasClassificados && partidas.length < minPartidas) continue;
-            const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
-            const somaTempo = partidas.reduce((acc, p) => acc + (p.tempo || 0), 0);
-            const mediaTempo = partidas.length > 0 ? somaTempo / partidas.length : Infinity;
-            let nome = participantes[id]?.nome || 'Anônimo';
-            let turma = participantes[id]?.turma || '?';
-            // Busca em fases anteriores se não encontrado
-            if (!participantes[id]) {
-                for (let f = fase-1; f >= 1; f--) {
-                    if (estadoAtual?.participantes?.[f]?.[id]) {
-                        nome = estadoAtual.participantes[f][id].nome || nome;
-                        turma = estadoAtual.participantes[f][id].turma || turma;
-                        break;
-                    }
+    const resultadosTemp = estadoAtual?.resultados_temp?.[fase] || {};
+
+    // Primeiro, monta um mapa com todos os jogadores que têm dados
+    const mapa = new Map();
+
+    // Adiciona os que já finalizaram partidas (resultados finais)
+    for (const id in resultados) {
+        const partidas = resultados[id];
+        if (!partidas || partidas.length === 0) continue;
+        const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+        const somaTempo = partidas.reduce((acc, p) => acc + (p.tempo || 0), 0);
+        const mediaTempo = partidas.length > 0 ? somaTempo / partidas.length : Infinity;
+        let nome = participantes[id]?.nome || 'Anônimo';
+        let turma = participantes[id]?.turma || '?';
+        // Busca nome/turma em fases anteriores se não encontrado
+        if (!participantes[id]) {
+            for (let f = fase-1; f >= 1; f--) {
+                if (estadoAtual?.participantes?.[f]?.[id]) {
+                    nome = estadoAtual.participantes[f][id].nome || nome;
+                    turma = estadoAtual.participantes[f][id].turma || turma;
+                    break;
                 }
             }
-            lista.push({
+        }
+        mapa.set(id, {
+            id,
+            nome,
+            turma,
+            melhorPontuacao: melhor.pontos,
+            totalPartidas: partidas.length,
+            mediaTempo: mediaTempo,
+            partidas: partidas
+        });
+    }
+
+    // Adiciona ou atualiza com dados temporários (jogadores em andamento)
+    for (const id in resultadosTemp) {
+        const data = resultadosTemp[id];
+        if (!data) continue;
+        const existente = mapa.get(id);
+        if (existente) {
+            // Atualiza a pontuação temporária (mas não altera a melhor se já tiver uma maior)
+            // Para o ranking ao vivo, usamos a pontuação atual (data.pontos) como referência
+            // Mas a ordenação final deve considerar a melhor pontuação (que pode ser maior)
+            // Então mantemos a melhor pontuação se já existir
+            // Se não tiver partida finalizada, usa a temporária
+            if (!existente.partidas || existente.partidas.length === 0) {
+                existente.melhorPontuacao = data.pontos;
+                existente.totalPartidas = 0;
+                existente.mediaTempo = data.tempo / (data.acertos || 1);
+            }
+        } else {
+            // Novo jogador em andamento
+            const nome = data.nome || 'Anônimo';
+            const turma = data.turma || '?';
+            mapa.set(id, {
                 id,
                 nome,
                 turma,
-                melhorPontuacao: melhor.pontos,
-                totalPartidas: partidas.length,
-                mediaTempo: mediaTempo,
-                partidas
+                melhorPontuacao: data.pontos,
+                totalPartidas: 0,
+                mediaTempo: data.tempo / (data.acertos || 1),
+                partidas: []
             });
         }
-        // Ordenação: maior pontuação, mais partidas, menor tempo médio, ordem alfabética
-        lista.sort((a,b) => {
-            if (a.melhorPontuacao !== b.melhorPontuacao) return b.melhorPontuacao - a.melhorPontuacao;
-            if (a.totalPartidas !== b.totalPartidas) return b.totalPartidas - a.totalPartidas;
-            if (a.mediaTempo !== b.mediaTempo) return a.mediaTempo - b.mediaTempo;
-            return a.nome.localeCompare(b.nome);
-        });
-        resolve(lista);
+    }
+
+    // Converte para array e ordena
+    let lista = Array.from(mapa.values());
+    lista.sort((a,b) => {
+        if (a.melhorPontuacao !== b.melhorPontuacao) return b.melhorPontuacao - a.melhorPontuacao;
+        if (a.totalPartidas !== b.totalPartidas) return b.totalPartidas - a.totalPartidas;
+        if (a.mediaTempo !== b.mediaTempo) return a.mediaTempo - b.mediaTempo;
+        return a.nome.localeCompare(b.nome);
     });
+    return lista;
+}
+
+// Função principal para renderizar o ranking de pontos com as novas colunas
+async function renderizarRankingPontos(containerId = 'ranking-pontos-container') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!rankingPontosAtivo) {
+        container.innerHTML = '<p style="color: #94a3b8;">🏆 Ranking de pontos desativado. Ative na aba "🏆 Pontos Copa".</p>';
+        return;
+    }
+
+    try {
+        // Buscar todos os IDs que têm pelo menos uma pontuação em alguma fase (histórico ou projeção)
+        const faseAtual = estadoAtual?.fase || 1;
+        const statusFase = estadoAtual?.status || 'aguardando';
+
+        // Mapa para acumular pontos por jogador
+        const jogadores = new Map();
+
+        // Para cada fase, obter a pontuação (histórico para fases já finalizadas, ou projeção para a atual)
+        for (let f = 1; f <= TOTAL_FASES; f++) {
+            // Se a fase já passou (f < faseAtual) OU se a fase atual já foi finalizada (status === 'finalizado' ou 'aguardando' e faseAtual já passou?),
+            // usamos o histórico salvo.
+            // Caso contrário, usamos a projeção ao vivo.
+            let pontosPorJogador = {};
+
+            if (f < faseAtual || (f === faseAtual && (statusFase === 'finalizado' || statusFase === 'aguardando'))) {
+                // Fase já finalizada: buscar do histórico
+                const snap = await db.ref(`copaV2/pontuacaoHistorico/${f}`).once('value');
+                const historico = snap.val() || {};
+                for (const [id, pts] of Object.entries(historico)) {
+                    pontosPorJogador[id] = pts;
+                }
+            } else if (f === faseAtual && statusFase === 'em_andamento') {
+                // Fase atual em andamento: calcular projeção baseada no ranking atual
+                const ranking = calcularRankingFase(faseAtual);
+                // Para cada posição, atribuir os pontos conforme a tabela
+                ranking.forEach((jogador, idx) => {
+                    const pos = idx + 1;
+                    const pts = getPontosPorPosicao(pos, f);
+                    if (pts > 0) {
+                        pontosPorJogador[jogador.id] = pts;
+                    }
+                });
+            } else {
+                // Fases futuras: 0 pontos
+                continue;
+            }
+
+            // Acumula os pontos para cada jogador
+            for (const [id, pts] of Object.entries(pontosPorJogador)) {
+                if (!jogadores.has(id)) {
+                    jogadores.set(id, { id, fases: {}, total: 0 });
+                }
+                const jog = jogadores.get(id);
+                jog.fases[f] = pts;
+                jog.total += pts;
+            }
+        }
+
+        // Agora, para cada jogador, garantir que as fases que faltam sejam 0
+        for (const [id, jog] of jogadores) {
+            for (let f = 1; f <= TOTAL_FASES; f++) {
+                if (!jog.fases[f]) jog.fases[f] = 0;
+            }
+        }
+
+        // Buscar nomes e turmas
+        const participantes = estadoAtual?.participantes || {};
+        for (const [id, jog] of jogadores) {
+            let nome = 'Anônimo', turma = '?';
+            for (let f = 1; f <= TOTAL_FASES; f++) {
+                if (participantes[f]?.[id]) {
+                    nome = participantes[f][id].nome || nome;
+                    turma = participantes[f][id].turma || turma;
+                    break;
+                }
+            }
+            jog.nome = nome;
+            jog.turma = turma;
+        }
+
+        // Ordenar: total decrescente, e em caso de empate, posição na fase 5 (desempate)
+        // Para fase 5, se não tiver pontuação, considerar posição 999
+        const lista = Array.from(jogadores.values());
+        lista.sort((a,b) => {
+            if (a.total !== b.total) return b.total - a.total;
+            const posA = a.fases[5] || 0;
+            const posB = b.fases[5] || 0;
+            // Quem tem mais pontos na fase 5 (não confundir com posição) - na verdade, o desempate é pela melhor posição na fase 5,
+            // mas a posição não está armazenada aqui. Vamos usar a pontuação da fase 5 como proxy? Melhor: usar a posição salva em pontuacaoPosicao/5
+            // Vamos buscar a posição na fase 5 para cada jogador.
+            return 0; // será resolvido abaixo
+        });
+
+        // Buscar posição na fase 5 para desempate
+        const snapPos5 = await db.ref('copaV2/pontuacaoPosicao/5').once('value');
+        const pos5Map = snapPos5.val() || {};
+        for (const item of lista) {
+            item.pos5 = pos5Map[item.id] || 999;
+        }
+        lista.sort((a,b) => {
+            if (a.total !== b.total) return b.total - a.total;
+            return a.pos5 - b.pos5;
+        });
+
+        if (lista.length === 0) {
+            container.innerHTML = '<p>📭 Nenhum ponto registrado ainda.</p>';
+            return;
+        }
+
+        // Montar a tabela com as colunas solicitadas
+        let html = `<table class="ranking-table"><thead><tr>
+            <th>Pos</th>
+            <th>Nome</th>
+            <th>Pontuação Geral</th>
+            <th>Fase 5</th>
+            <th>Fase 4</th>
+            <th>Fase 3</th>
+            <th>Fase 2</th>
+            <th>Fase 1</th>
+        </tr></thead><tbody>`;
+
+        lista.forEach((item, idx) => {
+            const pos = idx + 1;
+            const f1 = item.fases[1] || 0;
+            const f2 = item.fases[2] || 0;
+            const f3 = item.fases[3] || 0;
+            const f4 = item.fases[4] || 0;
+            const f5 = item.fases[5] || 0;
+            html += `<tr>
+                <td>${pos}º</td>
+                <td>${escapeHtml(item.nome)}</td>
+                <td><strong>${item.total}</strong></td>
+                <td>${f5}</td>
+                <td>${f4}</td>
+                <td>${f3}</td>
+                <td>${f2}</td>
+                <td>${f1}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+
+        // Adicionar evento de clique para histórico (apenas no professor, se desejar)
+        if (containerId === 'ranking-pontos-container') {
+            // Já temos o histórico via clique no nome na versão anterior, mas mantemos como opcional
+            // Aqui podemos adicionar um clique para mostrar detalhes se quiser
+        }
+
+    } catch (e) {
+        container.innerHTML = '<p>❌ Erro ao carregar ranking de pontos.</p>';
+        console.error(e);
+    }
 }
 
 // Processa a pontuação ao final da fase (chamado dentro de avancarFase)
@@ -2122,11 +2311,17 @@ async function processarPontuacaoFase(fase) {
     if (!rankingPontosAtivo) return;
     const minConfig = await carregarMinPartidas();
     const minPartidas = minConfig[fase] || 1;
-    let ranking = await calcularRankingFase(fase, false); // pega todos
+    const ranking = calcularRankingFase(fase);
     
     // Para fase 5, filtra quem não atingiu o mínimo
+    let filtrados = ranking;
     if (fase === 5) {
-        ranking = ranking.filter(j => j.totalPartidas >= minPartidas);
+        filtrados = ranking.filter(j => {
+            // Verifica se o jogador tem partidas finalizadas (já que no mapa pode ter só temporário)
+            const resultados = estadoAtual?.resultados?.[fase] || {};
+            const partidas = resultados[j.id] || [];
+            return partidas.length >= minPartidas;
+        });
     }
 
     // Atribui pontos
@@ -2142,7 +2337,7 @@ async function processarPontuacaoFase(fase) {
     const updatesGlobal = {};
     const updatesPosicao = {};
 
-    ranking.forEach((jogador, idx) => {
+    filtrados.forEach((jogador, idx) => {
         const posicao = idx + 1;
         const pontos = getPontosPorPosicao(posicao, fase);
         if (pontos > 0 || posicao <= 40) {
@@ -2167,137 +2362,14 @@ async function processarPontuacaoFase(fase) {
         let ordenados = Object.keys(globaisFinal).map(id => ({ id, total: globaisFinal[id] }));
         ordenados.sort((a,b) => {
             if (a.total !== b.total) return b.total - a.total;
-            // Desempate: melhor posição na fase 5 (menor número)
             const posA = pos5[a.id] || 999;
             const posB = pos5[b.id] || 999;
             return posA - posB;
         });
-        // Atualiza ranking global final ordenado (não precisa salvar, apenas exibir)
-        // Armazenamos a ordem em um nó auxiliar para exibição consistente
         await db.ref('copaV2/pontuacaoRankingFinal').set(ordenados.map(p => p.id));
     }
 
     toast(`✅ Pontos da Fase ${fase} processados!`);
-}
-
-// Renderiza o ranking de pontos
-async function renderizarRankingPontos(containerId = 'ranking-pontos-container', mostrarHistorico = true) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    if (!rankingPontosAtivo) {
-        container.innerHTML = '<p style="color: #94a3b8;">🏆 Ranking de pontos desativado. Ative na aba "🏆 Pontos Copa".</p>';
-        return;
-    }
-
-    try {
-        const snapGlobal = await db.ref('copaV2/pontuacaoGlobal').once('value');
-        const globais = snapGlobal.val() || {};
-        const snapPos5 = await db.ref('copaV2/pontuacaoPosicao/5').once('value');
-        const pos5 = snapPos5.val() || {};
-
-        let lista = Object.keys(globais).map(id => ({
-            id,
-            total: globais[id],
-            pos5: pos5[id] || 999
-        }));
-
-        // Busca nomes e turmas
-        const participantes = estadoAtual?.participantes || {};
-        for (const item of lista) {
-            let nome = 'Anônimo', turma = '?';
-            for (let f = 1; f <= TOTAL_FASES; f++) {
-                if (participantes[f]?.[item.id]) {
-                    nome = participantes[f][item.id].nome || nome;
-                    turma = participantes[f][item.id].turma || turma;
-                    break;
-                }
-            }
-            // Busca em fases anteriores se não encontrado
-            if (!nome) {
-                for (let f = TOTAL_FASES; f >= 1; f--) {
-                    if (participantes[f]?.[item.id]) {
-                        nome = participantes[f][item.id].nome || nome;
-                        turma = participantes[f][item.id].turma || turma;
-                        break;
-                    }
-                }
-            }
-            item.nome = nome;
-            item.turma = turma;
-        }
-
-        // Ordena: total decrescente, depois pos5 crescente
-        lista.sort((a,b) => {
-            if (a.total !== b.total) return b.total - a.total;
-            return a.pos5 - b.pos5;
-        });
-
-        if (lista.length === 0) {
-            container.innerHTML = '<p>📭 Nenhum ponto registrado ainda.</p>';
-            return;
-        }
-
-        let html = `<table class="ranking-table"><thead><tr>
-            <th>Pos</th><th>Nome</th><th>Turma</th><th>Total de Pontos</th><th>Pos. Fase 5 (desempate)</th>
-        </tr></thead><tbody>`;
-        lista.forEach((item, idx) => {
-            const pos = idx + 1;
-            const clicavel = mostrarHistorico ? 'pontos-ranking-clicavel' : '';
-            html += `<tr class="${clicavel}" data-id="${item.id}" data-nome="${escapeHtml(item.nome)}">
-                <td>${pos}º</td>
-                <td>${escapeHtml(item.nome)}</td>
-                <td>${escapeHtml(item.turma)}</td>
-                <td><strong>${item.total}</strong></td>
-                <td>${item.pos5 === 999 ? '—' : item.pos5 + 'º'}</td>
-            </tr>`;
-        });
-        html += '</tbody></table>';
-        container.innerHTML = html;
-
-        // Evento de clique para histórico
-        if (mostrarHistorico) {
-            container.querySelectorAll('.pontos-ranking-clicavel').forEach(tr => {
-                tr.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    const nome = this.dataset.nome;
-                    mostrarHistoricoPontos(id, nome);
-                });
-            });
-        }
-    } catch (e) {
-        container.innerHTML = '<p>❌ Erro ao carregar ranking de pontos.</p>';
-        console.error(e);
-    }
-}
-
-// Mostra histórico de pontos por fase de um aluno
-async function mostrarHistoricoPontos(id, nome) {
-    const modal = document.createElement('div');
-    modal.className = 'modal-historico';
-    modal.innerHTML = `<h2>📊 Histórico de ${escapeHtml(nome)}</h2><div id="historico-conteudo">Carregando...</div><button class="fechar-hist">Fechar</button>`;
-    document.body.appendChild(modal);
-
-    try {
-        let html = '<table class="ranking-table"><tr><th>Fase</th><th>Pontos</th><th>Posição</th></tr>';
-        let total = 0;
-        for (let f = 1; f <= TOTAL_FASES; f++) {
-            const snap = await db.ref(`copaV2/pontuacaoHistorico/${f}/${id}`).once('value');
-            const pts = snap.val() || 0;
-            total += pts;
-            const snapPos = await db.ref(`copaV2/pontuacaoPosicao/${f}/${id}`).once('value');
-            const pos = snapPos.val() || '—';
-            html += `<tr><td>Fase ${f}</td><td>${pts}</td><td>${pos !== '—' ? pos + 'º' : '—'}</td></tr>`;
-        }
-        html += `<tr style="font-weight:bold; border-top:2px solid #ffd966;"><td>TOTAL</td><td>${total}</td><td></td></tr>`;
-        html += '</table>';
-        document.getElementById('historico-conteudo').innerHTML = html;
-    } catch (e) {
-        document.getElementById('historico-conteudo').innerHTML = '<p>Erro ao carregar histórico.</p>';
-    }
-
-    modal.querySelector('.fechar-hist').addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 }
 
 // ============================================================
@@ -2396,7 +2468,7 @@ function iniciarListeners() {
 }
 
 // ============================================================
-// RANKING (funções principais)
+// RANKING (funções principais) - mantido para ranking de fase
 // ============================================================
 let cacheRanking = {};
 
@@ -2626,7 +2698,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         for (const col of COLUNAS_DEF.opcionais) colunasAtivas[col.id] = true;
     }
 
-    // Determina se mostra projeção de pontos
     const mostrarProjecao = rankingPontosAtivo && estadoAtual.status === 'em_andamento' && faseNum === estadoAtual.fase;
 
     let mapa = new Map();
@@ -2752,7 +2823,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     const vagas = VAGAS_POR_FASE[faseNum] || 30;
     const mostrarClassificacao = (containerId === 'ranking-torcida-container' || containerId === 'ranking-aluno-container') ? true : exibirClassificacao;
 
-    // Calcular pontos projetados (se mostrarProjecao)
     let pontosProjetadosMap = new Map();
     if (mostrarProjecao) {
         const tabela = getTabelaPontosPorFase(faseNum);
@@ -4287,7 +4357,6 @@ async function atualizarRankingAluno() {
     if (!estadoAtual) return;
     if (jogoAtivo) return;
 
-    // Verifica qual subtaba está ativa
     const subtabs = document.querySelectorAll('.modal-sub-tabs .sub-tab');
     let ativa = 'fase';
     subtabs.forEach(tab => {
@@ -4298,54 +4367,8 @@ async function atualizarRankingAluno() {
         const faseAtual = estadoAtual.fase;
         await renderRanking(faseAtual, 'ranking-aluno-container', 'individual', true);
     } else {
-        // Ranking de pontos
-        const container = document.getElementById('ranking-aluno-container');
-        if (!rankingPontosAtivo) {
-            container.innerHTML = '<p style="color: #94a3b8;">🏆 Ranking de pontos desativado pelo professor.</p>';
-            return;
-        }
-        try {
-            const snapGlobal = await db.ref('copaV2/pontuacaoGlobal').once('value');
-            const globais = snapGlobal.val() || {};
-            const snapPos5 = await db.ref('copaV2/pontuacaoPosicao/5').once('value');
-            const pos5 = snapPos5.val() || {};
-            let lista = Object.keys(globais).map(id => ({
-                id,
-                total: globais[id],
-                pos5: pos5[id] || 999
-            }));
-            const participantes = estadoAtual?.participantes || {};
-            for (const item of lista) {
-                let nome = 'Anônimo', turma = '?';
-                for (let f = 1; f <= TOTAL_FASES; f++) {
-                    if (participantes[f]?.[item.id]) {
-                        nome = participantes[f][item.id].nome || nome;
-                        turma = participantes[f][item.id].turma || turma;
-                        break;
-                    }
-                }
-                item.nome = nome;
-                item.turma = turma;
-            }
-            lista.sort((a,b) => {
-                if (a.total !== b.total) return b.total - a.total;
-                return a.pos5 - b.pos5;
-            });
-            if (lista.length === 0) {
-                container.innerHTML = '<p>📭 Nenhum ponto registrado ainda.</p>';
-                return;
-            }
-            let html = `<table class="ranking-table"><thead><tr>
-                <th>Pos</th><th>Nome</th><th>Turma</th><th>Total de Pontos</th>
-            </tr></thead><tbody>`;
-            lista.forEach((item, idx) => {
-                html += `<tr><td>${idx+1}º</td><td>${escapeHtml(item.nome)}</td><td>${escapeHtml(item.turma)}</td><td><strong>${item.total}</strong></td></tr>`;
-            });
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        } catch (e) {
-            container.innerHTML = '<p>❌ Erro ao carregar ranking de pontos.</p>';
-        }
+        // Ranking de pontos - usar a mesma função, mas passando o container do modal
+        await renderizarRankingPontos('ranking-aluno-container');
     }
 }
 
@@ -4356,7 +4379,6 @@ function abrirModalRanking() {
     }
     const modal = document.getElementById('modal-ranking-aluno');
     modal.style.display = 'flex';
-    // Atualiza subtabs
     document.querySelectorAll('.modal-sub-tabs .sub-tab').forEach(tab => {
         tab.addEventListener('click', function() {
             document.querySelectorAll('.modal-sub-tabs .sub-tab').forEach(t => t.classList.remove('active'));
@@ -4418,7 +4440,6 @@ async function init() {
             const status = document.getElementById('status-ranking-pontos');
             status.innerText = ativo ? '✅ Ativado' : '❌ Desativado';
             status.style.color = ativo ? '#4ade80' : '#f87171';
-            // Salva imediatamente o toggle
             await salvarConfigRankingPontos(ativo, tabelaPontosPadrao, tabelaPontosFase5);
             if (meuTipo === 'professor') renderizarRankingPontos();
             if (meuTipo === 'projecao') {
@@ -4462,7 +4483,6 @@ async function init() {
             }
             const ativo = document.getElementById('toggle-ranking-pontos').checked;
             await salvarConfigRankingPontos(ativo, objPadrao, objFase5);
-            // Atualiza textareas com formatação limpa
             document.getElementById('textarea-pontos-padrao').value = formatPontuacaoText(objPadrao);
             document.getElementById('textarea-pontos-fase5').value = formatPontuacaoText(objFase5);
         });
@@ -4480,10 +4500,7 @@ async function init() {
     });
     document.getElementById('btn-liberar-aluno')?.addEventListener('click', liberarAluno);
 
-    // Salvar mínimo de partidas
     document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', salvarMinPartidas);
-
-    // Salvar colunas
     document.getElementById('btn-salvar-colunas')?.addEventListener('click', salvarColunasVisiveis);
     document.getElementById('btn-restaurar-colunas')?.addEventListener('click', restaurarColunasPadrao);
 
@@ -4549,7 +4566,6 @@ async function init() {
         };
     }
 
-    // Sub-abas da Torcida (Fase / Pontos)
     document.getElementById('btn-torcida-sub-fase')?.addEventListener('click', function() {
         this.classList.add('ativo');
         document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
@@ -4563,54 +4579,8 @@ async function init() {
         document.getElementById('btn-torcida-sub-fase').classList.remove('ativo');
         document.getElementById('torcida-fase-selector').style.display = 'none';
         // Exibe ranking de pontos na torcida
-        const container = document.getElementById('ranking-torcida-container');
-        if (!rankingPontosAtivo) {
-            container.innerHTML = '<p style="color: #94a3b8;">🏆 Ranking de pontos desativado pelo professor.</p>';
-            return;
-        }
-        try {
-            const snapGlobal = await db.ref('copaV2/pontuacaoGlobal').once('value');
-            const globais = snapGlobal.val() || {};
-            const snapPos5 = await db.ref('copaV2/pontuacaoPosicao/5').once('value');
-            const pos5 = snapPos5.val() || {};
-            let lista = Object.keys(globais).map(id => ({
-                id,
-                total: globais[id],
-                pos5: pos5[id] || 999
-            }));
-            const participantes = estadoAtual?.participantes || {};
-            for (const item of lista) {
-                let nome = 'Anônimo', turma = '?';
-                for (let f = 1; f <= TOTAL_FASES; f++) {
-                    if (participantes[f]?.[item.id]) {
-                        nome = participantes[f][item.id].nome || nome;
-                        turma = participantes[f][item.id].turma || turma;
-                        break;
-                    }
-                }
-                item.nome = nome;
-                item.turma = turma;
-            }
-            lista.sort((a,b) => {
-                if (a.total !== b.total) return b.total - a.total;
-                return a.pos5 - b.pos5;
-            });
-            if (lista.length === 0) {
-                container.innerHTML = '<p>📭 Nenhum ponto registrado ainda.</p>';
-                return;
-            }
-            let html = `<table class="ranking-table"><thead><tr>
-                <th>Pos</th><th>Nome</th><th>Turma</th><th>Total de Pontos</th>
-            </tr></thead><tbody>`;
-            lista.forEach((item, idx) => {
-                html += `<tr><td>${idx+1}º</td><td>${escapeHtml(item.nome)}</td><td>${escapeHtml(item.turma)}</td><td><strong>${item.total}</strong></td></tr>`;
-            });
-            html += '</tbody></table>';
-            container.innerHTML = html;
-            document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
-        } catch (e) {
-            container.innerHTML = '<p>❌ Erro ao carregar ranking de pontos.</p>';
-        }
+        await renderizarRankingPontos('ranking-torcida-container');
+        document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
         tocarSom('clique');
     });
 
@@ -4781,17 +4751,14 @@ async function init() {
     document.getElementById('btn-ranking-aluno')?.addEventListener('click', abrirModalRanking);
     document.getElementById('btn-ranking-pontos-aluno')?.addEventListener('click', abrirModalRanking);
 
-    // Fechar modal ao clicar fora
     document.getElementById('modal-ranking-aluno')?.addEventListener('click', (e) => {
         if (e.target === e.currentTarget) {
             fecharModalRanking();
         }
     });
 
-    // Botão "Voltar ao Jogo"
     document.getElementById('btn-fechar-modal-ranking')?.addEventListener('click', fecharModalRanking);
 
-    // Botão "Sair" no modal
     document.getElementById('btn-sair-modal-ranking')?.addEventListener('click', () => {
         fecharModalRanking();
         pararAtualizacaoTempoReal();
@@ -4816,7 +4783,6 @@ async function init() {
         meuTipo = 'projecao';
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
         document.getElementById('tela-torcida').classList.remove('hidden');
-        // Força sub-aba Fase
         document.getElementById('btn-torcida-sub-fase').classList.add('ativo');
         document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
         document.getElementById('torcida-fase-selector').style.display = 'block';
