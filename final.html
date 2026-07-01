@@ -60,6 +60,7 @@
     </script>
 
     <style>
+        /* ===== ESTILOS GERAIS ===== */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: #0a0f1e; color: #eee; padding: 20px; }
         .container { max-width: 1400px; margin: 0 auto; }
@@ -815,6 +816,32 @@
             margin-top: 10px;
             border: 1px solid rgba(255,215,0,0.3);
         }
+
+        /* ===== LAYOUT ESPECÍFICO DA TELA DO ALUNO ===== */
+        #tela-aluno .jogo-topo {
+            order: -1; /* garante que fique no topo */
+        }
+        #jogo-area {
+            margin-bottom: 20px;
+        }
+        /* Para evitar que o cabeçalho atrapalhe a visualização do jogo em telas pequenas */
+        @media (max-width: 600px) {
+            #tela-aluno .header-actions {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .timer-fase-aluno {
+                font-size: 16px;
+                padding: 4px 12px;
+            }
+            .opcao-vertical {
+                font-size: 20px;
+                padding: 14px 16px;
+            }
+            #pergunta {
+                font-size: 32px !important;
+            }
+        }
     </style>
 
     <!-- Firebase SDKs -->
@@ -1212,19 +1239,11 @@
     <!-- Fim do painel do professor -->
 
     <!-- ========================================================= -->
-    <!-- TELA DO ALUNO                                               -->
+    <!-- TELA DO ALUNO (COM LAYOUT CORRIGIDO)                       -->
     <!-- ========================================================= -->
     <div id="tela-aluno" class="card hidden">
-        <div class="header-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
-            <h2 id="aluno-nome-display" style="margin: 0;">Aluno</h2>
-            <div class="timer-fase-aluno" id="timer-fase-aluno">⏱️ Tempo: --:--</div>
-            <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking Fase</button>
-            <button id="btn-ranking-pontos-aluno" class="btn-info" style="margin-left: 5px;">🏆 Ranking Pontos</button>
-            <button id="btn-tutorial-aluno" class="btn-info" style="margin-left: 5px;">📘 Tutorial</button>
-            <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
-        </div>
-        <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</span> <span id="aluno-fase-info" class="fase-info"></span></p>
-        <div id="jogo-area" class="hidden">
+        <!-- ÁREA DE JOGO – AGORA NO TOPO -->
+        <div id="jogo-area" class="hidden jogo-topo">
             <div class="status-box">
                 <div class="top-info">
                     <div class="pontuacao-atual">🎯 Pontuação: <span id="pontuacao-acumulada">0</span></div>
@@ -1253,10 +1272,27 @@
                 <div style="text-align: center;">Pergunta: <span id="pergunta-num">1</span>/20</div>
             </div>
         </div>
+
+        <!-- CABEÇALHO DO ALUNO (NOME, TIMER, BOTÕES) – AGORA ABAIXO DO JOGO -->
+        <div class="header-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+            <h2 id="aluno-nome-display" style="margin: 0;">Aluno</h2>
+            <div class="timer-fase-aluno" id="timer-fase-aluno">⏱️ Tempo: --:--</div>
+            <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking Fase</button>
+            <button id="btn-ranking-pontos-aluno" class="btn-info" style="margin-left: 5px;">🏆 Ranking Pontos</button>
+            <button id="btn-tutorial-aluno" class="btn-info" style="margin-left: 5px;">📘 Tutorial</button>
+            <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
+        </div>
+
+        <!-- INFORMAÇÕES DE TURMA E MODALIDADE -->
+        <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong> <span id="aluno-fase-info" class="fase-info"></span></p>
+
+        <!-- ÁREA DE AGUARDANDO (quando não está jogando) -->
         <div id="aguardando-aluno" style="text-align:center; padding:20px;">
             <div id="msg-status-aluno">Aguardando...</div>
             <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
         </div>
+
+        <!-- HISTÓRICO E MELHOR RESULTADO -->
         <div class="status-box">
             <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
             <div id="historico-aluno"></div>
@@ -1506,7 +1542,7 @@ async function atualizarDisplayVersao() {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DO FIREBASE (com seus dados)
+// CONFIGURAÇÃO DO FIREBASE
 // ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyBkoL3Zn-YkGUy6RAWZYVhWtIbcfL8h-J8",
@@ -1529,8 +1565,7 @@ let meuTipo = null, alunoId = null, alunoNome = null, alunoTurma = null;
 let estadoAtual = null, jogoAtivo = false;
 let perguntas = [], perguntaIdx = 0, pontosPartida = 0, acertosPartida = 0, tempoTotalPartida = 0;
 let timerPergunta = null, tempoRestantePergunta = 10, timerFase = null;
-let intervaloTorcidaIndividual = null;
-let intervaloTorcidaEquipes = null;
+let intervaloTorcidaIndividual = null, intervaloTorcidaEquipes = null;
 let intervaloRankingProfessor = null;
 let atualizacaoRankingAuto = true;
 let faseSelecionadaProf = 1;
@@ -1541,13 +1576,12 @@ let atualizandoSeletorTorcida = false;
 let intervaloRankingAluno = null;
 let colunasVisiveis = null;
 
-// Variáveis Ranking de Pontos
+// Ranking de Pontos
 let rankingPontosAtivo = false;
-let tabelaPontosPadrao = {}; // {1:40, 2:39, ...}
+let tabelaPontosPadrao = {};
 let tabelaPontosFase5 = {};
 
-// Controle de aba da torcida
-let abaTorcidaAtiva = 'fase'; // 'fase' ou 'pontos'
+let abaTorcidaAtiva = 'fase';
 
 const TOTAL_FASES = 5;
 let intervaloIndividualSegundos = 4;
@@ -1561,7 +1595,6 @@ const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 const DEVICE_ID_KEY = 'copa_device_id';
 
-// Definição das colunas (opcionais e obrigatórias)
 const COLUNAS_DEF = {
     obrigatorias: [
         { id: 'posicao', label: 'Posição' },
@@ -1593,7 +1626,7 @@ function toast(m) {
 }
 
 // ============================================================
-// TUTORIAL (compartilhado entre aluno e torcida)
+// FUNÇÕES DO TUTORIAL (compartilhado entre aluno e torcida)
 // ============================================================
 const CONTEUDO_TUTORIAL_ALUNO = {
     objetivo: `
@@ -1780,21 +1813,18 @@ const CONTEUDO_TUTORIAL_TORCIDA = {
 
 // Funções do tutorial
 function abrirTutorial(tipo) {
-    // tipo: 'aluno' ou 'torcida'
     const modal = document.getElementById('modal-tutorial');
     const titulo = document.getElementById('tutorial-titulo');
     const tabsContainer = document.getElementById('tutorial-tabs');
     
     if (tipo === 'aluno') {
         titulo.innerText = '📘 Tutorial - Aluno';
-        // Define as abas para aluno
         tabsContainer.innerHTML = `
             <div class="sub-tab active" data-tab-tut="objetivo">🎯 Objetivo</div>
             <div class="sub-tab" data-tab-tut="pontuacao">📊 Pontuação</div>
             <div class="sub-tab" data-tab-tut="dicas">⚡ Dicas</div>
             <div class="sub-tab" data-tab-tut="faq">❓ FAQ</div>
         `;
-        // Carrega a primeira aba
         mostrarAbaTutorial('objetivo', CONTEUDO_TUTORIAL_ALUNO);
     } else if (tipo === 'torcida') {
         titulo.innerText = '📘 Tutorial - Torcida';
@@ -1810,7 +1840,6 @@ function abrirTutorial(tipo) {
     modal.style.display = 'flex';
     tocarSom('clique');
     
-    // Reatribui eventos das abas
     document.querySelectorAll('[data-tab-tut]').forEach(tab => {
         tab.addEventListener('click', function() {
             const aba = this.dataset.tabTut;
@@ -1828,7 +1857,6 @@ function fecharTutorial() {
 function mostrarAbaTutorial(aba, conteudo) {
     const container = document.getElementById('tut-conteudo');
     container.innerHTML = conteudo[aba] || '<p>Conteúdo não encontrado.</p>';
-    // Marca a aba como ativa
     document.querySelectorAll('[data-tab-tut]').forEach(el => {
         el.classList.remove('active');
         if (el.dataset.tabTut === aba) {
@@ -1837,27 +1865,16 @@ function mostrarAbaTutorial(aba, conteudo) {
     });
 }
 
-// Eventos do tutorial (serão configurados no DOMContentLoaded)
 document.addEventListener('DOMContentLoaded', function() {
-    // Botão tutorial na tela inicial
     document.getElementById('btn-tutorial-inicial')?.addEventListener('click', function() {
-        // Pergunta se é para aluno ou torcida (ou só abre o do aluno por padrão)
-        // Como estamos na tela inicial, podemos abrir o do aluno ou perguntar.
-        // Vou abrir o do aluno por padrão.
         abrirTutorial('aluno');
     });
-    
-    // Botão tutorial na tela do aluno
     document.getElementById('btn-tutorial-aluno')?.addEventListener('click', function() {
         abrirTutorial('aluno');
     });
-    
-    // Botão tutorial na tela da torcida
     document.getElementById('btn-tutorial-torcida')?.addEventListener('click', function() {
         abrirTutorial('torcida');
     });
-    
-    // Fechar tutorial
     document.getElementById('btn-fechar-tutorial')?.addEventListener('click', fecharTutorial);
     document.getElementById('modal-tutorial')?.addEventListener('click', function(e) {
         if (e.target === this) fecharTutorial();
@@ -1865,7 +1882,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================================
-// AUTENTICAÇÃO DO PROFESSOR (Firebase Auth)
+// AUTENTICAÇÃO DO PROFESSOR
 // ============================================================
 function entrarModoProfessor() {
     meuTipo = 'professor';
@@ -2005,7 +2022,7 @@ async function carregarMinPartidas() {
         let config = snap.val();
         if (config === null || config === undefined) {
             config = {};
-            for (let i = 1; i <= TOTAL_FASES; i++) config[i] = 5; // PADRÃO 5
+            for (let i = 1; i <= TOTAL_FASES; i++) config[i] = 5;
             await db.ref(MIN_PARTIDAS_KEY).set(config);
         }
         return config;
@@ -2354,7 +2371,7 @@ function atualizarBolinhaUnica(cor) {
 }
 
 // ============================================================
-// RANKING DE PONTOS (NOVO) - PADRÃO ATIVADO
+// RANKING DE PONTOS (PADRÃO ATIVADO)
 // ============================================================
 function getPontuacaoDefault() {
     const obj = {};
@@ -2385,21 +2402,15 @@ function formatPontuacaoText(obj) {
     return keys.map(k => `${k}:${obj[k]}`).join(', ');
 }
 
-// Função para controlar visibilidade das abas de "Pontos" em torcida e aluno
 function atualizarVisibilidadeRankingPontos() {
     const visivel = rankingPontosAtivo;
-    
-    // Torcida
     const btnPontosTorcida = document.getElementById('btn-torcida-sub-pontos');
     if (btnPontosTorcida) {
         btnPontosTorcida.style.display = visivel ? 'inline-block' : 'none';
         if (!visivel && btnPontosTorcida.classList.contains('ativo')) {
-            // Força ativação da aba "Fase"
             document.getElementById('btn-torcida-sub-fase').click();
         }
     }
-    
-    // Aluno - no modal
     const subTabPontos = document.querySelector('.modal-sub-tabs .sub-tab[data-subtab="pontos"]');
     if (subTabPontos) {
         subTabPontos.style.display = visivel ? 'inline-block' : 'none';
@@ -2407,8 +2418,6 @@ function atualizarVisibilidadeRankingPontos() {
             document.querySelector('.modal-sub-tabs .sub-tab[data-subtab="fase"]').click();
         }
     }
-    
-    // Aluno - botão na tela principal
     const btnPontosAluno = document.getElementById('btn-ranking-pontos-aluno');
     if (btnPontosAluno) {
         btnPontosAluno.style.display = visivel ? 'inline-block' : 'none';
@@ -2417,7 +2426,6 @@ function atualizarVisibilidadeRankingPontos() {
 
 async function carregarConfigRankingPontos() {
     try {
-        // Ranking de Pontos - Ativado por padrão
         const snapAtivo = await db.ref('copaV2/configuracoes/rankingPontos/ativo').once('value');
         if (snapAtivo.val() === null || snapAtivo.val() === undefined) {
             rankingPontosAtivo = true;
@@ -2425,14 +2433,11 @@ async function carregarConfigRankingPontos() {
         } else {
             rankingPontosAtivo = snapAtivo.val() === true;
         }
-
         const snapPadrao = await db.ref('copaV2/configuracoes/rankingPontos/tabelaPadrao').once('value');
         const snapFase5 = await db.ref('copaV2/configuracoes/rankingPontos/tabelaFase5').once('value');
-        
         tabelaPontosPadrao = snapPadrao.val() || getPontuacaoDefault();
         tabelaPontosFase5 = snapFase5.val() || getPontuacaoDefault();
 
-        // Atualiza UI
         const toggle = document.getElementById('toggle-ranking-pontos');
         const status = document.getElementById('status-ranking-pontos');
         if (toggle) {
@@ -2445,10 +2450,8 @@ async function carregarConfigRankingPontos() {
         if (textPadrao) textPadrao.value = formatPontuacaoText(tabelaPontosPadrao);
         if (textFase5) textFase5.value = formatPontuacaoText(tabelaPontosFase5);
 
-        // Atualiza visibilidade das abas
         atualizarVisibilidadeRankingPontos();
 
-        // Atualiza visualizações
         if (meuTipo === 'professor') renderizarRankingPontos();
         if (meuTipo === 'projecao') {
             if (abaTorcidaAtiva === 'fase') {
@@ -2489,7 +2492,6 @@ async function salvarConfigRankingPontos(ativo, tabelaPadrao, tabelaFase5) {
         }
         toast('✅ Configuração de pontos salva!');
         atualizarVisibilidadeRankingPontos();
-        // Recarrega visualizações
         if (meuTipo === 'professor') renderizarRankingPontos();
         if (meuTipo === 'projecao') {
             if (abaTorcidaAtiva === 'fase') {
@@ -2518,7 +2520,6 @@ function getPontosPorPosicao(posicao, fase) {
     return tabela[posicao] || 0;
 }
 
-// Calcula o ranking da fase com critérios de desempate (mesma lógica usada no renderRanking)
 function calcularRankingFase(fase) {
     const resultados = estadoAtual?.resultados?.[fase] || {};
     const participantes = estadoAtual?.participantes?.[fase] || {};
@@ -2589,7 +2590,6 @@ function calcularRankingFase(fase) {
     return lista;
 }
 
-// Função principal para renderizar o ranking de pontos com as novas colunas
 async function renderizarRankingPontos(containerId = 'ranking-pontos-container') {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -2705,7 +2705,6 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
         html += '</tbody></table>';
         container.innerHTML = html;
 
-        // Atualiza timestamp da torcida se for o container da torcida
         if (containerId === 'ranking-torcida-container' && document.getElementById('torcida-last-update')) {
             document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
         }
@@ -2716,7 +2715,6 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
     }
 }
 
-// Processa a pontuação ao final da fase (chamado dentro de avancarFase)
 async function processarPontuacaoFase(fase) {
     if (!rankingPontosAtivo) return;
     const minConfig = await carregarMinPartidas();
@@ -2874,7 +2872,7 @@ function iniciarListeners() {
 }
 
 // ============================================================
-// RANKING (funções principais) - mantido para ranking de fase
+// RANKING (funções principais)
 // ============================================================
 let cacheRanking = {};
 
@@ -3073,15 +3071,11 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         }
     });
 
-    // ============================================================
-    // NOVO CÁLCULO DA VELOCIDADE RECORDE – SOMENTE NA FASE ATUAL
-    // ============================================================
     const recordeVelocMap = new Map();
     const resultadosFase = estadoAtual.resultados?.[faseNum] || {};
     for (const id in resultadosFase) {
         const partidas = resultadosFase[id];
         if (!partidas || partidas.length === 0) continue;
-        // Encontra a partida com maior pontuação
         let melhorPartida = null;
         let maxPontos = -1;
         for (const partida of partidas) {
@@ -3368,7 +3362,6 @@ function iniciarAtualizacaoProfessor() {
     intervaloRankingProfessor = setInterval(() => { atualizarRankingProfessor(); }, 4000);
 }
 
-// Funções específicas para torcida
 async function atualizarTorcidaIndividual() {
     if (meuTipo !== 'projecao' || abaTorcidaAtiva !== 'fase' || modoTorcida !== 'individual') return;
     if (!estadoAtual) return;
@@ -3394,25 +3387,10 @@ async function atualizarTorcidaPontos() {
     await renderizarRankingPontos('ranking-torcida-container');
 }
 
-// Função de atualização unificada para ser chamada pelos intervalos
-function atualizarTorcidaPorIntervalo() {
-    if (meuTipo !== 'projecao') return;
-    if (abaTorcidaAtiva === 'fase') {
-        if (modoTorcida === 'individual') {
-            atualizarTorcidaIndividual();
-        } else if (modoTorcida === 'equipes') {
-            atualizarTorcidaEquipes();
-        }
-    } else if (abaTorcidaAtiva === 'pontos') {
-        atualizarTorcidaPontos();
-    }
-}
-
 function reiniciarIntervalosTorcida() {
     if (intervaloTorcidaIndividual) clearInterval(intervaloTorcidaIndividual);
     if (intervaloTorcidaEquipes) clearInterval(intervaloTorcidaEquipes);
     
-    // Intervalo para atualização rápida (individual ou pontos)
     intervaloTorcidaIndividual = setInterval(() => {
         if (meuTipo === 'projecao' && document.getElementById('tela-torcida') && !document.getElementById('tela-torcida').classList.contains('hidden')) {
             if (abaTorcidaAtiva === 'fase' && modoTorcida === 'individual') {
@@ -3423,7 +3401,6 @@ function reiniciarIntervalosTorcida() {
         }
     }, intervaloIndividualSegundos * 1000);
     
-    // Intervalo para atualização por equipes (só quando modo equipes e aba fase)
     intervaloTorcidaEquipes = setInterval(() => {
         if (meuTipo === 'projecao' && document.getElementById('tela-torcida') && !document.getElementById('tela-torcida').classList.contains('hidden')) {
             if (abaTorcidaAtiva === 'fase' && modoTorcida === 'equipes') {
@@ -3441,7 +3418,6 @@ function reiniciarIntervalosTorcida() {
 function iniciarAtualizacaoTorcida() {
     reiniciarIntervalosTorcida();
     popularSelectFasesTorcida();
-    // Define aba inicial como 'fase'
     abaTorcidaAtiva = 'fase';
     document.getElementById('btn-torcida-sub-fase').classList.add('ativo');
     document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
@@ -3724,10 +3700,8 @@ async function avancarFase() {
     const minConfig = await carregarMinPartidas();
     const minPartidas = minConfig[faseAtual] || 1;
 
-    // --- Processar pontos para o Ranking de Pontos (antes de classificar) ---
     await processarPontuacaoFase(faseAtual);
 
-    // --- Classificação normal ---
     const res = estadoAtual.resultados?.[faseAtual] || {};
     let lista = [];
     for (let id in res) {
@@ -3764,7 +3738,6 @@ async function avancarFase() {
     if (faseAtual === TOTAL_FASES) {
         toast("🏆 COMPETIÇÃO FINALIZADA!");
         await db.ref('copaV2').update({ status: 'finalizado', fim: 0, tempoRestantePausa: null });
-        // Exibe os cards de finalização
         mostrarFinalizacao();
         forcarAlunosParaMenu();
         return;
@@ -3782,17 +3755,11 @@ async function avancarFase() {
     forcarAlunosParaMenu();
 }
 
-// Função para mostrar os cards de finalização
 function mostrarFinalizacao() {
-    // Professor
     const cardProf = document.getElementById('competicao-finalizada-prof');
     if (cardProf) cardProf.classList.remove('hidden');
-    
-    // Torcida
     const cardTorcida = document.getElementById('competicao-finalizada-torcida');
     if (cardTorcida) cardTorcida.classList.remove('hidden');
-    
-    // Aluno (modal)
     exibirModalFinalizacaoAluno();
 }
 
@@ -3821,7 +3788,6 @@ function exibirModalFinalizacaoAluno() {
 
 function forcarAlunosParaMenu() {
     if (meuTipo === 'aluno') {
-        // Se o aluno estiver na tela, exibir o modal de finalização
         exibirModalFinalizacaoAluno();
     }
 }
@@ -3849,13 +3815,89 @@ async function verificarTempoEsgotado() {
 }
 
 // ============================================================
+// GERENCIAR ALUNOS
+// ============================================================
+function renderListaAlunosGerenciar() {
+    if (!estadoAtual) return;
+    const faseAtual = estadoAtual.fase;
+    const participantes = estadoAtual.participantes?.[faseAtual] || {};
+    const container = document.getElementById('lista-alunos-gerenciavel');
+    if (!container) return;
+    const ids = Object.keys(participantes);
+    if (ids.length === 0) { container.innerHTML = '<p>📭 Nenhum aluno cadastrado.</p>'; return; }
+    let html = '';
+    for (let id of ids) {
+        const aluno = participantes[id];
+        html += `<div class="aluno-item"><div class="aluno-info"><strong>${escapeHtml(aluno.nome)}</strong> (${escapeHtml(aluno.turma)})<br><small>ID: ${id.substring(0,8)}...</small></div>
+                <div class="aluno-actions"><button class="btn-editar-aluno btn-warning" data-id="${id}" data-nome="${aluno.nome}" data-turma="${aluno.turma}">✏️ Editar</button>
+                <button class="btn-excluir-aluno btn-danger" data-id="${id}">🗑️ Excluir</button></div></div>`;
+    }
+    container.innerHTML = html;
+    document.querySelectorAll('.btn-editar-aluno').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const id = btn.getAttribute('data-id');
+            const novoNome = prompt("Novo nome:", btn.getAttribute('data-nome'));
+            if (novoNome) {
+                const novaTurma = prompt("Nova turma:", btn.getAttribute('data-turma'));
+                if (novaTurma) await db.ref(`copaV2/participantes/${faseAtual}/${id}`).update({ nome: novoNome, turma: novaTurma });
+                renderListaAlunosGerenciar();
+            }
+        });
+    });
+    document.querySelectorAll('.btn-excluir-aluno').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const id = btn.getAttribute('data-id');
+            if (confirm("Excluir aluno?")) {
+                await db.ref(`copaV2/participantes/${faseAtual}/${id}`).remove();
+                await db.ref(`copaV2/resultados/${faseAtual}/${id}`).remove();
+                await db.ref(`copaV2/resultados_temp/${faseAtual}/${id}`).remove();
+                renderListaAlunosGerenciar();
+            }
+        });
+    });
+}
+
+// ============================================================
+// SELECTS
+// ============================================================
+function popularSelectFasesTorcida() {
+    const select = document.getElementById('select-fase-torcida');
+    if (!select) return;
+    let options = '';
+    for (let i = 1; i <= TOTAL_FASES; i++) options += `<option value="${i}">Fase ${i}</option>`;
+    select.innerHTML = options;
+    if (estadoAtual) {
+        select.value = estadoAtual.fase;
+        faseTorcidaSelecionada = estadoAtual.fase;
+    }
+    select.removeEventListener('change', onSelectFaseTorcidaChange);
+    select.addEventListener('change', onSelectFaseTorcidaChange);
+}
+function onSelectFaseTorcidaChange() {
+    if (meuTipo !== 'projecao' || modoTorcida !== 'individual' || abaTorcidaAtiva !== 'fase') return;
+    const select = document.getElementById('select-fase-torcida');
+    const fase = parseInt(select.value);
+    if (!isNaN(fase) && fase >= 1 && fase <= TOTAL_FASES) {
+        faseTorcidaSelecionada = fase;
+        atualizarTorcidaIndividual();
+    }
+}
+function popularSelectFases() {
+    const select = document.getElementById('select-fase-ranking');
+    if (!select) return;
+    let options = '';
+    for (let i = 1; i <= TOTAL_FASES; i++) options += `<option value="${i}">Fase ${i}</option>`;
+    select.innerHTML = options;
+    select.value = faseSelecionadaProf;
+}
+
+// ============================================================
 // SENHA DE ACESSO (PADRÃO ATIVADO)
 // ============================================================
 let senhaBloqueada = false;
 
 async function carregarConfigSenha() {
     try {
-        // Senha numérica
         const snapSenha = await db.ref('copaV2/configuracoes/senhaFase1').once('value');
         let senha = snapSenha.val();
         if (senha === null || senha === undefined) {
@@ -3864,7 +3906,6 @@ async function carregarConfigSenha() {
         }
         document.getElementById('input-senha-fase1').value = senha;
 
-        // Exigir senha (sempre ativo por padrão)
         const snapExigir = await db.ref('copaV2/configuracoes/exigirSenhaFase1').once('value');
         let exigir = snapExigir.val();
         if (exigir === null || exigir === undefined) {
@@ -4207,10 +4248,11 @@ async function cadastrarNovoAluno(nome, turma) {
 }
 
 // ============================================================
-// LÓGICA DO JOGO
+// LÓGICA DO JOGO (COM CORREÇÃO DE MÚLTIPLAS PARTIDAS)
 // ============================================================
 let posicaoAnteriorAluno = null;
 let animFrameId = null;
+let partidaFinalizada = false;
 
 async function atualizarInfoAluno() {
     if (!alunoId || !estadoAtual) return;
@@ -4347,13 +4389,20 @@ function proxima() {
     startTimer();
 }
 
+// CORREÇÃO: função responder com proteção contra múltiplos cliques
 window.responder = async function(idx) {
+    if (!jogoAtivo || partidaFinalizada) return;
     if (timerPergunta) { clearInterval(timerPergunta); timerPergunta = null; }
     if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+
+    // Desabilita os botões imediatamente
+    const btns = document.querySelectorAll('.opcao-vertical');
+    btns.forEach(b => b.disabled = true);
+
     const tempoGasto = 10 - Math.max(0, tempoRestantePergunta);
     tempoTotalPartida += tempoGasto;
+
     if (idx !== -1) {
-        const btns = document.querySelectorAll('.opcao-vertical');
         const resp = parseInt(btns[idx].innerText);
         const p = perguntas[perguntaIdx];
         if (resp === p.a * p.b) {
@@ -4367,12 +4416,17 @@ window.responder = async function(idx) {
     } else {
         tocarSom('tempo_esgotado');
     }
-    const pontuacaoSpan = document.getElementById('pontuacao-acumulada');
-    if (pontuacaoSpan) pontuacaoSpan.innerText = pontosPartida;
 
+    document.getElementById('pontuacao-acumulada').innerText = pontosPartida;
     perguntaIdx++;
-    await atualizarPontuacaoParcial();
-    setTimeout(proxima, 200);
+
+    if (perguntaIdx >= 20) {
+        await finalizar();
+    } else {
+        btns.forEach(b => b.disabled = false);
+        await atualizarPontuacaoParcial();
+        setTimeout(proxima, 200);
+    }
 };
 
 async function atualizarPontuacaoParcial() {
@@ -4440,6 +4494,10 @@ async function iniciarNovaPartida() {
             toast("🔓 Acesso liberado pelo professor.");
         }
     }
+
+    // Resetar flag
+    partidaFinalizada = false;
+
     perguntas = gerarPerguntas(estadoAtual.modalidade, estadoAtual.fase);
     perguntaIdx = 0; pontosPartida = 0; acertosPartida = 0; tempoTotalPartida = 0;
     document.getElementById('pontuacao-acumulada').innerText = "0";
@@ -4454,6 +4512,9 @@ async function iniciarNovaPartida() {
 }
 
 async function finalizar() {
+    if (partidaFinalizada) return;
+    partidaFinalizada = true;
+
     jogoAtivo = false;
     document.getElementById('btn-ranking-aluno').disabled = false;
     document.getElementById('btn-ranking-pontos-aluno').disabled = false;
@@ -4573,7 +4634,6 @@ function atualizarUI() {
         popularSelectFases();
         popularSelectFasesTorcida();
         atualizarBotaoContinuarParar();
-        // Mostrar card de finalização se a fase 5 estiver finalizada
         if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
             const card = document.getElementById('competicao-finalizada-prof');
             if (card) card.classList.remove('hidden');
@@ -4591,7 +4651,6 @@ function atualizarUI() {
         }
         const torcidaFaseInfo = document.getElementById('torcida-fase-info');
         if (torcidaFaseInfo) torcidaFaseInfo.innerText = `${estadoAtual.fase}/${TOTAL_FASES}`;
-        // Mostrar card de finalização na torcida
         if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
             const card = document.getElementById('competicao-finalizada-torcida');
             if (card) card.classList.remove('hidden');
@@ -4603,7 +4662,6 @@ function atualizarUI() {
 
     if (meuTipo === 'aluno') {
         renderAluno();
-        // Se a fase 5 estiver finalizada, exibir modal
         if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado' && alunoId) {
             exibirModalFinalizacaoAluno();
         }
@@ -4699,7 +4757,6 @@ function renderAluno() {
         });
     }
 
-    // Se a fase 5 estiver finalizada, não exibe mais botão de jogar
     if (estadoAtual.fase === 5 && estadoAtual.status === 'finalizado') {
         if (btnJogar) btnJogar.classList.add('hidden');
         if (msgStatus) msgStatus.innerText = '🏆 Copa finalizada! Consulte o ranking.';
@@ -4776,15 +4833,12 @@ async function init() {
     iniciarListeners();
     await carregarConfigSenha();
 
-    // ============================================================
-    // EVENTOS DOS BOTÕES (além do Professor já tratado acima)
-    // ============================================================
+    // Eventos dos botões
     document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
         window.open('tutorial-instalacao.html', '_blank');
         toast('📱 Abrindo tutorial de instalação...');
     });
 
-    // Ranking de Pontos - Eventos
     const togglePontos = document.getElementById('toggle-ranking-pontos');
     const btnSalvarPontuacao = document.getElementById('btn-salvar-pontuacao');
     const btnRestaurarPadrao = document.getElementById('btn-restaurar-padrao');
@@ -4930,13 +4984,11 @@ async function init() {
         };
     }
 
-    // Sub-abas da Torcida (Fase / Pontos)
     document.getElementById('btn-torcida-sub-fase')?.addEventListener('click', function() {
         this.classList.add('ativo');
         document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
         abaTorcidaAtiva = 'fase';
         document.getElementById('torcida-fase-selector').style.display = 'block';
-        // Atualiza com o modo atual
         if (modoTorcida === 'individual') {
             atualizarTorcidaIndividual();
         } else {
@@ -5053,9 +5105,6 @@ async function init() {
         tocarSom('clique');
     });
 
-    // ============================================================
-    // BOTÃO ALUNO
-    // ============================================================
     document.getElementById('btn-aluno')?.addEventListener('click', async () => {
         if (!estadoAtual || estadoAtual.status !== 'em_andamento' || Date.now() >= estadoAtual.fim) {
             toast("⏳ A fase não foi iniciada ou já terminou.");
@@ -5114,9 +5163,6 @@ async function init() {
 
     document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarNovaPartida);
 
-    // ============================================================
-    // BOTÃO RANKING DO ALUNO (Fase e Pontos)
-    // ============================================================
     document.getElementById('btn-ranking-aluno')?.addEventListener('click', abrirModalRanking);
     document.getElementById('btn-ranking-pontos-aluno')?.addEventListener('click', abrirModalRanking);
 
@@ -5139,9 +5185,6 @@ async function init() {
         tocarSom('clique');
     });
 
-    // ============================================================
-    // BOTÃO TORCIDA
-    // ============================================================
     document.getElementById('btn-projecao')?.addEventListener('click', () => {
         torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
         const torcidaRef = db.ref(`online/${torcidaId}`);
@@ -5159,7 +5202,7 @@ async function init() {
         popularSelectFasesTorcida();
         atualizarUI();
         iniciarAtualizacaoTorcida();
-        atualizarVisibilidadeRankingPontos(); // Garante que a aba "Pontos" fique invisível se desativado
+        atualizarVisibilidadeRankingPontos();
         tocarSom('clique');
     });
 
