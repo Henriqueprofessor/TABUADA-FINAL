@@ -2736,6 +2736,50 @@ async function processarPontuacaoFase(fase) {
 let listenerCopa = null;
 let listenerOnline = null;
 
+// Listeners específicos para o pódio (observadores)
+let listenerPontuacaoGlobal = null;
+let listenerPos5 = null;
+
+function iniciarListenerPodium() {
+    // Remove listeners antigos se existirem
+    if (listenerPontuacaoGlobal) {
+        db.ref('copaV2/pontuacaoGlobal').off('value', listenerPontuacaoGlobal);
+        listenerPontuacaoGlobal = null;
+    }
+    if (listenerPos5) {
+        db.ref('copaV2/pontuacaoPosicao/5').off('value', listenerPos5);
+        listenerPos5 = null;
+    }
+
+    // Só cria listeners se o Ranking de Pontos estiver ativo
+    if (!rankingPontosAtivo) return;
+
+    // Escuta mudanças na pontuação global
+    listenerPontuacaoGlobal = db.ref('copaV2/pontuacaoGlobal').on('value', () => {
+        renderPodioFinal('podium-container');
+        renderPodioFinal('podium-torcida-container');
+        renderPodioFinal('podium-aluno-container');
+    });
+
+    // Também escuta mudanças na posição da Fase 5 (critério de desempate)
+    listenerPos5 = db.ref('copaV2/pontuacaoPosicao/5').on('value', () => {
+        renderPodioFinal('podium-container');
+        renderPodioFinal('podium-torcida-container');
+        renderPodioFinal('podium-aluno-container');
+    });
+}
+
+function removerListenerPodium() {
+    if (listenerPontuacaoGlobal) {
+        db.ref('copaV2/pontuacaoGlobal').off('value', listenerPontuacaoGlobal);
+        listenerPontuacaoGlobal = null;
+    }
+    if (listenerPos5) {
+        db.ref('copaV2/pontuacaoPosicao/5').off('value', listenerPos5);
+        listenerPos5 = null;
+    }
+}
+
 function iniciarListeners() {
     if (listenerCopa) listenerCopa();
     listenerCopa = db.ref('copaV2').on('value', snap => {
@@ -2825,6 +2869,9 @@ function iniciarListeners() {
             if (listaDiv) listaDiv.innerHTML = html;
         }
     });
+
+    // Inicia o listener do pódio (observadores)
+    iniciarListenerPodium();
 }
 
 // ============================================================
@@ -3805,12 +3852,8 @@ async function avancarFase() {
     if (faseAtual === TOTAL_FASES) {
         toast("🏆 COMPETIÇÃO FINALIZADA!");
         await db.ref('copaV2').update({ status: 'finalizado', fim: 0, tempoRestantePausa: null });
-        // Aguarda um pouco para o Firebase propagar os dados e renderiza o pódio
-        setTimeout(() => {
-            renderPodioFinal('podium-container');
-            renderPodioFinal('podium-torcida-container');
-            renderPodioFinal('podium-aluno-container');
-        }, 500);
+        // O pódio será renderizado automaticamente pelos listeners
+        // (não precisa de setTimeout aqui)
         if (meuTipo === 'projecao' && modoTorcida === 'equipes') setTimeout(() => atualizarTorcidaEquipes(), 500);
         forcarAlunosParaMenu();
         return;
@@ -4702,13 +4745,15 @@ function atualizarUI() {
         renderAluno();
     }
 
+    // O pódio agora é atualizado via listeners, não precisa de setTimeout aqui
     if (estadoAtual.fase === 5 && (estadoAtual.status === 'finalizado' || estadoAtual.status === 'aguardando')) {
-        // O pódio é renderizado com um pequeno atraso para garantir que os dados estejam salvos
-        setTimeout(() => {
+        // Os listeners já vão chamar renderPodioFinal automaticamente quando os dados mudarem.
+        // Mas se por algum motivo o listener não estiver ativo, chamamos uma vez aqui.
+        if (!listenerPontuacaoGlobal && !listenerPos5) {
             renderPodioFinal('podium-container');
             renderPodioFinal('podium-torcida-container');
             renderPodioFinal('podium-aluno-container');
-        }, 200);
+        }
     }
 }
 
@@ -4802,7 +4847,9 @@ function renderAluno() {
     }
 
     if (estadoAtual.fase === 5 && (estadoAtual.status === 'finalizado' || estadoAtual.status === 'aguardando')) {
-        setTimeout(() => renderPodioFinal('podium-aluno-container'), 200);
+        if (!listenerPontuacaoGlobal && !listenerPos5) {
+            renderPodioFinal('podium-aluno-container');
+        }
     }
 }
 
@@ -5110,6 +5157,7 @@ async function init() {
             if (confirm("Reset total?")) {
                 db.ref('copaV2').set({ fase:1, status:'aguardando', tempoFase:12, fim:0, modalidade: estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} });
                 db.ref('online').remove();
+                removerListenerPodium();
                 location.reload();
             }
             tocarSom('clique');
@@ -5122,6 +5170,7 @@ async function init() {
             if (confirm(`⚠️ Mudar para ${MODALIDADE_CONFIG[novaModalidade].nome} irá REINICIAR toda a competição. Continuar?`)) {
                 await db.ref('copaV2').set({ fase: 1, status: 'aguardando', tempoFase: 12, fim: 0, modalidade: novaModalidade, resultados: {}, participantes: {}, classificados: {} });
                 await db.ref('online').remove();
+                removerListenerPodium();
                 toast(`Modalidade alterada. Competição reiniciada.`);
                 setTimeout(() => location.reload(), 1500);
             }
@@ -5369,6 +5418,9 @@ async function init() {
             }
         }
     });
+
+    // Inicia os listeners do pódio
+    iniciarListenerPodium();
 
     setTimeout(carregarValorPartida, 500);
     setTimeout(carregarConfigRankingPontos, 600);
