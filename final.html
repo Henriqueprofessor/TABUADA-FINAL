@@ -819,12 +819,11 @@
 
         /* ===== LAYOUT ESPECÍFICO DA TELA DO ALUNO ===== */
         #tela-aluno .jogo-topo {
-            order: -1; /* garante que fique no topo */
+            order: -1;
         }
         #jogo-area {
             margin-bottom: 20px;
         }
-        /* Para evitar que o cabeçalho atrapalhe a visualização do jogo em telas pequenas */
         @media (max-width: 600px) {
             #tela-aluno .header-actions {
                 flex-wrap: wrap;
@@ -4248,11 +4247,12 @@ async function cadastrarNovoAluno(nome, turma) {
 }
 
 // ============================================================
-// LÓGICA DO JOGO (COM CORREÇÃO DE MÚLTIPLAS PARTIDAS)
+// LÓGICA DO JOGO (COM CORREÇÃO DE MÚLTIPLAS PARTIDAS E FECHAMENTO DO MODAL)
 // ============================================================
 let posicaoAnteriorAluno = null;
 let animFrameId = null;
 let partidaFinalizada = false;
+let posicaoAntesPartida = null; // armazena a posição antes de iniciar a partida
 
 async function atualizarInfoAluno() {
     if (!alunoId || !estadoAtual) return;
@@ -4445,18 +4445,33 @@ async function atualizarPontuacaoParcial() {
     await atualizarInfoAluno();
 }
 
-function exibirModalResultadosSimples(posicao, pontos) {
+function exibirModalResultadosSimples(posicao, pontos, posicaoAnterior) {
     let posEmoji = "";
     if (posicao === 1) posEmoji = "🥇";
     else if (posicao === 2) posEmoji = "🥈";
     else if (posicao === 3) posEmoji = "🥉";
     else posEmoji = "🏆";
 
+    // Calcular variação de posição
+    let variacaoHtml = '';
+    if (posicaoAnterior !== null && posicaoAnterior > 0) {
+        const delta = posicaoAnterior - posicao;
+        if (delta > 0) {
+            variacaoHtml = `<div style="margin: 10px 0; font-size: 20px; color: #2ecc71;">📈 Você subiu <strong>${delta}</strong> posição${delta > 1 ? 'es' : ''}! 🚀</div>`;
+        } else if (delta < 0) {
+            const descida = Math.abs(delta);
+            variacaoHtml = `<div style="margin: 10px 0; font-size: 20px; color: #e74c3c;">📉 Você caiu <strong>${descida}</strong> posição${descida > 1 ? 'es' : ''}.</div>`;
+        } else {
+            variacaoHtml = `<div style="margin: 10px 0; font-size: 20px; color: #f39c12;">🔄 Você manteve a posição!</div>`;
+        }
+    }
+
     let htmlModal = `
         <div class="modal-resultados" id="modal-pos-jogo">
             <h2>🏁 RESULTADO DA PARTIDA</h2>
             <div style="font-size: 48px; margin: 10px 0;">${posEmoji}</div>
             <div style="font-size: 28px; font-weight: bold;">${posicao}º lugar</div>
+            ${variacaoHtml}
             <hr style="border-color: #2c3e50; margin: 15px 0;">
             <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
             <div>✅ Acertos: ${acertosPartida}/20</div>
@@ -4482,6 +4497,10 @@ function exibirModalResultadosSimples(posicao, pontos) {
 }
 
 async function iniciarNovaPartida() {
+    // Fecha qualquer modal de resultado que esteja aberto
+    const modalResultado = document.getElementById('modal-pos-jogo');
+    if (modalResultado) modalResultado.remove();
+
     if (jogoAtivo) return;
     if (estadoAtual.status !== 'em_andamento') { toast("Fase inativa!"); return; }
     if (Date.now() >= estadoAtual.fim) { toast("Tempo esgotado!"); return; }
@@ -4494,6 +4513,21 @@ async function iniciarNovaPartida() {
             toast("🔓 Acesso liberado pelo professor.");
         }
     }
+
+    // Captura a posição atual ANTES de iniciar a partida
+    // Primeiro, obtém o ranking atual
+    const snapRanking = await db.ref(`copaV2/resultados/${estadoAtual.fase}`).once('value');
+    let rankingPosicoes = [];
+    snapRanking.forEach(child => {
+        const partidas = child.val();
+        if (partidas && partidas.length) {
+            const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
+            rankingPosicoes.push({ id: child.key, pontos: melhor.pontos });
+        }
+    });
+    rankingPosicoes.sort((a,b) => b.pontos - a.pontos);
+    const posAtual = rankingPosicoes.findIndex(p => p.id === alunoId) + 1;
+    posicaoAntesPartida = posAtual > 0 ? posAtual : null;
 
     // Resetar flag
     partidaFinalizada = false;
@@ -4556,7 +4590,8 @@ async function finalizar() {
         });
     }
 
-    exibirModalResultadosSimples(posicao, pontosPartida);
+    // Exibe o modal com a variação de posição
+    exibirModalResultadosSimples(posicao, pontosPartida, posicaoAntesPartida);
     renderAluno();
 }
 
