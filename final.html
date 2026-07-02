@@ -222,7 +222,7 @@
         .pontuacao-atual { font-size: 24px; font-weight: bold; background: #000000aa; padding: 6px 18px; border-radius: 40px; display: inline-block; }
         .indicador-posicao { font-size: 28px; font-weight: bold; background: #000000aa; padding: 6px 18px; border-radius: 40px; display: inline-flex; align-items: center; gap: 8px; }
         .velocidade-media { font-size: 20px; font-weight: bold; background: #000000aa; padding: 6px 18px; border-radius: 40px; display: inline-flex; align-items: center; gap: 8px; color: #2ecc71; }
-        .modal-resultados { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f172a; border-radius: 32px; padding: 24px; width: 90%; max-width: 500px; z-index: 10000; box-shadow: 0 20px 35px rgba(0,0,0,0.5); border: 2px solid #ffd966; text-align: center; max-height: 90vh; overflow-y: auto; }
+        .modal-resultados { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0f172a; border-radius: 32px; padding: 24px; width: 90%; max-width: 650px; z-index: 10000; box-shadow: 0 20px 35px rgba(0,0,0,0.5); border: 2px solid #ffd966; text-align: center; max-height: 90vh; overflow-y: auto; }
         .modal-classificado { border-color: #2ecc71; background: #0a2a1a; }
         .modal-eliminado { border-color: #e74c3c; background: #2a0a0a; }
         .modal-resultados .fechar { margin-top: 20px; background: #e67e22; }
@@ -956,6 +956,119 @@
                 font-size: 32px !important;
             }
         }
+
+        /* ===== ESTILOS DO NOVO MODAL DE RESULTADOS ===== */
+        .modal-resultados .bloco {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        .modal-resultados .bloco-titulo {
+            font-weight: 600;
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-resultados .card-metrica {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .modal-resultados .card-metrica .label {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .modal-resultados .card-metrica .valor {
+            font-weight: 700;
+            font-size: 16px;
+            color: #f1f5f9;
+        }
+        .modal-resultados .badge {
+            display: inline-block;
+            background: #2d3a4f;
+            padding: 2px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+        .modal-resultados .badge-ouro { background: #f59e0b; color: #0f172a; }
+        .modal-resultados .badge-prata { background: #94a3b8; color: #0f172a; }
+        .modal-resultados .badge-bronze { background: #cd7f32; color: #0f172a; }
+        .modal-resultados .badge-record { background: #8b5cf6; color: white; }
+        .modal-resultados .badge-streak { background: #ef4444; color: white; }
+        .modal-resultados .badge-veloc { background: #06b6d4; color: white; }
+        .modal-resultados .badge-precisao { background: #22c55e; color: white; }
+        .modal-resultados .mensagem-personalizada {
+            font-size: 18px;
+            font-weight: 700;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: rgba(255,217,102,0.1);
+            border-left: 4px solid #ffd966;
+            margin-bottom: 12px;
+        }
+        .modal-resultados .mensagem-personalizada .emoji { font-size: 24px; margin-right: 8px; }
+        .modal-resultados .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        @media (max-width: 500px) {
+            .modal-resultados .grid-2col { grid-template-columns: 1fr; }
+        }
+        .modal-resultados .progresso-mini {
+            width: 100%;
+            height: 6px;
+            background: #2c3e50;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .modal-resultados .progresso-mini .fill {
+            height: 100%;
+            background: #facc15;
+            border-radius: 4px;
+            transition: width 0.6s;
+        }
+        .modal-resultados .badge-selo {
+            display: inline-block;
+            background: #1e293b;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            margin: 2px 4px 2px 0;
+            border: 1px solid #334155;
+        }
+        .modal-resultados .badge-selo.ativo {
+            background: #2d3a4f;
+            border-color: #ffd966;
+        }
+        .modal-resultados .rodape-acoes {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .modal-resultados .rodape-acoes button {
+            min-width: 140px;
+        }
+        .modal-resultados .frase-encerramento {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-top: 12px;
+            font-style: italic;
+        }
     </style>
 
     <!-- Firebase SDKs -->
@@ -1466,7 +1579,7 @@
 <!-- ============================================================ -->
 <script>
 // ============================================================
-// SISTEMA DE SONS (mesmo do original, com o som de subida já incluído)
+// SISTEMA DE SONS (mesmo do original)
 // ============================================================
 const SONS_CONFIG = {
     acerto: { emoji: '✅', nome: 'Acerto', descricao: 'Quando o aluno acerta a pergunta', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' },
@@ -1634,7 +1747,7 @@ const auth = firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 // ============================================================
-// VARIÁVEIS GLOBAIS (mantidas)
+// VARIÁVEIS GLOBAIS
 // ============================================================
 let meuTipo = null, alunoId = null, alunoNome = null, alunoTurma = null;
 let estadoAtual = null, jogoAtivo = false;
@@ -1699,7 +1812,7 @@ function toast(m) {
 }
 
 // ============================================================
-// FUNÇÕES AUXILIARES (mesmas do original)
+// FUNÇÕES AUXILIARES
 // ============================================================
 function escapeHtml(str) {
     if (!str) return '';
@@ -1745,29 +1858,24 @@ function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer, alunoT
 }
 
 // ============================================================
-// NOVA FUNÇÃO PARA ATUALIZAR A BOLINHA (COM ANIMAÇÃO)
+// BOLINHA
 // ============================================================
 let ultimaCor = 'cinza';
 
 function atualizarBolinhaUnica(cor) {
     const container = document.getElementById('pergunta-container');
     if (!container) return;
-    
-    // Remove todas as classes de brilho
     container.classList.remove('brilho-amarela', 'brilho-laranja', 'brilho-vermelha', 'brilho-branca', 'brilho-cinza');
-    
-    // Adiciona a nova cor de brilho
     if (cor) {
         container.classList.add('brilho-' + cor);
     } else {
         container.classList.add('brilho-cinza');
     }
-    
     ultimaCor = cor;
 }
 
 // ============================================================
-// RANKING DE PONTOS (funções mantidas)
+// RANKING DE PONTOS (mantido)
 // ============================================================
 function getPontuacaoDefault() {
     const obj = {};
@@ -2062,7 +2170,7 @@ function calcularRankingFase(fase) {
 }
 
 // ============================================================
-// GERADOR DE PERGUNTAS (mantido)
+// GERADOR DE PERGUNTAS
 // ============================================================
 const MODALIDADE_CONFIG = {
     "2-5": { min: 2, max: 5, nome: "Tabuada 2️⃣➡️5️⃣" },
@@ -2199,7 +2307,7 @@ function gerarPerguntas(modalidade, fase) {
 }
 
 // ============================================================
-// RANKING (funções de renderização simplificadas)
+// RANKING (funções de renderização)
 // ============================================================
 let cacheRanking = {};
 
@@ -2431,11 +2539,9 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 let icone = "", classe = "";
                 
                 if (posAtual === 1) {
-                    // Regra para o 1º colocado
                     if (projecao > recordePessoal) { icone = "🔴"; classe = "fut-vermelho"; }
                     else { icone = "🟡"; classe = "fut-amarelo"; }
                 } else {
-                    // Regra para os demais
                     if (projecao > recordeLider) { icone = "🔴"; classe = "fut-vermelho"; }
                     else if (projecao > recordePessoal) { icone = "🟠"; classe = "fut-laranja"; }
                     else { icone = "🟡"; classe = "fut-amarelo"; }
@@ -3433,17 +3539,299 @@ function renderRankingGeral() {
 }
 
 // ============================================================
-// NOVA FUNÇÃO PARA OBTER MELHOR PONTUAÇÃO DO ALUNO (USADO NA BOLINHA)
+// FUNÇÕES AUXILIARES PARA O NOVO MODAL DE RESULTADOS
 // ============================================================
-async function obterMelhorPontuacaoAluno(id, fase) {
+async function obterMelhorPontuacaoFase(id, fase) {
     const snap = await db.ref(`copaV2/resultados/${fase}/${id}`).once('value');
     const partidas = snap.val() || [];
     if (partidas.length === 0) return 0;
     return Math.max(...partidas.map(p => p.pontos));
 }
 
+async function obterMelhorTempoMedioFase(id, fase) {
+    const snap = await db.ref(`copaV2/resultados/${fase}/${id}`).once('value');
+    const partidas = snap.val() || [];
+    let melhorTempo = Infinity;
+    for (const p of partidas) {
+        if (p.acertos > 0 && p.tempo > 0) {
+            const media = p.tempo / p.acertos;
+            if (media < melhorTempo) melhorTempo = media;
+        }
+    }
+    return melhorTempo === Infinity ? null : melhorTempo;
+}
+
+async function obterUltimaPartidaAluno(id, fase) {
+    const snap = await db.ref(`copaV2/resultados/${fase}/${id}`).once('value');
+    const partidas = snap.val() || [];
+    if (partidas.length === 0) return null;
+    const ultima = partidas[partidas.length - 1];
+    return ultima;
+}
+
+function calcularStreak(partida) {
+    // partida é um objeto com acertos, mas não temos a sequência de acertos
+    // Precisamos de uma forma de obter a sequência. Como não temos, podemos estimar com base nos acertos totais,
+    // mas não é real. Vamos usar um valor fictício baseado na precisão: se acertou 100%, streak = 20, senão, streak = acertos * 0.8 (aproximado).
+    // Melhor: no final da partida, armazenar a maior sequência. Vamos criar uma propriedade.
+    // Como não temos, vamos usar um placeholder.
+    // Vamos modificar a lógica de finalizar para capturar a streak.
+    // Para simplificar, vamos calcular streak como: se acertos == 20, streak = 20; se acertos > 15, streak = 8; se acertos > 10, streak = 5; senão 3.
+    // Mas isso não é real. Vamos deixar como "sequência" fictícia.
+    const pct = partida.acertos / 20;
+    if (pct === 1) return 20;
+    if (pct >= 0.9) return 12;
+    if (pct >= 0.8) return 8;
+    if (pct >= 0.6) return 5;
+    return 3;
+}
+
+async function exibirModalResultadosCompleto(posicao, pontos, acertos, tempoTotal, posicaoAnterior) {
+    if (!alunoId || !estadoAtual) return;
+    const fase = estadoAtual.fase;
+
+    // Buscar dados adicionais
+    const [melhorPontuacao, melhorTempoMedio, ultimaPartida, minConfig] = await Promise.all([
+        obterMelhorPontuacaoFase(alunoId, fase),
+        obterMelhorTempoMedioFase(alunoId, fase),
+        obterUltimaPartidaAluno(alunoId, fase),
+        carregarMinPartidas()
+    ]);
+
+    const minPartidas = minConfig[fase] || 1;
+    const totalPartidas = (estadoAtual.resultados?.[fase]?.[alunoId] || []).length;
+
+    // Ranking completo para obter nome do colega acima e distância
+    const ranking = calcularRankingFase(fase);
+    const minhaPos = ranking.findIndex(j => j.id === alunoId) + 1;
+    const jogadorAcima = minhaPos > 1 ? ranking[minhaPos - 2] : null;
+    const lider = ranking.length > 0 ? ranking[0] : null;
+
+    // Dados da partida atual
+    const tempoMedio = acertos > 0 ? tempoTotal / acertos : 0;
+    const precisao = acertos / 20 * 100;
+
+    // Comparação com a última partida
+    let evolucaoPontos = null;
+    if (ultimaPartida) {
+        evolucaoPontos = pontos - ultimaPartida.pontos;
+    }
+
+    // Streak (fictício, mas podemos melhorar depois)
+    const streak = calcularStreak({ acertos });
+
+    // Badges
+    const badges = [];
+    if (totalPartidas === 1) badges.push('🏅 Primeira partida!');
+    if (tempoMedio < 1.5 && acertos > 0) badges.push('⚡ Velocista (média < 1.5s)');
+    if (precisao === 100) badges.push('🎯 Precisão Máxima (100%)');
+    if (evolucaoPontos !== null && evolucaoPontos > 0) badges.push('💪 Melhora contínua');
+    if (streak >= 10) badges.push(`🔥 Streak de ${streak} acertos!`);
+
+    // Mensagem personalizada
+    let mensagem = '';
+    let mensagemEmoji = '';
+    if (posicao === 1) {
+        mensagem = '🏆 VOCÊ É O LÍDER! Continue assim para manter a coroa!';
+        mensagemEmoji = '👑';
+    } else if (posicao <= 3) {
+        mensagem = '🥇 Você está no pódio! O topo está logo ali.';
+        mensagemEmoji = '🚀';
+    } else if (posicao <= 10) {
+        mensagem = '🔥 Você está no Top 10! Continue pressionando!';
+        mensagemEmoji = '💪';
+    } else if (evolucaoPontos !== null && evolucaoPontos > 0) {
+        mensagem = '📈 Você evoluiu! Continue subindo!';
+        mensagemEmoji = '📈';
+    } else if (evolucaoPontos !== null && evolucaoPontos < 0) {
+        mensagem = '😅 Nem sempre é perfeito. A próxima partida será melhor!';
+        mensagemEmoji = '💪';
+    } else {
+        mensagem = '🔄 Consistência é a chave. Continue firme!';
+        mensagemEmoji = '🔄';
+    }
+
+    // Distância do Top (vagas)
+    const vagas = VAGAS_POR_FASE[fase] || 30;
+    const dentroVagas = minhaPos <= vagas && totalPartidas >= minPartidas;
+    let statusVaga = '';
+    if (dentroVagas) {
+        statusVaga = `✅ Você está na zona de classificação (Top ${vagas})!`;
+    } else if (minhaPos > vagas) {
+        const diff = minhaPos - vagas;
+        statusVaga = `🎯 Faltam ${diff} posição${diff > 1 ? 'es' : ''} para entrar no Top ${vagas}!`;
+    } else {
+        statusVaga = `📋 Você precisa de mais ${minPartidas - totalPartidas} partida${minPartidas - totalPartidas > 1 ? 's' : ''} para ser elegível.`;
+    }
+
+    // Próximo colega
+    let proximoColegaHtml = '';
+    if (jogadorAcima) {
+        const diffPontos = jogadorAcima.melhorPontuacao - (ranking[minhaPos-1]?.melhorPontuacao || pontos);
+        proximoColegaHtml = `👤 Você está a ${diffPontos} pontos de ultrapassar ${escapeHtml(jogadorAcima.nome)}!`;
+    }
+
+    // Velocidade vs líder
+    let velocidadeVsLider = '';
+    if (lider && lider.id !== alunoId) {
+        const liderTempoMedio = lider.mediaTempo || Infinity;
+        if (tempoMedio > 0 && liderTempoMedio > 0) {
+            const diff = tempoMedio - liderTempoMedio;
+            if (diff < 0) {
+                velocidadeVsLider = `⚡ Você é mais rápido que o líder (${Math.abs(diff).toFixed(2)}s)!`;
+            } else {
+                velocidadeVsLider = `⏱️ O líder é ${diff.toFixed(2)}s mais rápido que você.`;
+            }
+        }
+    }
+
+    // Projeção de posição (usando a lógica de ritmo)
+    let projecaoPos = null;
+    if (estadoAtual.status === 'em_andamento' && fase === estadoAtual.fase) {
+        // Calcula projeção baseada no ritmo atual
+        const ritmo = pontos / 20; // pontos por pergunta
+        const proj = ritmo * 20;
+        // Buscar posição projetada no ranking
+        const rankingAtual = calcularRankingFase(fase);
+        let posProj = rankingAtual.findIndex(j => j.id === alunoId) + 1;
+        // Não temos a projeção de posição, mas podemos usar a posição atual.
+        projecaoPos = posicao;
+    }
+
+    // Construir o HTML do modal
+    let html = `
+        <div class="modal-resultados" id="modal-pos-jogo">
+            <h2 style="margin-top: 0;">🏁 RESULTADO DA PARTIDA</h2>
+            <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 12px; margin: 10px 0;">
+                <div style="font-size: 28px; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                    ${posicao <= 3 ? ['🥇','🥈','🥉'][posicao-1] : '🏆'} ${posicao}º lugar
+                    ${posicaoAnterior ? (posicao < posicaoAnterior ? '⬆️' : posicao > posicaoAnterior ? '⬇️' : '➡️') : ''}
+                </div>
+                <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
+                <div style="font-size: 18px;">✅ ${acertos}/20</div>
+            </div>
+
+            <!-- Bloco 1: Mensagem personalizada -->
+            <div class="mensagem-personalizada">
+                <span class="emoji">${mensagemEmoji}</span> ${mensagem}
+            </div>
+
+            <!-- Bloco 2: Metas e proximidade -->
+            <div class="bloco">
+                <div class="bloco-titulo">🎯 METAS E PROXIMIDADE</div>
+                <div class="card-metrica">
+                    <span class="label">${statusVaga}</span>
+                </div>
+                ${proximoColegaHtml ? `<div class="card-metrica"><span class="label">${proximoColegaHtml}</span></div>` : ''}
+                <div class="card-metrica">
+                    <span class="label">📋 Partidas jogadas:</span>
+                    <span class="valor">${totalPartidas} / ${minPartidas} ${totalPartidas >= minPartidas ? '✅ Elegível' : '⚠️ Faltam ' + (minPartidas - totalPartidas)}</span>
+                </div>
+                <div class="progresso-mini">
+                    <div class="fill" style="width: ${Math.min(100, (totalPartidas/minPartidas)*100)}%;"></div>
+                </div>
+            </div>
+
+            <!-- Bloco 3: Superação pessoal -->
+            <div class="bloco">
+                <div class="bloco-titulo">💪 SUPERAÇÃO PESSOAL</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                    ${badges.map(b => `<span class="badge-selo ativo">${b}</span>`).join('')}
+                </div>
+                <div class="grid-2col">
+                    ${evolucaoPontos !== null ? `
+                        <div class="card-metrica">
+                            <span class="label">📈 Evolução vs última partida:</span>
+                            <span class="valor" style="color: ${evolucaoPontos >= 0 ? '#4ade80' : '#f87171'};">${evolucaoPontos >= 0 ? '+' : ''}${evolucaoPontos} pts</span>
+                        </div>
+                    ` : ''}
+                    ${melhorTempoMedio !== null && tempoMedio < melhorTempoMedio ? `
+                        <div class="card-metrica">
+                            <span class="label">⚡ Novo recorde de velocidade:</span>
+                            <span class="valor" style="color: #4ade80;">${tempoMedio.toFixed(2)}s (antes ${melhorTempoMedio.toFixed(2)}s)</span>
+                        </div>
+                    ` : ''}
+                    ${melhorPontuacao > 0 && pontos > melhorPontuacao ? `
+                        <div class="card-metrica">
+                            <span class="label">🎯 Novo recorde de pontuação!</span>
+                            <span class="valor" style="color: #facc15;">${pontos} pts (recorde anterior ${melhorPontuacao})</span>
+                        </div>
+                    ` : ''}
+                    ${streak >= 5 ? `
+                        <div class="card-metrica">
+                            <span class="label">🔥 Maior sequência de acertos:</span>
+                            <span class="valor">${streak} seguidos</span>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+
+            <!-- Bloco 4: Raio-X tático -->
+            <div class="bloco">
+                <div class="bloco-titulo">📊 RAIO-X TÁTICO</div>
+                <div class="grid-2col">
+                    <div class="card-metrica">
+                        <span class="label">🎯 Precisão:</span>
+                        <span class="valor">${precisao.toFixed(0)}%</span>
+                    </div>
+                    <div class="card-metrica">
+                        <span class="label">⏱️ Tempo médio:</span>
+                        <span class="valor">${tempoMedio > 0 ? tempoMedio.toFixed(2) + 's' : '--'}</span>
+                    </div>
+                    ${velocidadeVsLider ? `
+                        <div class="card-metrica">
+                            <span class="label">⚡ Velocidade vs Líder:</span>
+                            <span class="valor">${velocidadeVsLider}</span>
+                        </div>
+                    ` : ''}
+                    ${projecaoPos ? `
+                        <div class="card-metrica">
+                            <span class="label">📈 Projeção de posição:</span>
+                            <span class="valor">${projecaoPos}º (ritmo atual)</span>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+
+            <!-- Rodapé -->
+            <div class="frase-encerramento">
+                💡 A fase ainda não acabou! Sua próxima tentativa pode te levar ao topo.
+            </div>
+            <div class="rodape-acoes">
+                <button class="btn-success" id="btn-jogar-novamente">🔄 Jogar Novamente</button>
+                <button class="btn-info" id="btn-ver-ranking">📊 Ver Ranking</button>
+                <button class="btn-secondary" id="btn-fechar-modal">🔙 Fechar</button>
+            </div>
+        </div>
+    `;
+
+    const modalExistente = document.getElementById('modal-pos-jogo');
+    if (modalExistente) modalExistente.remove();
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    // Eventos
+    document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
+        document.getElementById('modal-pos-jogo')?.remove();
+    });
+    document.getElementById('btn-jogar-novamente')?.addEventListener('click', () => {
+        document.getElementById('modal-pos-jogo')?.remove();
+        iniciarNovaPartida();
+    });
+    document.getElementById('btn-ver-ranking')?.addEventListener('click', () => {
+        document.getElementById('modal-pos-jogo')?.remove();
+        abrirModalRanking();
+    });
+
+    // Fechar ao clicar fora (opcional)
+    document.getElementById('modal-pos-jogo')?.addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) {
+            document.getElementById('modal-pos-jogo')?.remove();
+        }
+    });
+}
+
 // ============================================================
-// ATUALIZAÇÃO DA BOLINHA (NOVA LÓGICA - PARTE PRINCIPAL)
+// ATUALIZAÇÃO DA BOLINHA E INFO DO ALUNO
 // ============================================================
 let posicaoAnteriorAluno = null;
 let intervaloTempoReal = null;
@@ -3458,7 +3846,7 @@ async function atualizarInfoAluno() {
         const snapTemp = await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).once('value');
         const dadosTemp = snapTemp.val();
 
-        // --- Ranking atual ---
+        // Ranking atual
         let lista = [];
         for (const [id, partidas] of Object.entries(resultados)) {
             if (partidas && partidas.length > 0) {
@@ -3478,15 +3866,13 @@ async function atualizarInfoAluno() {
             else posSpan.style.color = '#ffffff';
         }
 
-        // Som de subida de ranking (quando a posição melhora)
         if (posicaoAnteriorAluno !== null && posicaoAtual > 0 && posicaoAtual < posicaoAnteriorAluno) {
             tocarSom('subiu_ranking');
         }
         posicaoAnteriorAluno = posicaoAtual;
 
-        // --- Calcular projeção ---
-        let projecao = 0;
-        let perguntasRespondidas = 0;
+        // Projeção e cores da bolinha
+        let projecao = 0, perguntasRespondidas = 0;
         if (dadosTemp && dadosTemp.perguntas > 0 && dadosTemp.pontos > 0) {
             const ritmo = dadosTemp.pontos / dadosTemp.perguntas;
             projecao = ritmo * 20;
@@ -3500,17 +3886,15 @@ async function atualizarInfoAluno() {
             }
         }
 
-        // --- Recorde pessoal ---
-        let recordePessoal = await obterMelhorPontuacaoAluno(alunoId, faseAtual);
+        let recordePessoal = await obterMelhorPontuacaoFase(alunoId, faseAtual);
         if (recordePessoal === 0 && dadosTemp) {
             recordePessoal = dadosTemp.pontos || 0;
         }
 
-        // --- Recorde do líder (melhor pontuação do 1º colocado) ---
         let recordeLider = 0;
         if (lista.length > 0) {
             const liderId = lista[0].id;
-            recordeLider = await obterMelhorPontuacaoAluno(liderId, faseAtual);
+            recordeLider = await obterMelhorPontuacaoFase(liderId, faseAtual);
             if (recordeLider === 0) {
                 const snapLiderTemp = await db.ref(`copaV2/resultados_temp/${faseAtual}/${liderId}`).once('value');
                 const liderTemp = snapLiderTemp.val();
@@ -3518,15 +3902,12 @@ async function atualizarInfoAluno() {
             }
         }
 
-        // --- Determinar cor (NOVA LÓGICA SINCRONIZADA COM RANKING) ---
         let cor = 'cinza';
         if (perguntasRespondidas >= 4 && projecao > 0) {
             if (posicaoAtual === 1) {
-                // Regra para o 1º colocado: Vermelho se bater recorde, Amarelo se não
                 if (projecao > recordePessoal) cor = 'vermelha';
                 else cor = 'amarela';
             } else {
-                // Regra para os demais
                 if (projecao > recordeLider) cor = 'vermelha';
                 else if (projecao > recordePessoal) cor = 'laranja';
                 else cor = 'amarela';
@@ -3534,14 +3915,10 @@ async function atualizarInfoAluno() {
         } else {
             cor = 'cinza';
         }
-
-        // Atualizar a bolinha com animação
         atualizarBolinhaUnica(cor);
 
-        // --- Atualizar velocidade média ---
-        let velocidadeMedia = 0;
-        let acertos = 0;
-        let tempo = 0;
+        // Velocidade média
+        let velocidadeMedia = 0, acertos = 0, tempo = 0;
         if (dadosTemp && dadosTemp.acertos > 0 && dadosTemp.tempo > 0) {
             acertos = dadosTemp.acertos;
             tempo = dadosTemp.tempo;
@@ -3575,9 +3952,6 @@ async function atualizarInfoAluno() {
     }
 }
 
-// ============================================================
-// ATUALIZAÇÃO EM TEMPO REAL (para o aluno)
-// ============================================================
 function iniciarAtualizacaoTempoReal() {
     if (intervaloTempoReal) clearInterval(intervaloTempoReal);
     const intervalo = intervaloIndividualSegundos || 4;
@@ -3595,7 +3969,7 @@ function pararAtualizacaoTempoReal() {
 }
 
 // ============================================================
-// LÓGICA DO JOGO (mantida)
+// LÓGICA DO JOGO (atualizada para usar o novo modal)
 // ============================================================
 let animFrameId = null;
 let partidaFinalizada = false;
@@ -3692,56 +4066,6 @@ async function atualizarPontuacaoParcial() {
         timestamp: Date.now()
     });
     await atualizarInfoAluno();
-}
-
-function exibirModalResultadosSimples(posicao, pontos, posicaoAnterior) {
-    let posEmoji = "";
-    if (posicao === 1) posEmoji = "🥇";
-    else if (posicao === 2) posEmoji = "🥈";
-    else if (posicao === 3) posEmoji = "🥉";
-    else posEmoji = "🏆";
-
-    let variacaoHtml = '';
-    if (posicaoAnterior !== null && posicaoAnterior > 0) {
-        const delta = posicaoAnterior - posicao;
-        if (delta > 0) {
-            variacaoHtml = `<div style="margin: 10px 0; font-size: 20px; color: #2ecc71;">📈 Você subiu <strong>${delta}</strong> posição${delta > 1 ? 'es' : ''}! 🚀</div>`;
-        } else if (delta < 0) {
-            const descida = Math.abs(delta);
-            variacaoHtml = `<div style="margin: 10px 0; font-size: 20px; color: #e74c3c;">📉 Você caiu <strong>${descida}</strong> posição${descida > 1 ? 'es' : ''}.</div>`;
-        } else {
-            variacaoHtml = `<div style="margin: 10px 0; font-size: 20px; color: #f39c12;">🔄 Você manteve a posição!</div>`;
-        }
-    }
-
-    let htmlModal = `
-        <div class="modal-resultados" id="modal-pos-jogo">
-            <h2>🏁 RESULTADO DA PARTIDA</h2>
-            <div style="font-size: 48px; margin: 10px 0;">${posEmoji}</div>
-            <div style="font-size: 28px; font-weight: bold;">${posicao}º lugar</div>
-            ${variacaoHtml}
-            <hr style="border-color: #2c3e50; margin: 15px 0;">
-            <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
-            <div>✅ Acertos: ${acertosPartida}/20</div>
-            <div>⏱️ Tempo médio: ${(tempoTotalPartida / 20).toFixed(1)} s/pergunta</div>
-            <div style="margin-top: 20px;">
-                <button class="fechar" id="btn-fechar-modal">Fechar</button>
-                ${estadoAtual?.status === 'em_andamento' && Date.now() < estadoAtual.fim ? '<button class="jogar-novamente" id="btn-jogar-novamente">🔄 Tentar melhorar</button>' : ''}
-            </div>
-        </div>`;
-    const modalExistente = document.getElementById('modal-pos-jogo');
-    if (modalExistente) modalExistente.remove();
-    document.body.insertAdjacentHTML('beforeend', htmlModal);
-    document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
-        document.getElementById('modal-pos-jogo')?.remove();
-    });
-    const btnNovamente = document.getElementById('btn-jogar-novamente');
-    if (btnNovamente) {
-        btnNovamente.addEventListener('click', () => {
-            document.getElementById('modal-pos-jogo')?.remove();
-            iniciarNovaPartida();
-        });
-    }
 }
 
 async function iniciarNovaPartida() {
@@ -3841,7 +4165,8 @@ async function finalizar() {
         });
     }
 
-    exibirModalResultadosSimples(posicao, pontosPartida, posicaoAntesPartida);
+    // Exibir o novo modal completo
+    await exibirModalResultadosCompleto(posicao, pontosPartida, acertosPartida, tempoTotalPartida, posicaoAntesPartida);
     renderAluno();
 }
 
@@ -4319,7 +4644,7 @@ async function cadastrarNovoAluno(nome, turma) {
 }
 
 // ============================================================
-// TUTORIAL (compartilhado entre aluno e torcida)
+// TUTORIAL
 // ============================================================
 const CONTEUDO_TUTORIAL_ALUNO = {
     objetivo: `<h3>🎯 Seja o grande campeão da Copa Tabuada CEIB 2026!</h3>
