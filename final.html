@@ -858,12 +858,27 @@
             border: 1px solid rgba(255,215,0,0.3);
         }
 
-        #tela-aluno .jogo-topo {
-            order: -1;
+        /* Ajustes para a nova ordem */
+        #tela-aluno .jogo-bloco {
+            margin-top: 15px;
         }
-        #jogo-area {
-            margin-bottom: 20px;
+        #tela-aluno .jogo-bloco:first-child {
+            margin-top: 0;
         }
+        #tela-aluno .header-actions {
+            margin-top: 15px;
+        }
+        #tela-aluno .info-linha {
+            margin: 10px 0;
+            padding: 6px 0;
+        }
+        .bloco-desempenho {
+            margin-top: 15px;
+        }
+        .bloco-historico {
+            margin-top: 15px;
+        }
+
         @media (max-width: 600px) {
             #tela-aluno .header-actions {
                 flex-wrap: wrap;
@@ -1252,31 +1267,19 @@
     <!-- Fim do painel do professor -->
 
     <!-- ========================================================= -->
-    <!-- TELA DO ALUNO                                              -->
+    <!-- TELA DO ALUNO (REORGANIZADA NA ORDEM: 5,4,3,1,2,6,7,8)    -->
     <!-- ========================================================= -->
     <div id="tela-aluno" class="card hidden">
-        <div id="jogo-area" class="hidden jogo-topo">
+        <!-- 5 - Estatísticas da partida (aparece durante o jogo) -->
+        <div id="jogo-ativo" class="hidden jogo-bloco">
+            <div class="top-info">
+                <div class="pontuacao-atual">🎯 Pontuação: <span id="pontuacao-acumulada">0</span></div>
+                <div class="indicador-posicao"><span id="posicao-numero">--</span><span>º</span><span style="font-size: 14px; opacity: 0.6; margin-left: 4px;">atual</span></div>
+                <div class="velocidade-media">⚡ <span id="velocidade-media">0.00</span>s</div>
+            </div>
+
+            <!-- 4 - Pergunta e opções -->
             <div class="status-box">
-                <div class="top-info">
-                    <div class="pontuacao-atual">🎯 Pontuação: <span id="pontuacao-acumulada">0</span></div>
-                    <div class="indicador-posicao"><span id="posicao-numero">--</span><span>º</span><span style="font-size: 14px; opacity: 0.6; margin-left: 4px;">atual</span></div>
-                    <div class="velocidade-media">⚡ <span id="velocidade-media">0.00</span>s</div>
-                </div>
-
-                <!-- ===== BOLINHA COM NOVA LÓGICA ===== -->
-                <div class="evolucao-container">
-                    <span class="label">📊 DESEMPENHO:</span>
-                    <span class="bolinha-unica cinza" id="bolinha-unica"></span>
-                </div>
-                <div class="evolucao-legenda">
-                    <span class="item"><span class="bolinha-mini bolinha-mini-vermelha"></span> Ameaça ao líder / Campeão</span>
-                    <span class="item"><span class="bolinha-mini bolinha-mini-laranja"></span> Superando recorde pessoal</span>
-                    <span class="item"><span class="bolinha-mini bolinha-mini-amarela"></span> Abaixo do recorde pessoal</span>
-                    <span class="item"><span class="bolinha-mini bolinha-mini-branca"></span> Empate técnico</span>
-                    <span class="item"><span class="bolinha-mini bolinha-mini-cinza"></span> Sem dados suficientes</span>
-                </div>
-
-                <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
                 <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
                 <div class="opcoes-vertical">
                     <button class="opcao-vertical" onclick="window.responder(0)"></button>
@@ -1288,7 +1291,14 @@
             </div>
         </div>
 
-        <div class="header-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+        <!-- 3 - Área de espera (aparece quando NÃO está jogando) -->
+        <div id="aguardando-aluno" class="jogo-bloco" style="text-align:center; padding:20px;">
+            <div id="msg-status-aluno">Aguardando...</div>
+            <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
+        </div>
+
+        <!-- 1 - Cabeçalho do aluno -->
+        <div class="header-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 20px;">
             <h2 id="aluno-nome-display" style="margin: 0;">Aluno</h2>
             <div class="timer-fase-aluno" id="timer-fase-aluno">⏱️ Tempo: --:--</div>
             <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking Fase</button>
@@ -1297,14 +1307,27 @@
             <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
         </div>
 
-        <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong> <span id="aluno-fase-info" class="fase-info"></span></p>
+        <!-- 2 - Linha de informações (turma, modalidade, fase) -->
+        <p class="info-linha">Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong> <span id="aluno-fase-info" class="fase-info"></span></p>
 
-        <div id="aguardando-aluno" style="text-align:center; padding:20px;">
-            <div id="msg-status-aluno">Aguardando...</div>
-            <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
+        <!-- 6 e 7 - Desempenho (bolinha + barra de progresso) – aparecem durante o jogo -->
+        <div id="jogo-desempenho" class="hidden jogo-bloco bloco-desempenho">
+            <div class="evolucao-container">
+                <span class="label">📊 DESEMPENHO:</span>
+                <span class="bolinha-unica cinza" id="bolinha-unica"></span>
+            </div>
+            <div class="evolucao-legenda">
+                <span class="item"><span class="bolinha-mini bolinha-mini-vermelha"></span> Ameaça ao líder / Campeão</span>
+                <span class="item"><span class="bolinha-mini bolinha-mini-laranja"></span> Superando recorde pessoal</span>
+                <span class="item"><span class="bolinha-mini bolinha-mini-amarela"></span> Abaixo do recorde pessoal</span>
+                <span class="item"><span class="bolinha-mini bolinha-mini-branca"></span> Empate técnico</span>
+                <span class="item"><span class="bolinha-mini bolinha-mini-cinza"></span> Sem dados suficientes</span>
+            </div>
+            <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
         </div>
 
-        <div class="status-box">
+        <!-- 8 - Histórico e melhor resultado -->
+        <div class="status-box bloco-historico">
             <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
             <div id="historico-aluno"></div>
         </div>
@@ -3519,7 +3542,7 @@ function pararAtualizacaoTempoReal() {
 }
 
 // ============================================================
-// LÓGICA DO JOGO (mantida)
+// LÓGICA DO JOGO (mantida, com ajustes para os novos contêineres)
 // ============================================================
 let animFrameId = null;
 let partidaFinalizada = false;
@@ -3712,8 +3735,12 @@ async function iniciarNovaPartida() {
     jogoAtivo = true;
     document.getElementById('btn-ranking-aluno').disabled = true;
     document.getElementById('btn-ranking-pontos-aluno').disabled = true;
-    document.getElementById('jogo-area').classList.remove('hidden');
+
+    // Mostrar blocos de jogo, esconder aguardando
+    document.getElementById('jogo-ativo').classList.remove('hidden');
+    document.getElementById('jogo-desempenho').classList.remove('hidden');
     document.getElementById('aguardando-aluno').classList.add('hidden');
+
     iniciarAtualizacaoTempoReal();
     proxima();
 }
@@ -3725,7 +3752,10 @@ async function finalizar() {
     jogoAtivo = false;
     document.getElementById('btn-ranking-aluno').disabled = false;
     document.getElementById('btn-ranking-pontos-aluno').disabled = false;
-    document.getElementById('jogo-area').classList.add('hidden');
+
+    // Esconder blocos de jogo, mostrar aguardando
+    document.getElementById('jogo-ativo').classList.add('hidden');
+    document.getElementById('jogo-desempenho').classList.add('hidden');
     document.getElementById('aguardando-aluno').classList.remove('hidden');
 
     const faseAtual = estadoAtual.fase;
@@ -3768,7 +3798,7 @@ async function finalizar() {
 }
 
 // ============================================================
-// ATUALIZAÇÃO DA UI
+// ATUALIZAÇÃO DA UI (ajustada para os novos contêineres)
 // ============================================================
 function atualizarUI() {
     if (!estadoAtual) return;
@@ -3886,8 +3916,9 @@ function renderAluno() {
 
     const msgStatus = document.getElementById('msg-status-aluno');
     const btnJogar = document.getElementById('btn-iniciar-partida');
-    const jogoArea = document.getElementById('jogo-area');
-    const aguardandoArea = document.getElementById('aguardando-aluno');
+    const jogoAtivoEl = document.getElementById('jogo-ativo');
+    const jogoDesempenhoEl = document.getElementById('jogo-desempenho');
+    const aguardandoEl = document.getElementById('aguardando-aluno');
 
     document.getElementById('btn-ranking-aluno').disabled = jogoAtivo;
     document.getElementById('btn-ranking-pontos-aluno').disabled = jogoAtivo;
@@ -3900,6 +3931,10 @@ function renderAluno() {
             podeJogar = false;
             if (msgStatus) msgStatus.innerText = '❌ Você não está classificado para esta fase.';
             if (btnJogar) btnJogar.classList.add('hidden');
+            // Esconde blocos de jogo e mostra aguardando
+            if (jogoAtivoEl) jogoAtivoEl.classList.add('hidden');
+            if (jogoDesempenhoEl) jogoDesempenhoEl.classList.add('hidden');
+            if (aguardandoEl) aguardandoEl.classList.remove('hidden');
             return;
         }
         if (liberado && !classificados.includes(alunoId)) {
@@ -3909,24 +3944,28 @@ function renderAluno() {
 
     if (estadoAtual.status === 'em_andamento' && Date.now() < estadoAtual.fim) {
         if (!jogoAtivo) {
-            if (jogoArea) jogoArea.classList.add('hidden');
-            if (aguardandoArea) aguardandoArea.classList.remove('hidden');
+            if (jogoAtivoEl) jogoAtivoEl.classList.add('hidden');
+            if (jogoDesempenhoEl) jogoDesempenhoEl.classList.add('hidden');
+            if (aguardandoEl) aguardandoEl.classList.remove('hidden');
             if (msgStatus && podeJogar) msgStatus.innerText = '⏳ Fase em andamento! Clique para jogar.';
             if (btnJogar) btnJogar.classList.remove('hidden');
         }
     } else if (estadoAtual.status === 'aguardando') {
-        if (jogoArea) jogoArea.classList.add('hidden');
-        if (aguardandoArea) aguardandoArea.classList.remove('hidden');
+        if (jogoAtivoEl) jogoAtivoEl.classList.add('hidden');
+        if (jogoDesempenhoEl) jogoDesempenhoEl.classList.add('hidden');
+        if (aguardandoEl) aguardandoEl.classList.remove('hidden');
         if (msgStatus) msgStatus.innerText = '⏳ Aguardando o professor iniciar a fase...';
         if (btnJogar) btnJogar.classList.add('hidden');
     } else if (estadoAtual.status === 'pausado') {
-        if (jogoArea) jogoArea.classList.add('hidden');
-        if (aguardandoArea) aguardandoArea.classList.remove('hidden');
+        if (jogoAtivoEl) jogoAtivoEl.classList.add('hidden');
+        if (jogoDesempenhoEl) jogoDesempenhoEl.classList.add('hidden');
+        if (aguardandoEl) aguardandoEl.classList.remove('hidden');
         if (msgStatus) msgStatus.innerText = '⏸️ Fase pausada pelo professor. Aguarde...';
         if (btnJogar) btnJogar.classList.add('hidden');
     } else {
-        if (jogoArea) jogoArea.classList.add('hidden');
-        if (aguardandoArea) aguardandoArea.classList.remove('hidden');
+        if (jogoAtivoEl) jogoAtivoEl.classList.add('hidden');
+        if (jogoDesempenhoEl) jogoDesempenhoEl.classList.add('hidden');
+        if (aguardandoEl) aguardandoEl.classList.remove('hidden');
         if (msgStatus) msgStatus.innerText = '⏹️ Fase encerrada.';
         if (btnJogar) btnJogar.classList.add('hidden');
     }
