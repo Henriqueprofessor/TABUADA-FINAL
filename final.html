@@ -2099,6 +2099,9 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
     }
 }
 
+// ============================================================
+// FUNÇÃO CALCULAR RANKING FASE (CORRIGIDA - com melhorVelocidade)
+// ============================================================
 function calcularRankingFase(fase) {
     const resultados = estadoAtual?.resultados?.[fase] || {};
     const participantes = estadoAtual?.participantes?.[fase] || {};
@@ -2112,6 +2115,17 @@ function calcularRankingFase(fase) {
         const melhor = partidas.sort((a,b) => b.pontos - a.pontos)[0];
         const somaTempo = partidas.reduce((acc, p) => acc + (p.tempo || 0), 0);
         const mediaTempo = partidas.length > 0 ? somaTempo / partidas.length : Infinity;
+        
+        // --- NOVO: Calcular a melhor velocidade (tempo por acerto) ---
+        let melhorVelocidade = Infinity;
+        for (let p of partidas) {
+            if (p.acertos > 0 && p.tempo > 0) {
+                const vel = p.tempo / p.acertos;
+                if (vel < melhorVelocidade) melhorVelocidade = vel;
+            }
+        }
+        if (melhorVelocidade === Infinity) melhorVelocidade = null;
+
         let nome = participantes[id]?.nome || 'Anônimo';
         let turma = participantes[id]?.turma || '?';
         if (!participantes[id]) {
@@ -2130,6 +2144,7 @@ function calcularRankingFase(fase) {
             melhorPontuacao: melhor.pontos,
             totalPartidas: partidas.length,
             mediaTempo: mediaTempo,
+            melhorVelocidade: melhorVelocidade, // <--- NOVO CAMPO
             partidas: partidas
         });
     }
@@ -2143,6 +2158,8 @@ function calcularRankingFase(fase) {
                 existente.melhorPontuacao = data.pontos;
                 existente.totalPartidas = 0;
                 existente.mediaTempo = data.tempo / (data.acertos || 1);
+                // Para temp, a velocidade é calculada com base na partida atual
+                existente.melhorVelocidade = data.acertos > 0 ? data.tempo / data.acertos : null;
             }
         } else {
             const nome = data.nome || 'Anônimo';
@@ -2154,6 +2171,7 @@ function calcularRankingFase(fase) {
                 melhorPontuacao: data.pontos,
                 totalPartidas: 0,
                 mediaTempo: data.tempo / (data.acertos || 1),
+                melhorVelocidade: data.acertos > 0 ? data.tempo / data.acertos : null,
                 partidas: []
             });
         }
@@ -3570,14 +3588,7 @@ async function obterUltimaPartidaAluno(id, fase) {
 }
 
 function calcularStreak(partida) {
-    // partida é um objeto com acertos, mas não temos a sequência de acertos
-    // Precisamos de uma forma de obter a sequência. Como não temos, podemos estimar com base nos acertos totais,
-    // mas não é real. Vamos usar um valor fictício baseado na precisão: se acertou 100%, streak = 20, senão, streak = acertos * 0.8 (aproximado).
-    // Melhor: no final da partida, armazenar a maior sequência. Vamos criar uma propriedade.
-    // Como não temos, vamos usar um placeholder.
-    // Vamos modificar a lógica de finalizar para capturar a streak.
-    // Para simplificar, vamos calcular streak como: se acertos == 20, streak = 20; se acertos > 15, streak = 8; se acertos > 10, streak = 5; senão 3.
-    // Mas isso não é real. Vamos deixar como "sequência" fictícia.
+    // Estimativa baseada na precisão: se acertou 100%, streak = 20; senão, streak = acertos * 0.8 (aproximado)
     const pct = partida.acertos / 20;
     if (pct === 1) return 20;
     if (pct >= 0.9) return 12;
@@ -3617,7 +3628,7 @@ async function exibirModalResultadosCompleto(posicao, pontos, acertos, tempoTota
         evolucaoPontos = pontos - ultimaPartida.pontos;
     }
 
-    // Streak (fictício, mas podemos melhorar depois)
+    // Streak (estimativa)
     const streak = calcularStreak({ acertos });
 
     // Badges
@@ -3627,6 +3638,8 @@ async function exibirModalResultadosCompleto(posicao, pontos, acertos, tempoTota
     if (precisao === 100) badges.push('🎯 Precisão Máxima (100%)');
     if (evolucaoPontos !== null && evolucaoPontos > 0) badges.push('💪 Melhora contínua');
     if (streak >= 10) badges.push(`🔥 Streak de ${streak} acertos!`);
+    if (melhorTempoMedio !== null && tempoMedio < melhorTempoMedio) badges.push(`⚡ Novo recorde de velocidade (${tempoMedio.toFixed(2)}s)!`);
+    if (melhorPontuacao > 0 && pontos > melhorPontuacao) badges.push(`🎯 Novo recorde de pontuação (${pontos} pts)!`);
 
     // Mensagem personalizada
     let mensagem = '';
@@ -3671,16 +3684,18 @@ async function exibirModalResultadosCompleto(posicao, pontos, acertos, tempoTota
         proximoColegaHtml = `👤 Você está a ${diffPontos} pontos de ultrapassar ${escapeHtml(jogadorAcima.nome)}!`;
     }
 
-    // Velocidade vs líder
+    // Velocidade vs Líder (CORRIGIDO: compara tempo médio da partida com melhor velocidade do líder)
     let velocidadeVsLider = '';
     if (lider && lider.id !== alunoId) {
-        const liderTempoMedio = lider.mediaTempo || Infinity;
-        if (tempoMedio > 0 && liderTempoMedio > 0) {
-            const diff = tempoMedio - liderTempoMedio;
-            if (diff < 0) {
-                velocidadeVsLider = `⚡ Você é mais rápido que o líder (${Math.abs(diff).toFixed(2)}s)!`;
+        const liderMelhorVel = lider.melhorVelocidade || null;
+        if (tempoMedio > 0 && liderMelhorVel !== null && liderMelhorVel > 0) {
+            const diff = tempoMedio - liderMelhorVel;
+            if (diff < -0.01) {
+                velocidadeVsLider = `⚡ Você foi mais rápido que o líder nesta partida (${Math.abs(diff).toFixed(2)}s de vantagem)!`;
+            } else if (diff > 0.01) {
+                velocidadeVsLider = `⏱️ O líder ainda é mais rápido. Você está a ${diff.toFixed(2)}s do recorde dele.`;
             } else {
-                velocidadeVsLider = `⏱️ O líder é ${diff.toFixed(2)}s mais rápido que você.`;
+                velocidadeVsLider = `🤝 Você igualou a velocidade do líder!`;
             }
         }
     }
@@ -3694,7 +3709,6 @@ async function exibirModalResultadosCompleto(posicao, pontos, acertos, tempoTota
         // Buscar posição projetada no ranking
         const rankingAtual = calcularRankingFase(fase);
         let posProj = rankingAtual.findIndex(j => j.id === alunoId) + 1;
-        // Não temos a projeção de posição, mas podemos usar a posição atual.
         projecaoPos = posicao;
     }
 
