@@ -210,7 +210,9 @@
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
 
-        /* ===== NOVOS ESTILOS DA BOLINHA ===== */
+        /* ================================================================
+           BOLINHA ÚNICA - COM ANIMAÇÃO DE TRANSIÇÃO (NOVA IMPLEMENTAÇÃO)
+           ================================================================ */
         .evolucao-container {
             display: flex;
             align-items: center;
@@ -1390,11 +1392,11 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- JAVASCRIPT                                                    -->
+<!-- JAVASCRIPT (com as novas implementações)                      -->
 <!-- ============================================================ -->
 <script>
 // ============================================================
-// SISTEMA DE SONS (mesmo do original)
+// SISTEMA DE SONS (mesmo do original, com o som de subida já incluído)
 // ============================================================
 const SONS_CONFIG = {
     acerto: { emoji: '✅', nome: 'Acerto', descricao: 'Quando o aluno acerta a pergunta', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' },
@@ -1673,7 +1675,7 @@ function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer, alunoT
 }
 
 // ============================================================
-// FUNÇÃO PARA ATUALIZAR A BOLINHA (NOVA VERSÃO COM ANIMAÇÃO)
+// NOVA FUNÇÃO PARA ATUALIZAR A BOLINHA (COM ANIMAÇÃO)
 // ============================================================
 let ultimaCor = 'cinza';
 
@@ -3354,17 +3356,20 @@ function renderRankingGeral() {
 }
 
 // ============================================================
-// ATUALIZAÇÃO DA BOLINHA (NOVA LÓGICA - PARTE PRINCIPAL)
+// NOVA FUNÇÃO PARA OBTER MELHOR PONTUAÇÃO DO ALUNO (USADO NA BOLINHA)
 // ============================================================
-let posicaoAnteriorAluno = null;
-let intervaloTempoReal = null;
-
 async function obterMelhorPontuacaoAluno(id, fase) {
     const snap = await db.ref(`copaV2/resultados/${fase}/${id}`).once('value');
     const partidas = snap.val() || [];
     if (partidas.length === 0) return 0;
     return Math.max(...partidas.map(p => p.pontos));
 }
+
+// ============================================================
+// ATUALIZAÇÃO DA BOLINHA (NOVA LÓGICA - PARTE PRINCIPAL)
+// ============================================================
+let posicaoAnteriorAluno = null;
+let intervaloTempoReal = null;
 
 async function atualizarInfoAluno() {
     if (!alunoId || !estadoAtual) return;
