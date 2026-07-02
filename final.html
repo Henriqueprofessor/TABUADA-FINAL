@@ -1392,7 +1392,7 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- JAVASCRIPT (com as novas implementações)                      -->
+<!-- JAVASCRIPT                                                    -->
 <!-- ============================================================ -->
 <script>
 // ============================================================
@@ -1564,7 +1564,7 @@ const auth = firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 // ============================================================
-// VARIÁVEIS GLOBAIS
+// VARIÁVEIS GLOBAIS (mantidas)
 // ============================================================
 let meuTipo = null, alunoId = null, alunoNome = null, alunoTurma = null;
 let estadoAtual = null, jogoAtivo = false;
@@ -5022,6 +5022,35 @@ async function carregarValorPartida() {
         if (input) input.value = valor;
         if (exibicao) exibicao.textContent = valor;
     } catch (e) { VALOR_PARTIDA = 2000; }
+}
+
+async function carregarIntervalos() {
+    const snap = await db.ref('copaV2/configuracoes/intervalos').once('value');
+    const config = snap.val();
+    if (config) {
+        intervaloIndividualSegundos = config.individual || 4;
+        intervaloEquipesSegundos = config.equipes || 60;
+    } else {
+        await db.ref('copaV2/configuracoes/intervalos').set({ individual: 4, equipes: 60 });
+    }
+    const inputInd = document.getElementById('intervalo-individual');
+    const inputEq = document.getElementById('intervalo-equipes');
+    if (inputInd) inputInd.value = intervaloIndividualSegundos;
+    if (inputEq) inputEq.value = intervaloEquipesSegundos;
+    if (meuTipo === 'projecao') reiniciarIntervalosTorcida();
+}
+
+async function atualizarIntervaloIndividual(segundos) {
+    intervaloIndividualSegundos = segundos;
+    await db.ref('copaV2/configuracoes/intervalos/individual').set(segundos);
+    if (meuTipo === 'projecao' && modoTorcida === 'individual') reiniciarIntervalosTorcida();
+    toast(`Intervalo individual alterado para ${segundos} segundos`);
+}
+async function atualizarIntervaloEquipes(segundos) {
+    intervaloEquipesSegundos = segundos;
+    await db.ref('copaV2/configuracoes/intervalos/equipes').set(segundos);
+    if (meuTipo === 'projecao' && modoTorcida === 'equipes') reiniciarIntervalosTorcida();
+    toast(`Intervalo por equipes alterado para ${segundos} segundos`);
 }
 
 auth.onAuthStateChanged((user) => {
