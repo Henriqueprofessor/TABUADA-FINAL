@@ -77,6 +77,79 @@
         .btn-secondary { background: #34495e; }
         .btn-info { background: #3498db; }
         .status-box { background: #000000aa; border-radius: 20px; padding: 16px; margin-top: 20px; overflow-x: auto; }
+        .esconder-durante-jogo { transition: opacity 0.3s; }
+        body.em-jogo .esconder-durante-jogo { display: none !important; }
+        body.em-jogo .container { padding-top: 0; }
+        body.em-jogo .card:not(#tela-aluno) { display: none !important; }
+        body.em-jogo #tela-aluno { border: none; background: transparent; padding: 0; }
+        
+        .pergunta-container {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 24px;
+            padding: 30px 20px;
+            margin-bottom: 20px;
+            border: 2px solid rgba(255, 217, 102, 0.1);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .brilho-cinza { box-shadow: 0 0 20px rgba(148, 163, 184, 0.2); }
+        .brilho-amarela { box-shadow: 0 0 30px rgba(255, 217, 102, 0.4); border-color: rgba(255, 217, 102, 0.5); }
+        .brilho-laranja { box-shadow: 0 0 40px rgba(243, 156, 18, 0.6); border-color: rgba(243, 156, 18, 0.7); }
+        .brilho-vermelha { box-shadow: 0 0 50px rgba(231, 76, 60, 0.8); border-color: rgba(231, 76, 60, 0.9); animation: pulse-brilho 1.5s infinite; }
+        .brilho-branca { box-shadow: 0 0 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.4); }
+
+        @keyframes pulse-brilho {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.01); }
+            100% { transform: scale(1); }
+        }
+
+        .jogo-rodape-minimalista {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 12px;
+            border-radius: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .item-rodape {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #eee;
+        }
+        .item-rodape span { color: #ffd966; }
+        
+        .legenda-cores-container {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 15px;
+            margin: 10px 0;
+        }
+        .item-legenda {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .bolinha-mini {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .bolinha-mini-vermelha { background: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
+        .bolinha-mini-laranja { background: #e67e22; box-shadow: 0 0 10px #e67e22; }
+        .bolinha-mini-amarela { background: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
+        .bolinha-mini-branca { background: #bdc3c7; box-shadow: 0 0 10px #bdc3c7; }
+        .bolinha-mini-cinza { background: #2c3e50; }
         .flex-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
         .timer-display { font-size: 32px; font-weight: bold; color: #ffd966; background: #000; padding: 10px 20px; border-radius: 15px; display: inline-block; }
         .online-badge { background: #27ae60; color: white; padding: 4px 12px; border-radius: 10px; font-size: 14px; }
@@ -910,7 +983,7 @@
     <!-- ========================================================= -->
     <!-- CABEÇALHO PRINCIPAL                                        -->
     <!-- ========================================================= -->
-    <div class="card">
+    <div class="card esconder-durante-jogo">
         <div class="header-title">
             <h1>🏆 COPA TABUADA CEIB 2026 <span id="modalidade-titulo" class="modalidade-badge">Carregando...</span></h1>
             <a href="https://henriqueprofessor.github.io/Tabuada/" target="_blank" class="link-classificatoria" rel="noopener noreferrer">🔗 Fase Classificatória</a>
@@ -1256,35 +1329,30 @@
     <!-- ========================================================= -->
     <div id="tela-aluno" class="card hidden">
         <div id="jogo-area" class="hidden jogo-topo">
-            <div class="status-box">
-                <div class="top-info">
-                    <div class="pontuacao-atual">🎯 Pontuação: <span id="pontuacao-acumulada">0</span></div>
-                    <div class="indicador-posicao"><span id="posicao-numero">--</span><span>º</span><span style="font-size: 14px; opacity: 0.6; margin-left: 4px;">atual</span></div>
-                    <div class="velocidade-media">⚡ <span id="velocidade-media">0.00</span>s</div>
-                </div>
+            <!-- 2- Topo: Pergunta com Brilho -->
+            <div id="pergunta-container" class="pergunta-container brilho-cinza">
+                <div class="barra-tempo" style="margin-top: 0; margin-bottom: 20px;"><div id="progresso-tempo" class="progresso-tempo"></div></div>
+                <div id="pergunta" style="font-size:64px; font-weight: bold; margin-bottom: 0;">0 x 0 = ?</div>
+            </div>
 
-                <!-- ===== BOLINHA COM NOVA LÓGICA ===== -->
-                <div class="evolucao-container">
-                    <span class="label">📊 DESEMPENHO:</span>
-                    <span class="bolinha-unica cinza" id="bolinha-unica"></span>
-                </div>
-                <div class="evolucao-legenda">
-                    <span class="item"><span class="bolinha-mini bolinha-mini-vermelha"></span> Ameaça ao líder / Campeão</span>
-                    <span class="item"><span class="bolinha-mini bolinha-mini-laranja"></span> Superando recorde pessoal</span>
-                    <span class="item"><span class="bolinha-mini bolinha-mini-amarela"></span> Abaixo do recorde pessoal</span>
-                    <span class="item"><span class="bolinha-mini bolinha-mini-branca"></span> Empate técnico</span>
-                    <span class="item"><span class="bolinha-mini bolinha-mini-cinza"></span> Sem dados suficientes</span>
-                </div>
+            <!-- 3- Meio: Opções de Resposta -->
+            <div class="opcoes-vertical">
+                <button class="opcao-vertical" onclick="window.responder(0)"></button>
+                <button class="opcao-vertical" onclick="window.responder(1)"></button>
+                <button class="opcao-vertical" onclick="window.responder(2)"></button>
+                <button class="opcao-vertical" onclick="window.responder(3)"></button>
+            </div>
 
-                <div class="barra-tempo"><div id="progresso-tempo" class="progresso-tempo"></div></div>
-                <div id="pergunta" style="font-size:48px; text-align:center; margin: 20px 0;">0 x 0 = ?</div>
-                <div class="opcoes-vertical">
-                    <button class="opcao-vertical" onclick="window.responder(0)"></button>
-                    <button class="opcao-vertical" onclick="window.responder(1)"></button>
-                    <button class="opcao-vertical" onclick="window.responder(2)"></button>
-                    <button class="opcao-vertical" onclick="window.responder(3)"></button>
-                </div>
-                <div style="text-align: center;">Pergunta: <span id="pergunta-num">1</span>/20</div>
+            <!-- 4- Base: Contador de Questões -->
+            <div style="text-align: center; margin-top: 15px; font-size: 18px; opacity: 0.8; font-weight: bold;">
+                Pergunta: <span id="pergunta-num">1</span> / 20
+            </div>
+
+            <!-- 1- Rodapé: Barra Fina com Ícones -->
+            <div class="jogo-rodape-minimalista">
+                <div class="item-rodape" title="Pontuação">🎯 <span id="pontuacao-acumulada">0</span></div>
+                <div class="item-rodape" title="Posição Atual">🏆 <span id="posicao-numero">--</span>º</div>
+                <div class="item-rodape" title="Velocidade Média">⚡ <span id="velocidade-media">0.00</span>s</div>
             </div>
         </div>
 
@@ -1680,27 +1748,20 @@ function atualizarDisplayTimer(milissegundos, timerDisplay, torcidaTimer, alunoT
 let ultimaCor = 'cinza';
 
 function atualizarBolinhaUnica(cor) {
-    const el = document.getElementById('bolinha-unica');
-    if (!el) return;
+    const container = document.getElementById('pergunta-container');
+    if (!container) return;
     
-    // Remove todas as classes de cor e animação
-    el.classList.remove('amarela', 'laranja', 'vermelha', 'branca', 'cinza', 'animar');
+    // Remove todas as classes de brilho
+    container.classList.remove('brilho-amarela', 'brilho-laranja', 'brilho-vermelha', 'brilho-branca', 'brilho-cinza');
     
-    // Adiciona a nova cor
+    // Adiciona a nova cor de brilho
     if (cor) {
-        el.classList.add(cor);
+        container.classList.add('brilho-' + cor);
     } else {
-        el.classList.add('cinza');
+        container.classList.add('brilho-cinza');
     }
     
-    // Se a cor mudou, aplica animação de pulso
-    if (cor !== ultimaCor) {
-        // Pequeno delay para garantir que a transição seja percebida
-        setTimeout(() => {
-            el.classList.add('animar');
-        }, 10);
-        ultimaCor = cor;
-    }
+    ultimaCor = cor;
 }
 
 // ============================================================
@@ -3710,6 +3771,7 @@ async function iniciarNovaPartida() {
     document.getElementById('pontuacao-acumulada').innerText = "0";
     document.getElementById('velocidade-media').innerText = "--";
     jogoAtivo = true;
+    document.body.classList.add('em-jogo');
     document.getElementById('btn-ranking-aluno').disabled = true;
     document.getElementById('btn-ranking-pontos-aluno').disabled = true;
     document.getElementById('jogo-area').classList.remove('hidden');
@@ -3723,6 +3785,7 @@ async function finalizar() {
     partidaFinalizada = true;
 
     jogoAtivo = false;
+    document.body.classList.remove('em-jogo');
     document.getElementById('btn-ranking-aluno').disabled = false;
     document.getElementById('btn-ranking-pontos-aluno').disabled = false;
     document.getElementById('jogo-area').classList.add('hidden');
@@ -4249,6 +4312,16 @@ const CONTEUDO_TUTORIAL_ALUNO = {
         <p>Quanto mais rápido e certo você responder, <strong>mais pontos</strong> você ganha na partida.</p>
         <p>Você pode jogar <strong>várias partidas</strong> durante o tempo da fase (ex: 12 minutos).</p>
         <p><strong>Sua melhor pontuação</strong> em uma única partida será usada para definir sua posição no ranking da fase.</p></div>
+        
+        <h3>📊 Legenda de Desempenho (Cores)</h3>
+        <div class="legenda-cores-container">
+            <div class="item-legenda"><span class="bolinha-mini bolinha-mini-vermelha"></span> <strong>Vermelho:</strong> Ameaça ao líder / Recorde máximo!</div>
+            <div class="item-legenda"><span class="bolinha-mini bolinha-mini-laranja"></span> <strong>Laranja:</strong> Superando seu recorde pessoal.</div>
+            <div class="item-legenda"><span class="bolinha-mini bolinha-mini-amarela"></span> <strong>Amarelo:</strong> Abaixo do seu recorde pessoal.</div>
+            <div class="item-legenda"><span class="bolinha-mini bolinha-mini-branca"></span> <strong>Branco:</strong> Empate técnico.</div>
+            <div class="item-legenda"><span class="bolinha-mini bolinha-mini-cinza"></span> <strong>Cinza:</strong> Sem dados suficientes.</div>
+        </div>
+
         <p>Os <strong>melhores colocados</strong> (ex: os 30 primeiros na Fase 1) <strong>avançam</strong> para a próxima fase.</p>
         <p>Quem chegar à Fase 5 e vencer pode ser o campeão da Copa <strong>ou</strong>, se o professor ativar o <strong>Ranking de Pontos</strong>, o campeão será quem <strong>somar mais pontos</strong> ao longo das 5 fases.</p>`,
     pontuacao: `<h3>📊 Como são calculados os pontos de uma partida?</h3>
