@@ -247,9 +247,11 @@
         .status-finalizado { color: #3498db; font-weight: bold; }
         .btn-verificar-versao { background: #9b59b6; color: white; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px; }
         .btn-verificar-versao:hover { background: #8e44ad; transform: scale(1.02); }
-        .fut-sobe { color: #2ecc71; font-weight: bold; }
-        .fut-mantem { color: #f39c12; font-weight: bold; }
-        .fut-desce { color: #e74c3c; font-weight: bold; }
+        .fut-vermelho { color: #e74c3c; font-weight: bold; text-shadow: 0 0 8px rgba(231, 76, 60, 0.4); }
+        .fut-laranja { color: #e67e22; font-weight: bold; }
+        .fut-amarelo { color: #f1c40f; font-weight: bold; }
+        .fut-branco { color: #ffffff; font-weight: bold; }
+        .fut-cinza { color: #94a3b8; font-weight: normal; }
 
         .version-display {
             background: #1e293b;
@@ -1674,7 +1676,7 @@ const COLUNAS_DEF = {
         { id: 'classificacao', label: 'Classificação' }
     ],
     opcionais: [
-        { id: 'futPos', label: 'Fut. Pos.' },
+        { id: 'futPos', label: 'Ritmo' },
         { id: 'pontuacaoAtual', label: 'Pontuação Atual' },
         { id: 'deltaLider', label: 'Delta Líder' },
         { id: 'velocRecorde', label: 'Veloc. Recorde' },
@@ -2394,7 +2396,7 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         <th>Nome</th>
         <th>Melhor Pontuação</th>`;
     if (mostrarClassificacao) html += '<th>Classificação</th>';
-    html += '<th>Fut. Pos.</th><th>Pontuação Atual</th><th>Delta Líder</th><th>Veloc. Recorde</th><th>Progresso</th><th>Partidas</th><th>Turma</th>';
+    html += '<th>Ritmo</th><th>Pontuação Atual</th><th>Delta Líder</th><th>Veloc. Recorde</th><th>Progresso</th><th>Partidas</th><th>Turma</th>';
     if (rankingPontosAtivo && estadoAtual.status === 'em_andamento' && faseNum === estadoAtual.fase) {
         html += '<th>Projeção</th>';
     }
@@ -2419,14 +2421,28 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         else progressoHtml = `—`;
 
         let futPosHtml = "—";
-        if (j.status !== 'finalizado' && j.progresso < 20 && posAtual > 1) {
+        if (j.status !== 'finalizado' && j.progresso < 20) {
             const posProjetada = posProjetadaMap.get(j.id);
-            if (posProjetada !== undefined && posProjetada > 0) {
+            const projecao = j.projecao || 0;
+            const recordePessoal = j.melhorPontuacao || 0;
+            const recordeLider = maxMelhor || 0;
+
+            if (projecao > 0 && j.progresso >= 4) {
                 let icone = "", classe = "";
-                if (posProjetada < posAtual) { icone = "🟢"; classe = "fut-sobe"; }
-                else if (posProjetada === posAtual) { icone = "⚪"; classe = "fut-mantem"; }
-                else { icone = "🔴"; classe = "fut-desce"; }
-                futPosHtml = `<span class="${classe}">${posProjetada}° ${icone}</span>`;
+                
+                if (posAtual === 1) {
+                    // Regra para o 1º colocado
+                    if (projecao > recordePessoal) { icone = "🔴"; classe = "fut-vermelho"; }
+                    else { icone = "🟡"; classe = "fut-amarelo"; }
+                } else {
+                    // Regra para os demais
+                    if (projecao > recordeLider) { icone = "🔴"; classe = "fut-vermelho"; }
+                    else if (projecao > recordePessoal) { icone = "🟠"; classe = "fut-laranja"; }
+                    else { icone = "🟡"; classe = "fut-amarelo"; }
+                }
+                
+                const posExibida = posProjetada !== undefined ? posProjetada : "—";
+                futPosHtml = `<span class="${classe}">${posExibida}° ${icone}</span>`;
             }
         }
 
@@ -3502,19 +3518,18 @@ async function atualizarInfoAluno() {
             }
         }
 
-        // --- Determinar cor (NOVA LÓGICA) ---
+        // --- Determinar cor (NOVA LÓGICA SINCRONIZADA COM RANKING) ---
         let cor = 'cinza';
         if (perguntasRespondidas >= 4 && projecao > 0) {
-            if (projecao < recordePessoal) {
-                cor = 'amarela';
-            } else if (projecao === recordePessoal) {
-                cor = 'branca';
-            } else { // projecao > recordePessoal
-                if (projecao > recordeLider) {
-                    cor = 'vermelha';
-                } else {
-                    cor = 'laranja';
-                }
+            if (posicaoAtual === 1) {
+                // Regra para o 1º colocado: Vermelho se bater recorde, Amarelo se não
+                if (projecao > recordePessoal) cor = 'vermelha';
+                else cor = 'amarela';
+            } else {
+                // Regra para os demais
+                if (projecao > recordeLider) cor = 'vermelha';
+                else if (projecao > recordePessoal) cor = 'laranja';
+                else cor = 'amarela';
             }
         } else {
             cor = 'cinza';
@@ -4379,7 +4394,7 @@ const CONTEUDO_TUTORIAL_TORCIDA = {
         <tr><td><strong>Nome</strong></td><td>Nome do aluno.</td></tr>
         <tr><td><strong>Melhor Pontuação</strong></td><td>A maior pontuação que o aluno obteve em <strong>uma única partida</strong> dentro da fase.</td></tr>
         <tr><td><strong>Classificação</strong></td><td>Indica se o jogador está dentro da zona de classificação para a próxima fase (ex: "Top 30").</td></tr>
-        <tr><td><strong>Fut. Pos.</strong></td><td>Projeção da posição futura com base no ritmo atual de pontuação (se o jogador estiver em andamento).</td></tr>
+        <tr><td><strong>Ritmo</strong></td><td>Projeção da posição futura e desempenho com base no ritmo atual (🔴 Líder/Recorde, 🟠 Melhora, 🟡 Estável).</td></tr>
         <tr><td><strong>Pontuação Atual</strong></td><td>Pontuação da partida em andamento (se houver).</td></tr>
         <tr><td><strong>Delta Líder</strong></td><td>Diferença de pontos entre o jogador e o líder da fase.</td></tr>
         <tr><td><strong>Veloc. Recorde</strong></td><td>Melhor tempo médio por acerto (quanto menor, melhor).</td></tr>
