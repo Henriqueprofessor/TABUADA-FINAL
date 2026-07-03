@@ -1289,7 +1289,7 @@
                     </label>
                     <label style="color: #f1f5f9;">
                         Pontos:
-                        <input type="number" id="input-bonus-velocidade" value="10" min="1" max="100" style="width: 70px; padding: 5px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9;">
+                        <input type="number" id="input-bonus-velocidade" value="1" min="1" max="100" style="width: 70px; padding: 5px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9;">
                     </label>
                     <label style="color: #f1f5f9;">
                         Precisão Mínima (%):
@@ -1807,7 +1807,7 @@ let abaTorcidaAtiva = 'fase';
 // Configurações do bônus de velocidade
 let bonusVelocidadeConfig = {
     ativo: true,
-    pontos: 10,
+    pontos: 1,
     precisaoMinima: 80
 };
 
@@ -2356,7 +2356,8 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 recordeVelocidade: recordeVelocMap.get(child.key) || null,
                 pontuacaoAtual: ultima.pontos,
                 somaTempo: somaTempo,
-                mediaTempo: mediaTempo
+                mediaTempo: mediaTempo,
+                partidasData: partidas // guarda o array completo
             });
         }
     });
@@ -2382,7 +2383,8 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 recordeVelocidade: null,
                 pontuacaoAtual: data.pontos,
                 somaTempo: 0,
-                mediaTempo: null
+                mediaTempo: null,
+                partidasData: []
             });
         } else {
             existente.pontuacaoAtual = data.pontos;
@@ -2453,16 +2455,17 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     // --- NOVO: Verificar quem é o mais rápido válido da fase (para exibir o raio amarelo ao lado do nome durante a fase) ---
     let jogadorMaisRapidoFaseId = null;
     if (estadoAtual.status === 'em_andamento' && bonusVelocidadeConfig.ativo) {
-        // Filtrar apenas os que atendem à precisão mínima
+        // CORREÇÃO: garantir que item.partidasData seja um array
         const elegiveis = listaComId.filter(item => {
-            // Precisão baseada na melhor partida
-            const melhorPartida = item.partidas ? item.partidas.sort((a,b) => b.pontos - a.pontos)[0] : null;
+            const partidasArray = Array.isArray(item.partidasData) ? item.partidasData : [];
+            if (partidasArray.length === 0) return false;
+            // Usar a melhor partida (maior pontuação)
+            const melhorPartida = partidasArray.sort((a,b) => b.pontos - a.pontos)[0];
             if (!melhorPartida) return false;
             const precisao = (melhorPartida.acertos / 20) * 100;
             return precisao >= bonusVelocidadeConfig.precisaoMinima;
         });
         if (elegiveis.length > 0) {
-            // Ordenar por melhor velocidade (menor tempo)
             elegiveis.sort((a,b) => (a.melhorVelocidade || Infinity) - (b.melhorVelocidade || Infinity));
             jogadorMaisRapidoFaseId = elegiveis[0].id;
         }
@@ -2834,7 +2837,7 @@ async function carregarConfigBonusVelocidade() {
         if (config) {
             bonusVelocidadeConfig = {
                 ativo: config.ativo !== undefined ? config.ativo : true,
-                pontos: config.pontos || 10,
+                pontos: config.pontos || 1,
                 precisaoMinima: config.precisaoMinima || 80
             };
         } else {
@@ -2853,7 +2856,7 @@ async function carregarConfigBonusVelocidade() {
 // Salvar configurações do bônus de velocidade
 async function salvarConfigBonusVelocidade() {
     const ativo = document.getElementById('toggle-bonus-velocidade').checked;
-    const pontos = parseInt(document.getElementById('input-bonus-velocidade').value) || 10;
+    const pontos = parseInt(document.getElementById('input-bonus-velocidade').value) || 1;
     const precisaoMinima = parseInt(document.getElementById('input-precisao-bonus').value) || 80;
 
     if (pontos < 1) {
@@ -3018,6 +3021,85 @@ async function processarBonusVelocidade(fase) {
     await histRef.set(pontosAtuais + bonusVelocidadeConfig.pontos);
 
     toast(`⚡ ${vencedor.nome} ganhou +${bonusVelocidadeConfig.pontos} pontos de bônus por velocidade!`);
+}
+
+// ============================================================
+// FUNÇÕES PARA VISIBILIDADE DE COLUNAS
+// ============================================================
+async function carregarColunasVisiveis() {
+    try {
+        const snap = await db.ref(COLUNAS_KEY).once('value');
+        const config = snap.val();
+        if (config) {
+            colunasVisiveis = config;
+        } else {
+            // Padrão: todas as opcionais visíveis
+            colunasVisiveis = {};
+            COLUNAS_DEF.opcionais.forEach(col => {
+                colunasVisiveis[col.id] = true;
+            });
+            await db.ref(COLUNAS_KEY).set(colunasVisiveis);
+        }
+        renderizarColunasVisiveis();
+    } catch (e) {
+        console.warn('Erro ao carregar colunas:', e);
+        colunasVisiveis = {};
+        COLUNAS_DEF.opcionais.forEach(col => {
+            colunasVisiveis[col.id] = true;
+        });
+    }
+}
+
+function renderizarColunasVisiveis() {
+    const container = document.getElementById('colunas-visiveis-container');
+    if (!container) return;
+    let html = '';
+    // Obrigatórias (sempre visíveis)
+    COLUNAS_DEF.obrigatorias.forEach(col => {
+        html += `
+            <div class="checkbox-item disabled">
+                <input type="checkbox" checked disabled>
+                <label>${col.label} *</label>
+            </div>
+        `;
+    });
+    // Opcionais
+    COLUNAS_DEF.opcionais.forEach(col => {
+        const checked = colunasVisiveis && colunasVisiveis[col.id] !== undefined ? colunasVisiveis[col.id] : true;
+        html += `
+            <div class="checkbox-item">
+                <input type="checkbox" id="col-${col.id}" ${checked ? 'checked' : ''}>
+                <label for="col-${col.id}">${col.label}</label>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+async function salvarColunasVisiveis() {
+    const config = {};
+    COLUNAS_DEF.opcionais.forEach(col => {
+        const checkbox = document.getElementById(`col-${col.id}`);
+        config[col.id] = checkbox ? checkbox.checked : true;
+    });
+    try {
+        await db.ref(COLUNAS_KEY).set(config);
+        colunasVisiveis = config;
+        const feedback = document.getElementById('feedback-colunas');
+        feedback.style.display = 'block';
+        feedback.className = 'feedback-sucesso';
+        feedback.textContent = '✅ Configuração de colunas salva!';
+        setTimeout(() => feedback.style.display = 'none', 5000);
+        toast('✅ Colunas salvas!');
+        // Recarregar rankings para aplicar
+        if (meuTipo === 'professor') {
+            await atualizarRankingProfessor();
+            await renderizarRankingPontos();
+        }
+    } catch (e) {
+        toast('❌ Erro ao salvar colunas.');
+        console.error(e);
+    }
 }
 
 // ============================================================
@@ -5161,6 +5243,7 @@ async function init() {
     await carregarConfigRankingPontos();
     await carregarConfigBonusVelocidade();
     await carregarRecordeGeral();
+    await carregarColunasVisiveis();
 
     // Eventos dos botões
     document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
@@ -5173,9 +5256,28 @@ async function init() {
     const btnRestaurarPadrao = document.getElementById('btn-restaurar-padrao');
     const btnRestaurarPadraoFase5 = document.getElementById('btn-restaurar-padrao-fase5');
     const btnSalvarBonus = document.getElementById('btn-salvar-bonus-velocidade');
+    const btnSalvarColunas = document.getElementById('btn-salvar-colunas');
+    const btnRestaurarColunas = document.getElementById('btn-restaurar-colunas');
 
     if (btnSalvarBonus) {
         btnSalvarBonus.addEventListener('click', salvarConfigBonusVelocidade);
+    }
+
+    if (btnSalvarColunas) {
+        btnSalvarColunas.addEventListener('click', salvarColunasVisiveis);
+    }
+
+    if (btnRestaurarColunas) {
+        btnRestaurarColunas.addEventListener('click', async function() {
+            const config = {};
+            COLUNAS_DEF.opcionais.forEach(col => {
+                config[col.id] = true;
+            });
+            await db.ref(COLUNAS_KEY).set(config);
+            colunasVisiveis = config;
+            renderizarColunasVisiveis();
+            toast('✅ Colunas restauradas para o padrão (todas visíveis)');
+        });
     }
 
     if (togglePontos) {
@@ -5263,6 +5365,7 @@ async function init() {
             if (tab === 'gerenciar-turmas') renderListaTurmas();
             if (tab === 'configuracoes') {
                 carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
+                renderizarColunasVisiveis(); // Garantir que as colunas sejam exibidas
             }
             tocarSom('clique');
         });
@@ -5381,9 +5484,11 @@ async function init() {
             if (confirm("Reset total?")) {
                 db.ref('copaV2').set({ fase:1, status:'aguardando', tempoFase:10, fim:0, modalidade: estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} });
                 db.ref('online').remove();
-                // Resetar configurações de bônus e recorde
+                // Resetar configurações de bônus e recorde (com padrão 1 ponto)
+                db.ref(BONUS_VELOCIDADE_KEY).set({ ativo: true, pontos: 1, precisaoMinima: 80 });
                 db.ref('copaV2/configuracoes/bonusVelocidade/porFase').remove();
                 db.ref(RECORDE_GERAL_KEY).remove();
+                bonusVelocidadeConfig = { ativo: true, pontos: 1, precisaoMinima: 80 };
                 recordeGeral = null;
                 location.reload();
             }
@@ -5397,8 +5502,10 @@ async function init() {
             if (confirm(`⚠️ Mudar para ${MODALIDADE_CONFIG[novaModalidade].nome} irá REINICIAR toda a competição. Continuar?`)) {
                 await db.ref('copaV2').set({ fase: 1, status: 'aguardando', tempoFase: 10, fim: 0, modalidade: novaModalidade, resultados: {}, participantes: {}, classificados: {} });
                 await db.ref('online').remove();
+                db.ref(BONUS_VELOCIDADE_KEY).set({ ativo: true, pontos: 1, precisaoMinima: 80 });
                 db.ref('copaV2/configuracoes/bonusVelocidade/porFase').remove();
                 db.ref(RECORDE_GERAL_KEY).remove();
+                bonusVelocidadeConfig = { ativo: true, pontos: 1, precisaoMinima: 80 };
                 recordeGeral = null;
                 toast(`Modalidade alterada. Competição reiniciada.`);
                 setTimeout(() => location.reload(), 1500);
