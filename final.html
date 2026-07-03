@@ -2065,7 +2065,9 @@ function calcularRankingFase(fase) {
             somaTempo: somaTempo,
             mediaTempo: mediaTempo,
             melhorVelocidade: melhorVelocidade,
-            partidas: partidas
+            partidas: partidas,
+            // Guardar o índice da melhor partida
+            melhorPartidaIndex: partidas.findIndex(p => p.pontos === melhor.pontos)
         });
     }
 
@@ -2080,6 +2082,7 @@ function calcularRankingFase(fase) {
                 existente.somaTempo = data.tempo || 0;
                 existente.mediaTempo = data.acertos > 0 ? data.tempo / data.acertos : Infinity;
                 existente.melhorVelocidade = data.acertos > 0 ? data.tempo / data.acertos : null;
+                existente.melhorPartidaIndex = -1; // temporário
             }
         } else {
             const nome = data.nome || 'Anônimo';
@@ -2093,7 +2096,8 @@ function calcularRankingFase(fase) {
                 somaTempo: data.tempo || 0,
                 mediaTempo: data.acertos > 0 ? data.tempo / data.acertos : Infinity,
                 melhorVelocidade: data.acertos > 0 ? data.tempo / data.acertos : null,
-                partidas: []
+                partidas: [],
+                melhorPartidaIndex: -1
             });
         }
     }
@@ -2336,6 +2340,7 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             if (partidas.length > 0 && somaTempo > 0) {
                 mediaTempo = somaTempo / partidas.length;
             }
+            const melhorIndex = partidas.findIndex(p => p.pontos === melhor.pontos);
             mapa.set(child.key, {
                 id: child.key,
                 nome, turma,
@@ -2353,7 +2358,8 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 pontuacaoAtual: ultima.pontos,
                 somaTempo: somaTempo,
                 mediaTempo: mediaTempo,
-                partidasData: partidas
+                partidasData: partidas,
+                melhorPartidaIndex: melhorIndex !== -1 ? melhorIndex + 1 : null
             });
         }
     });
@@ -2380,7 +2386,8 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 pontuacaoAtual: data.pontos,
                 somaTempo: data.tempo || 0,
                 mediaTempo: data.acertos > 0 ? data.tempo / data.acertos : null,
-                partidasData: []
+                partidasData: [],
+                melhorPartidaIndex: null
             });
         } else {
             existente.pontuacaoAtual = data.pontos;
@@ -2389,7 +2396,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 existente.status = statusInfo.status;
                 existente.progresso = statusInfo.progresso;
             }
-            // Atualizar somaTempo e mediaTempo com dados temporários
             if (data.tempo) existente.somaTempo += data.tempo;
             if (data.acertos > 0) {
                 const tempMedia = data.tempo / data.acertos;
@@ -2471,8 +2477,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     } catch (e) {
         console.warn('Erro ao buscar vencedor do bônus:', e);
     }
-    // (Opcional) Se a fase ainda estiver em andamento e não houver vencedor persistido,
-    // calculamos em tempo real para exibir antes do término da fase.
     if (!jogadorMaisRapidoFaseId && estadoAtual.status === 'em_andamento' && bonusVelocidadeConfig.ativo) {
         const elegiveis = listaComId.filter(item => {
             const partidasArray = Array.isArray(item.partidasData) ? item.partidasData : [];
@@ -2488,6 +2492,9 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         }
     }
 
+    // Tempo da fase em segundos
+    const tempoFaseSegundos = (estadoAtual.tempoFase || 10) * 60;
+
     // ============================================
     // DEFINIÇÃO DO HEADER DA TABELA
     // ============================================
@@ -2499,7 +2506,7 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     html += '<th>Ritmo</th><th>Pontuação Atual</th><th>Delta Líder</th><th>Veloc. Recorde</th><th>Progresso</th><th>Partidas</th>';
     // Colunas extras apenas para o professor (containerId === 'ranking-parcial')
     if (containerId === 'ranking-parcial') {
-        html += '<th>Tempo Total</th><th>Méd. Temp. Part.</th>';
+        html += '<th>Tempo Total</th><th>% Tempo</th>';
     }
     html += '<th>Turma</th>';
     if (rankingPontosAtivo && estadoAtual.status === 'em_andamento' && faseNum === estadoAtual.fase) {
@@ -2577,13 +2584,30 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             nomeComRaios += ' <span class="raio-amarelo">⚡</span>';
         }
 
+        // --- Melhor Pontuação com partida (apenas para o professor) ---
+        let melhorPontuacaoDisplay = j.melhorPontuacao;
+        if (containerId === 'ranking-parcial' && j.melhorPartidaIndex !== null) {
+            melhorPontuacaoDisplay += ` (P${j.melhorPartidaIndex})`;
+        }
+
+        // --- % Tempo (apenas para o professor) ---
+        let percentualTempo = "—";
+        if (containerId === 'ranking-parcial') {
+            if (j.somaTempo > 0 && tempoFaseSegundos > 0) {
+                const pct = (j.somaTempo / tempoFaseSegundos) * 100;
+                percentualTempo = pct.toFixed(1) + '%';
+            } else if (j.partidas > 0) {
+                percentualTempo = '0.0%';
+            }
+        }
+
         // ============================================
         // MONTAGEM DA LINHA
         // ============================================
         html += `<tr>
             <td class="${classePos}">${posAtual}º</td>
             <td>${nomeComRaios}</td>
-            <td>${j.melhorPontuacao}</td>
+            <td>${melhorPontuacaoDisplay}</td>
             ${mostrarClassificacao ? colunaClassificacao : ''}
             <td>${futPosHtml}</td>
             <td>${j.pontuacaoAtual || "–"}</td>
@@ -2594,15 +2618,13 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
 
         // Colunas extras apenas para o professor
         if (containerId === 'ranking-parcial') {
-            // Tempo Total (somaTempo)
+            // Tempo Total
             let tempoTotalStr = "–";
-            if (j.somaTempo > 0) tempoTotalStr = j.somaTempo.toFixed(1) + "s";
-            else if (j.partidas > 0) tempoTotalStr = "0.0s";
-            // Média de Tempo por Partida
-            let mediaTempoStr = "–";
-            if (j.mediaTempo !== null && j.mediaTempo > 0 && j.mediaTempo !== Infinity) mediaTempoStr = j.mediaTempo.toFixed(1) + "s";
-            else if (j.partidas > 0) mediaTempoStr = "0.0s";
-            html += `<td>${tempoTotalStr}</td><td>${mediaTempoStr}</td>`;
+            if (j.somaTempo > 0) tempoTotalStr = (j.somaTempo / 60).toFixed(1) + 'min';
+            else if (j.partidas > 0) tempoTotalStr = "0.0min";
+            html += `<td>${tempoTotalStr}</td>`;
+            // % Tempo
+            html += `<td>${percentualTempo}</td>`;
         }
 
         html += `<td>${escapeHtml(j.turma)}</td>`;
@@ -2832,7 +2854,6 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
             const rec4 = item.recordeFase[4] || false;
             const rec5 = item.recordeFase[5] || false;
 
-            // Célula com RAIO AMARELO (⚡) e FOGUETE (🚀)
             const faseCell = (pts, bonus, recorde) => {
                 let cell = pts;
                 if (bonus > 0) cell += ` <span class="raio-amarelo">⚡</span>`;
@@ -2970,7 +2991,6 @@ async function atualizarRecordeGeral(jogadorId, velocidade, precisao, fase, part
 async function processarBonusVelocidade(fase) {
     if (!bonusVelocidadeConfig.ativo) return;
 
-    // Verifica se o bônus já foi concedido para esta fase
     const vencedorRef = db.ref(`copaV2/configuracoes/bonusVelocidade/vencedores/${fase}`);
     const snapVencedor = await vencedorRef.once('value');
     if (snapVencedor.exists()) {
@@ -3043,7 +3063,6 @@ async function processarBonusVelocidade(fase) {
     bonusData[vencedor.id] = bonusVelocidadeConfig.pontos;
     await bonusRef.set(bonusData);
 
-    // Salva o vencedor permanentemente
     await vencedorRef.set({
         id: vencedor.id,
         pontos: bonusVelocidadeConfig.pontos,
@@ -3908,7 +3927,7 @@ function renderListaAlunosGerenciar() {
 }
 
 // ============================================================
-// RANKING GERAL
+// RANKING GERAL (com partida e % tempo)
 // ============================================================
 function renderRankingGeral() {
     if (!estadoAtual) return;
@@ -3916,6 +3935,13 @@ function renderRankingGeral() {
     const participantesPorFase = estadoAtual.participantes || {};
     const classificadosPorFase = estadoAtual.classificados || {};
     let jogadores = new Map();
+
+    // Para cada jogador, rastrear a melhor pontuação global (fase e partida)
+    const melhorGlobal = new Map();
+
+    // Tempo da fase em segundos (usado para % tempo geral)
+    const tempoFaseSegundos = (estadoAtual.tempoFase || 10) * 60;
+
     for (let fase = 1; fase <= TOTAL_FASES; fase++) {
         const resultadosFase = todasFases[fase] || {};
         const participantesFase = participantesPorFase[fase] || {};
@@ -3923,12 +3949,14 @@ function renderRankingGeral() {
             const partidas = resultadosFase[id];
             if (!partidas || partidas.length === 0) continue;
             const melhor = [...partidas].sort((a,b) => b.pontos - a.pontos)[0];
+            const melhorIndex = partidas.findIndex(p => p.pontos === melhor.pontos);
             let nome = participantesFase[id]?.nome;
             if (!nome && fase > 1 && participantesPorFase[fase-1]?.[id]) nome = participantesPorFase[fase-1][id].nome;
             if (!nome) nome = "Anônimo";
             let turma = participantesFase[id]?.turma;
             if (!turma && fase > 1 && participantesPorFase[fase-1]?.[id]) turma = participantesPorFase[fase-1][id].turma;
             if (!turma) turma = "?";
+
             if (!jogadores.has(id)) {
                 jogadores.set(id, {
                     id, nome, turma,
@@ -3940,8 +3968,13 @@ function renderRankingGeral() {
                     totalPartidas: partidas.length,
                     melhorVelocidade: null,
                     tempoTotal: 0,
-                    mediaTempoGeral: null
+                    mediaTempoGeral: null,
+                    fasesJogadas: new Set(),
+                    melhorGlobalFase: fase,
+                    melhorGlobalPartidaIndex: melhorIndex + 1 // índice base 1
                 });
+                // Registrar a melhor global
+                melhorGlobal.set(id, { fase, partidaIndex: melhorIndex + 1 });
             } else {
                 const existente = jogadores.get(id);
                 if (fase > existente.ultimaFase) {
@@ -3949,10 +3982,19 @@ function renderRankingGeral() {
                     existente.melhorPontuacao = melhor.pontos;
                     existente.melhorAcertos = melhor.acertos;
                     existente.melhorTempo = melhor.tempo;
+                    existente.melhorGlobalFase = fase;
+                    existente.melhorGlobalPartidaIndex = melhorIndex + 1;
                 }
                 existente.totalPartidas += partidas.length;
+                // Atualizar melhor global se esta fase tiver pontuação maior
+                if (melhor.pontos > existente.melhorPontuacao) {
+                    existente.melhorPontuacao = melhor.pontos;
+                    existente.melhorGlobalFase = fase;
+                    existente.melhorGlobalPartidaIndex = melhorIndex + 1;
+                }
             }
             const jogador = jogadores.get(id);
+            jogador.fasesJogadas.add(fase);
             let somaTempoFase = 0;
             for (let partida of partidas) {
                 somaTempoFase += partida.tempo || 0;
@@ -3966,36 +4008,92 @@ function renderRankingGeral() {
             jogador.tempoTotal += somaTempoFase;
         }
     }
+
     for (let [id, info] of jogadores.entries()) {
         if (info.totalPartidas > 0 && info.tempoTotal > 0) {
             info.mediaTempoGeral = info.tempoTotal / info.totalPartidas;
         }
+        // % Tempo geral: tempoTotal / (fasesJogadas * tempoFaseSegundos) * 100
+        const numFases = info.fasesJogadas.size;
+        if (numFases > 0 && info.tempoTotal > 0 && tempoFaseSegundos > 0) {
+            info.percentualTempoGeral = (info.tempoTotal / (numFases * tempoFaseSegundos)) * 100;
+        } else {
+            info.percentualTempoGeral = null;
+        }
     }
+
     for (let [id, info] of jogadores.entries()) {
         const classificadosUltima = classificadosPorFase[info.ultimaFase] || [];
         if (!classificadosUltima.includes(id)) info.faseEliminacao = info.ultimaFase;
         else info.faseEliminacao = null;
     }
+
     let rankingArray = Array.from(jogadores.values());
     rankingArray.sort((a,b) => {
         if (a.ultimaFase !== b.ultimaFase) return b.ultimaFase - a.ultimaFase;
         return b.melhorPontuacao - a.melhorPontuacao || b.melhorAcertos - a.melhorAcertos || a.melhorTempo - b.melhorTempo;
     });
-    if (rankingArray.length === 0) { document.getElementById('ranking-geral-container').innerHTML = '<p>Nenhum dado ainda.</p>'; return; }
-    let html = '<table class="ranking-table"><thead><tr><th>Pos</th><th>Nome</th><th>Melhor Pontuação</th><th>Melhor Velocidade</th><th>Fase Máxima</th><th>Status</th><th>Turma</th><th>Total Partidas</th><th>Tempo Total</th><th>Méd. Temp. Part.</th></tr></thead><tbody>';
+
+    if (rankingArray.length === 0) {
+        document.getElementById('ranking-geral-container').innerHTML = '<p>Nenhum dado ainda.</p>';
+        return;
+    }
+
+    let html = `<table class="ranking-table"><thead><tr>
+        <th>Pos</th>
+        <th>Nome</th>
+        <th>Melhor Pontuação</th>
+        <th>Melhor Velocidade</th>
+        <th>Fase Máxima</th>
+        <th>Status</th>
+        <th>Turma</th>
+        <th>Total Partidas</th>
+        <th>Tempo Total</th>
+        <th>% Tempo</th>
+        <th>Méd. Temp. Part.</th>
+    </tr></thead><tbody>`;
+
     rankingArray.forEach((r, i) => {
         let status = `🎯 Fase ${r.ultimaFase}`;
         if (r.faseEliminacao) status += ` (Eliminado na Fase ${r.faseEliminacao})`;
         else if (r.ultimaFase === 5) status = "🏆 Finalista";
         else status += ` (Classificado para Fase ${r.ultimaFase+1})`;
+
         const vel = r.melhorVelocidade !== null ? r.melhorVelocidade.toFixed(2) + " s" : "-";
         let tempoTotalStr = "–";
-        if (r.tempoTotal > 0) tempoTotalStr = r.tempoTotal.toFixed(1) + "s";
-        else if (r.totalPartidas > 0 && r.tempoTotal === 0) tempoTotalStr = "0.0s";
+        if (r.tempoTotal > 0) tempoTotalStr = (r.tempoTotal / 60).toFixed(1) + 'min';
+        else if (r.totalPartidas > 0) tempoTotalStr = "0.0min";
+
+        let percentStr = "–";
+        if (r.percentualTempoGeral !== null && r.percentualTempoGeral > 0) {
+            percentStr = r.percentualTempoGeral.toFixed(1) + '%';
+        } else if (r.totalPartidas > 0) {
+            percentStr = '0.0%';
+        }
+
         let mediaStr = "–";
-        if (r.mediaTempoGeral !== null && r.mediaTempoGeral > 0) mediaStr = r.mediaTempoGeral.toFixed(1) + "s";
-        else if (r.totalPartidas > 0) mediaStr = "0.0s";
-        html += `<tr><td>${i+1}º</td><td>${escapeHtml(r.nome)}</td><td>${r.melhorPontuacao}</td><td>${vel}</td><td>${r.ultimaFase}</td><td>${status}</td><td>${escapeHtml(r.turma)}</td><td>${r.totalPartidas}</td><td>${tempoTotalStr}</td><td>${mediaStr}</td></tr>`;
+        if (r.mediaTempoGeral !== null && r.mediaTempoGeral > 0) mediaStr = (r.mediaTempoGeral / 60).toFixed(1) + 'min';
+        else if (r.totalPartidas > 0) mediaStr = "0.0min";
+
+        // Melhor pontuação com fase e partida (apenas para o professor)
+        let melhorDisplay = r.melhorPontuacao;
+        if (r.melhorGlobalFase && r.melhorGlobalPartidaIndex) {
+            melhorDisplay += ` (F${r.melhorGlobalFase}-P${r.melhorGlobalPartidaIndex})`;
+        }
+
+        html += `<tr>
+            <td>${i+1}º</td>
+            <td>${escapeHtml(r.nome)}</td>
+            <td>${melhorDisplay}</td>
+            <td>${vel}</td>
+            <td>${r.ultimaFase}</td>
+            <td>${status}</td>
+            <td>${escapeHtml(r.turma)}</td>
+            <td>${r.totalPartidas}</td>
+            <td>${tempoTotalStr}</td>
+            <td>${percentStr}</td>
+            <td>${mediaStr}</td>
+        </tr>`;
     });
     document.getElementById('ranking-geral-container').innerHTML = html + '</tbody></table>';
 }
