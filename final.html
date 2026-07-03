@@ -60,7 +60,7 @@
     </script>
 
     <style>
-        /* ===== ESTILOS GERAIS (mantidos do código original) ===== */
+        /* ===== ESTILOS GERAIS ===== */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: #0a0f1e; color: #eee; padding: 20px; }
         .container { max-width: 1400px; margin: 0 auto; }
@@ -285,9 +285,7 @@
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
 
-        /* ================================================================
-           BOLINHA ÚNICA - COM ANIMAÇÃO DE TRANSIÇÃO (NOVA IMPLEMENTAÇÃO)
-           ================================================================ */
+        /* ===== BOLINHA ÚNICA ===== */
         .evolucao-container {
             display: flex;
             align-items: center;
@@ -316,7 +314,6 @@
             background: #2c3e50;
             opacity: 0.6;
         }
-        /* Animação de pulso ao mudar de cor */
         .bolinha-unica.animar {
             animation: pulse-bolinha 0.5s ease;
         }
@@ -325,8 +322,6 @@
             50% { transform: scale(1.25); }
             100% { transform: scale(1); }
         }
-
-        /* Cores da nova lógica */
         .bolinha-unica.amarela {
             background: #f1c40f;
             border-color: #f39c12;
@@ -356,7 +351,6 @@
             border-color: #34495e;
             opacity: 0.6;
         }
-
         .evolucao-legenda {
             display: flex;
             gap: 16px;
@@ -384,7 +378,7 @@
         .bolinha-mini-branca   { background: #bdc3c7; }
         .bolinha-mini-cinza    { background: #2c3e50; }
 
-        /* ===== ESTILOS DO PAINEL DE SOM (mantidos) ===== */
+        /* ===== ESTILOS DO PAINEL DE SOM ===== */
         .som-card {
             background: #0f172a;
             border: 1px solid #2d3a4f;
@@ -502,7 +496,7 @@
         .btn-som-master.desativado { background: #e74c3c; color: white; }
         .btn-som-master:hover { transform: scale(1.03); }
 
-        /* Restante dos estilos (senha, liberar, colunas, etc.) */
+        /* ===== SENHA, LIBERAR, COLUNAS ===== */
         .senha-card {
             background: #1e293b;
             border: 1px solid #facc15;
@@ -957,7 +951,7 @@
             }
         }
 
-        /* ===== ESTILOS DO NOVO MODAL DE RESULTADOS ===== */
+        /* ===== ESTILOS DO MODAL DE RESULTADOS ===== */
         .modal-resultados .bloco {
             margin-bottom: 16px;
             text-align: left;
@@ -1070,9 +1064,21 @@
             font-style: italic;
         }
 
-        /* Estilo para os raios */
-        .raio-amarelo { color: #facc15; }
-        .raio-vermelho { color: #ef4444; }
+        /* ===== ÍCONES ===== */
+        .raio-amarelo { 
+            color: #facc15; 
+            font-weight: bold;
+            font-size: 1.4em;
+            text-shadow: 0 0 8px rgba(250, 204, 21, 0.6);
+        }
+        .foguete-vermelho { 
+            color: #ff6b6b; 
+            font-weight: bold;
+            font-size: 1.4em;
+            text-shadow: 0 0 10px rgba(255, 107, 107, 0.8);
+        }
+        .legenda-foguete { color: #ff6b6b; font-weight: bold; }
+        .legenda-raio { color: #facc15; font-weight: bold; }
     </style>
 
     <!-- Firebase SDKs -->
@@ -1242,7 +1248,7 @@
             <div id="ranking-turmas-container" class="status-box">Carregando...</div>
         </div>
 
-        <!-- Aba Ranking de Pontos (modificada para incluir bônus de velocidade) -->
+        <!-- Aba Ranking de Pontos -->
         <div id="tab-ranking-pontos" class="tab-content hidden">
             <h3>🏆 Ranking de Pontos Acumulados</h3>
             <p style="color: #94a3b8; margin-bottom: 15px;">O campeão da Copa será o jogador com o maior total de pontos ao final das 5 fases.</p>
@@ -1270,7 +1276,7 @@
                 <div id="feedback-pontuacao" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
 
-            <!-- NOVA SEÇÃO: Bônus de Velocidade -->
+            <!-- Bônus de Velocidade -->
             <div class="config-card" style="border-color: #facc15;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">⚡</span>
@@ -1302,7 +1308,9 @@
 
             <h4 style="margin-top: 20px;">📊 Ranking Geral de Pontos</h4>
             <div id="ranking-pontos-container" class="status-box">Carregando...</div>
-            <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">⚡ Amarelo = bônus de velocidade na fase | <span class="raio-vermelho">⚡</span> Vermelho = recorde de velocidade da competição</p>
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">
+                ⚡ = Bônus de velocidade na fase | 🚀 = Recorde de velocidade da competição
+            </p>
         </div>
 
         <div id="tab-gerenciar-alunos" class="tab-content hidden">
@@ -1320,7 +1328,6 @@
         <!-- Aba Configurações -->
         <div id="tab-configuracoes" class="tab-content hidden">
             <h3>⚙️ Configurações do Professor</h3>
-            <!-- Bloco de sons (mantido) -->
             <div id="bloco-controle-som" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🔊</span>
@@ -1346,7 +1353,6 @@
                 </div>
             </div>
 
-            <!-- Bloco Valor da Partida -->
             <div id="bloco-valor-partida" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">💰</span>
@@ -1381,7 +1387,6 @@
                 </div>
             </div>
 
-            <!-- Mínimo de Partidas -->
             <div id="bloco-min-partidas" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">📋</span>
@@ -1397,7 +1402,6 @@
                 <div id="feedback-min-partidas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
 
-            <!-- Visibilidade das Colunas -->
             <div id="bloco-visibilidade-colunas" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">👁️</span>
@@ -1416,7 +1420,6 @@
                 <div id="feedback-colunas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
 
-            <!-- Senha -->
             <div class="config-card senha-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🔑</span>
@@ -1447,7 +1450,6 @@
                 </p>
             </div>
 
-            <!-- Liberar Cadastro -->
             <div class="config-card liberar-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🚪</span>
@@ -1479,26 +1481,19 @@
     <!-- ========================================================= -->
     <div id="tela-aluno" class="card hidden">
         <div id="jogo-area" class="hidden jogo-topo">
-            <!-- 2- Topo: Pergunta com Brilho -->
             <div id="pergunta-container" class="pergunta-container brilho-cinza">
                 <div class="barra-tempo" style="margin-top: 0; margin-bottom: 20px;"><div id="progresso-tempo" class="progresso-tempo"></div></div>
                 <div id="pergunta" style="font-size:64px; font-weight: bold; margin-bottom: 0;">0 x 0 = ?</div>
             </div>
-
-            <!-- 3- Meio: Opções de Resposta -->
             <div class="opcoes-vertical">
                 <button class="opcao-vertical" onclick="window.responder(0)"></button>
                 <button class="opcao-vertical" onclick="window.responder(1)"></button>
                 <button class="opcao-vertical" onclick="window.responder(2)"></button>
                 <button class="opcao-vertical" onclick="window.responder(3)"></button>
             </div>
-
-            <!-- 4- Base: Contador de Questões -->
             <div style="text-align: center; margin-top: 15px; font-size: 18px; opacity: 0.8; font-weight: bold;">
                 Pergunta: <span id="pergunta-num">1</span> / 20
             </div>
-
-            <!-- 1- Rodapé: Barra Fina com Ícones -->
             <div class="jogo-rodape-minimalista">
                 <div class="item-rodape" title="Pontuação">🎯 <span id="pontuacao-acumulada">0</span></div>
                 <div class="item-rodape" title="Posição Atual">🏆 <span id="posicao-numero">--</span>º</div>
@@ -1614,7 +1609,7 @@
 <!-- ============================================================ -->
 <script>
 // ============================================================
-// SISTEMA DE SONS (mesmo do original)
+// SISTEMA DE SONS
 // ============================================================
 const SONS_CONFIG = {
     acerto: { emoji: '✅', nome: 'Acerto', descricao: 'Quando o aluno acerta a pergunta', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' },
@@ -1804,15 +1799,13 @@ let tabelaPontosPadrao = {};
 let tabelaPontosFase5 = {};
 let abaTorcidaAtiva = 'fase';
 
-// Configurações do bônus de velocidade
 let bonusVelocidadeConfig = {
     ativo: true,
     pontos: 1,
     precisaoMinima: 80
 };
 
-// Recorde geral de velocidade
-let recordeGeral = null; // { jogadorId, velocidade, precisao, fase, partidaId, nome, turma }
+let recordeGeral = null;
 
 const TOTAL_FASES = 5;
 let intervaloIndividualSegundos = 4;
@@ -1922,7 +1915,7 @@ function atualizarBolinhaUnica(cor) {
 }
 
 // ============================================================
-// RANKING DE PONTOS (com bônus e recorde geral)
+// RANKING DE PONTOS
 // ============================================================
 function getPontuacaoDefault() {
     const obj = {};
@@ -2250,7 +2243,7 @@ function gerarPerguntas(modalidade, fase) {
 }
 
 // ============================================================
-// RANKING (funções de renderização com raios)
+// RANKING (com FOGUETE 🚀 para recorde geral)
 // ============================================================
 let cacheRanking = {};
 
@@ -2357,7 +2350,7 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 pontuacaoAtual: ultima.pontos,
                 somaTempo: somaTempo,
                 mediaTempo: mediaTempo,
-                partidasData: partidas // guarda o array completo
+                partidasData: partidas
             });
         }
     });
@@ -2446,20 +2439,20 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
     const vagas = VAGAS_POR_FASE[faseNum] || 30;
     const mostrarClassificacao = (containerId === 'ranking-torcida-container' || containerId === 'ranking-aluno-container') ? true : exibirClassificacao;
 
-    // --- NOVO: Verificar quem detém o recorde geral de velocidade (para exibir o raio vermelho ao lado do nome) ---
+    // --- Recorde geral (FOGUETE 🚀) ---
     let jogadorRecordeGeralId = null;
+    let jogadorRecordeGeralNome = null;
     if (recordeGeral && recordeGeral.jogadorId) {
         jogadorRecordeGeralId = recordeGeral.jogadorId;
+        jogadorRecordeGeralNome = recordeGeral.nome;
     }
 
-    // --- NOVO: Verificar quem é o mais rápido válido da fase (para exibir o raio amarelo ao lado do nome durante a fase) ---
+    // --- Mais rápido da fase (RAIO AMARELO ⚡) ---
     let jogadorMaisRapidoFaseId = null;
     if (estadoAtual.status === 'em_andamento' && bonusVelocidadeConfig.ativo) {
-        // CORREÇÃO: garantir que item.partidasData seja um array
         const elegiveis = listaComId.filter(item => {
             const partidasArray = Array.isArray(item.partidasData) ? item.partidasData : [];
             if (partidasArray.length === 0) return false;
-            // Usar a melhor partida (maior pontuação)
             const melhorPartida = partidasArray.sort((a,b) => b.pontos - a.pontos)[0];
             if (!melhorPartida) return false;
             const precisao = (melhorPartida.acertos / 20) * 100;
@@ -2509,7 +2502,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
 
             if (projecao > 0 && j.progresso >= 4) {
                 let icone = "", classe = "";
-                
                 if (posAtual === 1) {
                     if (projecao > recordePessoal) { icone = "🔴"; classe = "fut-vermelho"; }
                     else { icone = "🟡"; classe = "fut-amarelo"; }
@@ -2518,7 +2510,6 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                     else if (projecao > recordePessoal) { icone = "🟠"; classe = "fut-laranja"; }
                     else { icone = "🟡"; classe = "fut-amarelo"; }
                 }
-                
                 const posExibida = posProjetada !== undefined ? posProjetada : "—";
                 futPosHtml = `<span class="${classe}">${posExibida}° ${icone}</span>`;
             }
@@ -2541,10 +2532,11 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             }
         }
 
-        // --- NOVO: Adicionar raios ao lado do nome ---
+        // --- Nome com FOGUETE 🚀 (recorde geral) e RAIO AMARELO ⚡ (bônus da fase) ---
         let nomeComRaios = escapeHtml(j.nome);
-        if (jogadorRecordeGeralId === j.id) {
-            nomeComRaios += ' <span class="raio-vermelho">⚡</span>';
+        const isRecorde = (jogadorRecordeGeralId === j.id) || (jogadorRecordeGeralNome === j.nome);
+        if (isRecorde) {
+            nomeComRaios += ' <span class="foguete-vermelho">🚀</span>';
         }
         if (jogadorMaisRapidoFaseId === j.id && bonusVelocidadeConfig.ativo) {
             nomeComRaios += ' <span class="raio-amarelo">⚡</span>';
@@ -2659,7 +2651,7 @@ async function renderRankingTurmas(containerId) {
 }
 
 // ============================================================
-// RENDERIZAR RANKING DE PONTOS (com raios na célula da fase)
+// RENDERIZAR RANKING DE PONTOS (com FOGUETE 🚀)
 // ============================================================
 async function renderizarRankingPontos(containerId = 'ranking-pontos-container') {
     const container = document.getElementById(containerId);
@@ -2672,11 +2664,9 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
         const faseAtual = estadoAtual?.fase || 1;
         const statusFase = estadoAtual?.status || 'aguardando';
 
-        // Carregar dados de bônus de velocidade por fase
         const snapBonus = await db.ref('copaV2/configuracoes/bonusVelocidade/porFase').once('value');
         const bonusPorFase = snapBonus.val() || {};
 
-        // Carregar recorde geral
         const snapRecorde = await db.ref(RECORDE_GERAL_KEY).once('value');
         const recorde = snapRecorde.val();
 
@@ -2690,7 +2680,6 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
                 for (const [id, pts] of Object.entries(historico)) {
                     pontosPorJogador[id] = pts;
                 }
-                // Adicionar bônus de velocidade se existir
                 if (bonusPorFase[f]) {
                     for (const [id, bonus] of Object.entries(bonusPorFase[f])) {
                         if (pontosPorJogador[id] !== undefined) {
@@ -2707,7 +2696,6 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
                         pontosPorJogador[jogador.id] = pts;
                     }
                 });
-                // Adicionar bônus de velocidade se já tiver sido definido (para fases em andamento, pode ser atualizado depois)
             } else {
                 continue;
             }
@@ -2718,11 +2706,9 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
                 const jog = jogadores.get(id);
                 jog.fases[f] = pts;
                 jog.total += pts;
-                // Verificar se ganhou bônus de velocidade nesta fase
                 if (bonusPorFase[f] && bonusPorFase[f][id]) {
                     jog.bonus[f] = bonusPorFase[f][id];
                 }
-                // Verificar se esta fase é a fase do recorde geral (apenas se o recorde existe e é deste jogador)
                 if (recorde && recorde.jogadorId === id && recorde.fase === f) {
                     jog.recordeFase[f] = true;
                 }
@@ -2794,11 +2780,11 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
             const rec4 = item.recordeFase[4] || false;
             const rec5 = item.recordeFase[5] || false;
 
-            // Construir células com raios
+            // Célula com RAIO AMARELO (⚡) e FOGUETE (🚀)
             const faseCell = (pts, bonus, recorde) => {
                 let cell = pts;
                 if (bonus > 0) cell += ` <span class="raio-amarelo">⚡</span>`;
-                if (recorde) cell += ` <span class="raio-vermelho">⚡</span>`;
+                if (recorde) cell += ` <span class="foguete-vermelho">🚀</span>`;
                 return cell;
             };
 
@@ -2828,8 +2814,6 @@ async function renderizarRankingPontos(containerId = 'ranking-pontos-container')
 // ============================================================
 // FUNÇÕES PARA BÔNUS DE VELOCIDADE E RECORDE GERAL
 // ============================================================
-
-// Carregar configurações do bônus de velocidade
 async function carregarConfigBonusVelocidade() {
     try {
         const snap = await db.ref(BONUS_VELOCIDADE_KEY).once('value');
@@ -2841,10 +2825,8 @@ async function carregarConfigBonusVelocidade() {
                 precisaoMinima: config.precisaoMinima || 80
             };
         } else {
-            // Salvar padrão
             await db.ref(BONUS_VELOCIDADE_KEY).set(bonusVelocidadeConfig);
         }
-        // Atualizar campos no painel
         document.getElementById('toggle-bonus-velocidade').checked = bonusVelocidadeConfig.ativo;
         document.getElementById('input-bonus-velocidade').value = bonusVelocidadeConfig.pontos;
         document.getElementById('input-precisao-bonus').value = bonusVelocidadeConfig.precisaoMinima;
@@ -2853,7 +2835,6 @@ async function carregarConfigBonusVelocidade() {
     }
 }
 
-// Salvar configurações do bônus de velocidade
 async function salvarConfigBonusVelocidade() {
     const ativo = document.getElementById('toggle-bonus-velocidade').checked;
     const pontos = parseInt(document.getElementById('input-bonus-velocidade').value) || 1;
@@ -2884,15 +2865,16 @@ async function salvarConfigBonusVelocidade() {
     }
 }
 
-// Carregar recorde geral
 async function carregarRecordeGeral() {
     try {
         const snap = await db.ref(RECORDE_GERAL_KEY).once('value');
         const data = snap.val();
         if (data) {
             recordeGeral = data;
+            console.log('🚀 Recorde geral carregado:', recordeGeral);
         } else {
             recordeGeral = null;
+            console.log('🚀 Nenhum recorde geral encontrado.');
         }
     } catch (e) {
         console.warn('Erro ao carregar recorde geral:', e);
@@ -2900,16 +2882,13 @@ async function carregarRecordeGeral() {
     }
 }
 
-// Atualizar recorde geral após uma partida
 async function atualizarRecordeGeral(jogadorId, velocidade, precisao, fase, partidaIndex) {
     if (!jogadorId || velocidade === null || velocidade === undefined || velocidade <= 0) return false;
     if (precisao < bonusVelocidadeConfig.precisaoMinima) return false;
 
     let recordeAtual = recordeGeral;
 
-    // Se não houver recorde, ou a nova velocidade for menor (mais rápida)
     if (!recordeAtual || velocidade < recordeAtual.velocidade) {
-        // Buscar nome e turma do jogador
         let nome = 'Anônimo', turma = '?';
         for (let f = fase; f >= 1; f--) {
             if (estadoAtual?.participantes?.[f]?.[jogadorId]) {
@@ -2930,13 +2909,12 @@ async function atualizarRecordeGeral(jogadorId, velocidade, precisao, fase, part
         };
         await db.ref(RECORDE_GERAL_KEY).set(novoRecorde);
         recordeGeral = novoRecorde;
-        toast(`⚡ NOVO RECORDE DE VELOCIDADE! ${nome} com ${velocidade.toFixed(2)}s por pergunta!`);
+        toast(`🚀 NOVO RECORDE DE VELOCIDADE! ${nome} com ${velocidade.toFixed(2)}s por pergunta!`);
         return true;
     }
     return false;
 }
 
-// Calcular e atribuir bônus de velocidade ao final da fase
 async function processarBonusVelocidade(fase) {
     if (!bonusVelocidadeConfig.ativo) return;
 
@@ -2946,11 +2924,10 @@ async function processarBonusVelocidade(fase) {
     const minConfig = await carregarMinPartidas();
     const minPartidas = minConfig[fase] || 1;
 
-    // Para cada jogador, encontrar sua melhor velocidade e precisão
     const candidatos = [];
     for (const [id, partidas] of Object.entries(resultados)) {
         if (!partidas || partidas.length === 0) continue;
-        if (partidas.length < minPartidas) continue; // precisa ter pelo menos o mínimo de partidas
+        if (partidas.length < minPartidas) continue;
 
         let melhorVelocidade = Infinity;
         let melhorPrecisao = 0;
@@ -2972,7 +2949,6 @@ async function processarBonusVelocidade(fase) {
         }
 
         if (melhorPartida && melhorVelocidade !== Infinity) {
-            // Buscar nome e turma
             let nome = 'Anônimo', turma = '?';
             for (let f = fase; f >= 1; f--) {
                 if (estadoAtual?.participantes?.[f]?.[id]) {
@@ -2995,16 +2971,11 @@ async function processarBonusVelocidade(fase) {
 
     if (candidatos.length === 0) return;
 
-    // Ordenar por velocidade (menor = mais rápido)
     candidatos.sort((a,b) => a.velocidade - b.velocidade);
-
-    // O vencedor é o primeiro
     const vencedor = candidatos[0];
 
-    // Atualizar o recorde geral (se for o caso)
     await atualizarRecordeGeral(vencedor.id, vencedor.velocidade, vencedor.precisao, fase, vencedor.partidaIndex);
 
-    // Salvar o bônus no Firebase
     const bonusPath = `copaV2/configuracoes/bonusVelocidade/porFase/${fase}`;
     const bonusRef = db.ref(bonusPath);
     const snap = await bonusRef.once('value');
@@ -3012,12 +2983,9 @@ async function processarBonusVelocidade(fase) {
     bonusData[vencedor.id] = bonusVelocidadeConfig.pontos;
     await bonusRef.set(bonusData);
 
-    // Atualizar o pontuacaoHistorico somando o bônus
     const histRef = db.ref(`copaV2/pontuacaoHistorico/${fase}/${vencedor.id}`);
     const snapHist = await histRef.once('value');
     let pontosAtuais = snapHist.val() || 0;
-    // O bônus deve ser somado aos pontos já existentes
-    // Mas cuidado: se o professor já salvou os pontos, o bônus é adicionado em cima
     await histRef.set(pontosAtuais + bonusVelocidadeConfig.pontos);
 
     toast(`⚡ ${vencedor.nome} ganhou +${bonusVelocidadeConfig.pontos} pontos de bônus por velocidade!`);
@@ -3033,7 +3001,6 @@ async function carregarColunasVisiveis() {
         if (config) {
             colunasVisiveis = config;
         } else {
-            // Padrão: todas as opcionais visíveis
             colunasVisiveis = {};
             COLUNAS_DEF.opcionais.forEach(col => {
                 colunasVisiveis[col.id] = true;
@@ -3054,7 +3021,6 @@ function renderizarColunasVisiveis() {
     const container = document.getElementById('colunas-visiveis-container');
     if (!container) return;
     let html = '';
-    // Obrigatórias (sempre visíveis)
     COLUNAS_DEF.obrigatorias.forEach(col => {
         html += `
             <div class="checkbox-item disabled">
@@ -3063,7 +3029,6 @@ function renderizarColunasVisiveis() {
             </div>
         `;
     });
-    // Opcionais
     COLUNAS_DEF.opcionais.forEach(col => {
         const checked = colunasVisiveis && colunasVisiveis[col.id] !== undefined ? colunasVisiveis[col.id] : true;
         html += `
@@ -3091,7 +3056,6 @@ async function salvarColunasVisiveis() {
         feedback.textContent = '✅ Configuração de colunas salva!';
         setTimeout(() => feedback.style.display = 'none', 5000);
         toast('✅ Colunas salvas!');
-        // Recarregar rankings para aplicar
         if (meuTipo === 'professor') {
             await atualizarRankingProfessor();
             await renderizarRankingPontos();
@@ -3103,7 +3067,7 @@ async function salvarColunasVisiveis() {
 }
 
 // ============================================================
-// ATUALIZAÇÃO DOS RANKINGS (Professor, Torcida, Aluno)
+// ATUALIZAÇÃO DOS RANKINGS
 // ============================================================
 async function atualizarRankingProfessor() {
     if (meuTipo === 'professor' && atualizacaoRankingAuto && document.getElementById('tab-ranking-fase') && !document.getElementById('tab-ranking-fase').classList.contains('hidden')) {
@@ -3604,7 +3568,7 @@ async function atualizarListaLiberados() {
 }
 
 // ============================================================
-// CONTROLE DE FASE (modificado para incluir bônus)
+// CONTROLE DE FASE
 // ============================================================
 function atualizarBotaoContinuarParar() {
     const btn = document.getElementById('btn-continuar-parar-fase');
@@ -3648,7 +3612,7 @@ async function resetarFase() {
     await db.ref(`copaV2/participantes/${faseAtual}`).remove();
     await db.ref(`copaV2/resultados_temp/${faseAtual}`).remove();
     await db.ref(`copaV2/classificados/${faseAtual}`).remove();
-    await db.ref(`copaV2/configuracoes/bonusVelocidade/porFase/${faseAtual}`).remove(); // Remover bônus da fase
+    await db.ref(`copaV2/configuracoes/bonusVelocidade/porFase/${faseAtual}`).remove();
     await db.ref('copaV2').update({ status: 'aguardando', fim: 0, tempoRestantePausa: null });
     tempoEsgotadoProcessado = false;
     toast(`✅ Fase ${faseAtual} resetada!`);
@@ -3690,7 +3654,6 @@ async function processarPontuacaoFase(fase) {
     await globalRef.update(updatesGlobal);
     await posicaoRef.update(updatesPosicao);
 
-    // Processar bônus de velocidade (adiciona ao histórico também)
     await processarBonusVelocidade(fase);
 
     if (fase === 5) {
@@ -3718,7 +3681,6 @@ async function avancarFase() {
     const minConfig = await carregarMinPartidas();
     const minPartidas = minConfig[faseAtual] || 1;
 
-    // Processar pontuação (inclui bônus de velocidade)
     await processarPontuacaoFase(faseAtual);
 
     const res = estadoAtual.resultados?.[faseAtual] || {};
@@ -3970,7 +3932,7 @@ function renderRankingGeral() {
 }
 
 // ============================================================
-// FUNÇÕES AUXILIARES PARA O NOVO MODAL DE RESULTADOS
+// FUNÇÕES AUXILIARES PARA O MODAL DE RESULTADOS
 // ============================================================
 async function obterMelhorPontuacaoFase(id, fase) {
     const snap = await db.ref(`copaV2/resultados/${fase}/${id}`).once('value');
@@ -4087,7 +4049,6 @@ async function exibirModalResultadosCompleto(posicao, pontos, acertos, tempoTota
         proximoColegaHtml = `👤 Você está a ${diffPontos} pontos de ultrapassar ${escapeHtml(jogadorAcima.nome)}!`;
     }
 
-    // Velocidade vs Líder (corrigido)
     let velocidadeVsLider = '';
     if (lider && lider.id !== alunoId) {
         const liderMelhorVel = lider.melhorVelocidade || null;
@@ -4103,7 +4064,6 @@ async function exibirModalResultadosCompleto(posicao, pontos, acertos, tempoTota
         }
     }
 
-    // Verificar se o aluno ganhou o bônus de velocidade (para exibir mensagem especial)
     let bonusMessage = '';
     if (bonusVelocidadeConfig.ativo) {
         const snapBonus = await db.ref(`copaV2/configuracoes/bonusVelocidade/porFase/${fase}/${alunoId}`).once('value');
@@ -4134,13 +4094,11 @@ async function exibirModalResultadosCompleto(posicao, pontos, acertos, tempoTota
                 <div style="font-size: 18px;">✅ ${acertos}/20</div>
             </div>
 
-            <!-- Bloco 1: Mensagem personalizada -->
             <div class="mensagem-personalizada">
                 <span class="emoji">${mensagemEmoji}</span> ${mensagem}
                 ${bonusMessage ? `<br><span style="font-size: 16px;">${bonusMessage}</span>` : ''}
             </div>
 
-            <!-- Bloco 2: Metas e proximidade -->
             <div class="bloco">
                 <div class="bloco-titulo">🎯 METAS E PROXIMIDADE</div>
                 <div class="card-metrica">
@@ -4156,7 +4114,6 @@ async function exibirModalResultadosCompleto(posicao, pontos, acertos, tempoTota
                 </div>
             </div>
 
-            <!-- Bloco 3: Superação pessoal -->
             <div class="bloco">
                 <div class="bloco-titulo">💪 SUPERAÇÃO PESSOAL</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
@@ -4190,7 +4147,6 @@ async function exibirModalResultadosCompleto(posicao, pontos, acertos, tempoTota
                 </div>
             </div>
 
-            <!-- Bloco 4: Raio-X tático -->
             <div class="bloco">
                 <div class="bloco-titulo">📊 RAIO-X TÁTICO</div>
                 <div class="grid-2col">
@@ -4217,7 +4173,6 @@ async function exibirModalResultadosCompleto(posicao, pontos, acertos, tempoTota
                 </div>
             </div>
 
-            <!-- Rodapé -->
             <div class="frase-encerramento">
                 💡 A fase ainda não acabou! Sua próxima tentativa pode te levar ao topo.
             </div>
@@ -4560,14 +4515,12 @@ async function finalizar() {
 
     await db.ref(`copaV2/resultados_temp/${faseAtual}/${alunoId}`).remove();
 
-    // --- NOVO: Atualizar recorde geral de velocidade após a partida ---
     if (acertosPartida > 0 && tempoTotalPartida > 0) {
         const precisao = (acertosPartida / 20) * 100;
         const velocidade = tempoTotalPartida / acertosPartida;
-        // Verificar quantas partidas o aluno já tem
         const snapPartidas = await db.ref(`copaV2/resultados/${faseAtual}/${alunoId}`).once('value');
         const partidas = snapPartidas.val() || [];
-        const partidaIndex = partidas.length - 1; // última partida adicionada
+        const partidaIndex = partidas.length - 1;
         await atualizarRecordeGeral(alunoId, velocidade, precisao, faseAtual, partidaIndex);
     }
 
@@ -5078,7 +5031,7 @@ const CONTEUDO_TUTORIAL_ALUNO = {
     objetivo: `<h3>🎯 Seja o grande campeão da Copa Tabuada CEIB 2026!</h3>
         <div class="destaque"><p>A competição tem <strong>5 fases</strong>. Em cada fase, você vai responder <strong>20 perguntas de multiplicação</strong>.</p>
         <p>Quanto mais rápido e certo você responder, <strong>mais pontos</strong> você ganha na partida.</p>
-        <p>Você pode jogar <strong>várias partidas</strong> durante o tempo da fase (ex: 12 minutos).</p>
+        <p>Você pode jogar <strong>várias partidas</strong> durante o tempo da fase (ex: 10 minutos).</p>
         <p><strong>Sua melhor pontuação</strong> em uma única partida será usada para definir sua posição no ranking da fase.</p></div>
         
         <h3>📊 Legenda de Desempenho (Cores)</h3>
@@ -5118,8 +5071,8 @@ const CONTEUDO_TUTORIAL_ALUNO = {
         <h3>⚡ Bônus de Velocidade e Recorde Geral</h3>
         <ul><li>Em cada fase, o jogador com a <strong>maior velocidade</strong> (tempo médio por pergunta) e que atender à <strong>precisão mínima</strong> (ex: 80% de acertos) ganha um <strong>bônus em pontos</strong> (definido pelo professor).</li>
         <li>Esse bônus aparece no Ranking de Pontos com um <span class="raio-amarelo">⚡</span> amarelo ao lado da pontuação da fase.</li>
-        <li>Além disso, o jogador com a <strong>maior velocidade de toda a competição</strong> (recorde geral) recebe um <span class="raio-vermelho">⚡</span> vermelho que aparece na fase em que o recorde foi estabelecido e ao lado do nome em todos os rankings.</li>
-        <li>O recorde geral é atualizado em tempo real e o raio vermelho acompanha o detentor.</li></ul>`,
+        <li>Além disso, o jogador com a <strong>maior velocidade de toda a competição</strong> (recorde geral) recebe um <span class="foguete-vermelho">🚀</span> que aparece na fase em que o recorde foi estabelecido e ao lado do nome em todos os rankings.</li>
+        <li>O recorde geral é atualizado em tempo real e o foguete acompanha o detentor.</li></ul>`,
     dicas: `<h3>⚡ Dicas para ser campeão</h3>
         <ol><li><strong>Treine a tabuada</strong> antes de cada fase – revise as operações que vão cair.</li>
         <li><strong>Jogue o máximo de partidas</strong> que conseguir dentro do tempo – cada partida é uma chance de melhorar sua pontuação.</li>
@@ -5136,7 +5089,7 @@ const CONTEUDO_TUTORIAL_ALUNO = {
         <p><strong>E se eu perder o acesso ao meu dispositivo?</strong></p><p>Você precisa usar o <strong>mesmo dispositivo</strong> ou o mesmo navegador para manter seu progresso. Se trocar de aparelho, fale com o professor para ser liberado manualmente.</p>
         <p><strong>Onde vejo meu histórico de partidas?</strong></p><p>Na tela do aluno, em "Seu Melhor Resultado" e no histórico logo abaixo.</p>
         <p><strong>Como funciona o desempate no Ranking de Pontos?</strong></p><p>O desempate é pela melhor posição na Fase 5. Se ainda empatar, a ordem alfabética define.</p>
-        <p><strong>O que significam os raios ⚡?</strong></p><p><span class="raio-amarelo">⚡</span> Amarelo = bônus de velocidade ganho na fase. <span class="raio-vermelho">⚡</span> Vermelho = recorde geral de velocidade da competição.</p>`
+        <p><strong>O que significam os ícones ⚡ e 🚀?</strong></p><p><span class="raio-amarelo">⚡</span> = bônus de velocidade ganho na fase. <span class="foguete-vermelho">🚀</span> = recorde geral de velocidade da competição.</p>`
 };
 
 const CONTEUDO_TUTORIAL_TORCIDA = {
@@ -5147,11 +5100,11 @@ const CONTEUDO_TUTORIAL_TORCIDA = {
         <p>Além disso, há duas <strong>sub-abas</strong>:</p><ul><li><strong>📊 Fase</strong>: mostra o ranking da fase selecionada (com projeção de pontos, se ativado).</li>
         <li><strong>🏆 Pontos</strong>: mostra o ranking geral de pontos acumulados (se o professor ativar essa funcionalidade).</li></ul>
         <p>Os dados são atualizados automaticamente a cada <strong>4 segundos</strong> (ranking individual) e a cada <strong>60 segundos</strong> (ranking por equipes).</p>
-        <p><strong>⚡ Ícones de raio:</strong> <span class="raio-amarelo">⚡</span> amarelo = jogador mais rápido da fase (bônus). <span class="raio-vermelho">⚡</span> vermelho = detentor do recorde geral de velocidade.</p></div>`,
+        <p><strong>Ícones:</strong> <span class="raio-amarelo">⚡</span> = bônus de velocidade da fase | <span class="foguete-vermelho">🚀</span> = recorde geral de velocidade</p></div>`,
     colunas: `<h3>📊 Como ler o Ranking da Fase</h3><p><strong>Entenda cada coluna do ranking individual:</strong></p>
         <table><thead><tr><th>Coluna</th><th>O que significa</th></tr></thead>
         <tbody><tr><td><strong>Pos</strong></td><td>Posição atual do jogador na fase.</td></tr>
-        <tr><td><strong>Nome</strong></td><td>Nome do aluno. Ao lado, <span class="raio-amarelo">⚡</span> (mais rápido da fase) e <span class="raio-vermelho">⚡</span> (recorde geral).</td></tr>
+        <tr><td><strong>Nome</strong></td><td>Nome do aluno. Ao lado, <span class="raio-amarelo">⚡</span> (mais rápido da fase) e <span class="foguete-vermelho">🚀</span> (recorde geral).</td></tr>
         <tr><td><strong>Melhor Pontuação</strong></td><td>A maior pontuação que o aluno obteve em <strong>uma única partida</strong> dentro da fase.</td></tr>
         <tr><td><strong>Classificação</strong></td><td>Indica se o jogador está dentro da zona de classificação para a próxima fase (ex: "Top 30").</td></tr>
         <tr><td><strong>Ritmo</strong></td><td>Projeção da posição futura e desempenho com base no ritmo atual (🔴 Líder/Recorde, 🟠 Melhora, 🟡 Estável).</td></tr>
@@ -5167,7 +5120,7 @@ const CONTEUDO_TUTORIAL_TORCIDA = {
     pontos: `<h3>🏆 Ranking de Pontos (se ativado)</h3>
         <div class="destaque"><p>Se o professor ativar o <strong>Ranking de Pontos</strong>, a torcida terá acesso a uma aba extra.</p>
         <p>Nela, você verá:</p><ul><li><strong>Posição</strong> geral.</li><li><strong>Nome</strong> do jogador.</li>
-        <li><strong>Pontuação Geral</strong> (soma de todas as fases).</li><li><strong>Fase 5</strong> a <strong>Fase 1</strong> – a pontuação que o jogador obteve em cada fase, com <span class="raio-amarelo">⚡</span> indicando bônus de velocidade na fase e <span class="raio-vermelho">⚡</span> indicando a fase onde o recorde geral foi estabelecido.</li></ul>
+        <li><strong>Pontuação Geral</strong> (soma de todas as fases).</li><li><strong>Fase 5</strong> a <strong>Fase 1</strong> – a pontuação que o jogador obteve em cada fase, com <span class="raio-amarelo">⚡</span> indicando bônus de velocidade na fase e <span class="foguete-vermelho">🚀</span> indicando a fase onde o recorde geral foi estabelecido.</li></ul>
         <p>O campeão da Copa será o jogador com a <strong>maior pontuação geral</strong>.</p>
         <p>Em caso de empate, vence quem teve a <strong>melhor posição na Fase 5</strong>.</p>
         <p>💡 <em>Esta aba só aparece se o professor ativar a funcionalidade no painel de controle.</em></p></div>`,
@@ -5178,7 +5131,7 @@ const CONTEUDO_TUTORIAL_TORCIDA = {
         <p><strong>Posso ver rankings de fases anteriores?</strong></p><p>Sim! No modo "Ranking Individual", você pode selecionar qualquer fase (1 a 5) no seletor superior.</p>
         <p><strong>O que é o "Ranking por Equipes"?</strong></p><p>Ele calcula a <strong>média das melhores pontuações</strong> de todos os alunos de cada turma, mostrando qual turma está com o melhor desempenho geral.</p>
         <p><strong>O ranking de pontos é obrigatório?</strong></p><p>Não. Ele só aparece se o professor ativar a opção no painel de controle. Se estiver desativado, a aba "🏆 Pontos" não será exibida.</p>
-        <p><strong>O que significam os raios ⚡?</strong></p><p><span class="raio-amarelo">⚡</span> Amarelo = bônus de velocidade da fase. <span class="raio-vermelho">⚡</span> Vermelho = recorde geral de velocidade.</p>`
+        <p><strong>O que significam os ícones ⚡ e 🚀?</strong></p><p><span class="raio-amarelo">⚡</span> = bônus de velocidade da fase | <span class="foguete-vermelho">🚀</span> = recorde geral de velocidade.</p>`
 };
 
 function abrirTutorial(tipo) {
@@ -5245,7 +5198,6 @@ async function init() {
     await carregarRecordeGeral();
     await carregarColunasVisiveis();
 
-    // Eventos dos botões
     document.getElementById('btn-instalar-app')?.addEventListener('click', () => {
         window.open('tutorial-instalacao.html', '_blank');
         toast('📱 Abrindo tutorial de instalação...');
@@ -5349,7 +5301,6 @@ async function init() {
     document.getElementById('btn-liberar-aluno')?.addEventListener('click', liberarAluno);
     document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', salvarMinPartidas);
 
-    // Abas
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -5365,7 +5316,7 @@ async function init() {
             if (tab === 'gerenciar-turmas') renderListaTurmas();
             if (tab === 'configuracoes') {
                 carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
-                renderizarColunasVisiveis(); // Garantir que as colunas sejam exibidas
+                renderizarColunasVisiveis();
             }
             tocarSom('clique');
         });
@@ -5484,7 +5435,6 @@ async function init() {
             if (confirm("Reset total?")) {
                 db.ref('copaV2').set({ fase:1, status:'aguardando', tempoFase:10, fim:0, modalidade: estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} });
                 db.ref('online').remove();
-                // Resetar configurações de bônus e recorde (com padrão 1 ponto)
                 db.ref(BONUS_VELOCIDADE_KEY).set({ ativo: true, pontos: 1, precisaoMinima: 80 });
                 db.ref('copaV2/configuracoes/bonusVelocidade/porFase').remove();
                 db.ref(RECORDE_GERAL_KEY).remove();
@@ -5551,7 +5501,6 @@ async function init() {
         if (e.target === this) fecharTutorial();
     });
 
-    // Login do professor
     document.getElementById('btn-professor')?.addEventListener('click', () => {
         const user = auth.currentUser;
         if (user) {
@@ -5593,7 +5542,6 @@ async function init() {
         }
     });
 
-    // Login do aluno
     document.getElementById('btn-aluno')?.addEventListener('click', async () => {
         if (!estadoAtual || estadoAtual.status !== 'em_andamento' || Date.now() >= estadoAtual.fim) {
             toast("⏳ A fase não foi iniciada ou já terminou.");
