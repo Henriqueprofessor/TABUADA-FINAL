@@ -2062,6 +2062,7 @@ function calcularRankingFase(fase) {
             turma,
             melhorPontuacao: melhor.pontos,
             totalPartidas: partidas.length,
+            somaTempo: somaTempo,
             mediaTempo: mediaTempo,
             melhorVelocidade: melhorVelocidade,
             partidas: partidas
@@ -2076,7 +2077,8 @@ function calcularRankingFase(fase) {
             if (!existente.partidas || existente.partidas.length === 0) {
                 existente.melhorPontuacao = data.pontos;
                 existente.totalPartidas = 0;
-                existente.mediaTempo = data.tempo / (data.acertos || 1);
+                existente.somaTempo = data.tempo || 0;
+                existente.mediaTempo = data.acertos > 0 ? data.tempo / data.acertos : Infinity;
                 existente.melhorVelocidade = data.acertos > 0 ? data.tempo / data.acertos : null;
             }
         } else {
@@ -2088,7 +2090,8 @@ function calcularRankingFase(fase) {
                 turma,
                 melhorPontuacao: data.pontos,
                 totalPartidas: 0,
-                mediaTempo: data.tempo / (data.acertos || 1),
+                somaTempo: data.tempo || 0,
+                mediaTempo: data.acertos > 0 ? data.tempo / data.acertos : Infinity,
                 melhorVelocidade: data.acertos > 0 ? data.tempo / data.acertos : null,
                 partidas: []
             });
@@ -2375,8 +2378,8 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
                 ultimaPosicao: null,
                 recordeVelocidade: null,
                 pontuacaoAtual: data.pontos,
-                somaTempo: 0,
-                mediaTempo: null,
+                somaTempo: data.tempo || 0,
+                mediaTempo: data.acertos > 0 ? data.tempo / data.acertos : null,
                 partidasData: []
             });
         } else {
@@ -2385,6 +2388,14 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             if (statusInfo) {
                 existente.status = statusInfo.status;
                 existente.progresso = statusInfo.progresso;
+            }
+            // Atualizar somaTempo e mediaTempo com dados temporários
+            if (data.tempo) existente.somaTempo += data.tempo;
+            if (data.acertos > 0) {
+                const tempMedia = data.tempo / data.acertos;
+                if (existente.mediaTempo === null || tempMedia < existente.mediaTempo) {
+                    existente.mediaTempo = tempMedia;
+                }
             }
         }
     });
@@ -2477,17 +2488,28 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         }
     }
 
+    // ============================================
+    // DEFINIÇÃO DO HEADER DA TABELA
+    // ============================================
     let html = `<table class="ranking-table"><thead><tr>
         <th>Pos</th>
         <th>Nome</th>
         <th>Melhor Pontuação</th>`;
     if (mostrarClassificacao) html += '<th>Classificação</th>';
-    html += '<th>Ritmo</th><th>Pontuação Atual</th><th>Delta Líder</th><th>Veloc. Recorde</th><th>Progresso</th><th>Partidas</th><th>Turma</th>';
+    html += '<th>Ritmo</th><th>Pontuação Atual</th><th>Delta Líder</th><th>Veloc. Recorde</th><th>Progresso</th><th>Partidas</th>';
+    // Colunas extras apenas para o professor (containerId === 'ranking-parcial')
+    if (containerId === 'ranking-parcial') {
+        html += '<th>Tempo Total</th><th>Méd. Temp. Part.</th>';
+    }
+    html += '<th>Turma</th>';
     if (rankingPontosAtivo && estadoAtual.status === 'em_andamento' && faseNum === estadoAtual.fase) {
         html += '<th>Projeção</th>';
     }
     html += '</tr></thead><tbody>';
 
+    // ============================================
+    // LOOP PARA CRIAR AS LINHAS
+    // ============================================
     for (let idx = 0; idx < listaComId.length; idx++) {
         const j = listaComId[idx];
         const posAtual = idx + 1;
@@ -2555,6 +2577,9 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             nomeComRaios += ' <span class="raio-amarelo">⚡</span>';
         }
 
+        // ============================================
+        // MONTAGEM DA LINHA
+        // ============================================
         html += `<tr>
             <td class="${classePos}">${posAtual}º</td>
             <td>${nomeComRaios}</td>
@@ -2565,10 +2590,24 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
             <td>${deltaText}</td>
             <td>${recordeStr}</td>
             <td>${progressoHtml}</td>
-            <td>${j.partidas}</td>
-            <td>${escapeHtml(j.turma)}</td>
-            ${projecaoHtml ? `<td>${projecaoHtml}</td>` : ''}
-        </tr>`;
+            <td>${j.partidas}</td>`;
+
+        // Colunas extras apenas para o professor
+        if (containerId === 'ranking-parcial') {
+            // Tempo Total (somaTempo)
+            let tempoTotalStr = "–";
+            if (j.somaTempo > 0) tempoTotalStr = j.somaTempo.toFixed(1) + "s";
+            else if (j.partidas > 0) tempoTotalStr = "0.0s";
+            // Média de Tempo por Partida
+            let mediaTempoStr = "–";
+            if (j.mediaTempo !== null && j.mediaTempo > 0 && j.mediaTempo !== Infinity) mediaTempoStr = j.mediaTempo.toFixed(1) + "s";
+            else if (j.partidas > 0) mediaTempoStr = "0.0s";
+            html += `<td>${tempoTotalStr}</td><td>${mediaTempoStr}</td>`;
+        }
+
+        html += `<td>${escapeHtml(j.turma)}</td>`;
+        if (projecaoHtml) html += `<td>${projecaoHtml}</td>`;
+        html += `</tr>`;
     }
     html += '</tbody></table>';
     document.getElementById(containerId).innerHTML = html;
