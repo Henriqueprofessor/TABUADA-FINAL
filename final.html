@@ -2447,9 +2447,22 @@ async function renderRanking(faseNum, containerId, tipo = 'individual', exibirCl
         jogadorRecordeGeralNome = recordeGeral.nome;
     }
 
-    // --- Mais rápido da fase (RAIO AMARELO ⚡) ---
+    // --- Busca o vencedor do bônus (persistido) para exibir o raio ⚡ ---
     let jogadorMaisRapidoFaseId = null;
-    if (estadoAtual.status === 'em_andamento' && bonusVelocidadeConfig.ativo) {
+    try {
+        const snapVencedor = await db.ref(`copaV2/configuracoes/bonusVelocidade/vencedores/${faseNum}`).once('value');
+        if (snapVencedor.exists()) {
+            const vencedorData = snapVencedor.val();
+            if (vencedorData && vencedorData.id) {
+                jogadorMaisRapidoFaseId = vencedorData.id;
+            }
+        }
+    } catch (e) {
+        console.warn('Erro ao buscar vencedor do bônus:', e);
+    }
+    // (Opcional) Se a fase ainda estiver em andamento e não houver vencedor persistido,
+    // calculamos em tempo real para exibir antes do término da fase.
+    if (!jogadorMaisRapidoFaseId && estadoAtual.status === 'em_andamento' && bonusVelocidadeConfig.ativo) {
         const elegiveis = listaComId.filter(item => {
             const partidasArray = Array.isArray(item.partidasData) ? item.partidasData : [];
             if (partidasArray.length === 0) return false;
@@ -2918,6 +2931,14 @@ async function atualizarRecordeGeral(jogadorId, velocidade, precisao, fase, part
 async function processarBonusVelocidade(fase) {
     if (!bonusVelocidadeConfig.ativo) return;
 
+    // Verifica se o bônus já foi concedido para esta fase
+    const vencedorRef = db.ref(`copaV2/configuracoes/bonusVelocidade/vencedores/${fase}`);
+    const snapVencedor = await vencedorRef.once('value');
+    if (snapVencedor.exists()) {
+        console.log(`Bônus já concedido para a fase ${fase}. Ignorando.`);
+        return;
+    }
+
     const resultados = estadoAtual?.resultados?.[fase] || {};
     if (Object.keys(resultados).length === 0) return;
 
@@ -2982,6 +3003,15 @@ async function processarBonusVelocidade(fase) {
     const bonusData = snap.val() || {};
     bonusData[vencedor.id] = bonusVelocidadeConfig.pontos;
     await bonusRef.set(bonusData);
+
+    // Salva o vencedor permanentemente
+    await vencedorRef.set({
+        id: vencedor.id,
+        pontos: bonusVelocidadeConfig.pontos,
+        velocidade: vencedor.velocidade,
+        nome: vencedor.nome,
+        turma: vencedor.turma
+    });
 
     const histRef = db.ref(`copaV2/pontuacaoHistorico/${fase}/${vencedor.id}`);
     const snapHist = await histRef.once('value');
