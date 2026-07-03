@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo - HENRIQUE ANGELO DA SILVA</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="container">
+
+    <!-- ========================================================= -->
+    <!-- MODAL DE LOGIN DO PROFESSOR                                -->
+    <!-- ========================================================= -->
+    <div id="modalLoginProfessor" class="modal-login">
+        <div class="modal-login-content">
+            <h2>🔐 Acesso do Professor</h2>
+            <p style="color: #94a3b8; margin: 10px 0 20px;">Digite seu e-mail e senha cadastrados.</p>
+            <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="email">
+            <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password">
+            <button id="btnLoginProfessor" class="btn-login">✅ Entrar</button>
+            <button id="btnCancelarLogin" class="btn-cancelar">❌ Cancelar</button>
+            <div id="loginErro" class="erro-msg"></div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- CABEÇALHO PRINCIPAL                                        -->
+    <!-- ========================================================= -->
+    <div class="card esconder-durante-jogo">
+        <div class="header-title">
+            <h1>🏆 COPA TABUADA CEIB 2026 <span id="modalidade-titulo" class="modalidade-badge">Carregando...</span></h1>
+            <a href="https://henriqueprofessor.github.io/Tabuada/" target="_blank" class="link-classificatoria" rel="noopener noreferrer">🔗 Fase Classificatória</a>
+            <span class="version-display" id="version-display">
+                📌 Versão: <span class="version-number" id="version-number">--</span>
+                <span class="version-check" id="version-check-icon" title="Verificar atualizações">🔄</span>
+            </span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div>
+                <p>Fase atual: <strong id="fase-atual-titulo">--</strong> <span id="fase-progresso" class="fase-info"></span></p>
+                <div id="timer-fase" class="timer-display">00:00</div>
+                <div style="font-size: 12px; margin-top: 5px;">Última Sinc: <span id="last-sync-time">--</span></div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px;">
+                    <button id="btn-sincronizar-global" class="btn-warning">🔄 Sincronizar</button>
+                    <button id="btn-verificar-versao" class="btn-verificar-versao">🔍 Verificar Versão</button>
+                </div>
+            </div>
+            <div id="online-stats" class="online-badge hidden">Online: <span id="jogadores-online">0</span></div>
+        </div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0;">
+            <button id="btn-professor" class="btn-primary">👨‍🏫 Professor</button>
+            <button id="btn-aluno">🎮 Aluno</button>
+            <button id="btn-projecao">📺 Torcida</button>
+            <button id="btn-tutorial-inicial" class="btn-info">📘 Tutorial</button>
+            <button id="btn-instalar-app" style="background: #9b59b6; color: white; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px;">📱 Instalar App</button>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- PAINEL DO PROFESSOR                                       -->
+    <!-- ========================================================= -->
+    <div id="painel-professor" class="card hidden">
+        <div class="header-actions">
+            <h2>🔧 Painel do Professor <span id="prof-fase-info" class="fase-info"></span></h2>
+            <div>
+                <button id="btn-sync-prof" class="btn-warning">🔄 Sincronizar</button>
+                <button id="btn-logout-professor" class="btn-danger">🚪 Sair</button>
+                <button id="btn-voltar-menu-prof" class="btn-danger">🏠 Voltar ao Menu</button>
+            </div>
+        </div>
+
+        <!-- Abas -->
+        <div class="tab-buttons">
+            <div class="tab-btn active" data-tab="controle">🎮 Controle</div>
+            <div class="tab-btn" data-tab="ranking-geral">🏆 Ranking Geral</div>
+            <div class="tab-btn" data-tab="ranking-fase">📊 Ranking por Fase <span class="live-badge" id="live-badge-prof">LIVE</span></div>
+            <div class="tab-btn" data-tab="ranking-turmas">🏆 Ranking por Turma</div>
+            <div class="tab-btn" data-tab="ranking-pontos">🏆 Pontos Copa</div>
+            <div class="tab-btn" data-tab="gerenciar-alunos">✏️ Gerenciar Alunos</div>
+            <div class="tab-btn" data-tab="gerenciar-turmas">🏷️ Gerenciar Turmas</div>
+            <div class="tab-btn" data-tab="configuracoes">⚙️ Configurações</div>
+        </div>
+
+        <!-- Conteúdo das abas -->
+        <div id="tab-controle" class="tab-content">
+            <div class="flex-grid">
+                <div>
+                    <h3>Controle da Fase</h3>
+                    <div class="status-box">
+                        <label>Modalidade da Tabuada:</label>
+                        <select id="select-modalidade" style="width:100%; padding:8px; margin:10px 0; border-radius:20px; background:#1f3a4b; color:white;">
+                            <option value="2-5">📚 Tabuada do 2 ao 5</option>
+                            <option value="6-9">📚 Tabuada do 6 ao 9</option>
+                            <option value="0-10">📚 Tabuada do 0 ao 10 (Completa)</option>
+                        </select>
+                        <button id="btn-aplicar-modalidade" class="btn-warning" style="width:100%;">🎯 Aplicar e Reiniciar Copa</button>
+                        <hr>
+                        <label>Tempo (minutos):</label>
+                        <input type="number" id="input-tempo-fase" value="10" min="1" style="width: 80px; padding: 5px; border-radius: 5px;">
+                        <button id="btn-salvar-tempo" class="btn-warning">💾 Salvar</button>
+                        <hr>
+                        <button id="btn-iniciar-fase" class="btn-success">▶️ Iniciar Fase</button>
+                        <button id="btn-continuar-parar-fase" class="btn-danger">⏹️ Parar Fase</button>
+                        <button id="btn-avancar-fase" class="btn-primary" style="margin-top: 10px; width: 100%;">➡️ Finalizar Fase e Classificar</button>
+                        <button id="btn-reset-fase" class="btn-warning" style="margin-top: 10px; width: 100%;">🔄 Resetar Fase (apagar dados atuais)</button>
+                        <button id="btn-reset-total" class="btn-danger" style="margin-top: 10px; width: 100%;">⚠️ Resetar Competição</button>
+                        <hr>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <label for="input-tempo-extra" style="color: #ffd966;">➕ Adicionar tempo extra (min):</label>
+                            <input type="number" id="input-tempo-extra" value="5" min="1" style="width: 80px; padding: 5px; border-radius: 5px;">
+                            <button id="btn-adicionar-tempo-extra" class="btn-success" style="padding: 6px 16px;">Adicionar</button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Usuários Online: <span id="prof-online-count">0</span></h3>
+                    <div id="lista-participantes" style="max-height: 300px; overflow-y: auto; background: #000; padding: 10px; border-radius: 10px;"></div>
+                </div>
+            </div>
+            <div class="controle-atualizacao">
+                <h3>⚙️ Controle de Atualização dos Rankings</h3>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
+                    <div>
+                        <label>📊 Ranking Individual (segundos):</label>
+                        <input type="number" id="intervalo-individual" min="1" max="300" value="4" step="1">
+                        <button id="btn-atualizar-intervalo-individual" class="btn-warning">Aplicar</button>
+                    </div>
+                    <div>
+                        <label>👥 Ranking por Equipes (segundos):</label>
+                        <input type="number" id="intervalo-equipes" min="1" max="600" value="60" step="1">
+                        <button id="btn-atualizar-intervalo-equipes" class="btn-warning">Aplicar</button>
+                    </div>
+                </div>
+                <p style="font-size: 12px;">* Os intervalos são salvos no Firebase e aplicados a todos os usuários em tempo real.</p>
+            </div>
+            <div id="competicao-finalizada-prof" class="competicao-finalizada hidden">
+                <h2>🏆 COPA FINALIZADA!</h2>
+                <p>A competição chegou ao fim.</p>
+                <div class="destaque">
+                    <p>📊 Consulte o <strong>Ranking de Pontos</strong> (na aba ao lado) para ver a classificação final e o grande campeão.</p>
+                    <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 5px;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-ranking-geral" class="tab-content hidden">
+            <h3>📊 Classificação Geral - Todos os Participantes</h3>
+            <div id="ranking-geral-container" class="status-box">Processando ranking geral...</div>
+        </div>
+
+        <div id="tab-ranking-fase" class="tab-content hidden">
+            <h3>Ranking por Fase (Atualização automática)</h3>
+            <div class="fase-selector">
+                <label>Selecione a Fase: </label>
+                <select id="select-fase-ranking" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
+                <button id="btn-toggle-auto-ranking" class="btn-secondary">⏸️ Pausar Atualização</button>
+            </div>
+            <div id="ranking-parcial" class="status-box">Aguardando dados...</div>
+        </div>
+
+        <div id="tab-ranking-turmas" class="tab-content hidden">
+            <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
+            <div style="margin-bottom: 15px;">
+                <button id="btn-atualizar-ranking-turmas" class="btn-secondary">🔄 Atualizar</button>
+            </div>
+            <div id="ranking-turmas-container" class="status-box">Carregando...</div>
+        </div>
+
+        <div id="tab-ranking-pontos" class="tab-content hidden">
+            <h3>🏆 Ranking de Pontos Acumulados</h3>
+            <p style="color: #94a3b8; margin-bottom: 15px;">O campeão da Copa será o jogador com o maior total de pontos ao final das 5 fases.</p>
+            <div class="toggle-ativo">
+                <label for="toggle-ranking-pontos">📌 Habilitar Ranking de Pontos</label>
+                <input type="checkbox" id="toggle-ranking-pontos" checked>
+                <span id="status-ranking-pontos" style="color: #94a3b8; font-size: 14px;">Desativado</span>
+            </div>
+            <div class="config-card">
+                <h4>📋 Configuração da Pontuação</h4>
+                <div class="pontos-config-area">
+                    <label style="color: #f1f5f9;">Fases 1 a 4 (padrão: 1º=40, 2º=39, ..., 40º=1)</label>
+                    <div class="dica-config">Digite no formato <strong>posição: pontos</strong>, separados por vírgula. Ex: 1:40, 2:39, 3:38</div>
+                    <textarea id="textarea-pontos-padrao" rows="3"></textarea>
+                    <button id="btn-restaurar-padrao" class="btn-secondary" style="margin-top: 6px;">🔄 Restaurar Padrão (40..1)</button>
+                </div>
+                <hr>
+                <div class="pontos-config-area">
+                    <label style="color: #f1f5f9;">Fase 5 (pode ser alterada a qualquer momento)</label>
+                    <div class="dica-config">Digite no formato <strong>posição: pontos</strong>, separados por vírgula.</div>
+                    <textarea id="textarea-pontos-fase5" rows="3"></textarea>
+                    <button id="btn-restaurar-padrao-fase5" class="btn-secondary" style="margin-top: 6px;">🔄 Restaurar Padrão (40..1)</button>
+                </div>
+                <button id="btn-salvar-pontuacao" class="btn-success" style="margin-top: 15px;">💾 Salvar Configuração de Pontos</button>
+                <div id="feedback-pontuacao" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <div class="config-card" style="border-color: #facc15;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">⚡</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Bônus de Velocidade</h4>
+                    <span style="background: #facc15; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Concede pontos extras ao jogador com a <strong>maior velocidade recorde</strong> da fase, 
+                    desde que ele atinja a precisão mínima exigida (porcentagem de acertos).
+                    O bônus é concedido apenas ao <strong>1º colocado</strong> em velocidade válido.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <label style="color: #f1f5f9; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="toggle-bonus-velocidade" checked>
+                        Habilitar Bônus
+                    </label>
+                    <label style="color: #f1f5f9;">
+                        Pontos:
+                        <input type="number" id="input-bonus-velocidade" value="1" min="1" max="100" style="width: 70px; padding: 5px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9;">
+                    </label>
+                    <label style="color: #f1f5f9;">
+                        Precisão Mínima (%):
+                        <input type="number" id="input-precisao-bonus" value="80" min="50" max="100" style="width: 70px; padding: 5px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9;">
+                    </label>
+                </div>
+                <button id="btn-salvar-bonus-velocidade" class="btn-success" style="margin-top: 15px;">💾 Salvar Bônus</button>
+                <div id="feedback-bonus-velocidade" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <h4 style="margin-top: 20px;">📊 Ranking Geral de Pontos</h4>
+            <div id="ranking-pontos-container" class="status-box">Carregando...</div>
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">
+                ⚡ = Bônus de velocidade na fase | 🚀 = Recorde de velocidade da competição
+            </p>
+        </div>
+
+        <div id="tab-gerenciar-alunos" class="tab-content hidden">
+            <h3>📝 Gerenciar Alunos da Fase Atual</h3>
+            <div id="lista-alunos-gerenciavel" class="status-box scroll-list">Carregando...</div>
+            <button id="btn-atualizar-lista-alunos" class="btn-secondary">🔄 Recarregar</button>
+        </div>
+
+        <div id="tab-gerenciar-turmas" class="tab-content hidden">
+            <h3>🏷️ Gerenciar Turmas Disponíveis</h3>
+            <button id="btn-adicionar-turma" class="btn-success">➕ Adicionar Nova Turma</button>
+            <div id="lista-turmas-gerenciavel" class="status-box scroll-list" style="margin-top: 15px;">Carregando...</div>
+        </div>
+
+        <!-- Aba Configurações -->
+        <div id="tab-configuracoes" class="tab-content hidden">
+            <h3>⚙️ Configurações do Professor</h3>
+            <div id="bloco-controle-som" class="config-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">🔊</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Controle de Sons</h4>
+                    <span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Habilite ou desabilite cada som individualmente. Os alunos também ouvem os efeitos durante o jogo.
+                    O volume e as preferências são salvos automaticamente no navegador.
+                </p>
+                <div class="som-controles-gerais">
+                    <button id="btn-som-master" class="btn-som-master ativado">🔊 Sons Ativados</button>
+                    <div class="controle-vol">
+                        <span>🔉</span>
+                        <input type="range" id="volume-global" min="0" max="100" value="70">
+                        <span id="volume-label">70%</span>
+                    </div>
+                    <button id="btn-testar-todos-sons" class="btn-secondary" style="padding: 6px 16px; font-size: 13px;">🔊 Testar Todos</button>
+                </div>
+                <div class="som-card">
+                    <h4>🎵 Efeitos Sonoros <span class="badge-som">11 sons</span></h4>
+                    <div class="som-grid" id="som-grid-container"></div>
+                </div>
+            </div>
+
+            <div id="bloco-valor-partida" class="config-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">💰</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Valor da Partida</h4>
+                    <span style="background: #3b82f6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Define quantos pontos uma partida completa vale. 
+                    Este valor é usado para <strong>projetar a posição futura</strong> dos jogadores no ranking,
+                    baseado na sua velocidade média de acertos.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <label for="input-valor-partida" style="color: #94a3b8; font-weight: 500; font-size: 14px;">Pontos por partida:</label>
+                    <input type="number" id="input-valor-partida" value="2000" min="1" max="10000" step="100"
+                        style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 16px; border-radius: 10px; font-size: 16px; width: 180px; font-weight: 600;"/>
+                    <button id="btn-atualizar-valor-partida" 
+                        style="background: #3b82f6; color: white; border: none; padding: 10px 28px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.3s; display: flex; align-items: center; gap: 8px;"
+                        onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+                        <span>🔄</span> Atualizar
+                    </button>
+                    <span style="color: #64748b; font-size: 13px; display: flex; align-items: center; gap: 4px;">
+                        Valor atual: <strong id="valor-partida-atual" style="color: #4ade80; font-size: 15px;">2000</strong> pontos
+                    </span>
+                </div>
+                <div id="feedback-valor-partida" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+                <div style="margin-top: 12px; padding: 12px 16px; background: #0f172a; border-radius: 8px; border-left: 3px solid #facc15;">
+                    <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+                        💡 <strong>Exemplo:</strong> Com 2000 pontos por partida, um jogador com 
+                        <strong>1.00s</strong> de média projeta <strong>2000 pts</strong> na próxima partida, 
+                        enquanto um com <strong>2.00s</strong> projeta <strong>1000 pts</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <div id="bloco-min-partidas" class="config-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">📋</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Mínimo de Partidas por Fase</h4>
+                    <span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Defina o número mínimo de partidas que um jogador deve completar em cada fase para ser elegível à classificação.
+                    Apenas jogadores que atingirem esse número e estiverem dentro das vagas avançam.
+                </p>
+                <div id="min-partidas-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                <button id="btn-salvar-min-partidas" class="btn-success" style="margin-top: 12px;">💾 Salvar configurações</button>
+                <div id="feedback-min-partidas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <div id="bloco-visibilidade-colunas" class="config-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">👁️</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Visibilidade das Colunas</h4>
+                    <span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Selecione quais colunas serão exibidas no ranking para <strong>alunos</strong> e para a <strong>torcida</strong>.
+                    As colunas com <strong>*</strong> são obrigatórias e sempre visíveis.
+                </p>
+                <div class="colunas-grid" id="colunas-visiveis-container"></div>
+                <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+                    <button id="btn-salvar-colunas" class="btn-success">💾 Salvar configurações</button>
+                    <button id="btn-restaurar-colunas" class="btn-warning">🔄 Restaurar Padrões</button>
+                </div>
+                <div id="feedback-colunas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <div class="config-card senha-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">🔑</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Senha de Acesso - Fase 1</h4>
+                    <span style="background: #facc15; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Defina uma senha numérica de 2 dígitos que os alunos deverão digitar para se cadastrar na <strong>Fase 1</strong>.
+                    Após iniciar a fase, a senha fica bloqueada e não pode mais ser alterada.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <div>
+                        <label style="color: #94a3b8; font-size: 14px;">Senha atual:</label>
+                        <input type="number" id="input-senha-fase1" min="10" max="99" value="42" 
+                            style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; font-size: 24px; width: 100px; text-align: center; font-weight: bold;">
+                    </div>
+                    <button id="btn-gerar-senha" class="btn-gerar-senha">🎲 Gerar</button>
+                    <button id="btn-salvar-senha" class="btn-success">💾 Salvar</button>
+                    <label class="toggle-label">
+                        <span>Exigir senha na Fase 1</span>
+                        <input type="checkbox" id="toggle-exigir-senha" checked>
+                    </label>
+                    <span id="status-senha" style="color: #4ade80; font-size: 14px; margin-left: 8px;">✅ Ativa</span>
+                </div>
+                <div id="feedback-senha" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+                <p style="color: #94a3b8; font-size: 12px; margin-top: 12px;">
+                    ⚠️ A senha só pode ser alterada <strong>antes</strong> de iniciar a Fase 1. Após o início, o campo fica bloqueado.
+                </p>
+            </div>
+
+            <div class="config-card liberar-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">🚪</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Liberar Cadastro Emergencial</h4>
+                    <span style="background: #3b82f6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Use esta ferramenta para <strong>liberar manualmente</strong> um aluno classificado que esteja tendo problemas para entrar 
+                    (ex: perda de deviceId, erro de digitação, bug). A liberação é persistente e válida apenas para a fase atual.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <input type="text" id="input-liberar-nome" placeholder="Nome do aluno" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; width: 200px;">
+                    <input type="text" id="input-liberar-turma" placeholder="Turma" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; width: 150px;">
+                    <button id="btn-liberar-aluno" class="btn-liberar">🔓 Liberar</button>
+                    <span style="color: #64748b; font-size: 13px;">(para a fase atual)</span>
+                </div>
+                <div id="feedback-liberar" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+                <div style="margin-top: 12px; max-height: 150px; overflow-y: auto; background: #0f172a; border-radius: 8px; padding: 8px;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">📋 Alunos liberados nesta fase:</p>
+                    <div id="lista-liberados" style="color: #4ade80; font-size: 13px; margin-top: 4px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Fim do painel do professor -->
+
+    <!-- ========================================================= -->
+    <!-- TELA DO ALUNO                                              -->
+    <!-- ========================================================= -->
+    <div id="tela-aluno" class="card hidden">
+        <div id="jogo-area" class="hidden jogo-topo">
+            <div id="pergunta-container" class="pergunta-container brilho-cinza">
+                <div class="barra-tempo" style="margin-top: 0; margin-bottom: 20px;"><div id="progresso-tempo" class="progresso-tempo"></div></div>
+                <div id="pergunta" style="font-size:64px; font-weight: bold; margin-bottom: 0;">0 x 0 = ?</div>
+            </div>
+            <div class="opcoes-vertical">
+                <button class="opcao-vertical" onclick="window.responder(0)"></button>
+                <button class="opcao-vertical" onclick="window.responder(1)"></button>
+                <button class="opcao-vertical" onclick="window.responder(2)"></button>
+                <button class="opcao-vertical" onclick="window.responder(3)"></button>
+            </div>
+            <div style="text-align: center; margin-top: 15px; font-size: 18px; opacity: 0.8; font-weight: bold;">
+                Pergunta: <span id="pergunta-num">1</span> / 20
+            </div>
+            <div class="jogo-rodape-minimalista">
+                <div class="item-rodape" title="Pontuação">🎯 <span id="pontuacao-acumulada">0</span></div>
+                <div class="item-rodape" title="Posição Atual">🏆 <span id="posicao-numero">--</span>º</div>
+                <div class="item-rodape" title="Velocidade Média">⚡ <span id="velocidade-media">0.00</span>s</div>
+            </div>
+        </div>
+
+        <div class="header-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+            <h2 id="aluno-nome-display" style="margin: 0;">Aluno</h2>
+            <div class="timer-fase-aluno" id="timer-fase-aluno">⏱️ Tempo: --:--</div>
+            <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking Fase</button>
+            <button id="btn-ranking-pontos-aluno" class="btn-info" style="margin-left: 5px;">🏆 Ranking Pontos</button>
+            <button id="btn-tutorial-aluno" class="btn-info" style="margin-left: 5px;">📘 Tutorial</button>
+            <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
+        </div>
+
+        <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong> <span id="aluno-fase-info" class="fase-info"></span></p>
+
+        <div id="aguardando-aluno" style="text-align:center; padding:20px;">
+            <div id="msg-status-aluno">Aguardando...</div>
+            <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
+        </div>
+
+        <div class="status-box">
+            <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
+            <div id="historico-aluno"></div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODAL DE RANKING DO ALUNO                                  -->
+    <!-- ========================================================= -->
+    <div id="modal-ranking-aluno" class="modal-ranking">
+        <div class="modal-ranking-content">
+            <h2 style="color: #ffd966; text-align: center;">📊 Ranking</h2>
+            <div class="modal-sub-tabs">
+                <div class="sub-tab active" data-subtab="fase">📊 Fase Atual</div>
+                <div class="sub-tab" data-subtab="pontos">🏆 Pontos Copa</div>
+            </div>
+            <div id="ranking-aluno-container" class="status-box" style="max-height: 60vh; overflow-y: auto;">Carregando...</div>
+            <div class="acoes-modal">
+                <button id="btn-fechar-modal-ranking" class="btn-fechar">🔙 Voltar ao Jogo</button>
+                <button id="btn-sair-modal-ranking" class="btn-sair-modal">🚪 Sair</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODAL DE TUTORIAL                                          -->
+    <!-- ========================================================= -->
+    <div id="modal-tutorial" class="modal-ranking" style="display:none;">
+        <div class="modal-ranking-content" style="max-width: 800px;">
+            <h2 style="color:#ffd966; text-align:center;" id="tutorial-titulo">📘 Tutorial</h2>
+            <div class="modal-sub-tabs" id="tutorial-tabs"></div>
+            <div id="tut-conteudo" class="tutorial-content"></div>
+            <div class="acoes-modal">
+                <button id="btn-fechar-tutorial" class="btn-fechar">🔙 Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TELA DA TORCIDA                                            -->
+    <!-- ========================================================= -->
+    <div id="tela-torcida" class="card hidden">
+        <div class="header-actions">
+            <h2>📺 RANKING EM TEMPO REAL <span class="live-badge">AO VIVO</span></h2>
+            <div>
+                <button id="btn-sync-torcida" class="btn-warning">🔄 Sincronizar</button>
+                <button id="btn-tutorial-torcida" class="btn-info">📘 Tutorial</button>
+                <button id="btn-sair-torcida" class="btn-danger">🏠 Voltar</button>
+            </div>
+        </div>
+        <div class="modo-buttons">
+            <button id="btn-modo-individual" class="btn-modo ativo">👤 Ranking Individual</button>
+            <button id="btn-modo-equipes" class="btn-modo">👥 Ranking por Equipes</button>
+        </div>
+        <div style="display: flex; gap: 10px; margin: 10px 0;">
+            <button id="btn-torcida-sub-fase" class="btn-modo ativo">📊 Fase</button>
+            <button id="btn-torcida-sub-pontos" class="btn-modo">🏆 Pontos</button>
+        </div>
+        <div class="fase-selector" id="torcida-fase-selector">
+            <label>Selecione a Fase: </label>
+            <select id="select-fase-torcida" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
+            <span style="margin-left: 15px; font-size: 14px; color: #ffd966;" id="fase-torcida-info"></span>
+        </div>
+        <div style="margin: 15px 0;">
+            <p>Modalidade: <strong id="torcida-modalidade">--</strong> | <span id="torcida-fase-info" class="fase-info"></span> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;">--:--</strong></p>
+            <p><small>Individual: atualização a cada <span id="torcida-individual-intervalo">4</span>s | Equipes: atualização a cada <span id="torcida-equipes-intervalo">60</span>s | Última atualização: <span id="torcida-last-update">--</span></small></p>
+        </div>
+        <div id="ranking-torcida-container" class="status-box">Carregando ranking ao vivo...</div>
+        <div id="competicao-finalizada-torcida" class="competicao-finalizada hidden">
+            <h2>🏆 COPA FINALIZADA!</h2>
+            <p>A competição chegou ao fim.</p>
+            <div class="destaque">
+                <p>📊 Consulte o <strong>Ranking de Pontos</strong> (aba ao lado) para ver a classificação final e o grande campeão.</p>
+                <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 5px;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div id="toast" class="toast hidden"></div>
+
+<!-- ===== RODAPÉ ===== -->
+<div style="text-align: center; margin-top: 30px; padding: 15px; color: #666; font-size: 14px; border-top: 1px solid #2c3e50;">
+    🏆 Copa Tabuada CEIB 2026 - Desenvolvido por <strong style="color: #ffd966;">HENRIQUE ANGELO DA SILVA</strong>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCRIPT PRINCIPAL (MODULAR)                                   -->
+<!-- ============================================================ -->
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
