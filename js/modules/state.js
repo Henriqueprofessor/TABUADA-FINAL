@@ -1,10 +1,9 @@
-// Estado global da aplicação
 export const state = {
-  meuTipo: null,           // 'professor', 'aluno', 'projecao'
+  meuTipo: null,
   alunoId: null,
   alunoNome: null,
   alunoTurma: null,
-  estadoAtual: null,       // snapshot do nó copaV2
+  estadoAtual: null,
   jogoAtivo: false,
   perguntas: [],
   perguntaIdx: 0,
@@ -16,17 +15,14 @@ export const state = {
   timerFase: null,
   partidaFinalizada: false,
   posicaoAntesPartida: null,
-  // Ranking e configurações
   rankingPontosAtivo: false,
   tabelaPontosPadrao: {},
   tabelaPontosFase5: {},
   bonusVelocidadeConfig: { ativo: true, pontos: 1, precisaoMinima: 80 },
   recordeGeral: null,
   colunasVisiveis: null,
-  // Intervalos (padrão: 4s e 60s) – item 3
   intervaloIndividualSegundos: 4,
   intervaloEquipesSegundos: 60,
-  // Outros
   faseSelecionadaProf: 1,
   modoTorcida: 'individual',
   abaTorcidaAtiva: 'fase',
@@ -35,7 +31,6 @@ export const state = {
   atualizacaoRankingAuto: true,
   tempoEsgotadoProcessado: false,
   VALOR_PARTIDA: 2000,
-  // Controles de listener
   intervaloTorcidaIndividual: null,
   intervaloTorcidaEquipes: null,
   intervaloRankingProfessor: null,
@@ -43,6 +38,5 @@ export const state = {
   intervaloTempoReal: null,
   listenerCopa: null,
   listenerOnline: null,
-  // Senha
   senhaBloqueada: false,
 };
