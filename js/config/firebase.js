@@ -1,5 +1,6 @@
 // js/config/firebase.js
-// Inicializa o Firebase com as configurações
+// O Firebase já foi carregado pelas tags script no HTML,
+// mas precisamos inicializar o app antes de usar database() e auth().
 
 const firebaseConfig = {
   apiKey: "AIzaSyBkoL3Zn-YkGUy6RAWZYVhWtIbcfL8h-J8",
@@ -11,8 +12,7 @@ const firebaseConfig = {
   appId: "1:488825824115:web:50e94f68253473aee91b06"
 };
 
-// O Firebase já foi carregado pelas tags script no HTML,
-// então a variável global 'firebase' está disponível.
+// Inicializa o Firebase (usando a variável global 'firebase' carregada pelas tags script)
 window.firebase.initializeApp(firebaseConfig);
 
 const db = window.firebase.database();
