@@ -102,19 +102,26 @@ async function init() {
   mostrarTela('inicio');
   popularSelectFases();
   popularSelectFasesTorcida();
-  // Atualizar última sincronização ao carregar
+  
+  // Atualizar data/hora imediatamente e a cada 5 segundos
   atualizarUltimaSinc();
+  setInterval(atualizarUltimaSinc, 5000);
 }
 
 // ============================================================
-// ATUALIZAR ÚLTIMA SINCRONIZAÇÃO
+// ATUALIZAR ÚLTIMA SINCRONIZAÇÃO (DATA/HORA FIXA)
 // ============================================================
 function atualizarUltimaSinc() {
-  const span = document.getElementById('last-sync-time');
-  if (span) {
-    const agora = new Date();
-    span.innerText = agora.toLocaleString('pt-BR');
-  }
+  const agora = new Date();
+  const dataHora = agora.toLocaleString('pt-BR');
+  
+  // Atualiza no cabeçalho principal
+  const spanGlobal = document.getElementById('last-sync-time');
+  if (spanGlobal) spanGlobal.innerText = dataHora;
+  
+  // Atualiza no painel da torcida (se existir)
+  const spanTorcida = document.getElementById('torcida-last-update');
+  if (spanTorcida) spanTorcida.innerText = dataHora;
 }
 
 // ============================================================
@@ -210,21 +217,22 @@ async function atualizarTorcidaIndividual() {
   await renderizarRanking(fase, 'ranking-torcida-container', 'individual', true);
   const infoSpan = document.getElementById('fase-torcida-info');
   if (infoSpan) infoSpan.innerText = (fase === state.estadoAtual.fase) ? '(Fase atual)' : '(Fase anterior)';
-  document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
+  // Atualizar data/hora após atualizar ranking
+  atualizarUltimaSinc();
 }
 
 async function atualizarTorcidaEquipes() {
   if (state.meuTipo !== 'projecao' || state.abaTorcidaAtiva !== 'fase' || state.modoTorcida !== 'equipes') return;
   if (!state.estadoAtual) return;
   await renderizarRanking(null, 'ranking-torcida-container', 'turmas', false);
-  document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
+  atualizarUltimaSinc();
 }
 
 async function atualizarTorcidaPontos() {
   if (state.meuTipo !== 'projecao' || state.abaTorcidaAtiva !== 'pontos') return;
   if (!state.estadoAtual) return;
   await renderizarRankingPontos('ranking-torcida-container');
-  document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
+  atualizarUltimaSinc();
 }
 
 function iniciarAtualizacaoTorcida() {
