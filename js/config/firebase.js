@@ -1,4 +1,7 @@
 // js/config/firebase.js
+// O Firebase já foi carregado pelas tags script no HTML,
+// mas precisamos inicializar o app antes de usar database() e auth().
+
 const firebaseConfig = {
   apiKey: "AIzaSyBkoL3Zn-YkGUy6RAWZYVhWtIbcfL8h-J8",
   authDomain: "final-copa-tabuada.firebaseapp.com",
@@ -9,6 +12,7 @@ const firebaseConfig = {
   appId: "1:488825824115:web:50e94f68253473aee91b06"
 };
 
+// Inicializa o Firebase (usando a variável global 'firebase' carregada pelas tags script)
 window.firebase.initializeApp(firebaseConfig);
 
 const db = window.firebase.database();
@@ -16,40 +20,22 @@ const auth = window.firebase.auth();
 auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL);
 
 // ============================================
-// HABILITAR PERSISTÊNCIA OFFLINE (silencioso)
-// ============================================
-(function enableOfflinePersistence() {
-  try {
-    const database = window.firebase.database();
-    if (database && typeof database.setPersistenceEnabled === 'function') {
-      database.setPersistenceEnabled(true);
-      console.log('💾 Persistência offline ativada!');
-      return;
-    }
-    if (db && typeof db.setPersistenceEnabled === 'function') {
-      db.setPersistenceEnabled(true);
-      console.log('💾 Persistência offline ativada!');
-      return;
-    }
-  } catch (e) {
-    // silencioso – jogo segue normal
-  }
-})();
-
-// ============================================
-// MONITOR DE CONEXÃO
+// MONITOR DE CONEXÃO (Realtime Database)
 // ============================================
 
+// Estado atual da conexão
 let connectionStatus = {
   online: false,
   listeners: []
 };
 
+// Função para notificar ouvintes
 function notifyConnectionListeners(status) {
   connectionStatus.online = status;
   connectionStatus.listeners.forEach(cb => cb(status));
 }
 
+// Inicia o monitoramento da conexão
 export function initConnectionMonitor() {
   const connectedRef = db.ref('.info/connected');
   connectedRef.on('value', (snap) => {
@@ -59,23 +45,18 @@ export function initConnectionMonitor() {
   });
 }
 
+// Inscreve um callback para ser chamado sempre que o status mudar
 export function onConnectionChange(callback) {
   if (typeof callback === 'function') {
     connectionStatus.listeners.push(callback);
+    // Chama imediatamente com o estado atual
     callback(connectionStatus.online);
   }
 }
 
+// Obtém o status atual (síncrono)
 export function getConnectionStatus() {
   return connectionStatus.online;
-}
-
-export function recriarPresencaOnline(id, tipo) {
-  if (!id) return;
-  const ref = db.ref(`online/${id}`);
-  ref.set({ tipo: tipo || 'usuario', timestamp: Date.now() });
-  ref.onDisconnect().remove();
-  console.log(`🔄 Presença online recriada para ${id} (${tipo})`);
 }
 
 export { db, auth };
