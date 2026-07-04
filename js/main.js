@@ -102,26 +102,28 @@ async function init() {
   mostrarTela('inicio');
   popularSelectFases();
   popularSelectFasesTorcida();
-  
-  // Atualizar data/hora imediatamente e a cada 5 segundos
+  // Atualizar última sincronização ao carregar
   atualizarUltimaSinc();
-  setInterval(atualizarUltimaSinc, 5000);
 }
 
 // ============================================================
-// ATUALIZAR ÚLTIMA SINCRONIZAÇÃO (DATA/HORA FIXA)
+// ATUALIZAR ÚLTIMA SINCRONIZAÇÃO (fixo em todos os painéis)
 // ============================================================
 function atualizarUltimaSinc() {
   const agora = new Date();
-  const dataHora = agora.toLocaleString('pt-BR');
+  const dataHoraStr = agora.toLocaleString('pt-BR');
   
-  // Atualiza no cabeçalho principal
-  const spanGlobal = document.getElementById('last-sync-time');
-  if (spanGlobal) spanGlobal.innerText = dataHora;
+  // Painel principal
+  const spanPrincipal = document.getElementById('last-sync-time');
+  if (spanPrincipal) {
+    spanPrincipal.innerText = dataHoraStr;
+  }
   
-  // Atualiza no painel da torcida (se existir)
+  // Painel da torcida
   const spanTorcida = document.getElementById('torcida-last-update');
-  if (spanTorcida) spanTorcida.innerText = dataHora;
+  if (spanTorcida) {
+    spanTorcida.innerText = dataHoraStr;
+  }
 }
 
 // ============================================================
@@ -217,7 +219,7 @@ async function atualizarTorcidaIndividual() {
   await renderizarRanking(fase, 'ranking-torcida-container', 'individual', true);
   const infoSpan = document.getElementById('fase-torcida-info');
   if (infoSpan) infoSpan.innerText = (fase === state.estadoAtual.fase) ? '(Fase atual)' : '(Fase anterior)';
-  // Atualizar data/hora após atualizar ranking
+  // Atualizar data/hora na torcida
   atualizarUltimaSinc();
 }
 
@@ -482,11 +484,9 @@ function configurarEventos() {
 
   // Botão Sincronizar Global
   document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
-    // Forçar recarregamento do estado
     db.ref('copaV2').once('value', snap => {
       state.estadoAtual = snap.val() || state.estadoAtual;
       atualizarUI();
-      // Atualizar ranking da fase se estiver visível
       if (state.meuTipo === 'professor') {
         const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
         renderizarRanking(fase, 'ranking-parcial', 'individual', true);
