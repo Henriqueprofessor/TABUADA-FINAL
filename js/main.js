@@ -3,7 +3,20 @@ import { db, auth, initConnectionMonitor, onConnectionChange, recriarPresencaOnl
 import { state } from './modules/state.js';
 import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './modules/auth.js';
 import { carregarEstado, atualizarDados, setDados, removerDados, lerDados, ouvirOnline } from './modules/db.js';
-import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase, initConnectionUI, exibirToastReconexao, mostrarCarregando, esconderCarregando, exibirErroCarregamento } from './modules/ui.js';
+import { 
+  mostrarTela, 
+  exibirToast, 
+  abrirModal, 
+  fecharModal, 
+  atualizarTimerFase, 
+  initConnectionUI, 
+  exibirToastReconexao, 
+  mostrarCarregando, 
+  esconderCarregando, 
+  exibirErroCarregamento,
+  aplicarTema,
+  alternarTema
+} from './modules/ui.js';
 import { iniciarPartida } from './modules/game.js';
 import { 
   renderizarRanking, 
@@ -33,10 +46,10 @@ import {
   salvarValorPartida,
   adicionarTurma,
   removerTurma,
-  carregarCache,                // <-- ITEM 5
-  carregarConfiguracoesDoCache, // <-- ITEM 5
-  aplicarPreferenciasUI,        // <-- ITEM 5
-  atualizarCacheComDadosFirebase // <-- ITEM 5
+  carregarCache,
+  carregarConfiguracoesDoCache,
+  aplicarPreferenciasUI,
+  atualizarCacheComDadosFirebase
 } from './modules/config.js';
 import { verificarVersao, iniciarListenerVersao } from './modules/version.js';
 import { abrirInstalacao } from './modules/install.js';
@@ -45,6 +58,9 @@ import { abrirInstalacao } from './modules/install.js';
 // INICIALIZAÇÃO
 // ============================================================
 async function init() {
+  // === APLICAR TEMA SALVO (item adicional) ===
+  aplicarTema();
+
   // === MOSTRAR OVERLAY DE CARREGAMENTO (item 4) ===
   mostrarCarregando();
 
@@ -225,6 +241,9 @@ async function init() {
     const inputTempo = document.getElementById('input-tempo-fase');
     if (inputTempo) inputTempo.value = state.tempoFaseCache;
   }
+
+  // === BOTÃO DE TEMA (item adicional) ===
+  document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
 }
 
 // ============================================================
