@@ -143,12 +143,10 @@ async function init() {
   setTimeout(() => verificarVersao(false), 2000);
   iniciarListenerVersao();
 
-  // ===== LISTENER DE AVISOS (tempo real) =====
+  // ===== LISTENER DE AVISOS =====
   state.listenerAviso = escutarAviso((aviso) => {
     state.avisoAtual = aviso;
-    // Atualiza status no painel do professor (se estiver na aba Configurações)
     atualizarStatusAviso(aviso);
-    // Se o usuário for aluno, exibe ou remove o banner
     if (state.meuTipo === 'aluno') {
       if (aviso && aviso.ativo === true && aviso.expiracao > Date.now()) {
         exibirBannerAviso(aviso);
@@ -435,7 +433,6 @@ function entrarModoProfessor() {
   exibirToast('👨‍🏫 Bem-vindo, Professor!');
   document.querySelector('.tab-btn[data-tab="controle"]')?.click();
   popularSelectFases();
-  // Atualiza status do aviso
   atualizarStatusAviso(state.avisoAtual);
 }
 
@@ -450,7 +447,6 @@ function entrarModoAluno() {
   state.meuTipo = 'aluno';
   mostrarTela('aluno');
   exibirToast('🎮 Modo Aluno ativado!');
-  // Verifica se há aviso ativo
   if (state.avisoAtual && state.avisoAtual.ativo === true && state.avisoAtual.expiracao > Date.now()) {
     exibirBannerAviso(state.avisoAtual);
   } else {
@@ -482,7 +478,7 @@ function entrarModoTorcida() {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DE EVENTOS (com avisos)
+// CONFIGURAÇÃO DE EVENTOS
 // ============================================================
 function configurarEventos() {
   document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
@@ -637,7 +633,6 @@ function configurarEventos() {
         carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
         renderizarColunasVisiveis();
         renderizarPainelSom();
-        // Atualiza status do aviso ao entrar em Configurações
         atualizarStatusAviso(state.avisoAtual);
       }
     });
@@ -659,7 +654,7 @@ function configurarEventos() {
     await removerAviso();
   });
 
-  // ===== RESTANTE DOS EVENTOS (mantido do original) =====
+  // ===== BOTÃO SINCRONIZAR GLOBAL =====
   document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
     db.ref('copaV2').once('value', snap => {
       state.estadoAtual = snap.val() || state.estadoAtual;
@@ -678,6 +673,7 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
+  // ===== CONTROLE DE FASE =====
   document.getElementById('btn-iniciar-fase')?.addEventListener('click', async () => {
     if (!state.estadoAtual) return;
     const duracao = state.estadoAtual.tempoFase || 10;
