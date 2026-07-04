@@ -57,7 +57,11 @@ export const state = {
   cacheVersao: '2.0.0',
   ultimaSincCache: null,
 
-  // ===== AVISO =====
+  // Aviso
   avisoAtual: null,
   listenerAviso: null,
+
+  // ===== AVATAR E COR DA TURMA =====
+  avatarAluno: '⭐',
+  corTurma: '#95a5a6',
 };
