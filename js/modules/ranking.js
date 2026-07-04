@@ -1,4 +1,5 @@
 // js/modules/ranking.js
+import { db } from '../config/firebase.js'; // <-- CORREÇÃO: importação do Firebase
 import { state } from './state.js';
 import { lerDados, atualizarDados, removerDados, setDados } from './db.js';
 import { exibirToast, atualizarTimerFase, mostrarTela } from './ui.js';
@@ -839,7 +840,7 @@ export async function renderRankingGeral() {
 }
 
 // ============================================================
-// ATUALIZAR INFORMAÇÕES DO ALUNO (com avatar)
+// ATUALIZAR INFORMAÇÕES DO ALUNO
 // ============================================================
 
 export async function atualizarInfoAluno() {
@@ -947,8 +948,10 @@ export async function atualizarInfoAluno() {
     }
   }
 
+  // Atualiza medalhas
   atualizarExibicaoMedalhas();
 
+  // Desenha gráfico de evolução
   const { desenharGraficoEvolucao } = await import('./game.js');
   desenharGraficoEvolucao();
 
