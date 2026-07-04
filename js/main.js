@@ -77,6 +77,12 @@ import {
   gerarAvatarHTML,
   obterCorTurma
 } from './modules/avatar.js';
+import {
+  mostrarConfiguracaoTreino,
+  iniciarTreinoFromConfig,
+  MODALIDADES_TREINO,
+  OPCOES_PERGUNTAS
+} from './modules/treino.js';
 
 // ============================================================
 // INICIALIZAÇÃO
@@ -206,7 +212,6 @@ async function init() {
     atualizarUltimaSinc();
     aplicarPreferenciasUI();
 
-    // Se for aluno, carregar avatar
     if (state.meuTipo === 'aluno') {
       carregarAvatarAluno();
       atualizarAvatarAlunoUI();
@@ -256,7 +261,6 @@ async function init() {
     if (inputTempo) inputTempo.value = state.tempoFaseCache;
   }
 
-  // Carregar avatar se já estiver logado como aluno
   if (state.meuTipo === 'aluno') {
     await carregarAvatarAluno();
     atualizarAvatarAlunoUI();
@@ -494,7 +498,6 @@ function entrarModoAluno() {
   } else {
     removerBannerAviso();
   }
-  // Carregar avatar
   setTimeout(() => {
     carregarAvatarAluno();
     atualizarAvatarAlunoUI();
@@ -537,6 +540,7 @@ function configurarEventos() {
   document.getElementById('btn-fechar-tutorial')?.addEventListener('click', fecharTutorial);
   document.getElementById('btn-instalar-app')?.addEventListener('click', abrirInstalacao);
 
+  // ===== BOTÃO PROFESSOR =====
   document.getElementById('btn-professor')?.addEventListener('click', () => {
     const user = getCurrentUser();
     if (user) entrarModoProfessor();
@@ -563,12 +567,37 @@ function configurarEventos() {
   });
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
+  // ===== BOTÃO ALUNO =====
   document.getElementById('btn-aluno')?.addEventListener('click', entrarModoAluno);
+
+  // ===== BOTÃO TORCIDA =====
   document.getElementById('btn-projecao')?.addEventListener('click', entrarModoTorcida);
+
+  // ===== BOTÃO TREINO (NOVO) =====
+  document.getElementById('btn-treino')?.addEventListener('click', () => {
+    state.modoTreinoAtivo = true;
+    mostrarConfiguracaoTreino();
+  });
 
   // ===== BOTÃO ESCOLHER AVATAR =====
   document.getElementById('btn-escolher-avatar')?.addEventListener('click', mostrarPopupAvatar);
 
+  // ===== BOTÕES DO MODO TREINO =====
+  document.getElementById('btn-treino-iniciar')?.addEventListener('click', iniciarTreinoFromConfig);
+
+  document.getElementById('btn-treino-voltar')?.addEventListener('click', () => {
+    state.modoTreinoAtivo = false;
+    mostrarTela('inicio');
+  });
+
+  document.getElementById('btn-treino-interromper')?.addEventListener('click', () => {
+    if (confirm('Deseja interromper o treino?')) {
+      state.modoTreinoAtivo = false;
+      mostrarConfiguracaoTreino();
+    }
+  });
+
+  // ===== BOTÕES DA TORCIDA =====
   document.getElementById('btn-modo-individual')?.addEventListener('click', function() {
     state.modoTorcida = 'individual';
     state.prefTorcidaModo = 'individual';
@@ -627,6 +656,7 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
+  // ===== RANKING DO ALUNO =====
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -656,6 +686,7 @@ function configurarEventos() {
     location.reload();
   });
 
+  // ===== ABAS DO PROFESSOR =====
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -684,7 +715,6 @@ function configurarEventos() {
         renderizarColunasVisiveis();
         renderizarPainelSom();
         atualizarStatusAviso(state.avisoAtual);
-        // Atualizar toggle de avatares
         const toggle = document.getElementById('toggle-avatars');
         if (toggle) {
           toggle.checked = state.avatarsEnabled !== false;
@@ -713,7 +743,6 @@ function configurarEventos() {
   document.getElementById('toggle-avatars')?.addEventListener('change', async function() {
     const habilitado = this.checked;
     await salvarConfigAvatar(habilitado);
-    // Re-renderizar rankings se estiver no modo professor ou torcida
     if (state.meuTipo === 'professor') {
       const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
       renderizarRanking(fase, 'ranking-parcial', 'individual', true);
