@@ -57,7 +57,7 @@ export const state = {
   cacheVersao: '2.0.0',
   ultimaSincCache: null,
 
-  // ===== AVISO (item novo) =====
-  avisoAtual: null,        // { mensagem, timestamp, expiracao, ativo }
-  listenerAviso: null,     // referência para desconectar o listener
+  // ===== AVISO =====
+  avisoAtual: null,
+  listenerAviso: null,
 };
