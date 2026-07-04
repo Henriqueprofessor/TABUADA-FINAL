@@ -8,8 +8,6 @@ import { iniciarPartida } from './modules/game.js';
 import { 
   renderizarRanking, 
   atualizarInfoAluno, 
-  calcularRankingFase,
-  renderRankingTurmas,
   renderizarRankingPontos,
   renderRankingGeral,
   atualizarRankingAluno,
@@ -20,7 +18,7 @@ import {
   renderizarConfigMinPartidas,
   renderizarColunasVisiveis
 } from './modules/ranking.js';
-import { inicializarSons, tocarSom } from './modules/sound.js';
+import { inicializarSons, renderizarPainelSom } from './modules/sound.js';
 import { abrirTutorial, fecharTutorial } from './modules/tutorial.js';
 import {
   carregarConfigBonusVelocidade,
@@ -61,7 +59,6 @@ async function init() {
   // Listeners Firebase
   carregarEstado((estado) => {
     atualizarUI();
-    // Se estiver na torcida, atualizar ranking
     if (state.meuTipo === 'projecao') {
       if (state.abaTorcidaAtiva === 'fase') {
         if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
@@ -92,8 +89,6 @@ async function init() {
 
   // Inicializar visibilidade
   mostrarTela('inicio');
-
-  // Carregar seletor de fases da torcida
   popularSelectFasesTorcida();
 }
 
@@ -278,13 +273,13 @@ function configurarEventos() {
   });
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
-  // Aluno - simplificado
+  // Aluno
   document.getElementById('btn-aluno')?.addEventListener('click', async () => {
     if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
       exibirToast('⏳ A fase não foi iniciada ou já terminou.');
       return;
     }
-    exibirToast('🔧 Função de aluno em desenvolvimento - use o menu Aluno no cabeçalho.');
+    exibirToast('🔧 Função de aluno em desenvolvimento.');
   });
 
   // Torcida
@@ -360,7 +355,7 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
-  // Ranking do aluno (modal)
+  // Ranking do aluno
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -399,6 +394,8 @@ function configurarEventos() {
       const tab = this.dataset.tab;
       document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
       document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      
+      // Renderizar conteúdo de cada aba
       if (tab === 'ranking-geral') {
         renderRankingGeral();
       }
@@ -419,8 +416,11 @@ function configurarEventos() {
         renderListaTurmas();
       }
       if (tab === 'configuracoes') {
+        // Carregar configurações
         carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
         renderizarColunasVisiveis();
+        // **IMPORTANTE: Renderizar painel de som**
+        renderizarPainelSom();
       }
     });
   });
@@ -659,32 +659,10 @@ function configurarEventos() {
     exibirToast(`✅ ${nome} liberado para a Fase ${faseAtual}!`);
     atualizarListaLiberados();
   });
-
-  // Sons - botão master (implementação direta sem import await)
-  const btnSomMaster = document.getElementById('btn-som-master');
-  if (btnSomMaster) {
-    btnSomMaster.addEventListener('click', function() {
-      // Importa dinamicamente apenas quando necessário
-      import('./modules/sound.js').then(module => {
-        const { tocarSom } = module;
-        // Alternar estado (exemplo simples)
-        this.classList.toggle('ativado');
-        this.classList.toggle('desativado');
-        if (this.classList.contains('ativado')) {
-          this.textContent = '🔊 Sons Ativados';
-          // Habilitar sons (isso seria gerenciado pelo módulo sound)
-          // A implementação completa está no módulo sound.js
-        } else {
-          this.textContent = '🔇 Sons Desativados';
-        }
-        tocarSom('clique');
-      });
-    });
-  }
 }
 
 // ============================================================
-// FUNÇÕES AUXILIARES PARA PONTUAÇÃO (parsing)
+// FUNÇÕES AUXILIARES PARA PONTUAÇÃO
 // ============================================================
 function getPontuacaoDefault() {
   const obj = {};
