@@ -3,7 +3,7 @@ import { db, auth, initConnectionMonitor, onConnectionChange, recriarPresencaOnl
 import { state } from './modules/state.js';
 import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './modules/auth.js';
 import { carregarEstado, atualizarDados, setDados, removerDados, lerDados, ouvirOnline } from './modules/db.js';
-import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase, initConnectionUI, exibirToastReconexao } from './modules/ui.js';
+import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase, initConnectionUI, exibirToastReconexao, mostrarCarregando, esconderCarregando, exibirErroCarregamento } from './modules/ui.js';
 import { iniciarPartida } from './modules/game.js';
 import { 
   renderizarRanking, 
@@ -41,6 +41,9 @@ import { abrirInstalacao } from './modules/install.js';
 // INICIALIZAÇÃO
 // ============================================================
 async function init() {
+  // === MOSTRAR OVERLAY DE CARREGAMENTO (item 4) ===
+  mostrarCarregando();
+
   // === INICIAR MONITOR DE CONEXÃO E BADGE (item 1) ===
   initConnectionMonitor();
   initConnectionUI(onConnectionChange);
@@ -49,17 +52,13 @@ async function init() {
   // Registrar callback para quando a conexão for restabelecida
   onConnectionChange(async (online) => {
     if (online) {
-      // Só executa ações se a conexão acabou de voltar (estava offline antes)
-      // O estado anterior é controlado internamente no módulo firebase, mas vamos usar uma variável local
       if (!window._wasOnline) {
         window._wasOnline = true;
-        return; // primeira execução, não fazer nada
+        return;
       }
-      // Se chegou aqui, é uma reconexão real
       console.log('🔄 Reconectado ao Firebase! Recarregando dados...');
       exibirToastReconexao();
 
-      // Recarregar estado completo da competição
       try {
         const snap = await db.ref('copaV2').once('value');
         state.estadoAtual = snap.val() || state.estadoAtual;
@@ -68,7 +67,6 @@ async function init() {
         console.warn('Erro ao recarregar estado na reconexão:', e);
       }
 
-      // Recriar presença online se o usuário estiver em algum modo
       if (state.meuTipo === 'professor' && auth.currentUser) {
         const uid = auth.currentUser.uid || 'professor';
         recriarPresencaOnline(uid, 'professor');
@@ -78,7 +76,6 @@ async function init() {
         recriarPresencaOnline(state.torcidaId, 'torcida');
       }
 
-      // Atualizar rankings conforme o modo atual
       if (state.meuTipo === 'professor') {
         const fase = parseInt(document.getElementById('select-fase-ranking')?.value) || state.estadoAtual?.fase || 1;
         renderizarRanking(fase, 'ranking-parcial', 'individual', true);
@@ -102,10 +99,8 @@ async function init() {
         }
       }
 
-      // Atualizar última sincronização
       atualizarUltimaSinc();
     } else {
-      // Desconectado: apenas registra para saber que estava online antes
       window._wasOnline = false;
     }
   });
@@ -125,8 +120,24 @@ async function init() {
   setTimeout(() => verificarVersao(false), 2000);
   iniciarListenerVersao();
 
+  // === TIMEOUT DE SEGURANÇA PARA CARREGAMENTO (item 4) ===
+  let carregamentoConcluido = false;
+  const timeoutId = setTimeout(() => {
+    if (!carregamentoConcluido) {
+      console.warn('⏳ Carregamento demorou mais que 10 segundos. Exibindo erro...');
+      exibirErroCarregamento();
+    }
+  }, 10000);
+
   // Listeners Firebase
   carregarEstado((estado) => {
+    // Dados carregados!
+    carregamentoConcluido = true;
+    clearTimeout(timeoutId);
+    
+    // Esconde o overlay
+    esconderCarregando();
+    
     atualizarUI();
     popularSelectFases();
     popularSelectFasesTorcida();
@@ -148,7 +159,6 @@ async function init() {
       }
     }
     
-    // Atualizar última sincronização quando os dados do Firebase mudarem
     atualizarUltimaSinc();
   });
 
@@ -179,6 +189,11 @@ async function init() {
   iniciarRelogio();
   // Definir última sinc inicial
   atualizarUltimaSinc();
+
+  // === BOTÃO RECARREGAR NO ERRO DE LOADING ===
+  document.getElementById('btn-recarregar-loading')?.addEventListener('click', () => {
+    location.reload();
+  });
 }
 
 // ============================================================
@@ -722,180 +737,4 @@ function configurarEventos() {
     if (state.meuTipo === 'professor') renderizarRankingPontos();
     if (state.meuTipo === 'projecao') {
       if (state.abaTorcidaAtiva === 'fase') {
-        if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
-        else atualizarTorcidaEquipes();
-      } else {
-        atualizarTorcidaPontos();
-      }
-    }
-    if (state.meuTipo === 'aluno' && document.getElementById('modal-ranking-aluno').style.display === 'flex') {
-      atualizarRankingAluno();
-    }
-  });
-
-  // Configurações: salvar pontuação
-  document.getElementById('btn-salvar-pontuacao')?.addEventListener('click', async function() {
-    const textPadrao = document.getElementById('textarea-pontos-padrao').value;
-    const textFase5 = document.getElementById('textarea-pontos-fase5').value;
-    const objPadrao = parsePontuacaoText(textPadrao);
-    const objFase5 = parsePontuacaoText(textFase5);
-    if (Object.keys(objPadrao).length === 0) {
-      exibirToast('❌ Tabela para Fases 1-4 vazia ou inválida.');
-      return;
-    }
-    if (Object.keys(objFase5).length === 0) {
-      exibirToast('❌ Tabela para Fase 5 vazia ou inválida.');
-      return;
-    }
-    const ativo = document.getElementById('toggle-ranking-pontos').checked;
-    await salvarConfigRankingPontos(ativo, objPadrao, objFase5);
-    document.getElementById('textarea-pontos-padrao').value = formatPontuacaoText(objPadrao);
-    document.getElementById('textarea-pontos-fase5').value = formatPontuacaoText(objFase5);
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
-  });
-
-  document.getElementById('btn-restaurar-padrao')?.addEventListener('click', function() {
-    document.getElementById('textarea-pontos-padrao').value = formatPontuacaoText(getPontuacaoDefault());
-    exibirToast('Padrão restaurado para Fases 1-4');
-  });
-  document.getElementById('btn-restaurar-padrao-fase5')?.addEventListener('click', function() {
-    document.getElementById('textarea-pontos-fase5').value = formatPontuacaoText(getPontuacaoDefault());
-    exibirToast('Padrão restaurado para Fase 5');
-  });
-
-  // Configurações: bônus de velocidade
-  document.getElementById('btn-salvar-bonus-velocidade')?.addEventListener('click', async function() {
-    const ativo = document.getElementById('toggle-bonus-velocidade').checked;
-    const pontos = parseInt(document.getElementById('input-bonus-velocidade').value) || 1;
-    const precisaoMinima = parseInt(document.getElementById('input-precisao-bonus').value) || 80;
-    if (pontos < 1) { exibirToast('❌ Pontos do bônus devem ser no mínimo 1.'); return; }
-    if (precisaoMinima < 50 || precisaoMinima > 100) { exibirToast('❌ Precisão mínima deve estar entre 50% e 100%.'); return; }
-    await salvarConfigBonusVelocidade(ativo, pontos, precisaoMinima);
-    document.getElementById('feedback-bonus-velocidade').style.display = 'block';
-    document.getElementById('feedback-bonus-velocidade').className = 'feedback-sucesso';
-    document.getElementById('feedback-bonus-velocidade').textContent = '✅ Configuração de bônus salva!';
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
-    setTimeout(() => document.getElementById('feedback-bonus-velocidade').style.display = 'none', 5000);
-  });
-
-  // Configurações: valor da partida
-  document.getElementById('btn-atualizar-valor-partida')?.addEventListener('click', async function() {
-    const novoValor = parseInt(document.getElementById('input-valor-partida').value);
-    if (!novoValor || novoValor < 1) { exibirToast('❌ Digite um valor válido maior que 0.'); return; }
-    await salvarValorPartida(novoValor);
-    document.getElementById('valor-partida-atual').textContent = novoValor;
-    document.getElementById('feedback-valor-partida').style.display = 'block';
-    document.getElementById('feedback-valor-partida').className = 'feedback-sucesso';
-    document.getElementById('feedback-valor-partida').textContent = `✅ Valor da partida atualizado para ${novoValor} pontos!`;
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
-    setTimeout(() => document.getElementById('feedback-valor-partida').style.display = 'none', 5000);
-  });
-
-  // Configurações: senha
-  document.getElementById('btn-gerar-senha')?.addEventListener('click', () => {
-    if (state.senhaBloqueada) { exibirToast('❌ Senha bloqueada após iniciar a fase.'); return; }
-    const num = Math.floor(Math.random() * 90) + 10;
-    document.getElementById('input-senha-fase1').value = num;
-    exibirToast(`🎲 Senha gerada: ${num}`);
-  });
-  document.getElementById('btn-salvar-senha')?.addEventListener('click', async () => {
-    if (state.senhaBloqueada) { exibirToast('❌ Senha bloqueada após iniciar a fase.'); return; }
-    const senha = document.getElementById('input-senha-fase1').value.trim();
-    if (!/^\d{2}$/.test(senha)) { exibirToast('❌ Digite uma senha de 2 dígitos (ex: 42).'); return; }
-    const exigir = document.getElementById('toggle-exigir-senha').checked;
-    await db.ref('copaV2/configuracoes/senhaFase1').set(senha);
-    await db.ref('copaV2/configuracoes/exigirSenhaFase1').set(exigir);
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
-    exibirToast('✅ Senha salva!');
-  });
-  document.getElementById('toggle-exigir-senha')?.addEventListener('change', () => {
-    if (!state.senhaBloqueada) {
-      document.getElementById('btn-salvar-senha').click();
-    } else {
-      document.getElementById('toggle-exigir-senha').checked = true;
-      exibirToast('❌ Não é possível alterar após iniciar a fase.');
-    }
-  });
-
-  // Configurações: liberar aluno
-  document.getElementById('btn-liberar-aluno')?.addEventListener('click', async () => {
-    const nome = document.getElementById('input-liberar-nome').value.trim();
-    const turma = document.getElementById('input-liberar-turma').value.trim();
-    if (!nome || !turma) { exibirToast('❌ Preencha nome e turma.'); return; }
-    const faseAtual = state.estadoAtual.fase;
-    let idEncontrado = null;
-    for (let f = 1; f <= faseAtual; f++) {
-      const participantes = await lerDados(`copaV2/participantes/${f}`) || {};
-      for (const [id, dados] of Object.entries(participantes)) {
-        if (dados.nome === nome && dados.turma === turma) {
-          idEncontrado = id;
-          break;
-        }
-      }
-      if (idEncontrado) break;
-    }
-    if (!idEncontrado) { exibirToast('❌ Aluno não encontrado. Verifique nome e turma.'); return; }
-    await atualizarDados(`copaV2/participantes/${faseAtual}/${idEncontrado}`, { liberado: true });
-    exibirToast(`✅ ${nome} liberado para a Fase ${faseAtual}!`);
-    atualizarListaLiberados();
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
-  });
-}
-
-// ============================================================
-// FUNÇÕES AUXILIARES PARA PONTUAÇÃO
-// ============================================================
-function getPontuacaoDefault() {
-  const obj = {};
-  for (let i = 1; i <= 40; i++) obj[i] = 41 - i;
-  return obj;
-}
-
-function parsePontuacaoText(text) {
-  const obj = {};
-  const pairs = text.split(',').map(s => s.trim());
-  for (const pair of pairs) {
-    const parts = pair.split(':').map(s => s.trim());
-    if (parts.length === 2) {
-      const pos = parseInt(parts[0]);
-      const pts = parseInt(parts[1]);
-      if (!isNaN(pos) && !isNaN(pts) && pos > 0 && pts >= 0) {
-        obj[pos] = pts;
-      }
-    }
-  }
-  return obj;
-}
-
-function formatPontuacaoText(obj) {
-  const keys = Object.keys(obj).map(Number).sort((a,b) => a - b);
-  return keys.map(k => `${k}:${obj[k]}`).join(', ');
-}
-
-// ============================================================
-// ATUALIZAR LISTA DE LIBERADOS
-// ============================================================
-async function atualizarListaLiberados() {
-  const container = document.getElementById('lista-liberados');
-  if (!container) return;
-  const faseAtual = state.estadoAtual?.fase || 1;
-  const participantes = await lerDados(`copaV2/participantes/${faseAtual}`) || {};
-  let liberados = [];
-  for (const [id, dados] of Object.entries(participantes)) {
-    if (dados.liberado === true) {
-      liberados.push(`${dados.nome} (${dados.turma})`);
-    }
-  }
-  if (liberados.length === 0) {
-    container.innerText = 'Nenhum aluno liberado.';
-    container.style.color = '#94a3b8';
-  } else {
-    container.innerText = liberados.join(', ');
-    container.style.color = '#4ade80';
-  }
-}
-
-// ============================================================
-// INICIAR
-// ============================================================
-document.addEventListener('DOMContentLoaded', init);
+        if
