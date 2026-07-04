@@ -5,6 +5,7 @@ import { lerDados, atualizarDados, removerDados } from './db.js';
 import { tocarSom } from './sound.js';
 import { calcularRankingFase } from './ranking.js';
 import { atualizarRecordeGeral } from './config.js';
+import { verificarEConcederMedalhas, atualizarExibicaoMedalhas } from './medals.js'; // <-- NOVO
 
 // Gerar perguntas (mesma lógica original)
 export function gerarPerguntas(modalidade, fase) {
@@ -244,12 +245,104 @@ async function finalizarPartida() {
     await atualizarRecordeGeral(state.alunoId, velocidade, precisao, fase, partidaIndex);
   }
 
-  // Exibir modal de resultados (chamar função existente)
+  // === VERIFICAR MEDALHAS (item novo) ===
+  await verificarEConcederMedalhas();
+  // Atualiza a exibição das medalhas na tela do aluno
+  atualizarExibicaoMedalhas();
+
+  // Atualiza o gráfico de evolução
+  desenharGraficoEvolucao();
+
+  // Exibir resultado
   exibirToast(`✅ Partida finalizada! Pontos: ${state.pontosPartida}`);
-  // Atualizar ranking do aluno
   const { atualizarInfoAluno } = await import('./ranking.js');
   atualizarInfoAluno();
 }
 
-// Exportar a função responder globalmente para os botões onclick
+// Exportar responder globalmente
 window.responder = responder;
+
+// ============================================================
+// GRÁFICO DE EVOLUÇÃO (item novo)
+// ============================================================
+
+export function desenharGraficoEvolucao() {
+  const canvas = document.getElementById('grafico-evolucao');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  // Limpa o canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Obtém dados do aluno
+  const fase = state.estadoAtual?.fase || 1;
+  const resultados = state.estadoAtual?.resultados?.[fase]?.[state.alunoId] || [];
+  if (resultados.length < 2) {
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Jogue mais partidas para ver sua evolução!', canvas.width/2, canvas.height/2);
+    return;
+  }
+
+  const pontuacoes = resultados.map(p => p.pontos || 0);
+  const maxPontos = Math.max(2000, Math.max(...pontuacoes) + 200);
+  const padding = 40;
+  const graficoWidth = canvas.width - padding * 2;
+  const graficoHeight = canvas.height - padding * 2;
+
+  // Desenha eixos
+  ctx.strokeStyle = '#4a5568';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, canvas.height - padding);
+  ctx.lineTo(canvas.width - padding, canvas.height - padding);
+  ctx.stroke();
+
+  // Desenha pontos e linha
+  ctx.beginPath();
+  ctx.strokeStyle = '#ffd966';
+  ctx.lineWidth = 3;
+  for (let i = 0; i < pontuacoes.length; i++) {
+    const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
+    const y = canvas.height - padding - (pontuacoes[i] / maxPontos) * graficoHeight;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Desenha pontos (bolinhas)
+  for (let i = 0; i < pontuacoes.length; i++) {
+    const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
+    const y = canvas.height - padding - (pontuacoes[i] / maxPontos) * graficoHeight;
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = '#ffd966';
+    ctx.fill();
+    ctx.strokeStyle = '#0a0f1e';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Valor acima do ponto
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(pontuacoes[i], x, y - 12);
+  }
+
+  // Rótulos
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  for (let i = 0; i < pontuacoes.length; i++) {
+    const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
+    ctx.fillText(`P${i+1}`, x, canvas.height - padding + 20);
+  }
+
+  // Título
+  ctx.fillStyle = '#ffd966';
+  ctx.font = '14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Evolução da Pontuação por Partida', canvas.width/2, 20);
+}
