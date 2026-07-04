@@ -16,21 +16,25 @@ const auth = window.firebase.auth();
 auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL);
 
 // ============================================
-// HABILITAR PERSISTÊNCIA OFFLINE
+// HABILITAR PERSISTÊNCIA OFFLINE (silencioso)
 // ============================================
-try {
-  if (typeof window.firebase.database().setPersistenceEnabled === 'function') {
-    window.firebase.database().setPersistenceEnabled(true);
-    console.log('💾 Persistência offline ativada!');
-  } else if (typeof db.setPersistenceEnabled === 'function') {
-    db.setPersistenceEnabled(true);
-    console.log('💾 Persistência offline ativada!');
-  } else {
-    console.warn('⚠️ Persistência offline não suportada nesta versão.');
+(function enableOfflinePersistence() {
+  try {
+    const database = window.firebase.database();
+    if (database && typeof database.setPersistenceEnabled === 'function') {
+      database.setPersistenceEnabled(true);
+      console.log('💾 Persistência offline ativada!');
+      return;
+    }
+    if (db && typeof db.setPersistenceEnabled === 'function') {
+      db.setPersistenceEnabled(true);
+      console.log('💾 Persistência offline ativada!');
+      return;
+    }
+  } catch (e) {
+    // silencioso – jogo segue normal
   }
-} catch (e) {
-  console.warn('⚠️ Erro ao ativar persistência offline:', e);
-}
+})();
 
 // ============================================
 // MONITOR DE CONEXÃO
