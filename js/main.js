@@ -15,7 +15,8 @@ import {
   esconderCarregando, 
   exibirErroCarregamento,
   aplicarTema,
-  alternarTema
+  alternarTema,
+  atualizarBannerAviso
 } from './modules/ui.js';
 import { iniciarPartida } from './modules/game.js';
 import { 
@@ -56,6 +57,15 @@ import {
 } from './modules/config.js';
 import { verificarVersao, iniciarListenerVersao } from './modules/version.js';
 import { abrirInstalacao } from './modules/install.js';
+import {
+  publicarAviso,
+  removerAviso,
+  escutarAviso,
+  pararEscutarAviso,
+  exibirBannerAviso,
+  removerBannerAviso,
+  atualizarStatusAviso
+} from './modules/aviso.js';
 
 // ============================================================
 // INICIALIZAÇÃO
@@ -132,6 +142,21 @@ async function init() {
   inicializarSons();
   setTimeout(() => verificarVersao(false), 2000);
   iniciarListenerVersao();
+
+  // ===== LISTENER DE AVISOS (tempo real) =====
+  state.listenerAviso = escutarAviso((aviso) => {
+    state.avisoAtual = aviso;
+    // Atualiza status no painel do professor (se estiver na aba Configurações)
+    atualizarStatusAviso(aviso);
+    // Se o usuário for aluno, exibe ou remove o banner
+    if (state.meuTipo === 'aluno') {
+      if (aviso && aviso.ativo === true && aviso.expiracao > Date.now()) {
+        exibirBannerAviso(aviso);
+      } else {
+        removerBannerAviso();
+      }
+    }
+  });
 
   let carregamentoConcluido = false;
   const timeoutId = setTimeout(() => {
@@ -410,6 +435,8 @@ function entrarModoProfessor() {
   exibirToast('👨‍🏫 Bem-vindo, Professor!');
   document.querySelector('.tab-btn[data-tab="controle"]')?.click();
   popularSelectFases();
+  // Atualiza status do aviso
+  atualizarStatusAviso(state.avisoAtual);
 }
 
 // ============================================================
@@ -423,6 +450,12 @@ function entrarModoAluno() {
   state.meuTipo = 'aluno';
   mostrarTela('aluno');
   exibirToast('🎮 Modo Aluno ativado!');
+  // Verifica se há aviso ativo
+  if (state.avisoAtual && state.avisoAtual.ativo === true && state.avisoAtual.expiracao > Date.now()) {
+    exibirBannerAviso(state.avisoAtual);
+  } else {
+    removerBannerAviso();
+  }
 }
 
 // ============================================================
@@ -449,7 +482,7 @@ function entrarModoTorcida() {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DE EVENTOS (resumido – mantido do original)
+// CONFIGURAÇÃO DE EVENTOS (com avisos)
 // ============================================================
 function configurarEventos() {
   document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
@@ -604,10 +637,29 @@ function configurarEventos() {
         carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
         renderizarColunasVisiveis();
         renderizarPainelSom();
+        // Atualiza status do aviso ao entrar em Configurações
+        atualizarStatusAviso(state.avisoAtual);
       }
     });
   });
 
+  // ===== BOTÕES DE AVISO =====
+  document.getElementById('btn-publicar-aviso')?.addEventListener('click', async () => {
+    const mensagem = document.getElementById('input-aviso-mensagem').value.trim();
+    const minutos = parseInt(document.getElementById('input-aviso-tempo').value) || 0;
+    if (minutos < 1) {
+      exibirToast('❌ Defina um tempo válido (mínimo 1 minuto).');
+      return;
+    }
+    await publicarAviso(mensagem, minutos);
+    document.getElementById('input-aviso-mensagem').value = '';
+  });
+
+  document.getElementById('btn-remover-aviso')?.addEventListener('click', async () => {
+    await removerAviso();
+  });
+
+  // ===== RESTANTE DOS EVENTOS (mantido do original) =====
   document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
     db.ref('copaV2').once('value', snap => {
       state.estadoAtual = snap.val() || state.estadoAtual;
