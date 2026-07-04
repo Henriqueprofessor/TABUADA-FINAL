@@ -2,47 +2,16 @@ import { state } from './state.js';
 
 // Mostrar/ocultar telas
 export function mostrarTela(tipo) {
-  console.log('🔄 mostrarTela chamado com tipo:', tipo);
-  
-  // Oculta todos os cards
-  document.querySelectorAll('.card').forEach(c => {
-    c.classList.add('hidden');
-    console.log('  Ocultando:', c.id || c.className);
-  });
-  
-  // Mostra a tela solicitada
-  if (tipo === 'professor') {
-    const el = document.getElementById('painel-professor');
-    if (el) {
-      el.classList.remove('hidden');
-      console.log('✅ Mostrando painel-professor');
-    } else {
-      console.warn('⚠️ Elemento painel-professor não encontrado');
-    }
-  } else if (tipo === 'aluno') {
-    const el = document.getElementById('tela-aluno');
-    if (el) {
-      el.classList.remove('hidden');
-      console.log('✅ Mostrando tela-aluno');
-    } else {
-      console.warn('⚠️ Elemento tela-aluno não encontrado');
-    }
-  } else if (tipo === 'projecao') {
-    const el = document.getElementById('tela-torcida');
-    if (el) {
-      el.classList.remove('hidden');
-      console.log('✅ Mostrando tela-torcida');
-    } else {
-      console.warn('⚠️ Elemento tela-torcida não encontrado');
-    }
-  } else {
-    // tela inicial (inicio)
+  document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+  if (tipo === 'professor') document.getElementById('painel-professor').classList.remove('hidden');
+  else if (tipo === 'aluno') document.getElementById('tela-aluno').classList.remove('hidden');
+  else if (tipo === 'projecao') document.getElementById('tela-torcida').classList.remove('hidden');
+  else {
+    // tela inicial
     document.querySelectorAll('.card').forEach(c => c.classList.remove('hidden'));
-    // Oculta as telas específicas que podem estar visíveis
     document.getElementById('tela-aluno')?.classList.add('hidden');
     document.getElementById('painel-professor')?.classList.add('hidden');
     document.getElementById('tela-torcida')?.classList.add('hidden');
-    console.log('🏠 Mostrando tela inicial');
   }
 }
 
@@ -56,19 +25,7 @@ export function exibirToast(mensagem) {
   }
 }
 
-export function exibirToastReconexao() {
-  const t = document.getElementById('toast');
-  if (t) {
-    t.innerText = '🔄 Conexão restaurada! Dados sincronizados.';
-    t.classList.remove('hidden');
-    t.style.background = '#2e7d32';
-    setTimeout(() => {
-      t.classList.add('hidden');
-      t.style.background = '';
-    }, 4000);
-  }
-}
-
+// Atualizar timer de fase
 export function atualizarTimerFase(milissegundos) {
   const segundos = Math.floor(milissegundos / 1000);
   const min = Math.floor(segundos / 60);
@@ -86,6 +43,7 @@ export function atualizarTimerFase(milissegundos) {
   }
 }
 
+// Modal genérico
 export function abrirModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) modal.style.display = 'flex';
@@ -96,15 +54,17 @@ export function fecharModal(modalId) {
   if (modal) modal.style.display = 'none';
 }
 
+// Atualizar informações de versão
 export function atualizarDisplayVersao(versao) {
   const el = document.getElementById('version-number');
   if (el) el.textContent = versao || '--';
 }
 
 // ============================================================
-// BADGE DE CONEXÃO
+// BADGE DE CONEXÃO (item 1)
 // ============================================================
 
+// Cria o elemento badge se não existir
 export function createConnectionBadge() {
   let badge = document.getElementById('connection-badge');
   if (!badge) {
@@ -112,11 +72,12 @@ export function createConnectionBadge() {
     badge.id = 'connection-badge';
     badge.className = 'connection-badge offline';
     badge.innerHTML = '⚡ Conectando...';
-    document.body.prepend(badge);
+    document.body.prepend(badge); // insere no topo do body
   }
   return badge;
 }
 
+// Atualiza o badge com base no status
 export function updateConnectionBadge(online) {
   const badge = createConnectionBadge();
   if (online) {
@@ -128,7 +89,10 @@ export function updateConnectionBadge(online) {
   }
 }
 
+// Função para iniciar o monitoramento e integrar com o Firebase
 export function initConnectionUI(onConnectionChangeCallback) {
+  // Cria o badge imediatamente
   createConnectionBadge();
+  // Registra o callback para atualizar a UI
   onConnectionChangeCallback(updateConnectionBadge);
 }
