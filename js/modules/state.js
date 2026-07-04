@@ -23,7 +23,7 @@ export const state = {
   bonusVelocidadeConfig: { ativo: true, pontos: 1, precisaoMinima: 80 },
   recordeGeral: null,
   colunasVisiveis: null,
-  // Intervalos
+  // Intervalos (padrão: 4s e 60s) – item 3
   intervaloIndividualSegundos: 4,
   intervaloEquipesSegundos: 60,
   // Outros
