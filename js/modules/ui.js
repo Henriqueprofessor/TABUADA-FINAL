@@ -25,6 +25,20 @@ export function exibirToast(mensagem) {
   }
 }
 
+// Toast especial para reconexão (item 2)
+export function exibirToastReconexao() {
+  const t = document.getElementById('toast');
+  if (t) {
+    t.innerText = '🔄 Conexão restaurada! Dados sincronizados.';
+    t.classList.remove('hidden');
+    t.style.background = '#2e7d32'; // verde
+    setTimeout(() => {
+      t.classList.add('hidden');
+      t.style.background = ''; // reset
+    }, 4000);
+  }
+}
+
 // Atualizar timer de fase
 export function atualizarTimerFase(milissegundos) {
   const segundos = Math.floor(milissegundos / 1000);
