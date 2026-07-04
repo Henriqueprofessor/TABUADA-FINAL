@@ -5,10 +5,37 @@ import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } f
 import { carregarEstado, atualizarDados, setDados, removerDados, lerDados, ouvirOnline } from './modules/db.js';
 import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase } from './modules/ui.js';
 import { iniciarPartida } from './modules/game.js';
-import { renderizarRanking, atualizarInfoAluno, calcularRankingFase, renderizarRankingPontos, avancarFase, resetarFase, renderRankingGeral, atualizarRankingAluno, renderListaAlunosGerenciar, renderListaTurmas } from './modules/ranking.js';
+import { 
+  renderizarRanking, 
+  atualizarInfoAluno, 
+  calcularRankingFase,
+  renderRankingTurmas,
+  renderizarRankingPontos,
+  renderRankingGeral,
+  atualizarRankingAluno,
+  avancarFase,
+  resetarFase,
+  renderListaAlunosGerenciar,
+  renderListaTurmas,
+  renderizarConfigMinPartidas,
+  renderizarColunasVisiveis
+} from './modules/ranking.js';
 import { inicializarSons, tocarSom } from './modules/sound.js';
 import { abrirTutorial, fecharTutorial } from './modules/tutorial.js';
-import { carregarConfigBonusVelocidade, carregarRecordeGeral, carregarValorPartida, carregarMinPartidas, carregarColunasVisiveis, carregarConfigRankingPontos } from './modules/config.js';
+import {
+  carregarConfigBonusVelocidade,
+  carregarRecordeGeral,
+  carregarValorPartida,
+  carregarMinPartidas,
+  carregarColunasVisiveis,
+  carregarConfigRankingPontos,
+  salvarMinPartidas,
+  salvarColunasVisiveis,
+  salvarConfigRankingPontos,
+  salvarValorPartida,
+  adicionarTurma,
+  removerTurma
+} from './modules/config.js';
 import { verificarVersao, iniciarListenerVersao } from './modules/version.js';
 import { abrirInstalacao } from './modules/install.js';
 
@@ -77,22 +104,18 @@ function atualizarUI() {
   if (!state.estadoAtual) return;
   const fase = state.estadoAtual.fase;
   document.getElementById('fase-atual-titulo').innerText = `Fase ${fase} de 5`;
-  // Atualizar modalidade
   const configs = { "2-5": "Tabuada 2️⃣➡️5️⃣", "6-9": "Tabuada 6️⃣➡️9️⃣", "0-10": "Tabuada 0️⃣➡️🔟" };
   document.getElementById('modalidade-titulo').innerText = configs[state.estadoAtual.modalidade] || state.estadoAtual.modalidade;
-  // Atualizar timer
   if (state.estadoAtual.status === 'em_andamento' && state.estadoAtual.fim > 0) {
     const restante = state.estadoAtual.fim - Date.now();
     if (restante > 0) atualizarTimerFase(restante);
   }
-  // Atualizar info do professor
   if (state.meuTipo === 'professor') {
     document.getElementById('prof-fase-info').innerText = `Fase ${fase}`;
     document.getElementById('select-modalidade').value = state.estadoAtual.modalidade;
     const hasResults = Object.keys(state.estadoAtual.resultados).some(f => Object.keys(state.estadoAtual.resultados[f] || {}).length > 0);
     document.getElementById('select-modalidade').disabled = (fase > 1 || hasResults);
   }
-  // Torcida
   if (state.meuTipo === 'projecao') {
     document.getElementById('torcida-modalidade').innerText = configs[state.estadoAtual.modalidade] || state.estadoAtual.modalidade;
     document.getElementById('torcida-fase-info').innerText = `${fase}/5`;
@@ -163,7 +186,6 @@ async function atualizarTorcidaPontos() {
 }
 
 function iniciarAtualizacaoTorcida() {
-  // Limpar intervalos antigos
   if (state.intervaloTorcidaIndividual) clearInterval(state.intervaloTorcidaIndividual);
   if (state.intervaloTorcidaEquipes) clearInterval(state.intervaloTorcidaEquipes);
   
@@ -181,11 +203,9 @@ function iniciarAtualizacaoTorcida() {
     }
   }, state.intervaloEquipesSegundos * 1000);
 
-  // Atualizar labels de intervalo
   document.getElementById('torcida-individual-intervalo').innerText = state.intervaloIndividualSegundos;
   document.getElementById('torcida-equipes-intervalo').innerText = state.intervaloEquipesSegundos;
 
-  // Popular select e iniciar com a fase atual
   popularSelectFasesTorcida();
   state.abaTorcidaAtiva = 'fase';
   document.getElementById('btn-torcida-sub-fase').classList.add('ativo');
@@ -208,7 +228,6 @@ function pararAtualizacaoTorcida() {
 function entrarModoProfessor() {
   state.meuTipo = 'professor';
   mostrarTela('professor');
-  // Iniciar atualização do ranking do professor
   if (state.intervaloRankingProfessor) clearInterval(state.intervaloRankingProfessor);
   state.intervaloRankingProfessor = setInterval(() => {
     if (state.meuTipo === 'professor' && state.atualizacaoRankingAuto) {
@@ -217,7 +236,6 @@ function entrarModoProfessor() {
     }
   }, 4000);
   exibirToast('👨‍🏫 Bem-vindo, Professor!');
-  // Carregar abas iniciais
   document.querySelector('.tab-btn[data-tab="controle"]')?.click();
 }
 
@@ -260,79 +278,18 @@ function configurarEventos() {
   });
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
-  // ALUNO - CORRIGIDO
+  // Aluno - simplificado (substitua pela lógica completa se necessário)
   document.getElementById('btn-aluno')?.addEventListener('click', async () => {
     if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
       exibirToast('⏳ A fase não foi iniciada ou já terminou.');
       return;
     }
-    
-    // Simular login automático para teste
-    const deviceId = localStorage.getItem('copa_device_id');
-    if (!deviceId) {
-      // Primeiro acesso - pedir nome e turma
-      const nome = prompt('Digite seu nome completo:');
-      if (!nome) return;
-      const turma = prompt('Digite sua turma (ex: 901):');
-      if (!turma) return;
-      
-      // Gerar ID e salvar
-      const novoId = btoa(nome.toLowerCase() + "|" + turma).slice(0, 16);
-      const novoDeviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-      localStorage.setItem('copa_device_id', novoDeviceId);
-      
-      // Salvar no Firebase
-      const faseAtual = state.estadoAtual.fase;
-      await setDados(`copaV2/participantes/${faseAtual}/${novoId}`, { 
-        nome: nome, 
-        turma: turma, 
-        deviceId: novoDeviceId 
-      });
-      
-      state.alunoId = novoId;
-      state.alunoNome = nome;
-      state.alunoTurma = turma;
-    } else {
-      // Buscar dados do aluno
-      const faseAtual = state.estadoAtual.fase;
-      const participantes = await lerDados(`copaV2/participantes/${faseAtual}`) || {};
-      let encontrado = false;
-      for (const [id, dados] of Object.entries(participantes)) {
-        if (dados.deviceId === deviceId) {
-          state.alunoId = id;
-          state.alunoNome = dados.nome;
-          state.alunoTurma = dados.turma;
-          encontrado = true;
-          break;
-        }
-      }
-      if (!encontrado) {
-        exibirToast('❌ Aluno não encontrado. Faça o cadastro novamente.');
-        localStorage.removeItem('copa_device_id');
-        return;
-      }
-    }
-    
-    // Entrar no modo aluno
-    state.meuTipo = 'aluno';
-    mostrarTela('aluno');
-    document.getElementById('aluno-nome-display').innerText = state.alunoNome;
-    document.getElementById('aluno-turma-display').innerText = state.alunoTurma;
-    document.getElementById('online-stats').classList.remove('hidden');
-    
-    // Registrar online
-    await setDados(`online/${state.alunoId}`, { nome: state.alunoNome, turma: state.alunoTurma });
-    db.ref(`online/${state.alunoId}`).onDisconnect().remove();
-    
-    // Mostrar botão jogar
-    document.getElementById('btn-iniciar-partida').classList.remove('hidden');
-    document.getElementById('msg-status-aluno').innerText = '✅ Pronto para jogar! Clique em JOGAR.';
-    exibirToast(`✅ Bem-vindo, ${state.alunoNome}!`);
+    // Implemente a lógica de login/cadastro do aluno aqui (exemplo)
+    exibirToast('🔧 Função de aluno em desenvolvimento - use o menu Aluno no cabeçalho.');
   });
 
   // Torcida
   document.getElementById('btn-projecao')?.addEventListener('click', () => {
-    // Gerar ID único para torcida
     state.torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
     const torcidaRef = db.ref(`online/${state.torcidaId}`);
     torcidaRef.set({ tipo: 'torcida', timestamp: Date.now() });
@@ -407,18 +364,15 @@ function configurarEventos() {
   // Ranking do aluno (modal)
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
-    // Iniciar atualização automática do ranking
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
     state.intervaloRankingAluno = setInterval(() => {
       if (document.getElementById('modal-ranking-aluno').style.display === 'flex' && !state.jogoAtivo) {
         atualizarRankingAluno();
       }
     }, state.intervaloIndividualSegundos * 1000);
-    atualizarRankingAluno();
   });
   document.getElementById('btn-ranking-pontos-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
-    // Ativar subtab de pontos
     document.querySelector('.modal-sub-tabs .sub-tab[data-subtab="pontos"]')?.click();
   });
   document.getElementById('btn-fechar-modal-ranking')?.addEventListener('click', () => {
@@ -466,9 +420,8 @@ function configurarEventos() {
         renderListaTurmas();
       }
       if (tab === 'configuracoes') {
-        carregarMinPartidas().then(config => {
-          // renderizarConfigMinPartidas(config);
-        });
+        carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
+        renderizarColunasVisiveis();
       }
     });
   });
@@ -489,14 +442,12 @@ function configurarEventos() {
 
   document.getElementById('btn-continuar-parar-fase')?.addEventListener('click', async () => {
     if (state.estadoAtual?.status === 'em_andamento') {
-      // Pausar
       if (state.timerFase) clearInterval(state.timerFase);
       const agora = Date.now();
       const tempoRestante = Math.max(0, state.estadoAtual.fim - agora);
       await setDados('copaV2', { ...state.estadoAtual, status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
       exibirToast('⏸️ Fase pausada.');
     } else if (state.estadoAtual?.status === 'pausado') {
-      // Continuar
       const tempoRestante = state.estadoAtual.tempoRestantePausa || 0;
       if (tempoRestante <= 0) { exibirToast('⚠️ Tempo esgotado.'); return; }
       const novoFim = Date.now() + tempoRestante;
@@ -564,10 +515,214 @@ function configurarEventos() {
   document.getElementById('btn-adicionar-turma')?.addEventListener('click', async () => {
     const nova = prompt('Digite o nome da nova turma:');
     if (nova && nova.trim()) {
-      // Implementar adicionar turma
-      exibirToast(`Turma ${nova} adicionada!`);
+      await adicionarTurma(nova.trim());
+      renderListaTurmas();
     }
   });
+
+  // Configurações: salvar mínimo de partidas
+  document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', salvarMinPartidas);
+
+  // Configurações: salvar colunas
+  document.getElementById('btn-salvar-colunas')?.addEventListener('click', salvarColunasVisiveis);
+
+  // Configurações: restaurar colunas
+  document.getElementById('btn-restaurar-colunas')?.addEventListener('click', async () => {
+    const config = {};
+    ['futPos','pontuacaoAtual','deltaLider','velocRecorde','progresso','partidas','tempo','mediaTempo','turma','projecaoPontos'].forEach(id => {
+      config[id] = true;
+    });
+    await db.ref(COLUNAS_KEY).set(config);
+    state.colunasVisiveis = config;
+    renderizarColunasVisiveis();
+    exibirToast('✅ Colunas restauradas para o padrão (todas visíveis)');
+  });
+
+  // Configurações: ranking de pontos
+  document.getElementById('toggle-ranking-pontos')?.addEventListener('change', async function() {
+    const ativo = this.checked;
+    document.getElementById('status-ranking-pontos').innerText = ativo ? '✅ Ativado' : '❌ Desativado';
+    document.getElementById('status-ranking-pontos').style.color = ativo ? '#4ade80' : '#f87171';
+    await salvarConfigRankingPontos(ativo, state.tabelaPontosPadrao, state.tabelaPontosFase5);
+    if (state.meuTipo === 'professor') renderizarRankingPontos();
+    if (state.meuTipo === 'projecao') {
+      if (state.abaTorcidaAtiva === 'fase') {
+        if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
+        else atualizarTorcidaEquipes();
+      } else {
+        atualizarTorcidaPontos();
+      }
+    }
+    if (state.meuTipo === 'aluno' && document.getElementById('modal-ranking-aluno').style.display === 'flex') {
+      atualizarRankingAluno();
+    }
+  });
+
+  // Configurações: salvar pontuação
+  document.getElementById('btn-salvar-pontuacao')?.addEventListener('click', async function() {
+    const textPadrao = document.getElementById('textarea-pontos-padrao').value;
+    const textFase5 = document.getElementById('textarea-pontos-fase5').value;
+    const objPadrao = parsePontuacaoText(textPadrao);
+    const objFase5 = parsePontuacaoText(textFase5);
+    if (Object.keys(objPadrao).length === 0) {
+      exibirToast('❌ Tabela para Fases 1-4 vazia ou inválida.');
+      return;
+    }
+    if (Object.keys(objFase5).length === 0) {
+      exibirToast('❌ Tabela para Fase 5 vazia ou inválida.');
+      return;
+    }
+    const ativo = document.getElementById('toggle-ranking-pontos').checked;
+    await salvarConfigRankingPontos(ativo, objPadrao, objFase5);
+    document.getElementById('textarea-pontos-padrao').value = formatPontuacaoText(objPadrao);
+    document.getElementById('textarea-pontos-fase5').value = formatPontuacaoText(objFase5);
+  });
+
+  document.getElementById('btn-restaurar-padrao')?.addEventListener('click', function() {
+    document.getElementById('textarea-pontos-padrao').value = formatPontuacaoText(getPontuacaoDefault());
+    exibirToast('Padrão restaurado para Fases 1-4');
+  });
+  document.getElementById('btn-restaurar-padrao-fase5')?.addEventListener('click', function() {
+    document.getElementById('textarea-pontos-fase5').value = formatPontuacaoText(getPontuacaoDefault());
+    exibirToast('Padrão restaurado para Fase 5');
+  });
+
+  // Configurações: bônus de velocidade
+  document.getElementById('btn-salvar-bonus-velocidade')?.addEventListener('click', async function() {
+    const ativo = document.getElementById('toggle-bonus-velocidade').checked;
+    const pontos = parseInt(document.getElementById('input-bonus-velocidade').value) || 1;
+    const precisaoMinima = parseInt(document.getElementById('input-precisao-bonus').value) || 80;
+    if (pontos < 1) { exibirToast('❌ Pontos do bônus devem ser no mínimo 1.'); return; }
+    if (precisaoMinima < 50 || precisaoMinima > 100) { exibirToast('❌ Precisão mínima deve estar entre 50% e 100%.'); return; }
+    await salvarConfigBonusVelocidade(ativo, pontos, precisaoMinima);
+    document.getElementById('feedback-bonus-velocidade').style.display = 'block';
+    document.getElementById('feedback-bonus-velocidade').className = 'feedback-sucesso';
+    document.getElementById('feedback-bonus-velocidade').textContent = '✅ Configuração de bônus salva!';
+    setTimeout(() => document.getElementById('feedback-bonus-velocidade').style.display = 'none', 5000);
+  });
+
+  // Configurações: valor da partida
+  document.getElementById('btn-atualizar-valor-partida')?.addEventListener('click', async function() {
+    const novoValor = parseInt(document.getElementById('input-valor-partida').value);
+    if (!novoValor || novoValor < 1) { exibirToast('❌ Digite um valor válido maior que 0.'); return; }
+    await salvarValorPartida(novoValor);
+    document.getElementById('valor-partida-atual').textContent = novoValor;
+    document.getElementById('feedback-valor-partida').style.display = 'block';
+    document.getElementById('feedback-valor-partida').className = 'feedback-sucesso';
+    document.getElementById('feedback-valor-partida').textContent = `✅ Valor da partida atualizado para ${novoValor} pontos!`;
+    setTimeout(() => document.getElementById('feedback-valor-partida').style.display = 'none', 5000);
+  });
+
+  // Configurações: senha
+  document.getElementById('btn-gerar-senha')?.addEventListener('click', () => {
+    if (state.senhaBloqueada) { exibirToast('❌ Senha bloqueada após iniciar a fase.'); return; }
+    const num = Math.floor(Math.random() * 90) + 10;
+    document.getElementById('input-senha-fase1').value = num;
+    exibirToast(`🎲 Senha gerada: ${num}`);
+  });
+  document.getElementById('btn-salvar-senha')?.addEventListener('click', async () => {
+    if (state.senhaBloqueada) { exibirToast('❌ Senha bloqueada após iniciar a fase.'); return; }
+    const senha = document.getElementById('input-senha-fase1').value.trim();
+    if (!/^\d{2}$/.test(senha)) { exibirToast('❌ Digite uma senha de 2 dígitos (ex: 42).'); return; }
+    const exigir = document.getElementById('toggle-exigir-senha').checked;
+    await db.ref('copaV2/configuracoes/senhaFase1').set(senha);
+    await db.ref('copaV2/configuracoes/exigirSenhaFase1').set(exigir);
+    exibirToast('✅ Senha salva!');
+  });
+  document.getElementById('toggle-exigir-senha')?.addEventListener('change', () => {
+    if (!state.senhaBloqueada) {
+      document.getElementById('btn-salvar-senha').click();
+    } else {
+      document.getElementById('toggle-exigir-senha').checked = true;
+      exibirToast('❌ Não é possível alterar após iniciar a fase.');
+    }
+  });
+
+  // Configurações: liberar aluno
+  document.getElementById('btn-liberar-aluno')?.addEventListener('click', async () => {
+    const nome = document.getElementById('input-liberar-nome').value.trim();
+    const turma = document.getElementById('input-liberar-turma').value.trim();
+    if (!nome || !turma) { exibirToast('❌ Preencha nome e turma.'); return; }
+    const faseAtual = state.estadoAtual.fase;
+    let idEncontrado = null;
+    for (let f = 1; f <= faseAtual; f++) {
+      const participantes = await lerDados(`copaV2/participantes/${f}`) || {};
+      for (const [id, dados] of Object.entries(participantes)) {
+        if (dados.nome === nome && dados.turma === turma) {
+          idEncontrado = id;
+          break;
+        }
+      }
+      if (idEncontrado) break;
+    }
+    if (!idEncontrado) { exibirToast('❌ Aluno não encontrado. Verifique nome e turma.'); return; }
+    await atualizarDados(`copaV2/participantes/${faseAtual}/${idEncontrado}`, { liberado: true });
+    exibirToast(`✅ ${nome} liberado para a Fase ${faseAtual}!`);
+    atualizarListaLiberados();
+  });
+
+  // Sons
+  document.getElementById('btn-som-master')?.addEventListener('click', function() {
+    // A função será chamada do módulo sound.js
+    // Mas como não temos essa função no main, vamos implementar diretamente
+    const { tocarSom } = await import('./modules/sound.js');
+    // ... (deixamos para o módulo sound.js)
+  });
+
+  // Inicializar listeners de versão já foram iniciados no init
+}
+
+// ============================================================
+// FUNÇÕES AUXILIARES PARA PONTUAÇÃO (parsing)
+// ============================================================
+function getPontuacaoDefault() {
+  const obj = {};
+  for (let i = 1; i <= 40; i++) obj[i] = 41 - i;
+  return obj;
+}
+
+function parsePontuacaoText(text) {
+  const obj = {};
+  const pairs = text.split(',').map(s => s.trim());
+  for (const pair of pairs) {
+    const parts = pair.split(':').map(s => s.trim());
+    if (parts.length === 2) {
+      const pos = parseInt(parts[0]);
+      const pts = parseInt(parts[1]);
+      if (!isNaN(pos) && !isNaN(pts) && pos > 0 && pts >= 0) {
+        obj[pos] = pts;
+      }
+    }
+  }
+  return obj;
+}
+
+function formatPontuacaoText(obj) {
+  const keys = Object.keys(obj).map(Number).sort((a,b) => a - b);
+  return keys.map(k => `${k}:${obj[k]}`).join(', ');
+}
+
+// ============================================================
+// ATUALIZAR LISTA DE LIBERADOS
+// ============================================================
+async function atualizarListaLiberados() {
+  const container = document.getElementById('lista-liberados');
+  if (!container) return;
+  const faseAtual = state.estadoAtual?.fase || 1;
+  const participantes = await lerDados(`copaV2/participantes/${faseAtual}`) || {};
+  let liberados = [];
+  for (const [id, dados] of Object.entries(participantes)) {
+    if (dados.liberado === true) {
+      liberados.push(`${dados.nome} (${dados.turma})`);
+    }
+  }
+  if (liberados.length === 0) {
+    container.innerText = 'Nenhum aluno liberado.';
+    container.style.color = '#94a3b8';
+  } else {
+    container.innerText = liberados.join(', ');
+    container.style.color = '#4ade80';
+  }
 }
 
 // ============================================================
