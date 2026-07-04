@@ -1457,3 +1457,102 @@ body.em-jogo #banner-aviso .banner-aviso-icone {
   flex-shrink: 0;
   user-select: none;
 }
+/* ===== MODO TREINO ===== */
+#tela-treino .card {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+#treino-opcoes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.treino-opcao {
+    background: var(--bg-botao-padrao);
+    color: var(--texto-principal);
+    border: 2px solid transparent;
+    padding: 16px;
+    font-size: 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-weight: bold;
+    text-align: center;
+}
+
+.treino-opcao:hover:not(:disabled) {
+    transform: scale(1.02);
+    border-color: var(--texto-destaque);
+}
+
+.treino-opcao:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.treino-opcao.treino-certo {
+    background: #27ae60;
+    color: white;
+    border-color: #27ae60;
+}
+
+.treino-opcao.treino-errado {
+    background: #e74c3c;
+    color: white;
+    border-color: #e74c3c;
+}
+
+.btn-treino {
+    background: #8e44ad;
+    color: white;
+    border: none;
+    border-radius: 40px;
+    padding: 10px 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    margin: 4px;
+}
+
+.btn-treino:hover {
+    background: #732d91;
+    transform: scale(1.02);
+}
+
+#treino-config label {
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#treino-config label:hover {
+    background: var(--bg-botao-padrao-hover);
+}
+
+#treino-modalidades label,
+#treino-quantidades label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-card-hover);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+@media (max-width: 480px) {
+    #treino-opcoes {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .treino-opcao {
+        font-size: 18px;
+        padding: 14px;
+    }
+    #treino-pergunta {
+        font-size: 32px !important;
+    }
+}
