@@ -278,13 +278,12 @@ function configurarEventos() {
   });
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
-  // Aluno - simplificado (substitua pela lógica completa se necessário)
+  // Aluno - simplificado
   document.getElementById('btn-aluno')?.addEventListener('click', async () => {
     if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
       exibirToast('⏳ A fase não foi iniciada ou já terminou.');
       return;
     }
-    // Implemente a lógica de login/cadastro do aluno aqui (exemplo)
     exibirToast('🔧 Função de aluno em desenvolvimento - use o menu Aluno no cabeçalho.');
   });
 
@@ -532,7 +531,7 @@ function configurarEventos() {
     ['futPos','pontuacaoAtual','deltaLider','velocRecorde','progresso','partidas','tempo','mediaTempo','turma','projecaoPontos'].forEach(id => {
       config[id] = true;
     });
-    await db.ref(COLUNAS_KEY).set(config);
+    await db.ref('copaV2/configuracoes/colunasVisiveis').set(config);
     state.colunasVisiveis = config;
     renderizarColunasVisiveis();
     exibirToast('✅ Colunas restauradas para o padrão (todas visíveis)');
@@ -661,15 +660,27 @@ function configurarEventos() {
     atualizarListaLiberados();
   });
 
-  // Sons
-  document.getElementById('btn-som-master')?.addEventListener('click', function() {
-    // A função será chamada do módulo sound.js
-    // Mas como não temos essa função no main, vamos implementar diretamente
-    const { tocarSom } = await import('./modules/sound.js');
-    // ... (deixamos para o módulo sound.js)
-  });
-
-  // Inicializar listeners de versão já foram iniciados no init
+  // Sons - botão master (implementação direta sem import await)
+  const btnSomMaster = document.getElementById('btn-som-master');
+  if (btnSomMaster) {
+    btnSomMaster.addEventListener('click', function() {
+      // Importa dinamicamente apenas quando necessário
+      import('./modules/sound.js').then(module => {
+        const { tocarSom } = module;
+        // Alternar estado (exemplo simples)
+        this.classList.toggle('ativado');
+        this.classList.toggle('desativado');
+        if (this.classList.contains('ativado')) {
+          this.textContent = '🔊 Sons Ativados';
+          // Habilitar sons (isso seria gerenciado pelo módulo sound)
+          // A implementação completa está no módulo sound.js
+        } else {
+          this.textContent = '🔇 Sons Desativados';
+        }
+        tocarSom('clique');
+      });
+    });
+  }
 }
 
 // ============================================================
