@@ -1,9 +1,9 @@
 // js/main.js
-import { db, auth } from './config/firebase.js';
+import { db, auth, initConnectionMonitor, onConnectionChange } from './config/firebase.js';
 import { state } from './modules/state.js';
 import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './modules/auth.js';
 import { carregarEstado, atualizarDados, setDados, removerDados, lerDados, ouvirOnline } from './modules/db.js';
-import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase } from './modules/ui.js';
+import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase, initConnectionUI } from './modules/ui.js';
 import { iniciarPartida } from './modules/game.js';
 import { 
   renderizarRanking, 
@@ -41,6 +41,10 @@ import { abrirInstalacao } from './modules/install.js';
 // INICIALIZAÇÃO
 // ============================================================
 async function init() {
+  // === INICIAR MONITOR DE CONEXÃO E BADGE (item 1) ===
+  initConnectionMonitor();
+  initConnectionUI(onConnectionChange);
+
   // Carregar configurações
   await carregarValorPartida();
   await carregarConfigRankingPontos();
