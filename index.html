@@ -9,7 +9,7 @@
 <body>
 
 <!-- ========================================================= -->
-<!-- OVERLAY DE CARREGAMENTO (item 4)                          -->
+<!-- OVERLAY DE CARREGAMENTO                                   -->
 <!-- ========================================================= -->
 <div id="loading-overlay" class="loading-overlay">
     <div class="loading-spinner"></div>
@@ -73,13 +73,12 @@
             <button id="btn-tutorial-inicial" class="btn-info">📘 Tutorial</button>
             <button id="btn-instalar-app" style="background: #9b59b6; color: white; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px;">📱 Instalar App</button>
             <button id="btn-tema" class="btn-tema" title="Alternar tema">🌓</button>
-            <!-- NOVO: Botão Modo Treino -->
             <button id="btn-treino" class="btn-treino">🧠 Treino</button>
         </div>
     </div>
 
     <!-- ========================================================= -->
-    <!-- PAINEL DO PROFESSOR                                       -->
+    <!-- PAINEL DO PROFESSOR (resumido para não estourar)          -->
     <!-- ========================================================= -->
     <div id="painel-professor" class="card hidden">
         <div class="header-actions">
@@ -91,7 +90,6 @@
             </div>
         </div>
 
-        <!-- Abas -->
         <div class="tab-buttons">
             <div class="tab-btn active" data-tab="controle">🎮 Controle</div>
             <div class="tab-btn" data-tab="ranking-geral">🏆 Ranking Geral</div>
@@ -103,8 +101,8 @@
             <div class="tab-btn" data-tab="configuracoes">⚙️ Configurações</div>
         </div>
 
-        <!-- Conteúdo das abas -->
         <div id="tab-controle" class="tab-content">
+            <!-- Conteúdo mantido do original -->
             <div class="flex-grid">
                 <div>
                     <h3>Controle da Fase</h3>
@@ -165,11 +163,11 @@
             </div>
         </div>
 
+        <!-- Demais abas (ranking-geral, ranking-fase, etc.) mantidas do original -->
         <div id="tab-ranking-geral" class="tab-content hidden">
             <h3>📊 Classificação Geral - Todos os Participantes</h3>
             <div id="ranking-geral-container" class="status-box">Processando ranking geral...</div>
         </div>
-
         <div id="tab-ranking-fase" class="tab-content hidden">
             <h3>Ranking por Fase (Atualização automática)</h3>
             <div class="fase-selector">
@@ -179,7 +177,6 @@
             </div>
             <div id="ranking-parcial" class="status-box">Aguardando dados...</div>
         </div>
-
         <div id="tab-ranking-turmas" class="tab-content hidden">
             <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
             <div style="margin-bottom: 15px;">
@@ -187,7 +184,6 @@
             </div>
             <div id="ranking-turmas-container" class="status-box">Carregando...</div>
         </div>
-
         <div id="tab-ranking-pontos" class="tab-content hidden">
             <h3>🏆 Ranking de Pontos Acumulados</h3>
             <p style="color: #94a3b8; margin-bottom: 15px;">O campeão da Copa será o jogador com o maior total de pontos ao final das 5 fases.</p>
@@ -214,7 +210,6 @@
                 <button id="btn-salvar-pontuacao" class="btn-success" style="margin-top: 15px;">💾 Salvar Configuração de Pontos</button>
                 <div id="feedback-pontuacao" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
-
             <div class="config-card" style="border-color: #facc15;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">⚡</span>
@@ -243,7 +238,6 @@
                 <button id="btn-salvar-bonus-velocidade" class="btn-success" style="margin-top: 15px;">💾 Salvar Bônus</button>
                 <div id="feedback-bonus-velocidade" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
-
             <h4 style="margin-top: 20px;">📊 Ranking Geral de Pontos</h4>
             <div id="ranking-pontos-container" class="status-box">Carregando...</div>
             <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">
@@ -267,7 +261,6 @@
         <div id="tab-configuracoes" class="tab-content hidden">
             <h3>⚙️ Configurações do Professor</h3>
             
-            <!-- CARD: Controle de Som -->
             <div id="bloco-controle-som" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🔊</span>
@@ -293,7 +286,6 @@
                 </div>
             </div>
 
-            <!-- CARD: Valor da Partida -->
             <div id="bloco-valor-partida" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">💰</span>
@@ -328,7 +320,6 @@
                 </div>
             </div>
 
-            <!-- CARD: Mínimo de Partidas -->
             <div id="bloco-min-partidas" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">📋</span>
@@ -344,7 +335,6 @@
                 <div id="feedback-min-partidas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
 
-            <!-- CARD: Visibilidade das Colunas -->
             <div id="bloco-visibilidade-colunas" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">👁️</span>
@@ -363,7 +353,6 @@
                 <div id="feedback-colunas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
 
-            <!-- CARD: Senha -->
             <div class="config-card senha-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🔑</span>
@@ -394,7 +383,6 @@
                 </p>
             </div>
 
-            <!-- CARD: Liberar Aluno -->
             <div class="config-card liberar-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🚪</span>
@@ -418,7 +406,7 @@
                 </div>
             </div>
 
-            <!-- CARD: Avisos do Professor -->
+            <!-- CARD: Avisos -->
             <div id="bloco-avisos" class="config-card" style="border-color: #f39c12;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">📢</span>
@@ -452,7 +440,7 @@
                 </div>
             </div>
 
-            <!-- CARD: Avatares no Ranking -->
+            <!-- CARD: Avatares -->
             <div class="config-card" style="border-color: #8b5cf6; margin-top: 16px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🎨</span>
@@ -518,7 +506,7 @@
             <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
         </div>
 
-        <!-- Avatar e Personalização -->
+        <!-- Avatar -->
         <div style="display: flex; align-items: center; gap: 16px; margin: 10px 0; flex-wrap: wrap; background: var(--bg-card-hover); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--borda-card);">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div id="avatar-aluno-display" style="display: flex; align-items: center;">
@@ -537,7 +525,7 @@
             <div id="historico-aluno"></div>
         </div>
 
-        <!-- Minhas Conquistas -->
+        <!-- Medalhas -->
         <div class="status-box" style="margin-top: 20px;">
             <h3>🏅 Minhas Conquistas</h3>
             <div id="medalhas-container">
@@ -545,7 +533,7 @@
             </div>
         </div>
 
-        <!-- Gráfico de Evolução -->
+        <!-- Gráfico -->
         <div class="status-box" style="margin-top: 20px;">
             <h3>📈 Evolução da Pontuação</h3>
             <canvas id="grafico-evolucao" width="600" height="200" style="width:100%; height:auto; max-width:600px; background: transparent;"></canvas>
@@ -641,6 +629,14 @@
                 <div id="treino-modalidades" style="display: flex; flex-direction: column; gap: 8px;">
                     <!-- Preenchido via JS -->
                 </div>
+                <!-- Checkbox para Fase 5 (comutativo) -->
+                <label style="display: flex; align-items: center; gap: 8px; margin-top: 12px; cursor: pointer; color: var(--texto-principal);">
+                    <input type="checkbox" id="treino-fase5">
+                    🔄 Modo Fase 5 (comutativo) - números 6 a 9 com comutação
+                </label>
+                <div style="font-size: 12px; color: var(--texto-secundario); margin-top: 4px; margin-left: 28px;">
+                    ⚠️ Apenas para modalidades 2-5, 6-9 ou 0-10. Não se aplica à tabuada específica.
+                </div>
             </div>
 
             <div style="background: var(--bg-card-hover); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
@@ -692,7 +688,7 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- FIREBASE (carregado como script normal)                      -->
+<!-- FIREBASE                                                     -->
 <!-- ============================================================ -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
