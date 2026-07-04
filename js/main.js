@@ -32,7 +32,11 @@ import {
   salvarConfigRankingPontos,
   salvarValorPartida,
   adicionarTurma,
-  removerTurma
+  removerTurma,
+  carregarCache,                // <-- ITEM 5
+  carregarConfiguracoesDoCache, // <-- ITEM 5
+  aplicarPreferenciasUI,        // <-- ITEM 5
+  atualizarCacheComDadosFirebase // <-- ITEM 5
 } from './modules/config.js';
 import { verificarVersao, iniciarListenerVersao } from './modules/version.js';
 import { abrirInstalacao } from './modules/install.js';
@@ -44,12 +48,14 @@ async function init() {
   // === MOSTRAR OVERLAY DE CARREGAMENTO (item 4) ===
   mostrarCarregando();
 
+  // === CARREGAR CONFIGURAÇÕES DO CACHE LOCAL (item 5) ===
+  carregarConfiguracoesDoCache();
+
   // === INICIAR MONITOR DE CONEXÃO E BADGE (item 1) ===
   initConnectionMonitor();
   initConnectionUI(onConnectionChange);
 
   // === TRATAMENTO DE RECONEXÃO (item 2) ===
-  // Registrar callback para quando a conexão for restabelecida
   onConnectionChange(async (online) => {
     if (online) {
       if (!window._wasOnline) {
@@ -63,6 +69,8 @@ async function init() {
         const snap = await db.ref('copaV2').once('value');
         state.estadoAtual = snap.val() || state.estadoAtual;
         atualizarUI();
+        // Atualiza cache com os dados mais recentes
+        atualizarCacheComDadosFirebase(state.estadoAtual);
       } catch (e) {
         console.warn('Erro ao recarregar estado na reconexão:', e);
       }
@@ -82,9 +90,7 @@ async function init() {
         renderListaAlunosGerenciar();
         renderListaTurmas();
       } else if (state.meuTipo === 'aluno') {
-        if (state.jogoAtivo) {
-          // Se estiver jogando, não recarrega o ranking para não atrapalhar
-        } else {
+        if (!state.jogoAtivo) {
           atualizarInfoAluno();
           if (document.getElementById('modal-ranking-aluno').style.display === 'flex') {
             atualizarRankingAluno();
@@ -105,7 +111,7 @@ async function init() {
     }
   });
 
-  // Carregar configurações
+  // Carregar configurações (priorizando o cache, depois Firebase)
   await carregarValorPartida();
   await carregarConfigRankingPontos();
   await carregarConfigBonusVelocidade();
@@ -135,6 +141,9 @@ async function init() {
     carregamentoConcluido = true;
     clearTimeout(timeoutId);
     
+    // === ATUALIZAR CACHE COM DADOS DO FIREBASE (item 5) ===
+    atualizarCacheComDadosFirebase(estado);
+    
     // Esconde o overlay
     esconderCarregando();
     
@@ -160,6 +169,9 @@ async function init() {
     }
     
     atualizarUltimaSinc();
+
+    // === APLICAR PREFERÊNCIAS DE INTERFACE DO CACHE (item 5) ===
+    aplicarPreferenciasUI();
   });
 
   ouvirOnline((snap) => {
@@ -194,6 +206,25 @@ async function init() {
   document.getElementById('btn-recarregar-loading')?.addEventListener('click', () => {
     location.reload();
   });
+
+  // === APLICAR DADOS DO CACHE NA UI (se houver) ===
+  // Preencher campos de senha e modalidade com valores do cache
+  if (state.senhaFase1) {
+    const inputSenha = document.getElementById('input-senha-fase1');
+    if (inputSenha) inputSenha.value = state.senhaFase1;
+  }
+  if (state.exigirSenhaFase1 !== undefined) {
+    const toggle = document.getElementById('toggle-exigir-senha');
+    if (toggle) toggle.checked = state.exigirSenhaFase1;
+  }
+  if (state.modalidadeCache) {
+    const select = document.getElementById('select-modalidade');
+    if (select) select.value = state.modalidadeCache;
+  }
+  if (state.tempoFaseCache) {
+    const inputTempo = document.getElementById('input-tempo-fase');
+    if (inputTempo) inputTempo.value = state.tempoFaseCache;
+  }
 }
 
 // ============================================================
@@ -220,7 +251,6 @@ function atualizarUltimaSinc() {
     const agora = new Date();
     span.innerText = agora.toLocaleString('pt-BR');
   }
-  // Também atualiza o campo da torcida se existir
   const torcidaUpdate = document.getElementById('torcida-last-update');
   if (torcidaUpdate) {
     const agora = new Date();
@@ -378,6 +408,12 @@ function pararAtualizacaoTorcida() {
 function entrarModoProfessor() {
   state.meuTipo = 'professor';
   mostrarTela('professor');
+  // Salvar preferência da aba atual
+  const abaAtiva = document.querySelector('.tab-btn.active');
+  if (abaAtiva) {
+    state.prefProfessorAba = abaAtiva.dataset.tab;
+    setCacheItem('preferencias.professorAba', state.prefProfessorAba);
+  }
   if (state.intervaloRankingProfessor) clearInterval(state.intervaloRankingProfessor);
   state.intervaloRankingProfessor = setInterval(() => {
     if (state.meuTipo === 'professor' && state.atualizacaoRankingAuto) {
@@ -388,6 +424,42 @@ function entrarModoProfessor() {
   exibirToast('👨‍🏫 Bem-vindo, Professor!');
   document.querySelector('.tab-btn[data-tab="controle"]')?.click();
   popularSelectFases();
+}
+
+// ============================================================
+// MODO ALUNO
+// ============================================================
+function entrarModoAluno() {
+  if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
+    exibirToast('⏳ A fase não foi iniciada ou já terminou.');
+    return;
+  }
+  state.meuTipo = 'aluno';
+  mostrarTela('aluno');
+  exibirToast('🎮 Modo Aluno ativado!');
+}
+
+// ============================================================
+// MODO TORCIDA
+// ============================================================
+function entrarModoTorcida() {
+  state.torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+  const torcidaRef = db.ref(`online/${state.torcidaId}`);
+  torcidaRef.set({ tipo: 'torcida', timestamp: Date.now() });
+  torcidaRef.onDisconnect().remove();
+  sessionStorage.setItem('torcidaId', state.torcidaId);
+
+  state.meuTipo = 'projecao';
+  mostrarTela('projecao');
+  state.abaTorcidaAtiva = 'fase';
+  state.modoTorcida = 'individual';
+  document.getElementById('btn-modo-individual').classList.add('ativo');
+  document.getElementById('btn-modo-equipes').classList.remove('ativo');
+  document.getElementById('btn-torcida-sub-fase').classList.add('ativo');
+  document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
+  document.getElementById('torcida-fase-selector').style.display = 'block';
+  iniciarAtualizacaoTorcida();
+  exibirToast('📺 Modo Torcida ativado!');
 }
 
 // ============================================================
@@ -430,38 +502,20 @@ function configurarEventos() {
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
   // Aluno
-  document.getElementById('btn-aluno')?.addEventListener('click', async () => {
-    if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
-      exibirToast('⏳ A fase não foi iniciada ou já terminou.');
-      return;
-    }
-    exibirToast('🔧 Função de aluno em desenvolvimento.');
+  document.getElementById('btn-aluno')?.addEventListener('click', () => {
+    entrarModoAluno();
   });
 
   // Torcida
   document.getElementById('btn-projecao')?.addEventListener('click', () => {
-    state.torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    const torcidaRef = db.ref(`online/${state.torcidaId}`);
-    torcidaRef.set({ tipo: 'torcida', timestamp: Date.now() });
-    torcidaRef.onDisconnect().remove();
-    sessionStorage.setItem('torcidaId', state.torcidaId);
-
-    state.meuTipo = 'projecao';
-    mostrarTela('projecao');
-    state.abaTorcidaAtiva = 'fase';
-    state.modoTorcida = 'individual';
-    document.getElementById('btn-modo-individual').classList.add('ativo');
-    document.getElementById('btn-modo-equipes').classList.remove('ativo');
-    document.getElementById('btn-torcida-sub-fase').classList.add('ativo');
-    document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
-    document.getElementById('torcida-fase-selector').style.display = 'block';
-    iniciarAtualizacaoTorcida();
-    exibirToast('📺 Modo Torcida ativado!');
+    entrarModoTorcida();
   });
 
   // Torcida - Modos
   document.getElementById('btn-modo-individual')?.addEventListener('click', function() {
     state.modoTorcida = 'individual';
+    state.prefTorcidaModo = 'individual';
+    setCacheItem('preferencias.torcidaModo', 'individual');
     this.classList.add('ativo');
     document.getElementById('btn-modo-equipes').classList.remove('ativo');
     document.getElementById('torcida-fase-selector').style.display = 'block';
@@ -469,6 +523,8 @@ function configurarEventos() {
   });
   document.getElementById('btn-modo-equipes')?.addEventListener('click', function() {
     state.modoTorcida = 'equipes';
+    state.prefTorcidaModo = 'equipes';
+    setCacheItem('preferencias.torcidaModo', 'equipes');
     this.classList.add('ativo');
     document.getElementById('btn-modo-individual').classList.remove('ativo');
     document.getElementById('torcida-fase-selector').style.display = 'none';
@@ -477,17 +533,21 @@ function configurarEventos() {
 
   // Torcida - Sub-abas
   document.getElementById('btn-torcida-sub-fase')?.addEventListener('click', function() {
+    state.abaTorcidaAtiva = 'fase';
+    state.prefTorcidaSubAba = 'fase';
+    setCacheItem('preferencias.torcidaSubAba', 'fase');
     this.classList.add('ativo');
     document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
-    state.abaTorcidaAtiva = 'fase';
     document.getElementById('torcida-fase-selector').style.display = 'block';
     if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
     else atualizarTorcidaEquipes();
   });
   document.getElementById('btn-torcida-sub-pontos')?.addEventListener('click', async function() {
+    state.abaTorcidaAtiva = 'pontos';
+    state.prefTorcidaSubAba = 'pontos';
+    setCacheItem('preferencias.torcidaSubAba', 'pontos');
     this.classList.add('ativo');
     document.getElementById('btn-torcida-sub-fase').classList.remove('ativo');
-    state.abaTorcidaAtiva = 'pontos';
     document.getElementById('torcida-fase-selector').style.display = 'none';
     await atualizarTorcidaPontos();
   });
@@ -549,6 +609,10 @@ function configurarEventos() {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       this.classList.add('active');
       const tab = this.dataset.tab;
+      // Salvar preferência da aba
+      state.prefProfessorAba = tab;
+      setCacheItem('preferencias.professorAba', tab);
+      
       document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
       document.getElementById(`tab-${tab}`).classList.remove('hidden');
       
@@ -722,6 +786,8 @@ function configurarEventos() {
     });
     await db.ref('copaV2/configuracoes/colunasVisiveis').set(config);
     state.colunasVisiveis = config;
+    state.prefColunasVisiveis = config;
+    setCacheItem('preferencias.colunasVisiveis', config);
     renderizarColunasVisiveis();
     atualizarUltimaSinc(); // <-- atualiza a última sinc
     exibirToast('✅ Colunas restauradas para o padrão (todas visíveis)');
@@ -820,6 +886,11 @@ function configurarEventos() {
     const exigir = document.getElementById('toggle-exigir-senha').checked;
     await db.ref('copaV2/configuracoes/senhaFase1').set(senha);
     await db.ref('copaV2/configuracoes/exigirSenhaFase1').set(exigir);
+    // Atualizar cache
+    state.senhaFase1 = senha;
+    state.exigirSenhaFase1 = exigir;
+    setCacheItem('configCompeticao.senhaFase1', senha);
+    setCacheItem('configCompeticao.exigirSenha', exigir);
     atualizarUltimaSinc(); // <-- atualiza a última sinc
     exibirToast('✅ Senha salva!');
   });
