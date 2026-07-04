@@ -23,10 +23,8 @@ export const MEDALS = [
 // FUNÇÕES DE PERSISTÊNCIA
 // ============================================================
 
-// Chave para localStorage
 const MEDALS_STORAGE_KEY = 'copa_medals';
 
-// Carrega as medalhas do aluno do localStorage (fallback)
 export function carregarMedalhasLocal() {
   try {
     const data = localStorage.getItem(MEDALS_STORAGE_KEY);
@@ -35,14 +33,12 @@ export function carregarMedalhasLocal() {
   return [];
 }
 
-// Salva as medalhas no localStorage
 export function salvarMedalhasLocal(medalhas) {
   try {
     localStorage.setItem(MEDALS_STORAGE_KEY, JSON.stringify(medalhas));
   } catch (e) {}
 }
 
-// Carrega as medalhas do Firebase (se o aluno tiver ID)
 export async function carregarMedalhasFirebase(alunoId) {
   if (!alunoId) return null;
   try {
@@ -54,7 +50,6 @@ export async function carregarMedalhasFirebase(alunoId) {
   }
 }
 
-// Salva as medalhas no Firebase
 export async function salvarMedalhasFirebase(alunoId, medalhas) {
   if (!alunoId) return;
   try {
@@ -68,13 +63,11 @@ export async function salvarMedalhasFirebase(alunoId, medalhas) {
 // VERIFICAR E CONCEDER NOVAS MEDALHAS
 // ============================================================
 
-// Dados do aluno para verificação de medalhas
 export function coletarDadosAluno() {
   const fase = state.estadoAtual?.fase || 1;
   const resultados = state.estadoAtual?.resultados?.[fase]?.[state.alunoId] || [];
   const totalPartidas = resultados.length;
 
-  // Melhor pontuação
   let melhorPontuacao = 0;
   let melhorAcertos = 0;
   let melhorVelocidade = Infinity;
@@ -100,19 +93,15 @@ export function coletarDadosAluno() {
     }
   }
 
-  // Evolução de 500 pontos
   const evolucao500 = (ultimaPontuacao - primeiraPontuacao) >= 500;
-
-  // Primeiro lugar? (verifica se o aluno está em 1º no ranking de pontos da fase)
   let primeiroLugar = false;
-  if (state.rankingPontosAtivo) {
-    // Simplificado: verifica se o aluno tem a maior pontuação geral
-    const ranking = state.rankingPontosAtivo;
-    // Aqui usamos uma lógica simples: se o aluno for o líder no ranking de pontos
-    // (precisamos de uma função que verifique isso)
-    // Vamos deixar para ser verificado quando o professor finalizar a competição
-    // Por enquanto, marcamos como false
-    primeiroLugar = false;
+  // Verifica se o aluno é o líder do ranking de pontos da fase atual
+  if (state.rankingPontosAtivo && state.estadoAtual) {
+    const faseAtual = state.estadoAtual.fase;
+    const ranking = calcularRankingFase(faseAtual);
+    if (ranking.length > 0 && ranking[0].id === state.alunoId) {
+      primeiroLugar = true;
+    }
   }
 
   return {
@@ -125,7 +114,13 @@ export function coletarDadosAluno() {
   };
 }
 
-// Verifica e concede novas medalhas
+// Importação circular: precisamos importar calcularRankingFase aqui
+// Para evitar erro, faremos import dinâmico
+async function calcularRankingFase(fase) {
+  const { calcularRankingFase: calc } = await import('./ranking.js');
+  return calc(fase);
+}
+
 export async function verificarEConcederMedalhas() {
   if (!state.alunoId) return;
 
@@ -134,7 +129,6 @@ export async function verificarEConcederMedalhas() {
   const novasMedalhas = [];
 
   for (const medal of MEDALS) {
-    // Verifica se o aluno já tem essa medalha
     const jaTem = medalhasAtuais.some(m => m.id === medal.id);
     if (!jaTem && medal.condicao(dados)) {
       novasMedalhas.push({
@@ -147,19 +141,15 @@ export async function verificarEConcederMedalhas() {
   }
 
   if (novasMedalhas.length > 0) {
-    // Adiciona as novas medalhas à lista
     const todasMedalhas = [...medalhasAtuais, ...novasMedalhas];
     salvarMedalhasLocal(todasMedalhas);
     await salvarMedalhasFirebase(state.alunoId, todasMedalhas);
 
-    // Mostra pop-up para cada nova medalha
     for (const medal of novasMedalhas) {
       exibirToast(`${medal.icone} NOVA CONQUISTA! Você ganhou a medalha "${medal.nome}"!`);
-      // Podemos também usar um modal mais bonito
       mostrarPopupMedalha(medal);
     }
 
-    // Atualiza a exibição das medalhas na tela do aluno
     atualizarExibicaoMedalhas();
   }
 
@@ -193,9 +183,7 @@ export function atualizarExibicaoMedalhas() {
   container.innerHTML = html;
 }
 
-// Pop-up de nova medalha (mais chamativo que o toast)
 function mostrarPopupMedalha(medal) {
-  // Verifica se já existe um pop-up
   let popup = document.getElementById('medalha-popup');
   if (popup) popup.remove();
 
@@ -212,7 +200,7 @@ function mostrarPopupMedalha(medal) {
     </div>
   `;
   document.body.appendChild(popup);
-  // Remove após 5 segundos
+
   setTimeout(() => {
     if (popup && popup.parentNode) popup.remove();
   }, 6000);
