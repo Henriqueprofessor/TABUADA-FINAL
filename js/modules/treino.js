@@ -39,13 +39,12 @@ export function iniciarTreino(modalidade, totalPerguntas, numeroEspecifico = nul
   } else if (fase5) {
     perguntas = gerarPerguntasParaFase5(totalPerguntas);
   } else {
-    // Modalidade normal (2-5, 6-9, 0-10) usando a função do game.js
-    const perguntasGeradas = gerarPerguntas(modalidade, 1); // fase 1, pois o treino não usa fase
+    // Modalidade normal (2-5, 6-9, 0-10)
+    const perguntasGeradas = gerarPerguntas(modalidade, 1);
     if (!perguntasGeradas || perguntasGeradas.length === 0) {
       exibirToast('❌ Erro ao gerar perguntas.');
       return;
     }
-    // Mapeia para o formato esperado pelo treino
     perguntas = perguntasGeradas.map(p => {
       const correta = p.opts[p.posicaoCorreta - 1];
       return {
@@ -56,12 +55,10 @@ export function iniciarTreino(modalidade, totalPerguntas, numeroEspecifico = nul
         posicaoCorreta: p.posicaoCorreta
       };
     });
-    // Corta ou repete para atingir o total desejado
     if (perguntas.length > totalPerguntas) {
       perguntas = perguntas.slice(0, totalPerguntas);
     } else {
       while (perguntas.length < totalPerguntas) {
-        // Gera mais perguntas e adiciona
         const extra = gerarPerguntas(modalidade, 1).map(p => {
           const correta = p.opts[p.posicaoCorreta - 1];
           return {
@@ -78,7 +75,6 @@ export function iniciarTreino(modalidade, totalPerguntas, numeroEspecifico = nul
     }
   }
 
-  // Verifica se há perguntas
   if (perguntas.length === 0) {
     exibirToast('❌ Nenhuma pergunta gerada. Tente outra modalidade.');
     return;
@@ -165,7 +161,7 @@ function gerarDistratores(correta, quantidade) {
 }
 
 // ============================================================
-// GERAR PERGUNTAS PARA FASE 5 (COMUTATIVA)
+// GERAR PERGUNTAS PARA FASE 5
 // ============================================================
 function gerarPerguntasParaFase5(total) {
   const perguntas = [];
@@ -243,7 +239,6 @@ function exibirPergunta() {
     return;
   }
 
-  // Verifica se a pergunta tem opções válidas
   if (!p || !p.opcoes || p.opcoes.length === 0) {
     console.error('Pergunta inválida:', p);
     exibirToast('❌ Erro ao carregar pergunta. Tente novamente.');
@@ -367,14 +362,21 @@ function finalizarTreino() {
 }
 
 // ============================================================
-// MOSTRAR TELAS
+// MOSTRAR TELAS (com controle de visibilidade)
 // ============================================================
 function mostrarTelaTreino() {
+  // Oculta todas as outras telas
   document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-  document.getElementById('tela-treino')?.classList.remove('hidden');
+  const telaTreino = document.getElementById('tela-treino');
+  if (telaTreino) {
+    telaTreino.style.display = 'block'; // força exibição
+    telaTreino.classList.remove('hidden');
+  }
 }
 
 export function mostrarConfiguracaoTreino() {
+  console.log('📢 Abrindo configuração do treino');
+  // Reseta estado
   treinoEstado.ativo = false;
   treinoEstado.finalizado = false;
   treinoEstado.perguntas = [];
@@ -382,10 +384,12 @@ export function mostrarConfiguracaoTreino() {
   treinoEstado.acertos = 0;
   treinoEstado.erros = 0;
 
+  // Oculta todas as outras telas
   document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
   const configContainer = document.getElementById('treino-config');
   const jogoContainer = document.getElementById('treino-jogo');
   const resultadoContainer = document.getElementById('treino-resultado');
+  const telaTreino = document.getElementById('tela-treino');
 
   if (jogoContainer) jogoContainer.style.display = 'none';
   if (resultadoContainer) {
@@ -393,6 +397,10 @@ export function mostrarConfiguracaoTreino() {
     resultadoContainer.innerHTML = '';
   }
   if (configContainer) configContainer.style.display = 'block';
+  if (telaTreino) {
+    telaTreino.style.display = 'block';
+    telaTreino.classList.remove('hidden');
+  }
 
   // Preenche modalidades
   const modalidadeContainer = document.getElementById('treino-modalidades');
@@ -466,7 +474,11 @@ export function mostrarConfiguracaoTreino() {
     });
   }
 
-  document.getElementById('tela-treino')?.classList.remove('hidden');
+  // Garante que a tela de treino está visível
+  if (telaTreino) {
+    telaTreino.style.display = 'block';
+    telaTreino.classList.remove('hidden');
+  }
 }
 
 // ============================================================
