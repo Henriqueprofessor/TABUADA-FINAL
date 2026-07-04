@@ -1,10 +1,10 @@
 // js/main.js
 import { db, auth, initConnectionMonitor, onConnectionChange, recriarPresencaOnline } from '../config/firebase.js';
-import { state } from './state.js';
-import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './auth.js';
-import { carregarEstado, atualizarDados, setDados, removerDados, lerDados, ouvirOnline } from './db.js';
-import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase, initConnectionUI, exibirToastReconexao } from './ui.js';
-import { iniciarPartida } from './game.js';
+import { state } from './modules/state.js';
+import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './modules/auth.js';
+import { carregarEstado, atualizarDados, setDados, removerDados, lerDados, ouvirOnline } from './modules/db.js';
+import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase, initConnectionUI, exibirToastReconexao } from './modules/ui.js';
+import { iniciarPartida } from './modules/game.js';
 import { 
   renderizarRanking, 
   atualizarInfoAluno, 
@@ -17,9 +17,9 @@ import {
   renderListaTurmas,
   renderizarConfigMinPartidas,
   renderizarColunasVisiveis
-} from './ranking.js';
-import { inicializarSons, renderizarPainelSom } from './sound.js';
-import { abrirTutorial, fecharTutorial } from './tutorial.js';
+} from './modules/ranking.js';
+import { inicializarSons, renderizarPainelSom } from './modules/sound.js';
+import { abrirTutorial, fecharTutorial } from './modules/tutorial.js';
 import {
   carregarValorPartida,
   carregarConfigRankingPontos,
@@ -35,9 +35,9 @@ import {
   salvarValorPartida,
   adicionarTurma,
   removerTurma
-} from './config.js';
-import { verificarVersao, iniciarListenerVersao } from './version.js';
-import { abrirInstalacao } from './install.js';
+} from './modules/config.js';
+import { verificarVersao, iniciarListenerVersao } from './modules/version.js';
+import { abrirInstalacao } from './modules/install.js';
 
 // ============================================================
 // INICIALIZAÇÃO
@@ -48,20 +48,15 @@ async function init() {
   initConnectionUI(onConnectionChange);
 
   // === TRATAMENTO DE RECONEXÃO (item 2) ===
-  // Registrar callback para quando a conexão for restabelecida
   onConnectionChange(async (online) => {
     if (online) {
-      // Só executa ações se a conexão acabou de voltar (estava offline antes)
-      // O estado anterior é controlado internamente no módulo firebase, mas vamos usar uma variável local
       if (!window._wasOnline) {
         window._wasOnline = true;
-        return; // primeira execução, não fazer nada
+        return;
       }
-      // Se chegou aqui, é uma reconexão real
       console.log('🔄 Reconectado ao Firebase! Recarregando dados...');
       exibirToastReconexao();
 
-      // Recarregar estado completo da competição
       try {
         const snap = await db.ref('copaV2').once('value');
         state.estadoAtual = snap.val() || state.estadoAtual;
@@ -70,7 +65,6 @@ async function init() {
         console.warn('Erro ao recarregar estado na reconexão:', e);
       }
 
-      // Recriar presença online se o usuário estiver em algum modo
       if (state.meuTipo === 'professor' && auth.currentUser) {
         const uid = auth.currentUser.uid || 'professor';
         recriarPresencaOnline(uid, 'professor');
@@ -80,16 +74,13 @@ async function init() {
         recriarPresencaOnline(state.torcidaId, 'torcida');
       }
 
-      // Atualizar rankings conforme o modo atual
       if (state.meuTipo === 'professor') {
         const fase = parseInt(document.getElementById('select-fase-ranking')?.value) || state.estadoAtual?.fase || 1;
         renderizarRanking(fase, 'ranking-parcial', 'individual', true);
         renderListaAlunosGerenciar();
         renderListaTurmas();
       } else if (state.meuTipo === 'aluno') {
-        if (state.jogoAtivo) {
-          // Se estiver jogando, não recarrega o ranking para não atrapalhar
-        } else {
+        if (!state.jogoAtivo) {
           atualizarInfoAluno();
           if (document.getElementById('modal-ranking-aluno').style.display === 'flex') {
             atualizarRankingAluno();
@@ -103,11 +94,8 @@ async function init() {
           atualizarTorcidaPontos();
         }
       }
-
-      // Atualizar última sincronização
       atualizarUltimaSinc();
     } else {
-      // Desconectado: apenas registra para saber que estava online antes
       window._wasOnline = false;
     }
   });
@@ -153,8 +141,6 @@ async function init() {
         renderizarRanking(fase, 'ranking-parcial', 'individual', true);
       }
     }
-    
-    // Atualizar última sincronização quando os dados do Firebase mudarem
     atualizarUltimaSinc();
   });
 
@@ -180,15 +166,12 @@ async function init() {
   mostrarTela('inicio');
   popularSelectFases();
   popularSelectFasesTorcida();
-  
-  // Iniciar relógio (apenas a hora, não a última sinc)
   iniciarRelogio();
-  // Definir última sinc inicial
   atualizarUltimaSinc();
 }
 
 // ============================================================
-// RELÓGIO EM TEMPO REAL (apenas hora)
+// RELÓGIO EM TEMPO REAL
 // ============================================================
 function iniciarRelogio() {
   function atualizarRelogio() {
@@ -203,7 +186,7 @@ function iniciarRelogio() {
 }
 
 // ============================================================
-// ATUALIZAR ÚLTIMA SINCRONIZAÇÃO (somente em eventos reais)
+// ATUALIZAR ÚLTIMA SINCRONIZAÇÃO
 // ============================================================
 function atualizarUltimaSinc() {
   const span = document.getElementById('last-sync-time');
@@ -211,7 +194,6 @@ function atualizarUltimaSinc() {
     const agora = new Date();
     span.innerText = agora.toLocaleString('pt-BR');
   }
-  // Também atualiza o campo da torcida se existir
   const torcidaUpdate = document.getElementById('torcida-last-update');
   if (torcidaUpdate) {
     const agora = new Date();
@@ -385,7 +367,6 @@ function entrarModoProfessor() {
 // CONFIGURAÇÃO DE EVENTOS
 // ============================================================
 function configurarEventos() {
-  // Botões principais
   document.getElementById('btn-verificar-versao')?.addEventListener('click', () => verificarVersao(true));
   document.getElementById('btn-tutorial-inicial')?.addEventListener('click', () => abrirTutorial('aluno'));
   document.getElementById('btn-tutorial-aluno')?.addEventListener('click', () => abrirTutorial('aluno'));
@@ -393,7 +374,6 @@ function configurarEventos() {
   document.getElementById('btn-fechar-tutorial')?.addEventListener('click', fecharTutorial);
   document.getElementById('btn-instalar-app')?.addEventListener('click', abrirInstalacao);
 
-  // Professor
   document.getElementById('btn-professor')?.addEventListener('click', () => {
     const user = getCurrentUser();
     if (user) entrarModoProfessor();
@@ -420,7 +400,6 @@ function configurarEventos() {
   });
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
-  // Aluno
   document.getElementById('btn-aluno')?.addEventListener('click', async () => {
     if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
       exibirToast('⏳ A fase não foi iniciada ou já terminou.');
@@ -429,7 +408,6 @@ function configurarEventos() {
     exibirToast('🔧 Função de aluno em desenvolvimento.');
   });
 
-  // Torcida
   document.getElementById('btn-projecao')?.addEventListener('click', () => {
     state.torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
     const torcidaRef = db.ref(`online/${state.torcidaId}`);
@@ -450,7 +428,6 @@ function configurarEventos() {
     exibirToast('📺 Modo Torcida ativado!');
   });
 
-  // Torcida - Modos
   document.getElementById('btn-modo-individual')?.addEventListener('click', function() {
     state.modoTorcida = 'individual';
     this.classList.add('ativo');
@@ -466,7 +443,6 @@ function configurarEventos() {
     if (state.abaTorcidaAtiva === 'fase') atualizarTorcidaEquipes();
   });
 
-  // Torcida - Sub-abas
   document.getElementById('btn-torcida-sub-fase')?.addEventListener('click', function() {
     this.classList.add('ativo');
     document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
@@ -483,7 +459,6 @@ function configurarEventos() {
     await atualizarTorcidaPontos();
   });
 
-  // Torcida - Sair
   document.getElementById('btn-sair-torcida')?.addEventListener('click', () => {
     if (state.torcidaId) {
       db.ref(`online/${state.torcidaId}`).remove();
@@ -503,7 +478,6 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
-  // Ranking do aluno
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -527,14 +501,12 @@ function configurarEventos() {
     location.reload();
   });
 
-  // Aluno - Iniciar partida
   document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarPartida);
   document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
     if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
     location.reload();
   });
 
-  // Abas do professor
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -543,9 +515,7 @@ function configurarEventos() {
       document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
       document.getElementById(`tab-${tab}`).classList.remove('hidden');
       
-      if (tab === 'ranking-geral') {
-        renderRankingGeral();
-      }
+      if (tab === 'ranking-geral') renderRankingGeral();
       if (tab === 'ranking-fase') {
         popularSelectFases();
         const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
@@ -554,15 +524,9 @@ function configurarEventos() {
       if (tab === 'ranking-turmas') {
         renderizarRanking(null, 'ranking-turmas-container', 'turmas', false);
       }
-      if (tab === 'ranking-pontos') {
-        renderizarRankingPontos();
-      }
-      if (tab === 'gerenciar-alunos') {
-        renderListaAlunosGerenciar();
-      }
-      if (tab === 'gerenciar-turmas') {
-        renderListaTurmas();
-      }
+      if (tab === 'ranking-pontos') renderizarRankingPontos();
+      if (tab === 'gerenciar-alunos') renderListaAlunosGerenciar();
+      if (tab === 'gerenciar-turmas') renderListaTurmas();
       if (tab === 'configuracoes') {
         carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
         renderizarColunasVisiveis();
@@ -571,7 +535,6 @@ function configurarEventos() {
     });
   });
 
-  // Botão Sincronizar Global
   document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
     db.ref('copaV2').once('value', snap => {
       state.estadoAtual = snap.val() || state.estadoAtual;
@@ -585,13 +548,11 @@ function configurarEventos() {
     });
   });
 
-  // Outros botões do professor
   document.getElementById('btn-sync-prof')?.addEventListener('click', () => {
     atualizarUltimaSinc();
     exibirToast('🔄 Sincronizado!');
   });
 
-  // Controle de fase
   document.getElementById('btn-iniciar-fase')?.addEventListener('click', async () => {
     if (!state.estadoAtual) return;
     const duracao = state.estadoAtual.tempoFase || 10;
@@ -642,7 +603,6 @@ function configurarEventos() {
     }
   });
 
-  // Salvar tempo
   document.getElementById('btn-salvar-tempo')?.addEventListener('click', async () => {
     const t = parseInt(document.getElementById('input-tempo-fase').value);
     if (t > 0) {
@@ -651,7 +611,6 @@ function configurarEventos() {
     }
   });
 
-  // Adicionar tempo extra
   document.getElementById('btn-adicionar-tempo-extra')?.addEventListener('click', async () => {
     if (state.estadoAtual?.status !== 'em_andamento') { exibirToast('⚠️ Fase não está em andamento.'); return; }
     const extra = parseInt(document.getElementById('input-tempo-extra').value);
@@ -663,7 +622,6 @@ function configurarEventos() {
     exibirToast(`✅ ${extra} minuto(s) adicionado(s)!`);
   });
 
-  // Intervalos (o botão "Aplicar" já salva no Firebase e atualiza o state)
   document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
     const val = parseInt(document.getElementById('intervalo-individual').value);
     if (val >= 1) {
@@ -683,7 +641,6 @@ function configurarEventos() {
     }
   });
 
-  // Gerenciar turmas
   document.getElementById('btn-adicionar-turma')?.addEventListener('click', async () => {
     const nova = prompt('Digite o nome da nova turma:');
     if (nova && nova.trim()) {
@@ -693,19 +650,16 @@ function configurarEventos() {
     }
   });
 
-  // Configurações: salvar mínimo de partidas
   document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', async () => {
     await salvarMinPartidas();
     atualizarUltimaSinc();
   });
 
-  // Configurações: salvar colunas
   document.getElementById('btn-salvar-colunas')?.addEventListener('click', async () => {
     await salvarColunasVisiveis();
     atualizarUltimaSinc();
   });
 
-  // Configurações: restaurar colunas
   document.getElementById('btn-restaurar-colunas')?.addEventListener('click', async () => {
     const config = {};
     ['futPos','pontuacaoAtual','deltaLider','velocRecorde','progresso','partidas','tempo','mediaTempo','turma','projecaoPontos'].forEach(id => {
@@ -718,7 +672,6 @@ function configurarEventos() {
     exibirToast('✅ Colunas restauradas para o padrão (todas visíveis)');
   });
 
-  // Configurações: ranking de pontos
   document.getElementById('toggle-ranking-pontos')?.addEventListener('change', async function() {
     const ativo = this.checked;
     document.getElementById('status-ranking-pontos').innerText = ativo ? '✅ Ativado' : '❌ Desativado';
@@ -739,7 +692,6 @@ function configurarEventos() {
     }
   });
 
-  // Configurações: salvar pontuação
   document.getElementById('btn-salvar-pontuacao')?.addEventListener('click', async function() {
     const textPadrao = document.getElementById('textarea-pontos-padrao').value;
     const textFase5 = document.getElementById('textarea-pontos-fase5').value;
@@ -769,7 +721,6 @@ function configurarEventos() {
     exibirToast('Padrão restaurado para Fase 5');
   });
 
-  // Configurações: bônus de velocidade
   document.getElementById('btn-salvar-bonus-velocidade')?.addEventListener('click', async function() {
     const ativo = document.getElementById('toggle-bonus-velocidade').checked;
     const pontos = parseInt(document.getElementById('input-bonus-velocidade').value) || 1;
@@ -784,7 +735,6 @@ function configurarEventos() {
     setTimeout(() => document.getElementById('feedback-bonus-velocidade').style.display = 'none', 5000);
   });
 
-  // Configurações: valor da partida
   document.getElementById('btn-atualizar-valor-partida')?.addEventListener('click', async function() {
     const novoValor = parseInt(document.getElementById('input-valor-partida').value);
     if (!novoValor || novoValor < 1) { exibirToast('❌ Digite um valor válido maior que 0.'); return; }
@@ -797,7 +747,6 @@ function configurarEventos() {
     setTimeout(() => document.getElementById('feedback-valor-partida').style.display = 'none', 5000);
   });
 
-  // Configurações: senha
   document.getElementById('btn-gerar-senha')?.addEventListener('click', () => {
     if (state.senhaBloqueada) { exibirToast('❌ Senha bloqueada após iniciar a fase.'); return; }
     const num = Math.floor(Math.random() * 90) + 10;
@@ -823,7 +772,6 @@ function configurarEventos() {
     }
   });
 
-  // Configurações: liberar aluno
   document.getElementById('btn-liberar-aluno')?.addEventListener('click', async () => {
     const nome = document.getElementById('input-liberar-nome').value.trim();
     const turma = document.getElementById('input-liberar-turma').value.trim();
