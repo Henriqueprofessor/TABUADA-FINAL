@@ -9,14 +9,13 @@ export function carregarEstado(callback) {
   });
 }
 
-// Atualizar dados (com tratamento silencioso de erros - item 2)
+// Atualizar dados (com tratamento silencioso de erros)
 export async function atualizarDados(caminho, dados) {
   try {
     await db.ref(caminho).update(dados);
     return true;
   } catch (e) {
     console.warn('⚠️ Erro ao atualizar dados (offline):', caminho, e);
-    // Não exibe toast para não incomodar o usuário
     return false;
   }
 }
@@ -59,4 +58,27 @@ export function ouvirOnline(callback) {
 // Desconectar listener
 export function removerListener(ref) {
   ref.off();
+}
+
+// ============================================================
+// FUNÇÕES ESPECÍFICAS PARA AVATAR
+// ============================================================
+
+// Carrega o avatar do aluno e a cor da turma
+export async function carregarAvatarAluno() {
+  if (!state.alunoId) return;
+
+  try {
+    // Carrega avatar do aluno
+    const snapAvatar = await db.ref(`copaV2/participantes/avatar/${state.alunoId}`).once('value');
+    state.avatarAluno = snapAvatar.val() || '⭐';
+
+    // Carrega cor da turma
+    if (state.alunoTurma) {
+      const snapCor = await db.ref(`copaV2/turmas_cores/${state.alunoTurma}`).once('value');
+      state.corTurma = snapCor.val() || '#95a5a6';
+    }
+  } catch (e) {
+    console.warn('Erro ao carregar avatar:', e);
+  }
 }
