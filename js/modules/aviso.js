@@ -64,11 +64,9 @@ export function escutarAviso(callback) {
     if (dados && dados.ativo === true) {
       const agora = Date.now();
       if (dados.expiracao > agora) {
-        // Aviso válido
         callback(dados);
         return;
       } else {
-        // Aviso expirado: remove automaticamente
         removerAviso();
         callback(null);
         return;
@@ -76,7 +74,7 @@ export function escutarAviso(callback) {
     }
     callback(null);
   });
-  return ref; // retorna a referência para poder desconectar depois
+  return ref;
 }
 
 // Desconecta o listener
@@ -88,9 +86,7 @@ export function pararEscutarAviso(ref) {
 // FUNÇÕES DE UI (banner para o aluno)
 // ============================================================
 
-// Exibe o banner de aviso na tela do aluno
 export function exibirBannerAviso(aviso) {
-  // Remove banner antigo se existir
   const bannerExistente = document.getElementById('banner-aviso');
   if (bannerExistente) bannerExistente.remove();
 
@@ -103,11 +99,9 @@ export function exibirBannerAviso(aviso) {
     <span class="banner-aviso-icone">📢</span>
     <span class="banner-aviso-texto">${aviso.mensagem}</span>
   `;
-  // Insere após o body, antes do container
   document.body.prepend(banner);
 }
 
-// Remove o banner de aviso da tela do aluno
 export function removerBannerAviso() {
   const banner = document.getElementById('banner-aviso');
   if (banner) banner.remove();
@@ -117,7 +111,6 @@ export function removerBannerAviso() {
 // ATUALIZAR STATUS NO PAINEL DO PROFESSOR
 // ============================================================
 
-// Atualiza a exibição do aviso no painel do professor (Configurações)
 export function atualizarStatusAviso(aviso) {
   const container = document.getElementById('aviso-status');
   if (!container) return;
@@ -129,7 +122,7 @@ export function atualizarStatusAviso(aviso) {
     const segundosRest = Math.floor((restanteMs % 60000) / 1000);
 
     container.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; background: #f39c12; color: #000; padding: 12px 16px; border-radius: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; background: #f39c12; color: #000; padding: 12px 16px; border-radius: 8px; flex-wrap: wrap; gap: 10px;">
         <span><strong>📢 Aviso Ativo:</strong> "${aviso.mensagem}"</span>
         <span>⏱️ Expira em: <strong>${minutosRest}m ${segundosRest}s</strong></span>
       </div>
