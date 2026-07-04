@@ -22,20 +22,14 @@ auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL);
 // ============================================
 // HABILITAR PERSISTÊNCIA OFFLINE (item 2)
 // ============================================
-// O método setPersistenceEnabled existe na instância do Database no SDK compat.
-// Vamos chamá-lo com segurança, verificando se existe.
+// Na versão 10.13.0, o método deve estar disponível em firebase.database()
 try {
-  if (typeof db.setPersistenceEnabled === 'function') {
-    db.setPersistenceEnabled(true);
-    console.log('💾 Persistência offline ativada!');
+  // Tenta ativar usando o objeto global diretamente (mais confiável)
+  if (typeof window.firebase.database().setPersistenceEnabled === 'function') {
+    window.firebase.database().setPersistenceEnabled(true);
+    console.log('💾 Persistência offline ativada (versão 10.13.0)!');
   } else {
-    // Fallback: tenta chamar diretamente no objeto firebase.database()
-    if (typeof window.firebase.database().setPersistenceEnabled === 'function') {
-      window.firebase.database().setPersistenceEnabled(true);
-      console.log('💾 Persistência offline ativada (via fallback)!');
-    } else {
-      console.warn('⚠️ Persistência offline não suportada nesta versão do Firebase.');
-    }
+    console.warn('⚠️ Persistência offline não suportada nesta versão do Firebase.');
   }
 } catch (e) {
   console.warn('⚠️ Erro ao ativar persistência offline:', e);
