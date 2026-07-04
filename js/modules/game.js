@@ -5,9 +5,9 @@ import { lerDados, atualizarDados, removerDados } from './db.js';
 import { tocarSom } from './sound.js';
 import { calcularRankingFase } from './ranking.js';
 import { atualizarRecordeGeral } from './config.js';
-import { verificarEConcederMedalhas, atualizarExibicaoMedalhas } from './medals.js'; // <-- NOVO
+import { verificarEConcederMedalhas, atualizarExibicaoMedalhas } from './medals.js';
 
-// Gerar perguntas (mesma lógica original)
+// Gerar perguntas
 export function gerarPerguntas(modalidade, fase) {
   const configs = {
     "2-5": { min: 2, max: 5 },
@@ -119,7 +119,7 @@ export function gerarPerguntas(modalidade, fase) {
   return resultado;
 }
 
-// Iniciar nova partida
+// Iniciar partida
 export async function iniciarPartida() {
   if (state.jogoAtivo) return;
   if (!state.alunoId || !state.estadoAtual) {
@@ -245,9 +245,9 @@ async function finalizarPartida() {
     await atualizarRecordeGeral(state.alunoId, velocidade, precisao, fase, partidaIndex);
   }
 
-  // === VERIFICAR MEDALHAS (item novo) ===
+  // === VERIFICAR MEDALHAS ===
   await verificarEConcederMedalhas();
-  // Atualiza a exibição das medalhas na tela do aluno
+  // Atualiza exibição das medalhas
   atualizarExibicaoMedalhas();
 
   // Atualiza o gráfico de evolução
@@ -263,7 +263,7 @@ async function finalizarPartida() {
 window.responder = responder;
 
 // ============================================================
-// GRÁFICO DE EVOLUÇÃO (item novo)
+// GRÁFICO DE EVOLUÇÃO
 // ============================================================
 
 export function desenharGraficoEvolucao() {
@@ -271,10 +271,8 @@ export function desenharGraficoEvolucao() {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
-  // Limpa o canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Obtém dados do aluno
   const fase = state.estadoAtual?.fase || 1;
   const resultados = state.estadoAtual?.resultados?.[fase]?.[state.alunoId] || [];
   if (resultados.length < 2) {
@@ -291,7 +289,7 @@ export function desenharGraficoEvolucao() {
   const graficoWidth = canvas.width - padding * 2;
   const graficoHeight = canvas.height - padding * 2;
 
-  // Desenha eixos
+  // Eixos
   ctx.strokeStyle = '#4a5568';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -300,7 +298,7 @@ export function desenharGraficoEvolucao() {
   ctx.lineTo(canvas.width - padding, canvas.height - padding);
   ctx.stroke();
 
-  // Desenha pontos e linha
+  // Linha de evolução
   ctx.beginPath();
   ctx.strokeStyle = '#ffd966';
   ctx.lineWidth = 3;
@@ -312,7 +310,7 @@ export function desenharGraficoEvolucao() {
   }
   ctx.stroke();
 
-  // Desenha pontos (bolinhas)
+  // Pontos (bolinhas)
   for (let i = 0; i < pontuacoes.length; i++) {
     const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
     const y = canvas.height - padding - (pontuacoes[i] / maxPontos) * graficoHeight;
@@ -331,7 +329,7 @@ export function desenharGraficoEvolucao() {
     ctx.fillText(pontuacoes[i], x, y - 12);
   }
 
-  // Rótulos
+  // Rótulos (P1, P2, ...)
   ctx.fillStyle = '#94a3b8';
   ctx.font = '12px sans-serif';
   ctx.textAlign = 'center';
