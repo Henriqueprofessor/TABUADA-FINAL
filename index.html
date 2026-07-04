@@ -264,6 +264,8 @@
         <!-- Aba Configurações -->
         <div id="tab-configuracoes" class="tab-content hidden">
             <h3>⚙️ Configurações do Professor</h3>
+            
+            <!-- ===== CARD: CONTROLE DE SOM ===== -->
             <div id="bloco-controle-som" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🔊</span>
@@ -289,6 +291,7 @@
                 </div>
             </div>
 
+            <!-- ===== CARD: VALOR DA PARTIDA ===== -->
             <div id="bloco-valor-partida" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">💰</span>
@@ -323,6 +326,7 @@
                 </div>
             </div>
 
+            <!-- ===== CARD: MÍNIMO DE PARTIDAS ===== -->
             <div id="bloco-min-partidas" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">📋</span>
@@ -338,6 +342,7 @@
                 <div id="feedback-min-partidas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
 
+            <!-- ===== CARD: VISIBILIDADE DAS COLUNAS ===== -->
             <div id="bloco-visibilidade-colunas" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">👁️</span>
@@ -356,6 +361,7 @@
                 <div id="feedback-colunas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
 
+            <!-- ===== CARD: SENHA ===== -->
             <div class="config-card senha-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🔑</span>
@@ -386,6 +392,7 @@
                 </p>
             </div>
 
+            <!-- ===== CARD: LIBERAR ALUNO ===== -->
             <div class="config-card liberar-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🚪</span>
@@ -408,7 +415,48 @@
                     <div id="lista-liberados" style="color: #4ade80; font-size: 13px; margin-top: 4px;"></div>
                 </div>
             </div>
+
+            <!-- ===== CARD: AVISOS DO PROFESSOR (NOVO) ===== -->
+            <div id="bloco-avisos" class="config-card" style="border-color: #f39c12;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">📢</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Avisos para os Alunos</h4>
+                    <span style="background: #f39c12; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Publique uma mensagem que aparecerá como um banner na tela de <strong>TODOS os alunos</strong> em tempo real.
+                    O aviso será removido automaticamente após o tempo definido.
+                </p>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Mensagem:</label>
+                        <input type="text" id="input-aviso-mensagem" placeholder="Ex: Atenção, última semana!" 
+                            style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 14px; border-radius: 10px; width: 100%;">
+                    </div>
+                    <div style="min-width: 120px;">
+                        <label style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Duração (min):</label>
+                        <input type="number" id="input-aviso-tempo" value="30" min="1" max="1440"
+                            style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 14px; border-radius: 10px; width: 100%;">
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 18px;">
+                        <button id="btn-publicar-aviso" class="btn-warning" style="padding: 10px 24px;">📢 Publicar</button>
+                        <button id="btn-remover-aviso" class="btn-danger" style="padding: 10px 24px;">❌ Remover</button>
+                    </div>
+                </div>
+
+                <!-- Status do aviso atual -->
+                <div id="aviso-status" style="margin-top: 16px;">
+                    <div style="padding: 12px 16px; background: #2c3e50; border-radius: 8px; color: #94a3b8;">
+                        📭 Nenhum aviso ativo no momento.
+                    </div>
+                </div>
+            </div>
+            <!-- Fim do card de avisos -->
+
         </div>
+        <!-- Fim da aba Configurações -->
+
     </div>
     <!-- Fim do painel do professor -->
 
@@ -456,6 +504,20 @@
         <div class="status-box">
             <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
             <div id="historico-aluno"></div>
+        </div>
+
+        <!-- ===== MINHAS CONQUISTAS ===== -->
+        <div class="status-box" style="margin-top: 20px;">
+            <h3>🏅 Minhas Conquistas</h3>
+            <div id="medalhas-container">
+                <p style="color: #94a3b8; font-size: 14px;">Nenhuma conquista ainda. Continue jogando!</p>
+            </div>
+        </div>
+
+        <!-- ===== GRÁFICO DE EVOLUÇÃO ===== -->
+        <div class="status-box" style="margin-top: 20px;">
+            <h3>📈 Evolução da Pontuação</h3>
+            <canvas id="grafico-evolucao" width="600" height="200" style="width:100%; height:auto; max-width:600px; background: transparent;"></canvas>
         </div>
     </div>
 
