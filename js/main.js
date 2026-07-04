@@ -59,11 +59,9 @@ async function init() {
   // Listeners Firebase
   carregarEstado((estado) => {
     atualizarUI();
-    // Atualizar seletores de fases sempre que o estado mudar
-    popularSelectFases(); // para o professor
-    popularSelectFasesTorcida(); // para a torcida
+    popularSelectFases();
+    popularSelectFasesTorcida();
 
-    // Se estiver na torcida, atualizar ranking
     if (state.meuTipo === 'projecao') {
       if (state.abaTorcidaAtiva === 'fase') {
         if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
@@ -73,7 +71,6 @@ async function init() {
       }
     }
 
-    // Se estiver no professor e a aba de ranking-fase estiver visível, atualizar
     if (state.meuTipo === 'professor') {
       const tabFase = document.getElementById('tab-ranking-fase');
       if (tabFase && !tabFase.classList.contains('hidden')) {
@@ -105,6 +102,19 @@ async function init() {
   mostrarTela('inicio');
   popularSelectFases();
   popularSelectFasesTorcida();
+  // Atualizar última sincronização ao carregar
+  atualizarUltimaSinc();
+}
+
+// ============================================================
+// ATUALIZAR ÚLTIMA SINCRONIZAÇÃO
+// ============================================================
+function atualizarUltimaSinc() {
+  const span = document.getElementById('last-sync-time');
+  if (span) {
+    const agora = new Date();
+    span.innerText = agora.toLocaleString('pt-BR');
+  }
 }
 
 // ============================================================
@@ -156,7 +166,6 @@ function popularSelectFases() {
   for (let i = 1; i <= 5; i++) options += `<option value="${i}">Fase ${i}</option>`;
   select.innerHTML = options;
   if (state.estadoAtual) select.value = state.estadoAtual.fase;
-  // Remover listener antigo para evitar duplicação
   select.removeEventListener('change', onSelectFaseProfessorChange);
   select.addEventListener('change', onSelectFaseProfessorChange);
 }
@@ -391,6 +400,7 @@ function configurarEventos() {
     } else {
       atualizarTorcidaPontos();
     }
+    atualizarUltimaSinc();
     exibirToast('🔄 Sincronizado!');
   });
 
@@ -434,7 +444,6 @@ function configurarEventos() {
       document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
       document.getElementById(`tab-${tab}`).classList.remove('hidden');
       
-      // Renderizar conteúdo de cada aba
       if (tab === 'ranking-geral') {
         renderRankingGeral();
       }
@@ -463,8 +472,25 @@ function configurarEventos() {
     });
   });
 
+  // Botão Sincronizar Global
+  document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
+    // Forçar recarregamento do estado
+    db.ref('copaV2').once('value', snap => {
+      state.estadoAtual = snap.val() || state.estadoAtual;
+      atualizarUI();
+      // Atualizar ranking da fase se estiver visível
+      if (state.meuTipo === 'professor') {
+        const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
+        renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+      }
+      atualizarUltimaSinc();
+      exibirToast('✅ Dados sincronizados!');
+    });
+  });
+
   // Outros botões do professor
   document.getElementById('btn-sync-prof')?.addEventListener('click', () => {
+    atualizarUltimaSinc();
     exibirToast('🔄 Sincronizado!');
   });
 
@@ -475,6 +501,7 @@ function configurarEventos() {
     const fim = Date.now() + duracao * 60000;
     await setDados('copaV2', { ...state.estadoAtual, status: 'em_andamento', fim, tempoRestantePausa: null });
     exibirToast('▶️ Fase iniciada!');
+    atualizarUltimaSinc();
   });
 
   document.getElementById('btn-continuar-parar-fase')?.addEventListener('click', async () => {
@@ -484,24 +511,28 @@ function configurarEventos() {
       const tempoRestante = Math.max(0, state.estadoAtual.fim - agora);
       await setDados('copaV2', { ...state.estadoAtual, status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
       exibirToast('⏸️ Fase pausada.');
+      atualizarUltimaSinc();
     } else if (state.estadoAtual?.status === 'pausado') {
       const tempoRestante = state.estadoAtual.tempoRestantePausa || 0;
       if (tempoRestante <= 0) { exibirToast('⚠️ Tempo esgotado.'); return; }
       const novoFim = Date.now() + tempoRestante;
       await setDados('copaV2', { ...state.estadoAtual, status: 'em_andamento', fim: novoFim, tempoRestantePausa: null });
       exibirToast('▶️ Fase retomada!');
+      atualizarUltimaSinc();
     }
   });
 
   document.getElementById('btn-avancar-fase')?.addEventListener('click', async () => {
     if (confirm('Finalizar fase?')) {
       await avancarFase();
+      atualizarUltimaSinc();
     }
   });
 
   document.getElementById('btn-reset-fase')?.addEventListener('click', async () => {
     if (confirm('Resetar fase atual?')) {
       await resetarFase();
+      atualizarUltimaSinc();
     }
   });
 
@@ -509,6 +540,7 @@ function configurarEventos() {
     if (confirm('Resetar toda a competição?')) {
       await setDados('copaV2', { fase:1, status:'aguardando', tempoFase:10, fim:0, modalidade: state.estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} });
       await removerDados('online');
+      atualizarUltimaSinc();
       location.reload();
     }
   });
@@ -516,7 +548,10 @@ function configurarEventos() {
   // Salvar tempo
   document.getElementById('btn-salvar-tempo')?.addEventListener('click', async () => {
     const t = parseInt(document.getElementById('input-tempo-fase').value);
-    if (t > 0) await atualizarDados('copaV2/tempoFase', t);
+    if (t > 0) {
+      await atualizarDados('copaV2/tempoFase', t);
+      atualizarUltimaSinc();
+    }
   });
 
   // Adicionar tempo extra
@@ -528,6 +563,7 @@ function configurarEventos() {
     const novoFim = Math.max(agora + 1000, state.estadoAtual.fim) + extra * 60000;
     await atualizarDados('copaV2/fim', novoFim);
     exibirToast(`✅ ${extra} minuto(s) adicionado(s)!`);
+    atualizarUltimaSinc();
   });
 
   // Intervalos
@@ -536,6 +572,7 @@ function configurarEventos() {
     if (val >= 1) {
       state.intervaloIndividualSegundos = val;
       atualizarDados('copaV2/configuracoes/intervalos/individual', val);
+      atualizarUltimaSinc();
       exibirToast(`✅ Intervalo individual: ${val}s`);
     }
   });
@@ -544,6 +581,7 @@ function configurarEventos() {
     if (val >= 1) {
       state.intervaloEquipesSegundos = val;
       atualizarDados('copaV2/configuracoes/intervalos/equipes', val);
+      atualizarUltimaSinc();
       exibirToast(`✅ Intervalo equipes: ${val}s`);
     }
   });
@@ -554,14 +592,21 @@ function configurarEventos() {
     if (nova && nova.trim()) {
       await adicionarTurma(nova.trim());
       renderListaTurmas();
+      atualizarUltimaSinc();
     }
   });
 
   // Configurações: salvar mínimo de partidas
-  document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', salvarMinPartidas);
+  document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', async () => {
+    await salvarMinPartidas();
+    atualizarUltimaSinc();
+  });
 
   // Configurações: salvar colunas
-  document.getElementById('btn-salvar-colunas')?.addEventListener('click', salvarColunasVisiveis);
+  document.getElementById('btn-salvar-colunas')?.addEventListener('click', async () => {
+    await salvarColunasVisiveis();
+    atualizarUltimaSinc();
+  });
 
   // Configurações: restaurar colunas
   document.getElementById('btn-restaurar-colunas')?.addEventListener('click', async () => {
@@ -572,6 +617,7 @@ function configurarEventos() {
     await db.ref('copaV2/configuracoes/colunasVisiveis').set(config);
     state.colunasVisiveis = config;
     renderizarColunasVisiveis();
+    atualizarUltimaSinc();
     exibirToast('✅ Colunas restauradas para o padrão (todas visíveis)');
   });
 
@@ -581,6 +627,7 @@ function configurarEventos() {
     document.getElementById('status-ranking-pontos').innerText = ativo ? '✅ Ativado' : '❌ Desativado';
     document.getElementById('status-ranking-pontos').style.color = ativo ? '#4ade80' : '#f87171';
     await salvarConfigRankingPontos(ativo, state.tabelaPontosPadrao, state.tabelaPontosFase5);
+    atualizarUltimaSinc();
     if (state.meuTipo === 'professor') renderizarRankingPontos();
     if (state.meuTipo === 'projecao') {
       if (state.abaTorcidaAtiva === 'fase') {
@@ -613,6 +660,7 @@ function configurarEventos() {
     await salvarConfigRankingPontos(ativo, objPadrao, objFase5);
     document.getElementById('textarea-pontos-padrao').value = formatPontuacaoText(objPadrao);
     document.getElementById('textarea-pontos-fase5').value = formatPontuacaoText(objFase5);
+    atualizarUltimaSinc();
   });
 
   document.getElementById('btn-restaurar-padrao')?.addEventListener('click', function() {
@@ -635,6 +683,7 @@ function configurarEventos() {
     document.getElementById('feedback-bonus-velocidade').style.display = 'block';
     document.getElementById('feedback-bonus-velocidade').className = 'feedback-sucesso';
     document.getElementById('feedback-bonus-velocidade').textContent = '✅ Configuração de bônus salva!';
+    atualizarUltimaSinc();
     setTimeout(() => document.getElementById('feedback-bonus-velocidade').style.display = 'none', 5000);
   });
 
@@ -647,6 +696,7 @@ function configurarEventos() {
     document.getElementById('feedback-valor-partida').style.display = 'block';
     document.getElementById('feedback-valor-partida').className = 'feedback-sucesso';
     document.getElementById('feedback-valor-partida').textContent = `✅ Valor da partida atualizado para ${novoValor} pontos!`;
+    atualizarUltimaSinc();
     setTimeout(() => document.getElementById('feedback-valor-partida').style.display = 'none', 5000);
   });
 
@@ -664,6 +714,7 @@ function configurarEventos() {
     const exigir = document.getElementById('toggle-exigir-senha').checked;
     await db.ref('copaV2/configuracoes/senhaFase1').set(senha);
     await db.ref('copaV2/configuracoes/exigirSenhaFase1').set(exigir);
+    atualizarUltimaSinc();
     exibirToast('✅ Senha salva!');
   });
   document.getElementById('toggle-exigir-senha')?.addEventListener('change', () => {
@@ -696,6 +747,7 @@ function configurarEventos() {
     await atualizarDados(`copaV2/participantes/${faseAtual}/${idEncontrado}`, { liberado: true });
     exibirToast(`✅ ${nome} liberado para a Fase ${faseAtual}!`);
     atualizarListaLiberados();
+    atualizarUltimaSinc();
   });
 }
 
