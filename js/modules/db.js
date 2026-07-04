@@ -9,22 +9,46 @@ export function carregarEstado(callback) {
   });
 }
 
-// Atualizar dados
+// Atualizar dados (com tratamento silencioso de erros - item 2)
 export async function atualizarDados(caminho, dados) {
-  await db.ref(caminho).update(dados);
+  try {
+    await db.ref(caminho).update(dados);
+    return true;
+  } catch (e) {
+    console.warn('⚠️ Erro ao atualizar dados (offline):', caminho, e);
+    // Não exibe toast para não incomodar o usuário
+    return false;
+  }
 }
 
 export async function setDados(caminho, dados) {
-  await db.ref(caminho).set(dados);
+  try {
+    await db.ref(caminho).set(dados);
+    return true;
+  } catch (e) {
+    console.warn('⚠️ Erro ao definir dados (offline):', caminho, e);
+    return false;
+  }
 }
 
 export async function removerDados(caminho) {
-  await db.ref(caminho).remove();
+  try {
+    await db.ref(caminho).remove();
+    return true;
+  } catch (e) {
+    console.warn('⚠️ Erro ao remover dados (offline):', caminho, e);
+    return false;
+  }
 }
 
 export async function lerDados(caminho) {
-  const snap = await db.ref(caminho).once('value');
-  return snap.val();
+  try {
+    const snap = await db.ref(caminho).once('value');
+    return snap.val();
+  } catch (e) {
+    console.warn('⚠️ Erro ao ler dados (offline):', caminho, e);
+    return null;
+  }
 }
 
 // Listener para mudanças em tempo real (ex: online)
