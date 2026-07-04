@@ -7,7 +7,6 @@ export function mostrarTela(tipo) {
   else if (tipo === 'aluno') document.getElementById('tela-aluno').classList.remove('hidden');
   else if (tipo === 'projecao') document.getElementById('tela-torcida').classList.remove('hidden');
   else {
-    // tela inicial
     document.querySelectorAll('.card').forEach(c => c.classList.remove('hidden'));
     document.getElementById('tela-aluno')?.classList.add('hidden');
     document.getElementById('painel-professor')?.classList.add('hidden');
@@ -25,16 +24,16 @@ export function exibirToast(mensagem) {
   }
 }
 
-// Toast especial para reconexão (item 2)
+// Toast especial para reconexão
 export function exibirToastReconexao() {
   const t = document.getElementById('toast');
   if (t) {
     t.innerText = '🔄 Conexão restaurada! Dados sincronizados.';
     t.classList.remove('hidden');
-    t.style.background = '#2e7d32'; // verde
+    t.style.background = '#2e7d32';
     setTimeout(() => {
       t.classList.add('hidden');
-      t.style.background = ''; // reset
+      t.style.background = '';
     }, 4000);
   }
 }
@@ -75,10 +74,9 @@ export function atualizarDisplayVersao(versao) {
 }
 
 // ============================================================
-// BADGE DE CONEXÃO (item 1)
+// BADGE DE CONEXÃO
 // ============================================================
 
-// Cria o elemento badge se não existir
 export function createConnectionBadge() {
   let badge = document.getElementById('connection-badge');
   if (!badge) {
@@ -86,12 +84,11 @@ export function createConnectionBadge() {
     badge.id = 'connection-badge';
     badge.className = 'connection-badge offline';
     badge.innerHTML = '⚡ Conectando...';
-    document.body.prepend(badge); // insere no topo do body
+    document.body.prepend(badge);
   }
   return badge;
 }
 
-// Atualiza o badge com base no status
 export function updateConnectionBadge(online) {
   const badge = createConnectionBadge();
   if (online) {
@@ -103,10 +100,7 @@ export function updateConnectionBadge(online) {
   }
 }
 
-// Função para iniciar o monitoramento e integrar com o Firebase
 export function initConnectionUI(onConnectionChangeCallback) {
-  // Cria o badge imediatamente
   createConnectionBadge();
-  // Registra o callback para atualizar a UI
   onConnectionChangeCallback(updateConnectionBadge);
 }
