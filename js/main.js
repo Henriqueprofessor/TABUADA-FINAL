@@ -61,20 +61,13 @@ import { abrirInstalacao } from './modules/install.js';
 // INICIALIZAÇÃO
 // ============================================================
 async function init() {
-  // === APLICAR TEMA SALVO ===
   aplicarTema();
-
-  // === MOSTRAR OVERLAY DE CARREGAMENTO ===
   mostrarCarregando();
-
-  // === CARREGAR CONFIGURAÇÕES DO CACHE LOCAL ===
   carregarConfiguracoesDoCache();
 
-  // === INICIAR MONITOR DE CONEXÃO E BADGE ===
   initConnectionMonitor();
   initConnectionUI(onConnectionChange);
 
-  // === TRATAMENTO DE RECONEXÃO ===
   onConnectionChange(async (online) => {
     if (online) {
       if (!window._wasOnline) {
@@ -129,7 +122,6 @@ async function init() {
     }
   });
 
-  // Carregar configurações
   await carregarValorPartida();
   await carregarConfigRankingPontos();
   await carregarConfigBonusVelocidade();
@@ -137,14 +129,10 @@ async function init() {
   await carregarColunasVisiveis();
   await carregarMinPartidas();
 
-  // Sons
   inicializarSons();
-
-  // Versão
   setTimeout(() => verificarVersao(false), 2000);
   iniciarListenerVersao();
 
-  // === TIMEOUT DE SEGURANÇA PARA CARREGAMENTO ===
   let carregamentoConcluido = false;
   const timeoutId = setTimeout(() => {
     if (!carregamentoConcluido) {
@@ -153,14 +141,11 @@ async function init() {
     }
   }, 10000);
 
-  // Listeners Firebase
   carregarEstado((estado) => {
     carregamentoConcluido = true;
     clearTimeout(timeoutId);
-    
     atualizarCacheComDadosFirebase(estado);
     esconderCarregando();
-    
     atualizarUI();
     popularSelectFases();
     popularSelectFasesTorcida();
@@ -181,7 +166,6 @@ async function init() {
         renderizarRanking(fase, 'ranking-parcial', 'individual', true);
       }
     }
-    
     atualizarUltimaSinc();
     aplicarPreferenciasUI();
   });
@@ -190,10 +174,8 @@ async function init() {
     atualizarOnline(snap);
   });
 
-  // Configurar eventos de botões
   configurarEventos();
 
-  // Autenticação
   onAuthStateChanged((user) => {
     if (user) {
       console.log('Usuário logado:', user.email);
@@ -204,21 +186,16 @@ async function init() {
     }
   });
 
-  // Inicializar visibilidade
   mostrarTela('inicio');
   popularSelectFases();
   popularSelectFasesTorcida();
-  
-  // Iniciar relógio
   iniciarRelogio();
   atualizarUltimaSinc();
 
-  // Botão recarregar no erro de loading
   document.getElementById('btn-recarregar-loading')?.addEventListener('click', () => {
     location.reload();
   });
 
-  // Preencher campos com dados do cache
   if (state.senhaFase1) {
     const inputSenha = document.getElementById('input-senha-fase1');
     if (inputSenha) inputSenha.value = state.senhaFase1;
@@ -472,13 +449,11 @@ function entrarModoTorcida() {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DE EVENTOS
+// CONFIGURAÇÃO DE EVENTOS (resumido – mantido do original)
 // ============================================================
 function configurarEventos() {
-  // --- BOTÃO DE TEMA ---
   document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
 
-  // Botões principais
   document.getElementById('btn-verificar-versao')?.addEventListener('click', () => verificarVersao(true));
   document.getElementById('btn-tutorial-inicial')?.addEventListener('click', () => abrirTutorial('aluno'));
   document.getElementById('btn-tutorial-aluno')?.addEventListener('click', () => abrirTutorial('aluno'));
@@ -486,7 +461,6 @@ function configurarEventos() {
   document.getElementById('btn-fechar-tutorial')?.addEventListener('click', fecharTutorial);
   document.getElementById('btn-instalar-app')?.addEventListener('click', abrirInstalacao);
 
-  // Professor
   document.getElementById('btn-professor')?.addEventListener('click', () => {
     const user = getCurrentUser();
     if (user) entrarModoProfessor();
@@ -513,17 +487,9 @@ function configurarEventos() {
   });
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
-  // Aluno
-  document.getElementById('btn-aluno')?.addEventListener('click', () => {
-    entrarModoAluno();
-  });
+  document.getElementById('btn-aluno')?.addEventListener('click', entrarModoAluno);
+  document.getElementById('btn-projecao')?.addEventListener('click', entrarModoTorcida);
 
-  // Torcida
-  document.getElementById('btn-projecao')?.addEventListener('click', () => {
-    entrarModoTorcida();
-  });
-
-  // Torcida - Modos
   document.getElementById('btn-modo-individual')?.addEventListener('click', function() {
     state.modoTorcida = 'individual';
     state.prefTorcidaModo = 'individual';
@@ -543,7 +509,6 @@ function configurarEventos() {
     if (state.abaTorcidaAtiva === 'fase') atualizarTorcidaEquipes();
   });
 
-  // Torcida - Sub-abas
   document.getElementById('btn-torcida-sub-fase')?.addEventListener('click', function() {
     state.abaTorcidaAtiva = 'fase';
     state.prefTorcidaSubAba = 'fase';
@@ -564,7 +529,6 @@ function configurarEventos() {
     await atualizarTorcidaPontos();
   });
 
-  // Torcida - Sair
   document.getElementById('btn-sair-torcida')?.addEventListener('click', () => {
     if (state.torcidaId) {
       db.ref(`online/${state.torcidaId}`).remove();
@@ -584,7 +548,6 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
-  // Ranking do aluno
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -608,29 +571,24 @@ function configurarEventos() {
     location.reload();
   });
 
-  // Aluno - Iniciar partida
   document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarPartida);
   document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
     if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
     location.reload();
   });
 
-  // Abas do professor
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       this.classList.add('active');
       const tab = this.dataset.tab;
-      // Salvar preferência da aba
       state.prefProfessorAba = tab;
       setCacheItem('preferencias.professorAba', tab);
       
       document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
       document.getElementById(`tab-${tab}`).classList.remove('hidden');
       
-      if (tab === 'ranking-geral') {
-        renderRankingGeral();
-      }
+      if (tab === 'ranking-geral') renderRankingGeral();
       if (tab === 'ranking-fase') {
         popularSelectFases();
         const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
@@ -639,15 +597,9 @@ function configurarEventos() {
       if (tab === 'ranking-turmas') {
         renderizarRanking(null, 'ranking-turmas-container', 'turmas', false);
       }
-      if (tab === 'ranking-pontos') {
-        renderizarRankingPontos();
-      }
-      if (tab === 'gerenciar-alunos') {
-        renderListaAlunosGerenciar();
-      }
-      if (tab === 'gerenciar-turmas') {
-        renderListaTurmas();
-      }
+      if (tab === 'ranking-pontos') renderizarRankingPontos();
+      if (tab === 'gerenciar-alunos') renderListaAlunosGerenciar();
+      if (tab === 'gerenciar-turmas') renderListaTurmas();
       if (tab === 'configuracoes') {
         carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
         renderizarColunasVisiveis();
@@ -656,7 +608,6 @@ function configurarEventos() {
     });
   });
 
-  // Botão Sincronizar Global
   document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
     db.ref('copaV2').once('value', snap => {
       state.estadoAtual = snap.val() || state.estadoAtual;
@@ -670,13 +621,11 @@ function configurarEventos() {
     });
   });
 
-  // Outros botões do professor
   document.getElementById('btn-sync-prof')?.addEventListener('click', () => {
     atualizarUltimaSinc();
     exibirToast('🔄 Sincronizado!');
   });
 
-  // Controle de fase
   document.getElementById('btn-iniciar-fase')?.addEventListener('click', async () => {
     if (!state.estadoAtual) return;
     const duracao = state.estadoAtual.tempoFase || 10;
@@ -727,7 +676,6 @@ function configurarEventos() {
     }
   });
 
-  // Salvar tempo
   document.getElementById('btn-salvar-tempo')?.addEventListener('click', async () => {
     const t = parseInt(document.getElementById('input-tempo-fase').value);
     if (t > 0) {
@@ -736,7 +684,6 @@ function configurarEventos() {
     }
   });
 
-  // Adicionar tempo extra
   document.getElementById('btn-adicionar-tempo-extra')?.addEventListener('click', async () => {
     if (state.estadoAtual?.status !== 'em_andamento') { exibirToast('⚠️ Fase não está em andamento.'); return; }
     const extra = parseInt(document.getElementById('input-tempo-extra').value);
@@ -748,7 +695,6 @@ function configurarEventos() {
     exibirToast(`✅ ${extra} minuto(s) adicionado(s)!`);
   });
 
-  // Intervalos
   document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
     const val = parseInt(document.getElementById('intervalo-individual').value);
     if (val >= 1) {
@@ -768,7 +714,6 @@ function configurarEventos() {
     }
   });
 
-  // Gerenciar turmas
   document.getElementById('btn-adicionar-turma')?.addEventListener('click', async () => {
     const nova = prompt('Digite o nome da nova turma:');
     if (nova && nova.trim()) {
@@ -778,19 +723,16 @@ function configurarEventos() {
     }
   });
 
-  // Configurações: salvar mínimo de partidas
   document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', async () => {
     await salvarMinPartidas();
     atualizarUltimaSinc();
   });
 
-  // Configurações: salvar colunas
   document.getElementById('btn-salvar-colunas')?.addEventListener('click', async () => {
     await salvarColunasVisiveis();
     atualizarUltimaSinc();
   });
 
-  // Configurações: restaurar colunas
   document.getElementById('btn-restaurar-colunas')?.addEventListener('click', async () => {
     const config = {};
     ['futPos','pontuacaoAtual','deltaLider','velocRecorde','progresso','partidas','tempo','mediaTempo','turma','projecaoPontos'].forEach(id => {
@@ -805,7 +747,6 @@ function configurarEventos() {
     exibirToast('✅ Colunas restauradas para o padrão (todas visíveis)');
   });
 
-  // Configurações: ranking de pontos
   document.getElementById('toggle-ranking-pontos')?.addEventListener('change', async function() {
     const ativo = this.checked;
     document.getElementById('status-ranking-pontos').innerText = ativo ? '✅ Ativado' : '❌ Desativado';
@@ -826,7 +767,6 @@ function configurarEventos() {
     }
   });
 
-  // Configurações: salvar pontuação
   document.getElementById('btn-salvar-pontuacao')?.addEventListener('click', async function() {
     const textPadrao = document.getElementById('textarea-pontos-padrao').value;
     const textFase5 = document.getElementById('textarea-pontos-fase5').value;
@@ -856,7 +796,6 @@ function configurarEventos() {
     exibirToast('Padrão restaurado para Fase 5');
   });
 
-  // Configurações: bônus de velocidade
   document.getElementById('btn-salvar-bonus-velocidade')?.addEventListener('click', async function() {
     const ativo = document.getElementById('toggle-bonus-velocidade').checked;
     const pontos = parseInt(document.getElementById('input-bonus-velocidade').value) || 1;
@@ -871,7 +810,6 @@ function configurarEventos() {
     setTimeout(() => document.getElementById('feedback-bonus-velocidade').style.display = 'none', 5000);
   });
 
-  // Configurações: valor da partida
   document.getElementById('btn-atualizar-valor-partida')?.addEventListener('click', async function() {
     const novoValor = parseInt(document.getElementById('input-valor-partida').value);
     if (!novoValor || novoValor < 1) { exibirToast('❌ Digite um valor válido maior que 0.'); return; }
@@ -884,7 +822,6 @@ function configurarEventos() {
     setTimeout(() => document.getElementById('feedback-valor-partida').style.display = 'none', 5000);
   });
 
-  // Configurações: senha
   document.getElementById('btn-gerar-senha')?.addEventListener('click', () => {
     if (state.senhaBloqueada) { exibirToast('❌ Senha bloqueada após iniciar a fase.'); return; }
     const num = Math.floor(Math.random() * 90) + 10;
@@ -914,7 +851,6 @@ function configurarEventos() {
     }
   });
 
-  // Configurações: liberar aluno
   document.getElementById('btn-liberar-aluno')?.addEventListener('click', async () => {
     const nome = document.getElementById('input-liberar-nome').value.trim();
     const turma = document.getElementById('input-liberar-turma').value.trim();
@@ -969,9 +905,6 @@ function formatPontuacaoText(obj) {
   return keys.map(k => `${k}:${obj[k]}`).join(', ');
 }
 
-// ============================================================
-// ATUALIZAR LISTA DE LIBERADOS
-// ============================================================
 async function atualizarListaLiberados() {
   const container = document.getElementById('lista-liberados');
   if (!container) return;
@@ -992,7 +925,4 @@ async function atualizarListaLiberados() {
   }
 }
 
-// ============================================================
-// INICIAR
-// ============================================================
 document.addEventListener('DOMContentLoaded', init);
