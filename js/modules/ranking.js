@@ -1,10 +1,10 @@
 // js/modules/ranking.js
-import { gerarAvatarHTML, obterCorTurma } from './avatar.js';
 import { state } from './state.js';
 import { lerDados, atualizarDados, removerDados, setDados } from './db.js';
 import { exibirToast, atualizarTimerFase, mostrarTela } from './ui.js';
 import { tocarSom } from './sound.js';
 import { atualizarExibicaoMedalhas, carregarMedalhasLocal } from './medals.js';
+import { gerarAvatarHTML, obterCorTurma, AVATAR_EMOJIS } from './avatar.js';
 
 // ============================================================
 // CONSTANTES E FUNÇÕES AUXILIARES
@@ -123,7 +123,7 @@ export function calcularRankingFase(fase) {
 }
 
 // ============================================================
-// RENDERIZAR RANKING (com medalhas)
+// RENDERIZAR RANKING (com avatares)
 // ============================================================
 
 export async function renderizarRanking(fase, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -237,8 +237,38 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     }
   }
 
+  // ===== CARREGAR AVATARES E CORES (se habilitado) =====
+  let avatarMap = new Map();
+  let corMap = new Map();
+  const avatarsEnabled = state.avatarsEnabled !== false; // padrão true
+
+  if (avatarsEnabled) {
+    // Buscar avatares e cores em lote com Promise.all
+    const promises = listaComInfo.map(async (j) => {
+      let avatar = '⭐';
+      let cor = '#95a5a6';
+      try {
+        // Avatar
+        const snapAvatar = await db.ref(`copaV2/participantes/avatar/${j.id}`).once('value');
+        avatar = snapAvatar.val() || '⭐';
+        // Cor da turma
+        cor = await obterCorTurma(j.turma);
+      } catch (e) {
+        console.warn('Erro ao buscar avatar/cor:', e);
+      }
+      return { id: j.id, avatar, cor };
+    });
+    const resultados = await Promise.all(promises);
+    resultados.forEach(r => {
+      avatarMap.set(r.id, r.avatar);
+      corMap.set(r.id, r.cor);
+    });
+  }
+
+  // ===== CONSTRUIR TABELA =====
   let html = `<table class="ranking-table"><thead><tr>
     <th>Pos</th>
+    <th>Avatar</th>
     <th>Nome</th>
     <th>Melhor Pontuação</th>`;
   if (exibirClassificacao) html += '<th>Classificação</th>';
@@ -301,30 +331,24 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       }
     }
 
-    // ===== GERAR AVATAR =====
-let avatarHtml = '';
-const corTurma = await obterCorTurma(j.turma);
-const avatarDoAluno = j.avatar || '⭐'; // precisamos buscar o avatar do aluno
+    // Montar avatar
+    let avatarHtml = '';
+    if (avatarsEnabled) {
+      const avatar = avatarMap.get(j.id) || '⭐';
+      const cor = corMap.get(j.id) || '#95a5a6';
+      avatarHtml = gerarAvatarHTML(avatar, cor, '28px');
+    }
 
-// Buscar avatar do aluno (se não tiver, usa padrão)
-let avatarAluno = '⭐';
-try {
-  const snap = await db.ref(`copaV2/participantes/avatar/${j.id}`).once('value');
-  avatarAluno = snap.val() || '⭐';
-} catch (e) {}
-
-avatarHtml = gerarAvatarHTML(avatarAluno, corTurma, '28px');
-
-let nomeComRaios = avatarHtml + ' ' + escapeHtml(j.nome);
+    let nomeDisplay = escapeHtml(j.nome);
     if (jogadorRecordeId === j.id) {
-      nomeComRaios += ' <span class="foguete-vermelho">🚀</span>';
+      nomeDisplay += ' <span class="foguete-vermelho">🚀</span>';
     }
     if (jogadorBonusId === j.id && state.bonusVelocidadeConfig.ativo) {
-      nomeComRaios += ' <span class="raio-amarelo">⚡</span>';
+      nomeDisplay += ' <span class="raio-amarelo">⚡</span>';
     }
     const medalhasStr = medalhasMap.get(j.id) || '';
     if (medalhasStr) {
-      nomeComRaios += ` <span class="medalhas-ranking" title="Conquistas">${medalhasStr}</span>`;
+      nomeDisplay += ` <span class="medalhas-ranking" title="Conquistas">${medalhasStr}</span>`;
     }
 
     let melhorDisplay = j.melhorPontuacao;
@@ -355,7 +379,8 @@ let nomeComRaios = avatarHtml + ' ' + escapeHtml(j.nome);
 
     html += `<tr>
       <td class="${classePos}">${posAtual}º</td>
-      <td>${nomeComRaios}</td>
+      <td>${avatarHtml}</td>
+      <td>${nomeDisplay}</td>
       <td>${melhorDisplay}</td>
       ${exibirClassificacao ? colunaClassificacao : ''}
       <td>${futPosHtml}</td>
@@ -376,7 +401,7 @@ let nomeComRaios = avatarHtml + ' ' + escapeHtml(j.nome);
 }
 
 // ============================================================
-// RANKING DE TURMAS
+// RANKING DE TURMAS (mantido)
 // ============================================================
 
 export async function renderRankingTurmas(containerId) {
@@ -468,7 +493,7 @@ export async function renderRankingTurmas(containerId) {
 }
 
 // ============================================================
-// RANKING DE PONTOS
+// RANKING DE PONTOS (mantido)
 // ============================================================
 
 export async function renderizarRankingPontos(containerId = 'ranking-pontos-container') {
@@ -620,7 +645,7 @@ export async function renderizarRankingPontos(containerId = 'ranking-pontos-cont
 }
 
 // ============================================================
-// RANKING GERAL
+// RANKING GERAL (mantido)
 // ============================================================
 
 export async function renderRankingGeral() {
@@ -787,7 +812,7 @@ export async function renderRankingGeral() {
 }
 
 // ============================================================
-// ATUALIZAR INFORMAÇÕES DO ALUNO (com medalhas e gráfico)
+// ATUALIZAR INFORMAÇÕES DO ALUNO (inclui medalhas e gráfico)
 // ============================================================
 
 export async function atualizarInfoAluno() {
@@ -895,12 +920,14 @@ export async function atualizarInfoAluno() {
     }
   }
 
-  // Atualiza medalhas
+  // Atualiza medalhas e gráfico
   atualizarExibicaoMedalhas();
-
-  // Desenha gráfico de evolução (função importada do game.js)
   const { desenharGraficoEvolucao } = await import('./game.js');
   desenharGraficoEvolucao();
+
+  // Atualizar avatar na tela do aluno
+  const { atualizarAvatarAlunoUI } = await import('./avatar.js');
+  atualizarAvatarAlunoUI();
 }
 
 // ============================================================
