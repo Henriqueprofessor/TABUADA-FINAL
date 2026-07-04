@@ -15,22 +15,18 @@ const COLUNAS_KEY = 'copaV2/configuracoes/colunasVisiveis';
 // ============================================================
 
 const CACHE_KEY = 'copa_cache_v2';
-const CACHE_VERSION = '2.0.0'; // Aumente esta versão se mudar a estrutura do cache
+const CACHE_VERSION = '2.0.0';
 
-// Carrega todo o cache do localStorage
 export function carregarCache() {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const cache = JSON.parse(raw);
-    
-    // Verifica se a versão do cache é compatível
     if (cache.versao !== CACHE_VERSION) {
       console.log('🔄 Versão do cache desatualizada. Ignorando cache antigo.');
       localStorage.removeItem(CACHE_KEY);
       return null;
     }
-    
     return cache;
   } catch (e) {
     console.warn('⚠️ Erro ao carregar cache:', e);
@@ -38,7 +34,6 @@ export function carregarCache() {
   }
 }
 
-// Salva todo o cache no localStorage
 export function salvarCache(cache) {
   try {
     cache.versao = CACHE_VERSION;
@@ -49,7 +44,6 @@ export function salvarCache(cache) {
   }
 }
 
-// Obtém um item específico do cache (com fallback)
 export function getCacheItem(caminho, fallback = null) {
   const cache = carregarCache();
   if (!cache) return fallback;
@@ -62,7 +56,6 @@ export function getCacheItem(caminho, fallback = null) {
   return atual !== undefined ? atual : fallback;
 }
 
-// Define um item no cache e salva
 export function setCacheItem(caminho, valor) {
   let cache = carregarCache() || {};
   const partes = caminho.split('.');
@@ -75,12 +68,10 @@ export function setCacheItem(caminho, valor) {
   salvarCache(cache);
 }
 
-// Carrega as configurações da competição do cache para o state
 export function carregarConfiguracoesDoCache() {
   const cache = carregarCache();
   if (!cache) return;
 
-  // Configurações da competição
   if (cache.configCompeticao) {
     state.senhaFase1 = cache.configCompeticao.senhaFase1 || null;
     state.exigirSenhaFase1 = cache.configCompeticao.exigirSenha !== undefined ? cache.configCompeticao.exigirSenha : true;
@@ -88,14 +79,12 @@ export function carregarConfiguracoesDoCache() {
     state.tempoFaseCache = cache.configCompeticao.tempoFase || null;
   }
 
-  // Dados do aluno
   if (cache.aluno) {
     state.alunoNomeCache = cache.aluno.nome || null;
     state.alunoTurmaCache = cache.aluno.turma || null;
     state.alunoDeviceId = cache.aluno.deviceId || null;
   }
 
-  // Preferências de interface
   if (cache.preferencias) {
     state.prefProfessorAba = cache.preferencias.professorAba || 'controle';
     state.prefTorcidaModo = cache.preferencias.torcidaModo || 'individual';
@@ -104,13 +93,10 @@ export function carregarConfiguracoesDoCache() {
     state.prefColunasVisiveis = cache.preferencias.colunasVisiveis || {};
   }
 
-  // Última sincronização
   state.ultimaSincCache = cache.ultimaSinc || null;
 }
 
-// Aplica as preferências do cache na interface (após carregar a UI)
 export function aplicarPreferenciasUI() {
-  // Aba do professor
   if (state.meuTipo === 'professor' && state.prefProfessorAba) {
     const tabBtn = document.querySelector(`.tab-btn[data-tab="${state.prefProfessorAba}"]`);
     if (tabBtn) {
@@ -118,7 +104,6 @@ export function aplicarPreferenciasUI() {
     }
   }
 
-  // Modo da torcida
   if (state.meuTipo === 'projecao') {
     if (state.prefTorcidaModo === 'equipes') {
       document.getElementById('btn-modo-equipes')?.click();
@@ -130,7 +115,6 @@ export function aplicarPreferenciasUI() {
     } else {
       document.getElementById('btn-torcida-sub-fase')?.click();
     }
-    // Fase da torcida
     const selectFase = document.getElementById('select-fase-torcida');
     if (selectFase && state.prefTorcidaFase) {
       selectFase.value = state.prefTorcidaFase;
@@ -139,12 +123,10 @@ export function aplicarPreferenciasUI() {
   }
 }
 
-// Atualiza o cache com os dados atuais do Firebase (quando mudar)
 export function atualizarCacheComDadosFirebase(estado) {
   if (!estado) return;
   let cache = carregarCache() || {};
 
-  // Configurações da competição
   cache.configCompeticao = {
     senhaFase1: estado.senhaFase1 || cache.configCompeticao?.senhaFase1 || null,
     exigirSenha: estado.exigirSenhaFase1 !== undefined ? estado.exigirSenhaFase1 : cache.configCompeticao?.exigirSenha || true,
@@ -152,13 +134,11 @@ export function atualizarCacheComDadosFirebase(estado) {
     tempoFase: estado.tempoFase || cache.configCompeticao?.tempoFase || null,
   };
 
-  // Atualiza o state com os valores do Firebase
   state.senhaFase1 = cache.configCompeticao.senhaFase1;
   state.exigirSenhaFase1 = cache.configCompeticao.exigirSenha;
   state.modalidadeCache = cache.configCompeticao.modalidade;
   state.tempoFaseCache = cache.configCompeticao.tempoFase;
 
-  // Dados do aluno (se já tiver)
   if (state.alunoNome || state.alunoTurma) {
     cache.aluno = {
       nome: state.alunoNome || state.alunoNomeCache || '',
@@ -170,7 +150,6 @@ export function atualizarCacheComDadosFirebase(estado) {
     state.alunoDeviceId = cache.aluno.deviceId;
   }
 
-  // Preferências de interface (salvar sempre as atuais)
   cache.preferencias = {
     professorAba: state.prefProfessorAba || 'controle',
     torcidaModo: state.prefTorcidaModo || 'individual',
@@ -184,7 +163,7 @@ export function atualizarCacheComDadosFirebase(estado) {
 }
 
 // ============================================================
-// INTERVALOS DE ATUALIZAÇÃO (item 3)
+// INTERVALOS DE ATUALIZAÇÃO
 // ============================================================
 export async function carregarIntervaloIndividual() {
   try {
@@ -194,9 +173,7 @@ export async function carregarIntervaloIndividual() {
       state.intervaloIndividualSegundos = valor;
       console.log(`📊 Intervalo individual carregado: ${valor}s`);
     }
-  } catch (e) {
-    // mantém o padrão (4s)
-  }
+  } catch (e) {}
 }
 
 export async function carregarIntervaloEquipes() {
@@ -207,9 +184,7 @@ export async function carregarIntervaloEquipes() {
       state.intervaloEquipesSegundos = valor;
       console.log(`📊 Intervalo equipes carregado: ${valor}s`);
     }
-  } catch (e) {
-    // mantém o padrão (60s)
-  }
+  } catch (e) {}
 }
 
 // ============================================================
@@ -336,7 +311,6 @@ export async function carregarColunasVisiveis() {
   try {
     const snap = await db.ref(COLUNAS_KEY).once('value');
     state.colunasVisiveis = snap.val() || {};
-    // Também salva nas preferências de cache
     state.prefColunasVisiveis = state.colunasVisiveis;
     setCacheItem('preferencias.colunasVisiveis', state.colunasVisiveis);
   } catch (e) { state.colunasVisiveis = {}; }
