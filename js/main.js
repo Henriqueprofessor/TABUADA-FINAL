@@ -59,12 +59,26 @@ async function init() {
   // Listeners Firebase
   carregarEstado((estado) => {
     atualizarUI();
+    // Atualizar seletores de fases sempre que o estado mudar
+    popularSelectFases(); // para o professor
+    popularSelectFasesTorcida(); // para a torcida
+
+    // Se estiver na torcida, atualizar ranking
     if (state.meuTipo === 'projecao') {
       if (state.abaTorcidaAtiva === 'fase') {
         if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
         else atualizarTorcidaEquipes();
       } else {
         atualizarTorcidaPontos();
+      }
+    }
+
+    // Se estiver no professor e a aba de ranking-fase estiver visível, atualizar
+    if (state.meuTipo === 'professor') {
+      const tabFase = document.getElementById('tab-ranking-fase');
+      if (tabFase && !tabFase.classList.contains('hidden')) {
+        const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
+        renderizarRanking(fase, 'ranking-parcial', 'individual', true);
       }
     }
   });
@@ -89,6 +103,7 @@ async function init() {
 
   // Inicializar visibilidade
   mostrarTela('inicio');
+  popularSelectFases();
   popularSelectFasesTorcida();
 }
 
@@ -132,8 +147,28 @@ function atualizarOnline(snap) {
 }
 
 // ============================================================
-// FUNÇÕES DA TORCIDA
+// POPULAR SELECTORES DE FASES
 // ============================================================
+function popularSelectFases() {
+  const select = document.getElementById('select-fase-ranking');
+  if (!select) return;
+  let options = '';
+  for (let i = 1; i <= 5; i++) options += `<option value="${i}">Fase ${i}</option>`;
+  select.innerHTML = options;
+  if (state.estadoAtual) select.value = state.estadoAtual.fase;
+  // Remover listener antigo para evitar duplicação
+  select.removeEventListener('change', onSelectFaseProfessorChange);
+  select.addEventListener('change', onSelectFaseProfessorChange);
+}
+
+function onSelectFaseProfessorChange() {
+  if (state.meuTipo !== 'professor') return;
+  const fase = parseInt(document.getElementById('select-fase-ranking').value);
+  if (!isNaN(fase) && fase >= 1 && fase <= 5) {
+    renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+  }
+}
+
 function popularSelectFasesTorcida() {
   const select = document.getElementById('select-fase-torcida');
   if (!select) return;
@@ -154,6 +189,9 @@ function onSelectFaseTorcidaChange() {
   }
 }
 
+// ============================================================
+// FUNÇÕES DA TORCIDA
+// ============================================================
 async function atualizarTorcidaIndividual() {
   if (state.meuTipo !== 'projecao' || state.abaTorcidaAtiva !== 'fase' || state.modoTorcida !== 'individual') return;
   if (!state.estadoAtual) return;
@@ -232,6 +270,7 @@ function entrarModoProfessor() {
   }, 4000);
   exibirToast('👨‍🏫 Bem-vindo, Professor!');
   document.querySelector('.tab-btn[data-tab="controle"]')?.click();
+  popularSelectFases();
 }
 
 // ============================================================
@@ -400,6 +439,7 @@ function configurarEventos() {
         renderRankingGeral();
       }
       if (tab === 'ranking-fase') {
+        popularSelectFases();
         const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
         renderizarRanking(fase, 'ranking-parcial', 'individual', true);
       }
@@ -416,10 +456,8 @@ function configurarEventos() {
         renderListaTurmas();
       }
       if (tab === 'configuracoes') {
-        // Carregar configurações
         carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
         renderizarColunasVisiveis();
-        // **IMPORTANTE: Renderizar painel de som**
         renderizarPainelSom();
       }
     });
