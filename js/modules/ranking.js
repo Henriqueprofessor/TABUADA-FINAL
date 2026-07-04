@@ -301,7 +301,21 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       }
     }
 
-    let nomeComRaios = escapeHtml(j.nome);
+    // ===== GERAR AVATAR =====
+let avatarHtml = '';
+const corTurma = await obterCorTurma(j.turma);
+const avatarDoAluno = j.avatar || '⭐'; // precisamos buscar o avatar do aluno
+
+// Buscar avatar do aluno (se não tiver, usa padrão)
+let avatarAluno = '⭐';
+try {
+  const snap = await db.ref(`copaV2/participantes/avatar/${j.id}`).once('value');
+  avatarAluno = snap.val() || '⭐';
+} catch (e) {}
+
+avatarHtml = gerarAvatarHTML(avatarAluno, corTurma, '28px');
+
+let nomeComRaios = avatarHtml + ' ' + escapeHtml(j.nome);
     if (jogadorRecordeId === j.id) {
       nomeComRaios += ' <span class="foguete-vermelho">🚀</span>';
     }
