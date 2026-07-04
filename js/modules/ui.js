@@ -138,3 +138,42 @@ export function exibirErroCarregamento() {
     errorEl.classList.remove('hidden');
   }
 }
+
+// ============================================================
+// CONTROLE DE TEMA (item adicional)
+// ============================================================
+
+const TEMA_KEY = 'copa_theme';
+
+// Aplica o tema salvo ou o padrão (escuro)
+export function aplicarTema() {
+  let tema = localStorage.getItem(TEMA_KEY);
+  if (!tema) {
+    tema = 'tema-escuro'; // padrão
+    localStorage.setItem(TEMA_KEY, tema);
+  }
+  document.body.className = tema;
+  atualizarIconeTema(tema);
+}
+
+// Alterna entre claro e escuro
+export function alternarTema() {
+  const atual = document.body.className;
+  const novoTema = atual === 'tema-escuro' ? 'tema-claro' : 'tema-escuro';
+  document.body.className = novoTema;
+  localStorage.setItem(TEMA_KEY, novoTema);
+  atualizarIconeTema(novoTema);
+}
+
+// Atualiza o ícone do botão conforme o tema
+function atualizarIconeTema(tema) {
+  const btn = document.getElementById('btn-tema');
+  if (!btn) return;
+  if (tema === 'tema-escuro') {
+    btn.textContent = '☀️'; // Ícone de sol = alternar para claro
+    btn.title = 'Alternar para tema claro';
+  } else {
+    btn.textContent = '🌙'; // Ícone de lua = alternar para escuro
+    btn.title = 'Alternar para tema escuro';
+  }
+}
