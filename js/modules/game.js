@@ -1,5 +1,6 @@
+// js/modules/game.js
 import { state } from './state.js';
-import { exibirToast, atualizarTimerFase } from './ui.js';
+import { exibirToast } from './ui.js';
 import { lerDados, atualizarDados, removerDados } from './db.js';
 import { tocarSom } from './sound.js';
 import { calcularRankingFase } from './ranking.js';
@@ -25,22 +26,96 @@ export function gerarPerguntas(modalidade, fase) {
   } else {
     for (let a of base) for (let b of base) pool.push({a,b});
   }
-  // ... (mesmo código de shuffle e seleção)
-  // Por brevidade, estou encurtando. Use a função original.
-  // Retornar array de perguntas com {a, b, opts, posicaoCorreta}
-  return pool.slice(0,20).map(p => {
-    const correta = p.a * p.b;
-    // gerar distratores
-    let opts = [correta];
-    for (let i=0; i<3; i++) {
-      let d = correta + Math.floor(Math.random() * 10) + 1;
-      if (d !== correta && !opts.includes(d)) opts.push(d);
-      else i--;
+  while (pool.length < 20) {
+    const extra = pool.slice(0, 20 - pool.length);
+    pool = pool.concat(extra);
+  }
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    opts.sort((a,b) => a-b);
-    const posicaoCorreta = opts.indexOf(correta) + 1;
-    return { a: p.a, b: p.b, opts, posicaoCorreta };
+    return arr;
+  }
+  let selecionadas = [];
+  let tentativas = 0;
+  const maxTentativas = 100;
+  while (selecionadas.length < 20 && tentativas < maxTentativas) {
+    tentativas++;
+    const copia = shuffle([...pool]);
+    let candidatas = [];
+    for (let i = 0; i < copia.length && candidatas.length < 20; i++) {
+      const p = copia[i];
+      if (candidatas.length > 0) {
+        const ultima = candidatas[candidatas.length - 1];
+        if (ultima.a === p.a && ultima.b === p.b) continue;
+      }
+      candidatas.push({ a: p.a, b: p.b });
+    }
+    if (candidatas.length === 20) {
+      selecionadas = candidatas;
+      break;
+    }
+  }
+  while (selecionadas.length < 20) {
+    const p = pool[Math.floor(Math.random() * pool.length)];
+    if (selecionadas.length > 0) {
+      const ultima = selecionadas[selecionadas.length - 1];
+      if (ultima.a === p.a && ultima.b === p.b) continue;
+    }
+    selecionadas.push({ a: p.a, b: p.b });
+  }
+  const posicoes = [];
+  for (let i = 0; i < 5; i++) { posicoes.push(1,2,3,4); }
+  shuffle(posicoes);
+  const resultado = selecionadas.map((p, idx) => {
+    const correta = p.a * p.b;
+    const posAlvo = posicoes[idx];
+    function gerarDistratoresParaPos(correta, pos) {
+      let menores = [], maiores = [];
+      for (let i = 0; i < 20; i++) {
+        let d = Math.floor(Math.random() * correta);
+        if (d !== correta && d >= 0 && !menores.includes(d)) menores.push(d);
+      }
+      menores.sort((a,b) => b - a);
+      for (let i = 0; i < 20; i++) {
+        let d = correta + Math.floor(Math.random() * 30) + 1;
+        if (d !== correta && !maiores.includes(d)) maiores.push(d);
+      }
+      maiores.sort((a,b) => a - b);
+      let escolhidos = [];
+      if (pos === 1) {
+        escolhidos = maiores.slice(0,3);
+      } else if (pos === 4) {
+        escolhidos = menores.slice(0,3);
+      } else if (pos === 2) {
+        let umMenor = menores.length > 0 ? menores[0] : Math.max(0, correta - 5);
+        let doisMaiores = maiores.slice(0,2);
+        escolhidos = [umMenor, ...doisMaiores];
+      } else if (pos === 3) {
+        let doisMenores = menores.slice(0,2);
+        let umMaior = maiores.length > 0 ? maiores[0] : correta + 5;
+        escolhidos = [...doisMenores, umMaior];
+      }
+      while (escolhidos.length < 3) {
+        let d = Math.floor(Math.random() * 100);
+        if (d !== correta && !escolhidos.includes(d) && d >= 0) escolhidos.push(d);
+      }
+      return escolhidos;
+    }
+    let novosDistratores = gerarDistratoresParaPos(correta, posAlvo);
+    let novasOpcoes = [correta, ...novosDistratores];
+    novasOpcoes.sort((a,b) => a - b);
+    let tentativa = 0;
+    while (novasOpcoes.indexOf(correta) + 1 !== posAlvo && tentativa < 20) {
+      tentativa++;
+      novosDistratores = gerarDistratoresParaPos(correta, posAlvo);
+      novasOpcoes = [correta, ...novosDistratores];
+      novasOpcoes.sort((a,b) => a - b);
+    }
+    return { a: p.a, b: p.b, opts: novasOpcoes, posicaoCorreta: posAlvo };
   });
+  return resultado;
 }
 
 // Iniciar nova partida
@@ -63,7 +138,6 @@ export async function iniciarPartida() {
   document.body.classList.add('em-jogo');
   document.getElementById('jogo-area').classList.remove('hidden');
   document.getElementById('aguardando-aluno').classList.add('hidden');
-  // Desabilitar botões de ranking
   document.getElementById('btn-ranking-aluno').disabled = true;
   document.getElementById('btn-ranking-pontos-aluno').disabled = true;
   proximaPergunta();
@@ -93,14 +167,14 @@ function iniciarTimerPergunta() {
     if (state.tempoRestantePergunta > 0) {
       requestAnimationFrame(atualizar);
     } else {
-      window.responder(-1);
+      responder(-1);
     }
   }
   requestAnimationFrame(atualizar);
 }
 
-// Função responder (global para ser chamada pelos botões)
-window.responder = async function(idx) {
+// Função responder (exportada globalmente)
+export async function responder(idx) {
   if (!state.jogoAtivo || state.partidaFinalizada) return;
   if (state.timerPergunta) clearInterval(state.timerPergunta);
   const btns = document.querySelectorAll('.opcao-vertical');
@@ -130,7 +204,7 @@ window.responder = async function(idx) {
     await atualizarPontuacaoParcial();
     setTimeout(proximaPergunta, 200);
   }
-};
+}
 
 async function atualizarPontuacaoParcial() {
   if (!state.alunoId || !state.estadoAtual) return;
@@ -158,13 +232,11 @@ async function finalizarPartida() {
 
   const fase = state.estadoAtual.fase;
   const ref = `copaV2/resultados/${fase}/${state.alunoId}`;
-  // Adicionar nova partida
   const partidas = await lerDados(ref) || [];
   partidas.push({ pontos: state.pontosPartida, acertos: state.acertosPartida, tempo: state.tempoTotalPartida });
   await atualizarDados(ref, partidas);
   await removerDados(`copaV2/resultados_temp/${fase}/${state.alunoId}`);
 
-  // Atualizar recorde geral
   if (state.acertosPartida > 0 && state.tempoTotalPartida > 0) {
     const precisao = (state.acertosPartida / 20) * 100;
     const velocidade = state.tempoTotalPartida / state.acertosPartida;
@@ -173,9 +245,11 @@ async function finalizarPartida() {
   }
 
   // Exibir modal de resultados (chamar função existente)
-  // (Aqui chamaríamos exibirModalResultados, que está no código original)
-  // Para simplificar, apenas notificamos
   exibirToast(`✅ Partida finalizada! Pontos: ${state.pontosPartida}`);
   // Atualizar ranking do aluno
-  await import('./ranking.js').then(m => m.atualizarInfoAluno());
+  const { atualizarInfoAluno } = await import('./ranking.js');
+  atualizarInfoAluno();
 }
+
+// Exportar a função responder globalmente para os botões onclick
+window.responder = responder;
