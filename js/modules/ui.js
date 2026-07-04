@@ -59,3 +59,40 @@ export function atualizarDisplayVersao(versao) {
   const el = document.getElementById('version-number');
   if (el) el.textContent = versao || '--';
 }
+
+// ============================================================
+// BADGE DE CONEXÃO (item 1)
+// ============================================================
+
+// Cria o elemento badge se não existir
+export function createConnectionBadge() {
+  let badge = document.getElementById('connection-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'connection-badge';
+    badge.className = 'connection-badge offline';
+    badge.innerHTML = '⚡ Conectando...';
+    document.body.prepend(badge); // insere no topo do body
+  }
+  return badge;
+}
+
+// Atualiza o badge com base no status
+export function updateConnectionBadge(online) {
+  const badge = createConnectionBadge();
+  if (online) {
+    badge.className = 'connection-badge online';
+    badge.innerHTML = '🟢 Conectado';
+  } else {
+    badge.className = 'connection-badge offline';
+    badge.innerHTML = '🔴 Desconectado';
+  }
+}
+
+// Função para iniciar o monitoramento e integrar com o Firebase
+export function initConnectionUI(onConnectionChangeCallback) {
+  // Cria o badge imediatamente
+  createConnectionBadge();
+  // Registra o callback para atualizar a UI
+  onConnectionChangeCallback(updateConnectionBadge);
+}
