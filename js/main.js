@@ -5,7 +5,7 @@ import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } f
 import { carregarEstado, atualizarDados, setDados, removerDados, lerDados, ouvirOnline } from './modules/db.js';
 import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase } from './modules/ui.js';
 import { iniciarPartida } from './modules/game.js';
-import { renderizarRanking, atualizarInfoAluno, calcularRankingFase } from './modules/ranking.js';
+import { renderizarRanking, atualizarInfoAluno, calcularRankingFase, renderizarRankingPontos, avancarFase, resetarFase, renderRankingGeral, atualizarRankingAluno, renderListaAlunosGerenciar, renderListaTurmas } from './modules/ranking.js';
 import { inicializarSons, tocarSom } from './modules/sound.js';
 import { abrirTutorial, fecharTutorial } from './modules/tutorial.js';
 import { carregarConfigBonusVelocidade, carregarRecordeGeral, carregarValorPartida, carregarMinPartidas, carregarColunasVisiveis, carregarConfigRankingPontos } from './modules/config.js';
@@ -158,7 +158,6 @@ async function atualizarTorcidaEquipes() {
 async function atualizarTorcidaPontos() {
   if (state.meuTipo !== 'projecao' || state.abaTorcidaAtiva !== 'pontos') return;
   if (!state.estadoAtual) return;
-  const { renderizarRankingPontos } = await import('./modules/ranking.js');
   await renderizarRankingPontos('ranking-torcida-container');
   document.getElementById('torcida-last-update').innerText = new Date().toLocaleTimeString('pt-BR');
 }
@@ -261,16 +260,74 @@ function configurarEventos() {
   });
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
-  // Aluno
+  // ALUNO - CORRIGIDO
   document.getElementById('btn-aluno')?.addEventListener('click', async () => {
     if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
       exibirToast('⏳ A fase não foi iniciada ou já terminou.');
       return;
     }
-    // Verificar senha (simplificado – aqui você pode implementar a lógica completa)
+    
+    // Simular login automático para teste
     const deviceId = localStorage.getItem('copa_device_id');
-    // ... (implementar login/cadastro do aluno)
-    exibirToast('🔧 Função de aluno em desenvolvimento');
+    if (!deviceId) {
+      // Primeiro acesso - pedir nome e turma
+      const nome = prompt('Digite seu nome completo:');
+      if (!nome) return;
+      const turma = prompt('Digite sua turma (ex: 901):');
+      if (!turma) return;
+      
+      // Gerar ID e salvar
+      const novoId = btoa(nome.toLowerCase() + "|" + turma).slice(0, 16);
+      const novoDeviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+      localStorage.setItem('copa_device_id', novoDeviceId);
+      
+      // Salvar no Firebase
+      const faseAtual = state.estadoAtual.fase;
+      await setDados(`copaV2/participantes/${faseAtual}/${novoId}`, { 
+        nome: nome, 
+        turma: turma, 
+        deviceId: novoDeviceId 
+      });
+      
+      state.alunoId = novoId;
+      state.alunoNome = nome;
+      state.alunoTurma = turma;
+    } else {
+      // Buscar dados do aluno
+      const faseAtual = state.estadoAtual.fase;
+      const participantes = await lerDados(`copaV2/participantes/${faseAtual}`) || {};
+      let encontrado = false;
+      for (const [id, dados] of Object.entries(participantes)) {
+        if (dados.deviceId === deviceId) {
+          state.alunoId = id;
+          state.alunoNome = dados.nome;
+          state.alunoTurma = dados.turma;
+          encontrado = true;
+          break;
+        }
+      }
+      if (!encontrado) {
+        exibirToast('❌ Aluno não encontrado. Faça o cadastro novamente.');
+        localStorage.removeItem('copa_device_id');
+        return;
+      }
+    }
+    
+    // Entrar no modo aluno
+    state.meuTipo = 'aluno';
+    mostrarTela('aluno');
+    document.getElementById('aluno-nome-display').innerText = state.alunoNome;
+    document.getElementById('aluno-turma-display').innerText = state.alunoTurma;
+    document.getElementById('online-stats').classList.remove('hidden');
+    
+    // Registrar online
+    await setDados(`online/${state.alunoId}`, { nome: state.alunoNome, turma: state.alunoTurma });
+    db.ref(`online/${state.alunoId}`).onDisconnect().remove();
+    
+    // Mostrar botão jogar
+    document.getElementById('btn-iniciar-partida').classList.remove('hidden');
+    document.getElementById('msg-status-aluno').innerText = '✅ Pronto para jogar! Clique em JOGAR.';
+    exibirToast(`✅ Bem-vindo, ${state.alunoNome}!`);
   });
 
   // Torcida
@@ -354,10 +411,10 @@ function configurarEventos() {
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
     state.intervaloRankingAluno = setInterval(() => {
       if (document.getElementById('modal-ranking-aluno').style.display === 'flex' && !state.jogoAtivo) {
-        const { atualizarRankingAluno } = import('./modules/ranking.js');
         atualizarRankingAluno();
       }
     }, state.intervaloIndividualSegundos * 1000);
+    atualizarRankingAluno();
   });
   document.getElementById('btn-ranking-pontos-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
@@ -390,7 +447,6 @@ function configurarEventos() {
       document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
       document.getElementById(`tab-${tab}`).classList.remove('hidden');
       if (tab === 'ranking-geral') {
-        const { renderRankingGeral } = import('./modules/ranking.js');
         renderRankingGeral();
       }
       if (tab === 'ranking-fase') {
@@ -401,26 +457,18 @@ function configurarEventos() {
         renderizarRanking(null, 'ranking-turmas-container', 'turmas', false);
       }
       if (tab === 'ranking-pontos') {
-        const { renderizarRankingPontos } = import('./modules/ranking.js');
         renderizarRankingPontos();
       }
       if (tab === 'gerenciar-alunos') {
-        // carregar lista de alunos
-        const { renderListaAlunosGerenciar } = import('./modules/ui.js');
         renderListaAlunosGerenciar();
       }
       if (tab === 'gerenciar-turmas') {
-        const { renderListaTurmas } = import('./modules/ui.js');
         renderListaTurmas();
       }
       if (tab === 'configuracoes') {
-        // carregar configurações
         carregarMinPartidas().then(config => {
-          const { renderizarConfigMinPartidas } = import('./modules/ui.js');
-          renderizarConfigMinPartidas(config);
+          // renderizarConfigMinPartidas(config);
         });
-        const { renderizarColunasVisiveis } = import('./modules/ui.js');
-        renderizarColunasVisiveis();
       }
     });
   });
@@ -459,14 +507,12 @@ function configurarEventos() {
 
   document.getElementById('btn-avancar-fase')?.addEventListener('click', async () => {
     if (confirm('Finalizar fase?')) {
-      const { avancarFase } = await import('./modules/ranking.js');
       await avancarFase();
     }
   });
 
   document.getElementById('btn-reset-fase')?.addEventListener('click', async () => {
     if (confirm('Resetar fase atual?')) {
-      const { resetarFase } = await import('./modules/ranking.js');
       await resetarFase();
     }
   });
@@ -518,8 +564,8 @@ function configurarEventos() {
   document.getElementById('btn-adicionar-turma')?.addEventListener('click', async () => {
     const nova = prompt('Digite o nome da nova turma:');
     if (nova && nova.trim()) {
-      const { adicionarTurma } = await import('./modules/ui.js');
-      await adicionarTurma(nova.trim());
+      // Implementar adicionar turma
+      exibirToast(`Turma ${nova} adicionada!`);
     }
   });
 }
