@@ -40,3 +40,6 @@
     padding: 4px 10px;
   }
 }
+.hidden {
+  display: none !important;
+}
