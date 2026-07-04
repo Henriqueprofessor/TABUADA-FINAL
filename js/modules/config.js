@@ -11,6 +11,35 @@ const MIN_PARTIDAS_KEY = 'copaV2/configuracoes/minPartidasPorFase';
 const COLUNAS_KEY = 'copaV2/configuracoes/colunasVisiveis';
 
 // ============================================================
+// INTERVALOS DE ATUALIZAÇÃO (item 3)
+// ============================================================
+export async function carregarIntervaloIndividual() {
+  try {
+    const snap = await db.ref('copaV2/configuracoes/intervalos/individual').once('value');
+    const valor = snap.val();
+    if (valor && typeof valor === 'number' && valor >= 1) {
+      state.intervaloIndividualSegundos = valor;
+      console.log(`📊 Intervalo individual carregado: ${valor}s`);
+    }
+  } catch (e) {
+    // mantém o padrão (4s)
+  }
+}
+
+export async function carregarIntervaloEquipes() {
+  try {
+    const snap = await db.ref('copaV2/configuracoes/intervalos/equipes').once('value');
+    const valor = snap.val();
+    if (valor && typeof valor === 'number' && valor >= 1) {
+      state.intervaloEquipesSegundos = valor;
+      console.log(`📊 Intervalo equipes carregado: ${valor}s`);
+    }
+  } catch (e) {
+    // mantém o padrão (60s)
+  }
+}
+
+// ============================================================
 // BÔNUS DE VELOCIDADE
 // ============================================================
 export async function carregarConfigBonusVelocidade() {
