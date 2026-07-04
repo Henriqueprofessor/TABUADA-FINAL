@@ -43,11 +43,9 @@ import { abrirInstalacao } from './modules/install.js';
 // INICIALIZAÇÃO
 // ============================================================
 async function init() {
-  // === INICIAR MONITOR DE CONEXÃO E BADGE (item 1) ===
   initConnectionMonitor();
   initConnectionUI(onConnectionChange);
 
-  // === TRATAMENTO DE RECONEXÃO (item 2) ===
   onConnectionChange(async (online) => {
     if (online) {
       if (!window._wasOnline) {
@@ -100,26 +98,19 @@ async function init() {
     }
   });
 
-  // Carregar configurações
   await carregarValorPartida();
   await carregarConfigRankingPontos();
   await carregarConfigBonusVelocidade();
   await carregarRecordeGeral();
   await carregarColunasVisiveis();
   await carregarMinPartidas();
-
-  // === CARREGAR INTERVALOS DO FIREBASE (item 3) ===
   await carregarIntervaloIndividual();
   await carregarIntervaloEquipes();
 
-  // Sons
   inicializarSons();
-
-  // Versão
   setTimeout(() => verificarVersao(false), 2000);
   iniciarListenerVersao();
 
-  // Listeners Firebase
   carregarEstado((estado) => {
     atualizarUI();
     popularSelectFases();
@@ -148,10 +139,8 @@ async function init() {
     atualizarOnline(snap);
   });
 
-  // Configurar eventos de botões
   configurarEventos();
 
-  // Autenticação
   onAuthStateChanged((user) => {
     if (user) {
       console.log('Usuário logado:', user.email);
@@ -162,7 +151,6 @@ async function init() {
     }
   });
 
-  // Inicializar visibilidade
   mostrarTela('inicio');
   popularSelectFases();
   popularSelectFasesTorcida();
@@ -796,9 +784,6 @@ function configurarEventos() {
   });
 }
 
-// ============================================================
-// FUNÇÕES AUXILIARES PARA PONTUAÇÃO
-// ============================================================
 function getPontuacaoDefault() {
   const obj = {};
   for (let i = 1; i <= 40; i++) obj[i] = 41 - i;
@@ -826,9 +811,6 @@ function formatPontuacaoText(obj) {
   return keys.map(k => `${k}:${obj[k]}`).join(', ');
 }
 
-// ============================================================
-// ATUALIZAR LISTA DE LIBERADOS
-// ============================================================
 async function atualizarListaLiberados() {
   const container = document.getElementById('lista-liberados');
   if (!container) return;
@@ -849,7 +831,4 @@ async function atualizarListaLiberados() {
   }
 }
 
-// ============================================================
-// INICIAR
-// ============================================================
 document.addEventListener('DOMContentLoaded', init);
