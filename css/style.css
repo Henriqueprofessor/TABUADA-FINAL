@@ -1440,6 +1440,14 @@ body.em-jogo #banner-aviso .banner-aviso-icone {
   }
 }
 
+.avatar-container {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50% !important;
+  flex-shrink: 0;
+  user-select: none;
+}
 /* ===== AVATAR NO RANKING ===== */
 .avatar-container {
   display: inline-flex !important;
