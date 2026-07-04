@@ -1,3 +1,4 @@
+console.log('🚀 Módulo treino.js carregado!');
 // js/modules/treino.js
 import { state } from './state.js';
 import { exibirToast, mostrarTela } from './ui.js';
