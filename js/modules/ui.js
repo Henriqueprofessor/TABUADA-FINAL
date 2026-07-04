@@ -7,7 +7,6 @@ export function mostrarTela(tipo) {
   else if (tipo === 'aluno') document.getElementById('tela-aluno').classList.remove('hidden');
   else if (tipo === 'projecao') document.getElementById('tela-torcida').classList.remove('hidden');
   else {
-    // tela inicial
     document.querySelectorAll('.card').forEach(c => c.classList.remove('hidden'));
     document.getElementById('tela-aluno')?.classList.add('hidden');
     document.getElementById('painel-professor')?.classList.add('hidden');
@@ -15,7 +14,6 @@ export function mostrarTela(tipo) {
   }
 }
 
-// Toast
 export function exibirToast(mensagem) {
   const t = document.getElementById('toast');
   if (t) {
@@ -70,10 +68,7 @@ export function atualizarDisplayVersao(versao) {
   if (el) el.textContent = versao || '--';
 }
 
-// ============================================================
-// BADGE DE CONEXÃO
-// ============================================================
-
+// ===== BADGE DE CONEXÃO =====
 export function createConnectionBadge() {
   let badge = document.getElementById('connection-badge');
   if (!badge) {
@@ -102,10 +97,7 @@ export function initConnectionUI(onConnectionChangeCallback) {
   onConnectionChangeCallback(updateConnectionBadge);
 }
 
-// ============================================================
-// OVERLAY DE CARREGAMENTO
-// ============================================================
-
+// ===== OVERLAY DE CARREGAMENTO =====
 export function mostrarCarregando() {
   const overlay = document.getElementById('loading-overlay');
   if (overlay) {
@@ -129,10 +121,7 @@ export function exibirErroCarregamento() {
   }
 }
 
-// ============================================================
-// CONTROLE DE TEMA
-// ============================================================
-
+// ===== CONTROLE DE TEMA =====
 const TEMA_KEY = 'copa_theme';
 
 export function aplicarTema() {
@@ -165,14 +154,9 @@ function atualizarIconeTema(tema) {
   }
 }
 
-// ============================================================
-// BANNER DE AVISO (para o aluno) - item novo
-// ============================================================
-
-// Cria ou atualiza o banner de aviso
+// ===== BANNER DE AVISO =====
 export function atualizarBannerAviso(aviso) {
   if (!aviso || !aviso.mensagem) {
-    // Remove o banner
     const banner = document.getElementById('banner-aviso');
     if (banner) banner.remove();
     return;
