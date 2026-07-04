@@ -1,9 +1,9 @@
 // js/main.js
-import { db, auth, initConnectionMonitor, onConnectionChange } from './config/firebase.js';
+import { db, auth, initConnectionMonitor, onConnectionChange, recriarPresencaOnline } from './config/firebase.js';
 import { state } from './modules/state.js';
 import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './modules/auth.js';
 import { carregarEstado, atualizarDados, setDados, removerDados, lerDados, ouvirOnline } from './modules/db.js';
-import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase, initConnectionUI } from './modules/ui.js';
+import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase, initConnectionUI, exibirToastReconexao } from './modules/ui.js';
 import { iniciarPartida } from './modules/game.js';
 import { 
   renderizarRanking, 
@@ -44,6 +44,71 @@ async function init() {
   // === INICIAR MONITOR DE CONEXÃO E BADGE (item 1) ===
   initConnectionMonitor();
   initConnectionUI(onConnectionChange);
+
+  // === TRATAMENTO DE RECONEXÃO (item 2) ===
+  // Registrar callback para quando a conexão for restabelecida
+  onConnectionChange(async (online) => {
+    if (online) {
+      // Só executa ações se a conexão acabou de voltar (estava offline antes)
+      // O estado anterior é controlado internamente no módulo firebase, mas vamos usar uma variável local
+      if (!window._wasOnline) {
+        window._wasOnline = true;
+        return; // primeira execução, não fazer nada
+      }
+      // Se chegou aqui, é uma reconexão real
+      console.log('🔄 Reconectado ao Firebase! Recarregando dados...');
+      exibirToastReconexao();
+
+      // Recarregar estado completo da competição
+      try {
+        const snap = await db.ref('copaV2').once('value');
+        state.estadoAtual = snap.val() || state.estadoAtual;
+        atualizarUI();
+      } catch (e) {
+        console.warn('Erro ao recarregar estado na reconexão:', e);
+      }
+
+      // Recriar presença online se o usuário estiver em algum modo
+      if (state.meuTipo === 'professor' && auth.currentUser) {
+        const uid = auth.currentUser.uid || 'professor';
+        recriarPresencaOnline(uid, 'professor');
+      } else if (state.meuTipo === 'aluno' && state.alunoId) {
+        recriarPresencaOnline(state.alunoId, 'aluno');
+      } else if (state.meuTipo === 'projecao' && state.torcidaId) {
+        recriarPresencaOnline(state.torcidaId, 'torcida');
+      }
+
+      // Atualizar rankings conforme o modo atual
+      if (state.meuTipo === 'professor') {
+        const fase = parseInt(document.getElementById('select-fase-ranking')?.value) || state.estadoAtual?.fase || 1;
+        renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+        renderListaAlunosGerenciar();
+        renderListaTurmas();
+      } else if (state.meuTipo === 'aluno') {
+        if (state.jogoAtivo) {
+          // Se estiver jogando, não recarrega o ranking para não atrapalhar
+        } else {
+          atualizarInfoAluno();
+          if (document.getElementById('modal-ranking-aluno').style.display === 'flex') {
+            atualizarRankingAluno();
+          }
+        }
+      } else if (state.meuTipo === 'projecao') {
+        if (state.abaTorcidaAtiva === 'fase') {
+          if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
+          else atualizarTorcidaEquipes();
+        } else {
+          atualizarTorcidaPontos();
+        }
+      }
+
+      // Atualizar última sincronização
+      atualizarUltimaSinc();
+    } else {
+      // Desconectado: apenas registra para saber que estava online antes
+      window._wasOnline = false;
+    }
+  });
 
   // Carregar configurações
   await carregarValorPartida();
