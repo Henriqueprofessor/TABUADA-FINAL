@@ -2,19 +2,47 @@ import { state } from './state.js';
 
 // Mostrar/ocultar telas
 export function mostrarTela(tipo) {
-  document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+  console.log('🔄 mostrarTela chamado com tipo:', tipo);
+  
+  // Oculta todos os cards
+  document.querySelectorAll('.card').forEach(c => {
+    c.classList.add('hidden');
+    console.log('  Ocultando:', c.id || c.className);
+  });
+  
+  // Mostra a tela solicitada
   if (tipo === 'professor') {
-    document.getElementById('painel-professor').classList.remove('hidden');
+    const el = document.getElementById('painel-professor');
+    if (el) {
+      el.classList.remove('hidden');
+      console.log('✅ Mostrando painel-professor');
+    } else {
+      console.warn('⚠️ Elemento painel-professor não encontrado');
+    }
   } else if (tipo === 'aluno') {
-    document.getElementById('tela-aluno').classList.remove('hidden');
+    const el = document.getElementById('tela-aluno');
+    if (el) {
+      el.classList.remove('hidden');
+      console.log('✅ Mostrando tela-aluno');
+    } else {
+      console.warn('⚠️ Elemento tela-aluno não encontrado');
+    }
   } else if (tipo === 'projecao') {
-    document.getElementById('tela-torcida').classList.remove('hidden');
+    const el = document.getElementById('tela-torcida');
+    if (el) {
+      el.classList.remove('hidden');
+      console.log('✅ Mostrando tela-torcida');
+    } else {
+      console.warn('⚠️ Elemento tela-torcida não encontrado');
+    }
   } else {
-    // tela inicial
+    // tela inicial (inicio)
     document.querySelectorAll('.card').forEach(c => c.classList.remove('hidden'));
+    // Oculta as telas específicas que podem estar visíveis
     document.getElementById('tela-aluno')?.classList.add('hidden');
     document.getElementById('painel-professor')?.classList.add('hidden');
     document.getElementById('tela-torcida')?.classList.add('hidden');
+    console.log('🏠 Mostrando tela inicial');
   }
 }
 
