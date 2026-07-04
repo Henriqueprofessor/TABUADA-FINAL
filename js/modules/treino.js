@@ -39,18 +39,49 @@ export function iniciarTreino(modalidade, totalPerguntas, numeroEspecifico = nul
   } else if (fase5) {
     perguntas = gerarPerguntasParaFase5(totalPerguntas);
   } else {
-    const config = MODALIDADES_TREINO[modalidade];
-    if (!config) return;
-    perguntas = gerarPerguntas(modalidade, 1);
+    // Modalidade normal (2-5, 6-9, 0-10) usando a função do game.js
+    const perguntasGeradas = gerarPerguntas(modalidade, 1); // fase 1, pois o treino não usa fase
+    if (!perguntasGeradas || perguntasGeradas.length === 0) {
+      exibirToast('❌ Erro ao gerar perguntas.');
+      return;
+    }
+    // Mapeia para o formato esperado pelo treino
+    perguntas = perguntasGeradas.map(p => {
+      const correta = p.opts[p.posicaoCorreta - 1];
+      return {
+        a: p.a,
+        b: p.b,
+        correta: correta,
+        opcoes: p.opts,
+        posicaoCorreta: p.posicaoCorreta
+      };
+    });
+    // Corta ou repete para atingir o total desejado
     if (perguntas.length > totalPerguntas) {
       perguntas = perguntas.slice(0, totalPerguntas);
     } else {
       while (perguntas.length < totalPerguntas) {
-        const extra = gerarPerguntas(modalidade, 1);
+        // Gera mais perguntas e adiciona
+        const extra = gerarPerguntas(modalidade, 1).map(p => {
+          const correta = p.opts[p.posicaoCorreta - 1];
+          return {
+            a: p.a,
+            b: p.b,
+            correta: correta,
+            opcoes: p.opts,
+            posicaoCorreta: p.posicaoCorreta
+          };
+        });
         perguntas = perguntas.concat(extra);
       }
       perguntas = perguntas.slice(0, totalPerguntas);
     }
+  }
+
+  // Verifica se há perguntas
+  if (perguntas.length === 0) {
+    exibirToast('❌ Nenhuma pergunta gerada. Tente outra modalidade.');
+    return;
   }
 
   treinoEstado.ativo = true;
@@ -71,7 +102,7 @@ export function iniciarTreino(modalidade, totalPerguntas, numeroEspecifico = nul
 }
 
 // ============================================================
-// GERAR PERGUNTAS
+// GERAR PERGUNTAS ESPECÍFICAS
 // ============================================================
 function gerarPerguntasEspecificas(numero, total) {
   const perguntas = [];
@@ -133,6 +164,9 @@ function gerarDistratores(correta, quantidade) {
   return Array.from(distratores);
 }
 
+// ============================================================
+// GERAR PERGUNTAS PARA FASE 5 (COMUTATIVA)
+// ============================================================
 function gerarPerguntasParaFase5(total) {
   const perguntas = [];
   const H = [6,7,8,9];
@@ -145,8 +179,6 @@ function gerarPerguntasParaFase5(total) {
   }
   for (let a of H) {
     for (let b of base) {
-      const key1 = `${a}x${b}`;
-      const key2 = `${b}x${a}`;
       if (!combinacoes.some(c => (c.a === a && c.b === b) || (c.a === b && c.b === a))) {
         combinacoes.push({ a, b });
       }
@@ -206,7 +238,17 @@ function exibirPergunta() {
   const opcoesContainer = document.getElementById('treino-opcoes');
   const progresso = document.getElementById('treino-progresso');
 
-  if (!container || !opcoesContainer) return;
+  if (!container || !opcoesContainer) {
+    console.warn('Elementos do treino não encontrados');
+    return;
+  }
+
+  // Verifica se a pergunta tem opções válidas
+  if (!p || !p.opcoes || p.opcoes.length === 0) {
+    console.error('Pergunta inválida:', p);
+    exibirToast('❌ Erro ao carregar pergunta. Tente novamente.');
+    return;
+  }
 
   const total = treinoEstado.totalPerguntas;
   const atual = treinoEstado.perguntaAtual + 1;
