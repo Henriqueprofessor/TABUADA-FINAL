@@ -105,9 +105,7 @@ export function updateConnectionBadge(online) {
 
 // Função para iniciar o monitoramento e integrar com o Firebase
 export function initConnectionUI(onConnectionChangeCallback) {
-  // Cria o badge imediatamente
   createConnectionBadge();
-  // Registra o callback para atualizar a UI
   onConnectionChangeCallback(updateConnectionBadge);
 }
 
