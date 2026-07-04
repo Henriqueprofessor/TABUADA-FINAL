@@ -39,7 +39,6 @@ export function iniciarTreino(modalidade, totalPerguntas, numeroEspecifico = nul
   } else if (fase5) {
     perguntas = gerarPerguntasParaFase5(totalPerguntas);
   } else {
-    // Modalidade normal (2-5, 6-9, 0-10)
     const perguntasGeradas = gerarPerguntas(modalidade, 1);
     if (!perguntasGeradas || perguntasGeradas.length === 0) {
       exibirToast('❌ Erro ao gerar perguntas.');
@@ -362,14 +361,15 @@ function finalizarTreino() {
 }
 
 // ============================================================
-// MOSTRAR TELAS (com controle de visibilidade)
+// MOSTRAR TELAS (COM CLASSE visible E FORÇA DISPLAY)
 // ============================================================
 function mostrarTelaTreino() {
   // Oculta todas as outras telas
   document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
   const telaTreino = document.getElementById('tela-treino');
   if (telaTreino) {
-    telaTreino.style.display = 'block'; // força exibição
+    telaTreino.classList.add('visible'); // <-- ADICIONA CLASSE visible
+    telaTreino.style.display = 'block';
     telaTreino.classList.remove('hidden');
   }
 }
@@ -398,6 +398,7 @@ export function mostrarConfiguracaoTreino() {
   }
   if (configContainer) configContainer.style.display = 'block';
   if (telaTreino) {
+    telaTreino.classList.add('visible'); // <-- ADICIONA CLASSE visible
     telaTreino.style.display = 'block';
     telaTreino.classList.remove('hidden');
   }
@@ -476,6 +477,7 @@ export function mostrarConfiguracaoTreino() {
 
   // Garante que a tela de treino está visível
   if (telaTreino) {
+    telaTreino.classList.add('visible');
     telaTreino.style.display = 'block';
     telaTreino.classList.remove('hidden');
   }
