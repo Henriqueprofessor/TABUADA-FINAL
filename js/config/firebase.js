@@ -20,6 +20,13 @@ const auth = window.firebase.auth();
 auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL);
 
 // ============================================
+// HABILITAR PERSISTÊNCIA OFFLINE (item 2)
+// ============================================
+db.setPersistenceEnabled(true)
+  .then(() => console.log('💾 Persistência offline ativada!'))
+  .catch(err => console.warn('Erro ao ativar persistência:', err));
+
+// ============================================
 // MONITOR DE CONEXÃO (Realtime Database)
 // ============================================
 
@@ -57,6 +64,17 @@ export function onConnectionChange(callback) {
 // Obtém o status atual (síncrono)
 export function getConnectionStatus() {
   return connectionStatus.online;
+}
+
+// ============================================
+// RECRIAR PRESENÇA ONLINE (item 2)
+// ============================================
+export function recriarPresencaOnline(id, tipo) {
+  if (!id) return;
+  const ref = db.ref(`online/${id}`);
+  ref.set({ tipo: tipo || 'usuario', timestamp: Date.now() });
+  ref.onDisconnect().remove();
+  console.log(`🔄 Presença online recriada para ${id} (${tipo})`);
 }
 
 export { db, auth };
