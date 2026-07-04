@@ -1,5 +1,5 @@
 // js/main.js
-import { db, auth, initConnectionMonitor, onConnectionChange, recriarPresencaOnline } from '../config/firebase.js';
+import { db, auth, initConnectionMonitor, onConnectionChange, recriarPresencaOnline } from './config/firebase.js';
 import { state } from './modules/state.js';
 import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './modules/auth.js';
 import { carregarEstado, atualizarDados, setDados, removerDados, lerDados, ouvirOnline } from './modules/db.js';
