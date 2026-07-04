@@ -66,3 +66,10 @@ export const state = {
   corTurma: '#95a5a6',
   avatarsEnabled: true, // padrão ativado
 };
+// Adicione no objeto state (no final ou onde preferir)
+export const state = {
+  // ... (tudo que já existe) ...
+
+  // ===== MODO TREINO =====
+  modoTreinoAtivo: false,
+};
