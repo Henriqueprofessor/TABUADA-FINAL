@@ -4,13 +4,14 @@ import { lerDados, atualizarDados, removerDados, setDados } from './db.js';
 import { exibirToast, atualizarTimerFase, mostrarTela } from './ui.js';
 import { tocarSom } from './sound.js';
 import { atualizarExibicaoMedalhas, carregarMedalhasLocal } from './medals.js';
-import { gerarAvatarHTML, obterCorTurma, AVATAR_EMOJIS } from './avatar.js';
+import { gerarAvatarHTML, obterCorTurma } from './avatar.js';
 
 // ============================================================
 // CONSTANTES E FUNÇÕES AUXILIARES
 // ============================================================
 
 const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
+const AVATAR_ENABLED_KEY = 'copaV2/configuracoes/avatarsEnabled';
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -123,7 +124,7 @@ export function calcularRankingFase(fase) {
 }
 
 // ============================================================
-// RENDERIZAR RANKING (com avatares)
+// RENDERIZAR RANKING (com avatares e toggle)
 // ============================================================
 
 export async function renderizarRanking(fase, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -237,38 +238,52 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     }
   }
 
-  // ===== CARREGAR AVATARES E CORES (se habilitado) =====
-  let avatarMap = new Map();
-  let corMap = new Map();
-  const avatarsEnabled = state.avatarsEnabled !== false; // padrão true
+  // ===== CARREGAR AVATARES EM LOTE (otimizado) =====
+  const avatarsEnabled = state.avatarsEnabled !== false;
+  let avatarsMap = new Map();
+  let coresMap = new Map();
 
   if (avatarsEnabled) {
-    // Buscar avatares e cores em lote com Promise.all
-    const promises = listaComInfo.map(async (j) => {
-      let avatar = '⭐';
-      let cor = '#95a5a6';
-      try {
-        // Avatar
-        const snapAvatar = await db.ref(`copaV2/participantes/avatar/${j.id}`).once('value');
-        avatar = snapAvatar.val() || '⭐';
-        // Cor da turma
-        cor = await obterCorTurma(j.turma);
-      } catch (e) {
-        console.warn('Erro ao buscar avatar/cor:', e);
+    try {
+      // Busca todos os avatares de uma vez
+      const snapAvatars = await db.ref('copaV2/participantes/avatar').once('value');
+      const allAvatars = snapAvatars.val() || {};
+      
+      // Busca todas as cores de turmas de uma vez
+      const snapCores = await db.ref('copaV2/turmas_cores').once('value');
+      const allCores = snapCores.val() || {};
+
+      for (let item of listaComInfo) {
+        const avatar = allAvatars[item.id] || '⭐';
+        avatarsMap.set(item.id, avatar);
+        
+        const turma = item.turma || '?';
+        let cor = allCores[turma];
+        if (!cor) {
+          // Gera cor automaticamente se não tiver
+          cor = gerarCorPorNome(turma);
+          // Salva para cache futuro (opcional)
+          try {
+            await db.ref(`copaV2/turmas_cores/${turma}`).set(cor);
+          } catch (e) {}
+        }
+        coresMap.set(turma, cor);
+        // Também guarda no item para uso posterior
+        item._corTurma = cor;
+        item._avatar = avatar;
       }
-      return { id: j.id, avatar, cor };
-    });
-    const resultados = await Promise.all(promises);
-    resultados.forEach(r => {
-      avatarMap.set(r.id, r.avatar);
-      corMap.set(r.id, r.cor);
-    });
+    } catch (e) {
+      console.warn('Erro ao carregar avatares em lote:', e);
+      // Fallback: usa valores padrão
+      for (let item of listaComInfo) {
+        item._avatar = '⭐';
+        item._corTurma = '#95a5a6';
+      }
+    }
   }
 
-  // ===== CONSTRUIR TABELA =====
   let html = `<table class="ranking-table"><thead><tr>
     <th>Pos</th>
-    <th>Avatar</th>
     <th>Nome</th>
     <th>Melhor Pontuação</th>`;
   if (exibirClassificacao) html += '<th>Classificação</th>';
@@ -331,24 +346,24 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       }
     }
 
-    // Montar avatar
-    let avatarHtml = '';
-    if (avatarsEnabled) {
-      const avatar = avatarMap.get(j.id) || '⭐';
-      const cor = corMap.get(j.id) || '#95a5a6';
-      avatarHtml = gerarAvatarHTML(avatar, cor, '28px');
+    // ===== CONSTRUIR NOME COM AVATAR =====
+    let nomeCompleto = '';
+    if (avatarsEnabled && j._avatar && j._corTurma) {
+      const avatarHtml = gerarAvatarHTML(j._avatar, j._corTurma, '28px');
+      nomeCompleto = avatarHtml + ' ' + escapeHtml(j.nome);
+    } else {
+      nomeCompleto = escapeHtml(j.nome);
     }
 
-    let nomeDisplay = escapeHtml(j.nome);
     if (jogadorRecordeId === j.id) {
-      nomeDisplay += ' <span class="foguete-vermelho">🚀</span>';
+      nomeCompleto += ' <span class="foguete-vermelho">🚀</span>';
     }
     if (jogadorBonusId === j.id && state.bonusVelocidadeConfig.ativo) {
-      nomeDisplay += ' <span class="raio-amarelo">⚡</span>';
+      nomeCompleto += ' <span class="raio-amarelo">⚡</span>';
     }
     const medalhasStr = medalhasMap.get(j.id) || '';
     if (medalhasStr) {
-      nomeDisplay += ` <span class="medalhas-ranking" title="Conquistas">${medalhasStr}</span>`;
+      nomeCompleto += ` <span class="medalhas-ranking" title="Conquistas">${medalhasStr}</span>`;
     }
 
     let melhorDisplay = j.melhorPontuacao;
@@ -379,8 +394,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
 
     html += `<tr>
       <td class="${classePos}">${posAtual}º</td>
-      <td>${avatarHtml}</td>
-      <td>${nomeDisplay}</td>
+      <td>${nomeCompleto}</td>
       <td>${melhorDisplay}</td>
       ${exibirClassificacao ? colunaClassificacao : ''}
       <td>${futPosHtml}</td>
@@ -401,7 +415,20 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
 }
 
 // ============================================================
-// RANKING DE TURMAS (mantido)
+// FUNÇÕES AUXILIARES PARA CORES (geração automática)
+// ============================================================
+
+function gerarCorPorNome(nome) {
+  let hash = 0;
+  for (let i = 0; i < nome.length; i++) {
+    hash = nome.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash % 360);
+  return `hsl(${hue}, 70%, 55%)`;
+}
+
+// ============================================================
+// RANKING DE TURMAS
 // ============================================================
 
 export async function renderRankingTurmas(containerId) {
@@ -493,7 +520,7 @@ export async function renderRankingTurmas(containerId) {
 }
 
 // ============================================================
-// RANKING DE PONTOS (mantido)
+// RANKING DE PONTOS
 // ============================================================
 
 export async function renderizarRankingPontos(containerId = 'ranking-pontos-container') {
@@ -645,7 +672,7 @@ export async function renderizarRankingPontos(containerId = 'ranking-pontos-cont
 }
 
 // ============================================================
-// RANKING GERAL (mantido)
+// RANKING GERAL
 // ============================================================
 
 export async function renderRankingGeral() {
@@ -812,7 +839,7 @@ export async function renderRankingGeral() {
 }
 
 // ============================================================
-// ATUALIZAR INFORMAÇÕES DO ALUNO (inclui medalhas e gráfico)
+// ATUALIZAR INFORMAÇÕES DO ALUNO (com avatar)
 // ============================================================
 
 export async function atualizarInfoAluno() {
@@ -920,14 +947,16 @@ export async function atualizarInfoAluno() {
     }
   }
 
-  // Atualiza medalhas e gráfico
   atualizarExibicaoMedalhas();
+
   const { desenharGraficoEvolucao } = await import('./game.js');
   desenharGraficoEvolucao();
 
-  // Atualizar avatar na tela do aluno
-  const { atualizarAvatarAlunoUI } = await import('./avatar.js');
-  atualizarAvatarAlunoUI();
+  // Atualiza avatar do aluno na UI
+  try {
+    const { atualizarAvatarAlunoUI } = await import('./avatar.js');
+    atualizarAvatarAlunoUI();
+  } catch (e) {}
 }
 
 // ============================================================
@@ -1353,5 +1382,31 @@ export async function atualizarRankingAluno() {
     await renderizarRanking(faseAtual, 'ranking-aluno-container', 'individual', true);
   } else {
     await renderizarRankingPontos('ranking-aluno-container');
+  }
+}
+
+// ============================================================
+// TOGGLE PARA AVATAR (Configurações do Professor)
+// ============================================================
+
+export async function carregarConfigAvatar() {
+  try {
+    const snap = await db.ref('copaV2/configuracoes/avatarsEnabled').once('value');
+    state.avatarsEnabled = snap.val() !== null ? snap.val() : true;
+  } catch (e) {
+    state.avatarsEnabled = true;
+  }
+}
+
+export async function salvarConfigAvatar(habilitado) {
+  try {
+    await db.ref('copaV2/configuracoes/avatarsEnabled').set(habilitado);
+    state.avatarsEnabled = habilitado;
+    exibirToast(`✅ Avatares ${habilitado ? 'habilitados' : 'desabilitados'}!`);
+    return true;
+  } catch (e) {
+    exibirToast('❌ Erro ao salvar configuração de avatares.');
+    console.error(e);
+    return false;
   }
 }
