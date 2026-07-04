@@ -361,14 +361,13 @@ function finalizarTreino() {
 }
 
 // ============================================================
-// MOSTRAR TELAS (COM CLASSE visible E FORÇA DISPLAY)
+// MOSTRAR TELAS (COM CLASSE visible)
 // ============================================================
 function mostrarTelaTreino() {
-  // Oculta todas as outras telas
   document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
   const telaTreino = document.getElementById('tela-treino');
   if (telaTreino) {
-    telaTreino.classList.add('visible'); // <-- ADICIONA CLASSE visible
+    telaTreino.classList.add('visible');
     telaTreino.style.display = 'block';
     telaTreino.classList.remove('hidden');
   }
@@ -376,7 +375,6 @@ function mostrarTelaTreino() {
 
 export function mostrarConfiguracaoTreino() {
   console.log('📢 Abrindo configuração do treino');
-  // Reseta estado
   treinoEstado.ativo = false;
   treinoEstado.finalizado = false;
   treinoEstado.perguntas = [];
@@ -384,7 +382,6 @@ export function mostrarConfiguracaoTreino() {
   treinoEstado.acertos = 0;
   treinoEstado.erros = 0;
 
-  // Oculta todas as outras telas
   document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
   const configContainer = document.getElementById('treino-config');
   const jogoContainer = document.getElementById('treino-jogo');
@@ -398,7 +395,7 @@ export function mostrarConfiguracaoTreino() {
   }
   if (configContainer) configContainer.style.display = 'block';
   if (telaTreino) {
-    telaTreino.classList.add('visible'); // <-- ADICIONA CLASSE visible
+    telaTreino.classList.add('visible');
     telaTreino.style.display = 'block';
     telaTreino.classList.remove('hidden');
   }
@@ -475,7 +472,6 @@ export function mostrarConfiguracaoTreino() {
     });
   }
 
-  // Garante que a tela de treino está visível
   if (telaTreino) {
     telaTreino.classList.add('visible');
     telaTreino.style.display = 'block';
