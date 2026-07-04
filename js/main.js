@@ -102,27 +102,26 @@ async function init() {
   mostrarTela('inicio');
   popularSelectFases();
   popularSelectFasesTorcida();
-  // Atualizar última sincronização ao carregar
+  
+  // Iniciar atualização automática da data/hora a cada segundo
   atualizarUltimaSinc();
+  setInterval(atualizarUltimaSinc, 1000);
 }
 
 // ============================================================
-// ATUALIZAR ÚLTIMA SINCRONIZAÇÃO (fixo em todos os painéis)
+// ATUALIZAR ÚLTIMA SINCRONIZAÇÃO (DATA/HORA FIXA)
 // ============================================================
 function atualizarUltimaSinc() {
-  const agora = new Date();
-  const dataHoraStr = agora.toLocaleString('pt-BR');
-  
-  // Painel principal
-  const spanPrincipal = document.getElementById('last-sync-time');
-  if (spanPrincipal) {
-    spanPrincipal.innerText = dataHoraStr;
+  const span = document.getElementById('last-sync-time');
+  if (span) {
+    const agora = new Date();
+    span.innerText = agora.toLocaleString('pt-BR');
   }
-  
-  // Painel da torcida
-  const spanTorcida = document.getElementById('torcida-last-update');
-  if (spanTorcida) {
-    spanTorcida.innerText = dataHoraStr;
+  // Também atualiza o campo da torcida se existir
+  const torcidaUpdate = document.getElementById('torcida-last-update');
+  if (torcidaUpdate) {
+    const agora = new Date();
+    torcidaUpdate.innerText = agora.toLocaleTimeString('pt-BR');
   }
 }
 
@@ -219,22 +218,19 @@ async function atualizarTorcidaIndividual() {
   await renderizarRanking(fase, 'ranking-torcida-container', 'individual', true);
   const infoSpan = document.getElementById('fase-torcida-info');
   if (infoSpan) infoSpan.innerText = (fase === state.estadoAtual.fase) ? '(Fase atual)' : '(Fase anterior)';
-  // Atualizar data/hora na torcida
-  atualizarUltimaSinc();
+  // A data/hora será atualizada automaticamente pelo setInterval
 }
 
 async function atualizarTorcidaEquipes() {
   if (state.meuTipo !== 'projecao' || state.abaTorcidaAtiva !== 'fase' || state.modoTorcida !== 'equipes') return;
   if (!state.estadoAtual) return;
   await renderizarRanking(null, 'ranking-torcida-container', 'turmas', false);
-  atualizarUltimaSinc();
 }
 
 async function atualizarTorcidaPontos() {
   if (state.meuTipo !== 'projecao' || state.abaTorcidaAtiva !== 'pontos') return;
   if (!state.estadoAtual) return;
   await renderizarRankingPontos('ranking-torcida-container');
-  atualizarUltimaSinc();
 }
 
 function iniciarAtualizacaoTorcida() {
@@ -410,8 +406,8 @@ function configurarEventos() {
     } else {
       atualizarTorcidaPontos();
     }
-    atualizarUltimaSinc();
     exibirToast('🔄 Sincronizado!');
+    // A data/hora é atualizada automaticamente pelo setInterval
   });
 
   // Ranking do aluno
@@ -491,14 +487,12 @@ function configurarEventos() {
         const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
         renderizarRanking(fase, 'ranking-parcial', 'individual', true);
       }
-      atualizarUltimaSinc();
       exibirToast('✅ Dados sincronizados!');
     });
   });
 
   // Outros botões do professor
   document.getElementById('btn-sync-prof')?.addEventListener('click', () => {
-    atualizarUltimaSinc();
     exibirToast('🔄 Sincronizado!');
   });
 
@@ -509,7 +503,6 @@ function configurarEventos() {
     const fim = Date.now() + duracao * 60000;
     await setDados('copaV2', { ...state.estadoAtual, status: 'em_andamento', fim, tempoRestantePausa: null });
     exibirToast('▶️ Fase iniciada!');
-    atualizarUltimaSinc();
   });
 
   document.getElementById('btn-continuar-parar-fase')?.addEventListener('click', async () => {
@@ -519,28 +512,24 @@ function configurarEventos() {
       const tempoRestante = Math.max(0, state.estadoAtual.fim - agora);
       await setDados('copaV2', { ...state.estadoAtual, status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
       exibirToast('⏸️ Fase pausada.');
-      atualizarUltimaSinc();
     } else if (state.estadoAtual?.status === 'pausado') {
       const tempoRestante = state.estadoAtual.tempoRestantePausa || 0;
       if (tempoRestante <= 0) { exibirToast('⚠️ Tempo esgotado.'); return; }
       const novoFim = Date.now() + tempoRestante;
       await setDados('copaV2', { ...state.estadoAtual, status: 'em_andamento', fim: novoFim, tempoRestantePausa: null });
       exibirToast('▶️ Fase retomada!');
-      atualizarUltimaSinc();
     }
   });
 
   document.getElementById('btn-avancar-fase')?.addEventListener('click', async () => {
     if (confirm('Finalizar fase?')) {
       await avancarFase();
-      atualizarUltimaSinc();
     }
   });
 
   document.getElementById('btn-reset-fase')?.addEventListener('click', async () => {
     if (confirm('Resetar fase atual?')) {
       await resetarFase();
-      atualizarUltimaSinc();
     }
   });
 
@@ -548,7 +537,6 @@ function configurarEventos() {
     if (confirm('Resetar toda a competição?')) {
       await setDados('copaV2', { fase:1, status:'aguardando', tempoFase:10, fim:0, modalidade: state.estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} });
       await removerDados('online');
-      atualizarUltimaSinc();
       location.reload();
     }
   });
@@ -556,10 +544,7 @@ function configurarEventos() {
   // Salvar tempo
   document.getElementById('btn-salvar-tempo')?.addEventListener('click', async () => {
     const t = parseInt(document.getElementById('input-tempo-fase').value);
-    if (t > 0) {
-      await atualizarDados('copaV2/tempoFase', t);
-      atualizarUltimaSinc();
-    }
+    if (t > 0) await atualizarDados('copaV2/tempoFase', t);
   });
 
   // Adicionar tempo extra
@@ -571,7 +556,6 @@ function configurarEventos() {
     const novoFim = Math.max(agora + 1000, state.estadoAtual.fim) + extra * 60000;
     await atualizarDados('copaV2/fim', novoFim);
     exibirToast(`✅ ${extra} minuto(s) adicionado(s)!`);
-    atualizarUltimaSinc();
   });
 
   // Intervalos
@@ -580,7 +564,6 @@ function configurarEventos() {
     if (val >= 1) {
       state.intervaloIndividualSegundos = val;
       atualizarDados('copaV2/configuracoes/intervalos/individual', val);
-      atualizarUltimaSinc();
       exibirToast(`✅ Intervalo individual: ${val}s`);
     }
   });
@@ -589,7 +572,6 @@ function configurarEventos() {
     if (val >= 1) {
       state.intervaloEquipesSegundos = val;
       atualizarDados('copaV2/configuracoes/intervalos/equipes', val);
-      atualizarUltimaSinc();
       exibirToast(`✅ Intervalo equipes: ${val}s`);
     }
   });
@@ -600,21 +582,14 @@ function configurarEventos() {
     if (nova && nova.trim()) {
       await adicionarTurma(nova.trim());
       renderListaTurmas();
-      atualizarUltimaSinc();
     }
   });
 
   // Configurações: salvar mínimo de partidas
-  document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', async () => {
-    await salvarMinPartidas();
-    atualizarUltimaSinc();
-  });
+  document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', salvarMinPartidas);
 
   // Configurações: salvar colunas
-  document.getElementById('btn-salvar-colunas')?.addEventListener('click', async () => {
-    await salvarColunasVisiveis();
-    atualizarUltimaSinc();
-  });
+  document.getElementById('btn-salvar-colunas')?.addEventListener('click', salvarColunasVisiveis);
 
   // Configurações: restaurar colunas
   document.getElementById('btn-restaurar-colunas')?.addEventListener('click', async () => {
@@ -625,7 +600,6 @@ function configurarEventos() {
     await db.ref('copaV2/configuracoes/colunasVisiveis').set(config);
     state.colunasVisiveis = config;
     renderizarColunasVisiveis();
-    atualizarUltimaSinc();
     exibirToast('✅ Colunas restauradas para o padrão (todas visíveis)');
   });
 
@@ -635,7 +609,6 @@ function configurarEventos() {
     document.getElementById('status-ranking-pontos').innerText = ativo ? '✅ Ativado' : '❌ Desativado';
     document.getElementById('status-ranking-pontos').style.color = ativo ? '#4ade80' : '#f87171';
     await salvarConfigRankingPontos(ativo, state.tabelaPontosPadrao, state.tabelaPontosFase5);
-    atualizarUltimaSinc();
     if (state.meuTipo === 'professor') renderizarRankingPontos();
     if (state.meuTipo === 'projecao') {
       if (state.abaTorcidaAtiva === 'fase') {
@@ -668,7 +641,6 @@ function configurarEventos() {
     await salvarConfigRankingPontos(ativo, objPadrao, objFase5);
     document.getElementById('textarea-pontos-padrao').value = formatPontuacaoText(objPadrao);
     document.getElementById('textarea-pontos-fase5').value = formatPontuacaoText(objFase5);
-    atualizarUltimaSinc();
   });
 
   document.getElementById('btn-restaurar-padrao')?.addEventListener('click', function() {
@@ -691,7 +663,6 @@ function configurarEventos() {
     document.getElementById('feedback-bonus-velocidade').style.display = 'block';
     document.getElementById('feedback-bonus-velocidade').className = 'feedback-sucesso';
     document.getElementById('feedback-bonus-velocidade').textContent = '✅ Configuração de bônus salva!';
-    atualizarUltimaSinc();
     setTimeout(() => document.getElementById('feedback-bonus-velocidade').style.display = 'none', 5000);
   });
 
@@ -704,7 +675,6 @@ function configurarEventos() {
     document.getElementById('feedback-valor-partida').style.display = 'block';
     document.getElementById('feedback-valor-partida').className = 'feedback-sucesso';
     document.getElementById('feedback-valor-partida').textContent = `✅ Valor da partida atualizado para ${novoValor} pontos!`;
-    atualizarUltimaSinc();
     setTimeout(() => document.getElementById('feedback-valor-partida').style.display = 'none', 5000);
   });
 
@@ -722,7 +692,6 @@ function configurarEventos() {
     const exigir = document.getElementById('toggle-exigir-senha').checked;
     await db.ref('copaV2/configuracoes/senhaFase1').set(senha);
     await db.ref('copaV2/configuracoes/exigirSenhaFase1').set(exigir);
-    atualizarUltimaSinc();
     exibirToast('✅ Senha salva!');
   });
   document.getElementById('toggle-exigir-senha')?.addEventListener('change', () => {
@@ -755,7 +724,6 @@ function configurarEventos() {
     await atualizarDados(`copaV2/participantes/${faseAtual}/${idEncontrado}`, { liberado: true });
     exibirToast(`✅ ${nome} liberado para a Fase ${faseAtual}!`);
     atualizarListaLiberados();
-    atualizarUltimaSinc();
   });
 }
 
