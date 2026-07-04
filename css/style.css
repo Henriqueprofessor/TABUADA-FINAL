@@ -1458,6 +1458,14 @@ body.em-jogo #banner-aviso .banner-aviso-icone {
   user-select: none;
 }
 /* ===== MODO TREINO ===== */
+#tela-treino {
+  display: none !important;
+}
+
+#tela-treino.visible {
+  display: block !important;
+}
+
 #tela-treino .card {
     max-width: 700px;
     margin: 0 auto;
@@ -1555,12 +1563,4 @@ body.em-jogo #banner-aviso .banner-aviso-icone {
     #treino-pergunta {
         font-size: 32px !important;
     }
-}
-/* ===== GARANTIR QUE A TELA DE TREINO FIQUE OCULTA POR PADRÃO ===== */
-#tela-treino {
-  display: none !important;
-}
-
-#tela-treino.visible {
-  display: block !important;
 }
