@@ -1,4 +1,5 @@
 // js/modules/ranking.js
+import { gerarAvatarHTML, obterCorTurma } from './avatar.js';
 import { state } from './state.js';
 import { lerDados, atualizarDados, removerDados, setDados } from './db.js';
 import { exibirToast, atualizarTimerFase, mostrarTela } from './ui.js';
