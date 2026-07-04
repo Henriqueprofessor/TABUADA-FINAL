@@ -1,10 +1,10 @@
 // js/main.js
-import { db, auth, initConnectionMonitor, onConnectionChange, recriarPresencaOnline } from './config/firebase.js';
-import { state } from './modules/state.js';
-import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './modules/auth.js';
-import { carregarEstado, atualizarDados, setDados, removerDados, lerDados, ouvirOnline } from './modules/db.js';
-import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase, initConnectionUI, exibirToastReconexao } from './modules/ui.js';
-import { iniciarPartida } from './modules/game.js';
+import { db, auth, initConnectionMonitor, onConnectionChange, recriarPresencaOnline } from '../config/firebase.js';
+import { state } from './state.js';
+import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './auth.js';
+import { carregarEstado, atualizarDados, setDados, removerDados, lerDados, ouvirOnline } from './db.js';
+import { mostrarTela, exibirToast, abrirModal, fecharModal, atualizarTimerFase, initConnectionUI, exibirToastReconexao } from './ui.js';
+import { iniciarPartida } from './game.js';
 import { 
   renderizarRanking, 
   atualizarInfoAluno, 
@@ -17,9 +17,9 @@ import {
   renderListaTurmas,
   renderizarConfigMinPartidas,
   renderizarColunasVisiveis
-} from './modules/ranking.js';
-import { inicializarSons, renderizarPainelSom } from './modules/sound.js';
-import { abrirTutorial, fecharTutorial } from './modules/tutorial.js';
+} from './ranking.js';
+import { inicializarSons, renderizarPainelSom } from './sound.js';
+import { abrirTutorial, fecharTutorial } from './tutorial.js';
 import {
   carregarValorPartida,
   carregarConfigRankingPontos,
@@ -27,17 +27,17 @@ import {
   carregarRecordeGeral,
   carregarColunasVisiveis,
   carregarMinPartidas,
-  carregarIntervaloIndividual,   // <-- item 3
-  carregarIntervaloEquipes,     // <-- item 3
+  carregarIntervaloIndividual,
+  carregarIntervaloEquipes,
   salvarMinPartidas,
   salvarColunasVisiveis,
   salvarConfigRankingPontos,
   salvarValorPartida,
   adicionarTurma,
   removerTurma
-} from './modules/config.js';
-import { verificarVersao, iniciarListenerVersao } from './modules/version.js';
-import { abrirInstalacao } from './modules/install.js';
+} from './config.js';
+import { verificarVersao, iniciarListenerVersao } from './version.js';
+import { abrirInstalacao } from './install.js';
 
 // ============================================================
 // INICIALIZAÇÃO
@@ -375,7 +375,7 @@ function entrarModoProfessor() {
       const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
       renderizarRanking(fase, 'ranking-parcial', 'individual', true);
     }
-  }, state.intervaloIndividualSegundos * 1000); // <-- usa o intervalo carregado
+  }, state.intervaloIndividualSegundos * 1000);
   exibirToast('👨‍🏫 Bem-vindo, Professor!');
   document.querySelector('.tab-btn[data-tab="controle"]')?.click();
   popularSelectFases();
@@ -499,7 +499,7 @@ function configurarEventos() {
     } else {
       atualizarTorcidaPontos();
     }
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
     exibirToast('🔄 Sincronizado!');
   });
 
@@ -511,7 +511,7 @@ function configurarEventos() {
       if (document.getElementById('modal-ranking-aluno').style.display === 'flex' && !state.jogoAtivo) {
         atualizarRankingAluno();
       }
-    }, state.intervaloIndividualSegundos * 1000); // <-- usa o intervalo carregado
+    }, state.intervaloIndividualSegundos * 1000);
   });
   document.getElementById('btn-ranking-pontos-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
@@ -580,14 +580,14 @@ function configurarEventos() {
         const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
         renderizarRanking(fase, 'ranking-parcial', 'individual', true);
       }
-      atualizarUltimaSinc(); // <-- atualiza a última sinc
+      atualizarUltimaSinc();
       exibirToast('✅ Dados sincronizados!');
     });
   });
 
   // Outros botões do professor
   document.getElementById('btn-sync-prof')?.addEventListener('click', () => {
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
     exibirToast('🔄 Sincronizado!');
   });
 
@@ -597,7 +597,7 @@ function configurarEventos() {
     const duracao = state.estadoAtual.tempoFase || 10;
     const fim = Date.now() + duracao * 60000;
     await setDados('copaV2', { ...state.estadoAtual, status: 'em_andamento', fim, tempoRestantePausa: null });
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
     exibirToast('▶️ Fase iniciada!');
   });
 
@@ -607,14 +607,14 @@ function configurarEventos() {
       const agora = Date.now();
       const tempoRestante = Math.max(0, state.estadoAtual.fim - agora);
       await setDados('copaV2', { ...state.estadoAtual, status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
-      atualizarUltimaSinc(); // <-- atualiza a última sinc
+      atualizarUltimaSinc();
       exibirToast('⏸️ Fase pausada.');
     } else if (state.estadoAtual?.status === 'pausado') {
       const tempoRestante = state.estadoAtual.tempoRestantePausa || 0;
       if (tempoRestante <= 0) { exibirToast('⚠️ Tempo esgotado.'); return; }
       const novoFim = Date.now() + tempoRestante;
       await setDados('copaV2', { ...state.estadoAtual, status: 'em_andamento', fim: novoFim, tempoRestantePausa: null });
-      atualizarUltimaSinc(); // <-- atualiza a última sinc
+      atualizarUltimaSinc();
       exibirToast('▶️ Fase retomada!');
     }
   });
@@ -622,14 +622,14 @@ function configurarEventos() {
   document.getElementById('btn-avancar-fase')?.addEventListener('click', async () => {
     if (confirm('Finalizar fase?')) {
       await avancarFase();
-      atualizarUltimaSinc(); // <-- atualiza a última sinc
+      atualizarUltimaSinc();
     }
   });
 
   document.getElementById('btn-reset-fase')?.addEventListener('click', async () => {
     if (confirm('Resetar fase atual?')) {
       await resetarFase();
-      atualizarUltimaSinc(); // <-- atualiza a última sinc
+      atualizarUltimaSinc();
     }
   });
 
@@ -637,7 +637,7 @@ function configurarEventos() {
     if (confirm('Resetar toda a competição?')) {
       await setDados('copaV2', { fase:1, status:'aguardando', tempoFase:10, fim:0, modalidade: state.estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} });
       await removerDados('online');
-      atualizarUltimaSinc(); // <-- atualiza a última sinc
+      atualizarUltimaSinc();
       location.reload();
     }
   });
@@ -647,7 +647,7 @@ function configurarEventos() {
     const t = parseInt(document.getElementById('input-tempo-fase').value);
     if (t > 0) {
       await atualizarDados('copaV2/tempoFase', t);
-      atualizarUltimaSinc(); // <-- atualiza a última sinc
+      atualizarUltimaSinc();
     }
   });
 
@@ -659,7 +659,7 @@ function configurarEventos() {
     const agora = Date.now();
     const novoFim = Math.max(agora + 1000, state.estadoAtual.fim) + extra * 60000;
     await atualizarDados('copaV2/fim', novoFim);
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
     exibirToast(`✅ ${extra} minuto(s) adicionado(s)!`);
   });
 
@@ -669,7 +669,7 @@ function configurarEventos() {
     if (val >= 1) {
       state.intervaloIndividualSegundos = val;
       atualizarDados('copaV2/configuracoes/intervalos/individual', val);
-      atualizarUltimaSinc(); // <-- atualiza a última sinc
+      atualizarUltimaSinc();
       exibirToast(`✅ Intervalo individual: ${val}s`);
     }
   });
@@ -678,7 +678,7 @@ function configurarEventos() {
     if (val >= 1) {
       state.intervaloEquipesSegundos = val;
       atualizarDados('copaV2/configuracoes/intervalos/equipes', val);
-      atualizarUltimaSinc(); // <-- atualiza a última sinc
+      atualizarUltimaSinc();
       exibirToast(`✅ Intervalo equipes: ${val}s`);
     }
   });
@@ -689,20 +689,20 @@ function configurarEventos() {
     if (nova && nova.trim()) {
       await adicionarTurma(nova.trim());
       renderListaTurmas();
-      atualizarUltimaSinc(); // <-- atualiza a última sinc
+      atualizarUltimaSinc();
     }
   });
 
   // Configurações: salvar mínimo de partidas
   document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', async () => {
     await salvarMinPartidas();
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
   });
 
   // Configurações: salvar colunas
   document.getElementById('btn-salvar-colunas')?.addEventListener('click', async () => {
     await salvarColunasVisiveis();
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
   });
 
   // Configurações: restaurar colunas
@@ -714,7 +714,7 @@ function configurarEventos() {
     await db.ref('copaV2/configuracoes/colunasVisiveis').set(config);
     state.colunasVisiveis = config;
     renderizarColunasVisiveis();
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
     exibirToast('✅ Colunas restauradas para o padrão (todas visíveis)');
   });
 
@@ -724,7 +724,7 @@ function configurarEventos() {
     document.getElementById('status-ranking-pontos').innerText = ativo ? '✅ Ativado' : '❌ Desativado';
     document.getElementById('status-ranking-pontos').style.color = ativo ? '#4ade80' : '#f87171';
     await salvarConfigRankingPontos(ativo, state.tabelaPontosPadrao, state.tabelaPontosFase5);
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
     if (state.meuTipo === 'professor') renderizarRankingPontos();
     if (state.meuTipo === 'projecao') {
       if (state.abaTorcidaAtiva === 'fase') {
@@ -757,7 +757,7 @@ function configurarEventos() {
     await salvarConfigRankingPontos(ativo, objPadrao, objFase5);
     document.getElementById('textarea-pontos-padrao').value = formatPontuacaoText(objPadrao);
     document.getElementById('textarea-pontos-fase5').value = formatPontuacaoText(objFase5);
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
   });
 
   document.getElementById('btn-restaurar-padrao')?.addEventListener('click', function() {
@@ -780,7 +780,7 @@ function configurarEventos() {
     document.getElementById('feedback-bonus-velocidade').style.display = 'block';
     document.getElementById('feedback-bonus-velocidade').className = 'feedback-sucesso';
     document.getElementById('feedback-bonus-velocidade').textContent = '✅ Configuração de bônus salva!';
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
     setTimeout(() => document.getElementById('feedback-bonus-velocidade').style.display = 'none', 5000);
   });
 
@@ -793,7 +793,7 @@ function configurarEventos() {
     document.getElementById('feedback-valor-partida').style.display = 'block';
     document.getElementById('feedback-valor-partida').className = 'feedback-sucesso';
     document.getElementById('feedback-valor-partida').textContent = `✅ Valor da partida atualizado para ${novoValor} pontos!`;
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
     setTimeout(() => document.getElementById('feedback-valor-partida').style.display = 'none', 5000);
   });
 
@@ -811,7 +811,7 @@ function configurarEventos() {
     const exigir = document.getElementById('toggle-exigir-senha').checked;
     await db.ref('copaV2/configuracoes/senhaFase1').set(senha);
     await db.ref('copaV2/configuracoes/exigirSenhaFase1').set(exigir);
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
     exibirToast('✅ Senha salva!');
   });
   document.getElementById('toggle-exigir-senha')?.addEventListener('change', () => {
@@ -844,7 +844,7 @@ function configurarEventos() {
     await atualizarDados(`copaV2/participantes/${faseAtual}/${idEncontrado}`, { liberado: true });
     exibirToast(`✅ ${nome} liberado para a Fase ${faseAtual}!`);
     atualizarListaLiberados();
-    atualizarUltimaSinc(); // <-- atualiza a última sinc
+    atualizarUltimaSinc();
   });
 }
 
