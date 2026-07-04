@@ -1281,3 +1281,87 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
   transform: scale(1.1);
   background: var(--bg-botao-padrao-hover);
 }
+/* ===== BANNER DE AVISO (tela do aluno) ===== */
+#banner-aviso {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 9998;
+  background: #f39c12;
+  color: #000;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  animation: slideDown 0.5s ease;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+#banner-aviso .banner-aviso-icone {
+  font-size: 24px;
+}
+
+#banner-aviso .banner-aviso-texto {
+  flex: 1;
+  min-width: 200px;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+#connection-badge {
+  top: 56px;
+}
+
+@media (max-width: 480px) {
+  #banner-aviso {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+  #connection-badge {
+    top: 50px;
+  }
+}
+
+/* ===== CARD DE AVISO NO PAINEL DO PROFESSOR ===== */
+#bloco-avisos .input-aviso-tempo {
+  max-width: 100px;
+}
+
+#aviso-status .aviso-ativo {
+  background: #f39c12;
+  color: #000;
+  padding: 12px 16px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#aviso-status .aviso-inativo {
+  padding: 12px 16px;
+  background: #2c3e50;
+  border-radius: 8px;
+  color: #94a3b8;
+}
+
+body.em-jogo #banner-aviso {
+  background: rgba(243, 156, 18, 0.9);
+  padding: 6px 16px;
+  font-size: 14px;
+  backdrop-filter: blur(4px);
+}
+
+body.em-jogo #banner-aviso .banner-aviso-icone {
+  font-size: 18px;
+}
