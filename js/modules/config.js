@@ -1,4 +1,3 @@
-// js/modules/config.js
 import { db } from '../config/firebase.js';
 import { state } from './state.js';
 import { exibirToast } from './ui.js';
@@ -81,7 +80,6 @@ export async function atualizarRecordeGeral(jogadorId, velocidade, precisao, fas
   let recorde = state.recordeGeral;
   if (!recorde || velocidade < recorde.velocidade) {
     let nome = 'Anônimo', turma = '?';
-    // Buscar nome e turma
     for (let f = fase; f >= 1; f--) {
       if (state.estadoAtual?.participantes?.[f]?.[jogadorId]) {
         nome = state.estadoAtual.participantes[f][jogadorId].nome || nome;
@@ -188,7 +186,7 @@ export async function salvarColunasVisiveis() {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DE PONTOS (RANKING DE PONTOS)
+// CONFIGURAÇÃO DE PONTOS
 // ============================================================
 export async function carregarConfigRankingPontos() {
   try {
@@ -219,7 +217,7 @@ export async function salvarConfigRankingPontos(ativo, tabelaPadrao, tabelaFase5
 }
 
 // ============================================================
-// ADICIONAR/REMOVER TURMAS (para o gerenciamento)
+// TURMAS
 // ============================================================
 export async function adicionarTurma(novaTurma) {
   const turmas = await lerDados('copaV2/turmas') || [];
