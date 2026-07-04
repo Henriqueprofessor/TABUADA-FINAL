@@ -3,10 +3,36 @@ import { state } from './state.js';
 import { lerDados, atualizarDados, removerDados, setDados } from './db.js';
 import { exibirToast, atualizarTimerFase, mostrarTela } from './ui.js';
 import { tocarSom } from './sound.js';
-import { atualizarExibicaoMedalhas, carregarMedalhasLocal } from './medals.js'; // <-- NOVO
+import { atualizarExibicaoMedalhas, carregarMedalhasLocal } from './medals.js';
 
 // ============================================================
-// FUNÇÕES DE CÁLCULO DE RANKING (mantidas)
+// CONSTANTES E FUNÇÕES AUXILIARES
+// ============================================================
+
+const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+
+async function carregarMinPartidas() {
+  const config = await lerDados('copaV2/configuracoes/minPartidasPorFase') || {};
+  if (Object.keys(config).length === 0) {
+    const def = { 1: 5, 2: 5, 3: 5, 4: 5, 5: 5 };
+    await setDados('copaV2/configuracoes/minPartidasPorFase', def);
+    return def;
+  }
+  return config;
+}
+
+// ============================================================
+// CÁLCULO DE RANKING
 // ============================================================
 
 export function calcularRankingFase(fase) {
@@ -96,7 +122,7 @@ export function calcularRankingFase(fase) {
 }
 
 // ============================================================
-// RENDERIZAÇÃO DE RANKINGS (apenas a parte que inclui medalhas)
+// RENDERIZAR RANKING (com medalhas)
 // ============================================================
 
 export async function renderizarRanking(fase, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -201,7 +227,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   const vagas = VAGAS_POR_FASE[fase] || 30;
   const maxMelhor = listaComInfo.length > 0 ? listaComInfo[0].melhorPontuacao : 0;
 
-  // === CARREGAR MEDALHAS PARA EXIBIÇÃO (item novo) ===
+  // Carregar medalhas
   let medalhasMap = new Map();
   for (let item of listaComInfo) {
     const medalhas = await lerDados(`copaV2/medalhas/${item.id}`) || [];
@@ -281,7 +307,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     if (jogadorBonusId === j.id && state.bonusVelocidadeConfig.ativo) {
       nomeComRaios += ' <span class="raio-amarelo">⚡</span>';
     }
-    // === ADICIONAR MEDALHAS (item novo) ===
     const medalhasStr = medalhasMap.get(j.id) || '';
     if (medalhasStr) {
       nomeComRaios += ` <span class="medalhas-ranking" title="Conquistas">${medalhasStr}</span>`;
@@ -336,7 +361,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
 }
 
 // ============================================================
-// RANKING DE TURMAS (mantido)
+// RANKING DE TURMAS
 // ============================================================
 
 export async function renderRankingTurmas(containerId) {
@@ -428,7 +453,7 @@ export async function renderRankingTurmas(containerId) {
 }
 
 // ============================================================
-// RANKING DE PONTOS (mantido)
+// RANKING DE PONTOS
 // ============================================================
 
 export async function renderizarRankingPontos(containerId = 'ranking-pontos-container') {
@@ -580,7 +605,7 @@ export async function renderizarRankingPontos(containerId = 'ranking-pontos-cont
 }
 
 // ============================================================
-// RANKING GERAL (mantido)
+// RANKING GERAL
 // ============================================================
 
 export async function renderRankingGeral() {
@@ -747,7 +772,7 @@ export async function renderRankingGeral() {
 }
 
 // ============================================================
-// ATUALIZAR INFORMAÇÕES DO ALUNO (inclui medalhas e gráfico)
+// ATUALIZAR INFORMAÇÕES DO ALUNO (com medalhas e gráfico)
 // ============================================================
 
 export async function atualizarInfoAluno() {
@@ -855,13 +880,16 @@ export async function atualizarInfoAluno() {
     }
   }
 
-  // Atualiza medalhas e gráfico (item novo)
+  // Atualiza medalhas
   atualizarExibicaoMedalhas();
+
+  // Desenha gráfico de evolução (função importada do game.js)
+  const { desenharGraficoEvolucao } = await import('./game.js');
   desenharGraficoEvolucao();
 }
 
 // ============================================================
-// FUNÇÕES AUXILIARES (exportadas)
+// FUNÇÕES DE CONTROLE DE FASE
 // ============================================================
 
 export function getTabelaPontosPorFase(fase) {
@@ -874,22 +902,414 @@ export function getPontosPorPosicao(posicao, fase) {
   return tabela[posicao] || 0;
 }
 
-// ... (as outras funções como avancarFase, resetarFase, etc. permanecem as mesmas)
-// Para não estender demais, mantenha o restante do arquivo como estava.
-// Mas vou fornecer abaixo as funções que faltam (AVISO: são extensas, mas você pode mantê-las do seu arquivo original).
+export async function avancarFase() {
+  if (state.timerFase) { clearInterval(state.timerFase); state.timerFase = null; }
+  const faseAtual = state.estadoAtual.fase;
+  if (faseAtual > 5) { exibirToast('Competição já finalizada!'); return; }
+
+  const minConfig = await carregarMinPartidas();
+  const minPartidas = minConfig[faseAtual] || 1;
+
+  await processarPontuacaoFase(faseAtual);
+
+  const res = state.estadoAtual.resultados?.[faseAtual] || {};
+  let lista = [];
+  for (let id in res) {
+    const partidas = res[id];
+    if (partidas?.length) {
+      if (partidas.length < minPartidas) continue;
+      const melhor = [...partidas].sort((a, b) => b.pontos - a.pontos)[0];
+      lista.push({ id, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo });
+    }
+  }
+  lista.sort((a, b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
+  const vagas = VAGAS_POR_FASE[faseAtual];
+  const classificadosIds = lista.slice(0, vagas).map(l => l.id);
+  await setDados(`copaV2/classificados/${faseAtual}`, classificadosIds);
+  tocarSom('classificado');
+
+  const participantesAtual = state.estadoAtual.participantes?.[faseAtual] || {};
+  const participantesProxima = {};
+  for (let id of classificadosIds) {
+    if (participantesAtual[id]) participantesProxima[id] = participantesAtual[id];
+    else {
+      for (let f = faseAtual - 1; f >= 1; f--) {
+        if (state.estadoAtual.participantes?.[f]?.[id]) {
+          participantesProxima[id] = state.estadoAtual.participantes[f][id];
+          break;
+        }
+      }
+    }
+  }
+  if (Object.keys(participantesProxima).length > 0) await setDados(`copaV2/participantes/${faseAtual+1}`, participantesProxima);
+  await removerDados(`copaV2/resultados_temp/${faseAtual}`);
+  state.tempoEsgotadoProcessado = false;
+
+  if (faseAtual === 5) {
+    exibirToast('🏆 COMPETIÇÃO FINALIZADA!');
+    await setDados('copaV2', { ...state.estadoAtual, status: 'finalizado', fim: 0, tempoRestantePausa: null });
+    mostrarFinalizacao();
+    forcarAlunosParaMenu();
+    return;
+  }
+  await setDados('copaV2', { ...state.estadoAtual, fase: faseAtual + 1, status: 'aguardando', fim: 0, tempoRestantePausa: null });
+  exibirToast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados para a fase ${faseAtual+1}.`);
+  forcarAlunosParaMenu();
+}
+
+export async function resetarFase() {
+  const faseAtual = state.estadoAtual.fase;
+  if (!confirm(`⚠️ Resetar a Fase ${faseAtual}? Todos os resultados, cadastros e classificações desta fase serão apagados.`)) return;
+  if (state.timerFase) { clearInterval(state.timerFase); state.timerFase = null; }
+  await removerDados(`copaV2/resultados/${faseAtual}`);
+  await removerDados(`copaV2/participantes/${faseAtual}`);
+  await removerDados(`copaV2/resultados_temp/${faseAtual}`);
+  await removerDados(`copaV2/classificados/${faseAtual}`);
+  await removerDados(`copaV2/configuracoes/bonusVelocidade/porFase/${faseAtual}`);
+  await setDados('copaV2', { ...state.estadoAtual, status: 'aguardando', fim: 0, tempoRestantePausa: null });
+  state.tempoEsgotadoProcessado = false;
+  exibirToast(`✅ Fase ${faseAtual} resetada!`);
+}
 
 // ============================================================
-// FUNÇÕES DE CONTROLE DE FASE (mantidas do original)
+// FUNÇÕES AUXILIARES (lista de alunos, turmas, etc.)
 // ============================================================
-// (coloque aqui as funções avancarFase, resetarFase, renderListaAlunosGerenciar,
-// renderListaTurmas, renderizarConfigMinPartidas, renderizarColunasVisiveis,
-// processarPontuacaoFase, processarBonusVelocidade, etc.)
-// Para não repetir todo o código, você pode manter o seu arquivo ranking.js original
-// e apenas adicionar as importações e as chamadas para medalhas e gráfico onde necessário.
-// Como você pediu "arquivos completos", vou fornecer o ranking.js inteiro, mas com as
-// funções auxiliares já presentes (do seu código original). Vou assumir que você já tem
-// essas funções e vou apenas adicionar as chamadas para atualizar medalhas e gráfico.
-// Para evitar duplicação, recomendo que você pegue o seu ranking.js original e adicione
-// as importações e as chamadas dentro da função atualizarInfoAluno (já fiz acima).
-// Portanto, a versão completa do ranking.js é a que eu forneci acima, mas com as
-// funções auxiliares (avancarFase, etc.) mantidas do seu original.
+
+export async function renderListaAlunosGerenciar() {
+  if (!state.estadoAtual) return;
+  const faseAtual = state.estadoAtual.fase;
+  const participantes = state.estadoAtual.participantes?.[faseAtual] || {};
+  const container = document.getElementById('lista-alunos-gerenciavel');
+  if (!container) return;
+  const ids = Object.keys(participantes);
+  if (ids.length === 0) { container.innerHTML = '<p>📭 Nenhum aluno cadastrado.</p>'; return; }
+  let html = '';
+  for (let id of ids) {
+    const aluno = participantes[id];
+    html += `<div class="aluno-item"><div class="aluno-info"><strong>${escapeHtml(aluno.nome)}</strong> (${escapeHtml(aluno.turma)})<br><small>ID: ${id.substring(0,8)}...</small></div>
+      <div class="aluno-actions"><button class="btn-editar-aluno btn-warning" data-id="${id}" data-nome="${aluno.nome}" data-turma="${aluno.turma}">✏️ Editar</button>
+      <button class="btn-excluir-aluno btn-danger" data-id="${id}">🗑️ Excluir</button></div></div>`;
+  }
+  container.innerHTML = html;
+  document.querySelectorAll('.btn-editar-aluno').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = btn.getAttribute('data-id');
+      const novoNome = prompt("Novo nome:", btn.getAttribute('data-nome'));
+      if (novoNome) {
+        const novaTurma = prompt("Nova turma:", btn.getAttribute('data-turma'));
+        if (novaTurma) await atualizarDados(`copaV2/participantes/${faseAtual}/${id}`, { nome: novoNome, turma: novaTurma });
+        renderListaAlunosGerenciar();
+      }
+    });
+  });
+  document.querySelectorAll('.btn-excluir-aluno').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = btn.getAttribute('data-id');
+      if (confirm("Excluir aluno?")) {
+        await removerDados(`copaV2/participantes/${faseAtual}/${id}`);
+        await removerDados(`copaV2/resultados/${faseAtual}/${id}`);
+        await removerDados(`copaV2/resultados_temp/${faseAtual}/${id}`);
+        renderListaAlunosGerenciar();
+      }
+    });
+  });
+}
+
+export async function renderListaTurmas() {
+  const container = document.getElementById('lista-turmas-gerenciavel');
+  if (!container) return;
+  const turmas = await lerDados('copaV2/turmas') || [];
+  if (turmas.length === 0) {
+    container.innerHTML = '<p>📭 Nenhuma turma cadastrada. Adicione usando o botão acima.</p>';
+    return;
+  }
+  let html = '<ul style="list-style: none; padding: 0;">';
+  turmas.forEach(turma => {
+    html += `<li style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #2c3e50;">
+      <span>🏷️ ${escapeHtml(turma)}</span>
+      <div>
+        <button class="btn-editar-turma btn-warning" data-turma="${turma}" style="padding: 4px 12px; margin: 0 4px;">✏️ Editar</button>
+        <button class="btn-excluir-turma btn-danger" data-turma="${turma}" style="padding: 4px 12px; margin: 0 4px;">🗑️ Excluir</button>
+      </div>
+    </li>`;
+  });
+  html += '</ul>';
+  container.innerHTML = html;
+  document.querySelectorAll('.btn-editar-turma').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const turmaAntiga = btn.getAttribute('data-turma');
+      const novaTurma = prompt("Digite o novo nome da turma:", turmaAntiga);
+      if (novaTurma && novaTurma !== turmaAntiga) {
+        let turmas = await lerDados('copaV2/turmas') || [];
+        const index = turmas.indexOf(turmaAntiga);
+        if (index !== -1) {
+          turmas[index] = novaTurma;
+          await setDados('copaV2/turmas', turmas);
+          exibirToast(`Turma alterada de ${turmaAntiga} para ${novaTurma}`);
+          renderListaTurmas();
+        }
+      }
+    });
+  });
+  document.querySelectorAll('.btn-excluir-turma').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const turma = btn.getAttribute('data-turma');
+      if (confirm(`Remover turma "${turma}"?`)) {
+        let turmas = await lerDados('copaV2/turmas') || [];
+        turmas = turmas.filter(t => t !== turma);
+        await setDados('copaV2/turmas', turmas);
+        exibirToast(`Turma ${turma} removida!`);
+        renderListaTurmas();
+      }
+    });
+  });
+}
+
+export function renderizarConfigMinPartidas(config) {
+  const container = document.getElementById('min-partidas-container');
+  if (!container) return;
+  let html = '';
+  for (let i = 1; i <= 5; i++) {
+    const valor = config[i] !== undefined ? config[i] : 5;
+    html += `
+      <div style="display: flex; align-items: center; gap: 15px; background: #0f172a; padding: 8px 16px; border-radius: 8px; border: 1px solid #2d3a4f;">
+        <label style="color: #f1f5f9; font-weight: 500; min-width: 70px;">Fase ${i}</label>
+        <input type="number" id="min-partidas-fase-${i}" min="1" max="20" value="${valor}" 
+          style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 6px 10px; border-radius: 6px; width: 70px; text-align: center;">
+        <span style="color: #94a3b8; font-size: 13px;">partidas mínimas</span>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+export function renderizarColunasVisiveis() {
+  const container = document.getElementById('colunas-visiveis-container');
+  if (!container) return;
+  const colunasDef = {
+    obrigatorias: [
+      { id: 'posicao', label: 'Posição' },
+      { id: 'nome', label: 'Nome' },
+      { id: 'melhorPontuacao', label: 'Melhor Pontuação' },
+      { id: 'classificacao', label: 'Classificação' }
+    ],
+    opcionais: [
+      { id: 'futPos', label: 'Ritmo' },
+      { id: 'pontuacaoAtual', label: 'Pontuação Atual' },
+      { id: 'deltaLider', label: 'Delta Líder' },
+      { id: 'velocRecorde', label: 'Veloc. Recorde' },
+      { id: 'progresso', label: 'Progresso' },
+      { id: 'partidas', label: 'Partidas' },
+      { id: 'tempo', label: 'Tempo' },
+      { id: 'mediaTempo', label: 'Méd. Temp. Part.' },
+      { id: 'turma', label: 'Turma' },
+      { id: 'projecaoPontos', label: 'Projeção' }
+    ]
+  };
+  let html = '';
+  colunasDef.obrigatorias.forEach(col => {
+    html += `
+      <div class="checkbox-item disabled">
+        <input type="checkbox" checked disabled>
+        <label>${col.label} *</label>
+      </div>
+    `;
+  });
+  const colunasVisiveis = state.colunasVisiveis || {};
+  colunasDef.opcionais.forEach(col => {
+    const checked = colunasVisiveis[col.id] !== undefined ? colunasVisiveis[col.id] : true;
+    html += `
+      <div class="checkbox-item">
+        <input type="checkbox" id="col-${col.id}" ${checked ? 'checked' : ''}>
+        <label for="col-${col.id}">${col.label}</label>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+// ============================================================
+// FUNÇÕES DE PONTUAÇÃO E BÔNUS
+// ============================================================
+
+async function processarPontuacaoFase(fase) {
+  if (!state.rankingPontosAtivo) return;
+  const minConfig = await carregarMinPartidas();
+  const minPartidas = minConfig[fase] || 1;
+  const ranking = calcularRankingFase(fase);
+  let filtrados = ranking;
+  if (fase === 5) {
+    filtrados = ranking.filter(j => {
+      const resultados = state.estadoAtual?.resultados?.[fase] || {};
+      const partidas = resultados[j.id] || [];
+      return partidas.length >= minPartidas;
+    });
+  }
+  const pontosPorFaseRef = `copaV2/pontuacaoHistorico/${fase}`;
+  const globalRef = 'copaV2/pontuacaoGlobal';
+  const posicaoRef = `copaV2/pontuacaoPosicao/${fase}`;
+  const globais = await lerDados(globalRef) || {};
+  const updatesHistorico = {};
+  const updatesGlobal = {};
+  const updatesPosicao = {};
+  filtrados.forEach((jogador, idx) => {
+    const posicao = idx + 1;
+    const pontos = getPontosPorPosicao(posicao, fase);
+    if (pontos > 0 || posicao <= 40) {
+      updatesHistorico[jogador.id] = pontos;
+      globais[jogador.id] = (globais[jogador.id] || 0) + pontos;
+      updatesGlobal[jogador.id] = globais[jogador.id];
+      updatesPosicao[jogador.id] = posicao;
+    }
+  });
+  await setDados(pontosPorFaseRef, updatesHistorico);
+  await setDados(globalRef, updatesGlobal);
+  await setDados(posicaoRef, updatesPosicao);
+
+  await processarBonusVelocidade(fase);
+
+  if (fase === 5) {
+    const pos5 = await lerDados('copaV2/pontuacaoPosicao/5') || {};
+    const globaisFinal = await lerDados(globalRef) || {};
+    let ordenados = Object.keys(globaisFinal).map(id => ({ id, total: globaisFinal[id] }));
+    ordenados.sort((a, b) => {
+      if (a.total !== b.total) return b.total - a.total;
+      const posA = pos5[a.id] || 999;
+      const posB = pos5[b.id] || 999;
+      return posA - posB;
+    });
+    await setDados('copaV2/pontuacaoRankingFinal', ordenados.map(p => p.id));
+  }
+  exibirToast(`✅ Pontos da Fase ${fase} processados!`);
+}
+
+async function processarBonusVelocidade(fase) {
+  if (!state.bonusVelocidadeConfig.ativo) return;
+  const vencedorRef = `copaV2/configuracoes/bonusVelocidade/vencedores/${fase}`;
+  const snapVencedor = await lerDados(vencedorRef);
+  if (snapVencedor) return;
+
+  const resultados = state.estadoAtual?.resultados?.[fase] || {};
+  if (Object.keys(resultados).length === 0) return;
+
+  const minConfig = await carregarMinPartidas();
+  const minPartidas = minConfig[fase] || 1;
+  const candidatos = [];
+  for (const [id, partidas] of Object.entries(resultados)) {
+    if (!partidas || partidas.length === 0) continue;
+    if (partidas.length < minPartidas) continue;
+
+    let melhorVelocidade = Infinity;
+    let melhorPrecisao = 0;
+    let melhorPartidaIndex = -1;
+    for (let i = 0; i < partidas.length; i++) {
+      const p = partidas[i];
+      if (p.acertos === 0 || p.tempo === 0) continue;
+      const precisao = (p.acertos / 20) * 100;
+      if (precisao < state.bonusVelocidadeConfig.precisaoMinima) continue;
+      const vel = p.tempo / p.acertos;
+      if (vel < melhorVelocidade) {
+        melhorVelocidade = vel;
+        melhorPrecisao = precisao;
+        melhorPartidaIndex = i;
+      }
+    }
+    if (melhorVelocidade !== Infinity) {
+      let nome = 'Anônimo', turma = '?';
+      for (let f = fase; f >= 1; f--) {
+        if (state.estadoAtual?.participantes?.[f]?.[id]) {
+          nome = state.estadoAtual.participantes[f][id].nome || nome;
+          turma = state.estadoAtual.participantes[f][id].turma || turma;
+          break;
+        }
+      }
+      candidatos.push({ id, nome, turma, velocidade: melhorVelocidade, precisao: melhorPrecisao, partidaIndex: melhorPartidaIndex });
+    }
+  }
+
+  if (candidatos.length === 0) return;
+  candidatos.sort((a, b) => a.velocidade - b.velocidade);
+  const vencedor = candidatos[0];
+
+  const { atualizarRecordeGeral } = await import('./config.js');
+  await atualizarRecordeGeral(vencedor.id, vencedor.velocidade, vencedor.precisao, fase, vencedor.partidaIndex);
+
+  const bonusPath = `copaV2/configuracoes/bonusVelocidade/porFase/${fase}`;
+  const bonusData = await lerDados(bonusPath) || {};
+  bonusData[vencedor.id] = state.bonusVelocidadeConfig.pontos;
+  await setDados(bonusPath, bonusData);
+
+  await setDados(vencedorRef, {
+    id: vencedor.id,
+    pontos: state.bonusVelocidadeConfig.pontos,
+    velocidade: vencedor.velocidade,
+    nome: vencedor.nome,
+    turma: vencedor.turma
+  });
+
+  const histRef = `copaV2/pontuacaoHistorico/${fase}/${vencedor.id}`;
+  const ptsAtuais = await lerDados(histRef) || 0;
+  await setDados(histRef, ptsAtuais + state.bonusVelocidadeConfig.pontos);
+
+  exibirToast(`⚡ ${vencedor.nome} ganhou +${state.bonusVelocidadeConfig.pontos} pontos de bônus por velocidade!`);
+}
+
+// ============================================================
+// FUNÇÕES DE FINALIZAÇÃO E UTILITÁRIOS
+// ============================================================
+
+function mostrarFinalizacao() {
+  const cardProf = document.getElementById('competicao-finalizada-prof');
+  if (cardProf) cardProf.classList.remove('hidden');
+  const cardTorcida = document.getElementById('competicao-finalizada-torcida');
+  if (cardTorcida) cardTorcida.classList.remove('hidden');
+  exibirModalFinalizacaoAluno();
+}
+
+function exibirModalFinalizacaoAluno() {
+  if (state.meuTipo !== 'aluno') return;
+  const modalHtml = `
+    <div class="modal-resultados" id="modal-finalizacao">
+      <h2>🏆 COPA FINALIZADA!</h2>
+      <div style="font-size: 64px; margin: 15px 0;">🎉</div>
+      <p>A competição chegou ao fim.</p>
+      <div class="dica">
+        <p>📊 Consulte o <strong>Ranking de Pontos</strong> para ver sua classificação final.</p>
+        <p style="font-size: 0.9rem; opacity: 0.7;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
+      </div>
+      <button class="fechar" id="btn-fechar-finalizacao">Voltar ao Menu</button>
+    </div>
+  `;
+  const modalExistente = document.getElementById('modal-finalizacao');
+  if (modalExistente) modalExistente.remove();
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  document.getElementById('btn-fechar-finalizacao')?.addEventListener('click', () => {
+    document.getElementById('modal-finalizacao')?.remove();
+    location.reload();
+  });
+}
+
+function forcarAlunosParaMenu() {
+  if (state.meuTipo === 'aluno') {
+    exibirModalFinalizacaoAluno();
+  }
+}
+
+export async function atualizarRankingAluno() {
+  if (state.meuTipo !== 'aluno') return;
+  if (!state.estadoAtual) return;
+  if (state.jogoAtivo) return;
+
+  const subtabs = document.querySelectorAll('.modal-sub-tabs .sub-tab');
+  let ativa = 'fase';
+  subtabs.forEach(tab => {
+    if (tab.classList.contains('active')) ativa = tab.dataset.subtab;
+  });
+
+  if (ativa === 'fase') {
+    const faseAtual = state.estadoAtual.fase;
+    await renderizarRanking(faseAtual, 'ranking-aluno-container', 'individual', true);
+  } else {
+    await renderizarRankingPontos('ranking-aluno-container');
+  }
+}
