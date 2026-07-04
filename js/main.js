@@ -92,7 +92,6 @@ async function init() {
   mostrarCarregando();
   carregarConfiguracoesDoCache();
 
-  // Carregar configuração de avatares
   await carregarConfigAvatar();
 
   initConnectionMonitor();
@@ -163,7 +162,6 @@ async function init() {
   setTimeout(() => verificarVersao(false), 2000);
   iniciarListenerVersao();
 
-  // ===== LISTENER DE AVISOS =====
   state.listenerAviso = escutarAviso((aviso) => {
     state.avisoAtual = aviso;
     atualizarStatusAviso(aviso);
@@ -268,7 +266,7 @@ async function init() {
 }
 
 // ============================================================
-// FUNÇÃO CARREGAR AVATAR DO ALUNO
+// CARREGAR AVATAR
 // ============================================================
 async function carregarAvatarAluno() {
   try {
@@ -284,7 +282,7 @@ async function carregarAvatarAluno() {
 }
 
 // ============================================================
-// RELÓGIO EM TEMPO REAL
+// RELÓGIO
 // ============================================================
 function iniciarRelogio() {
   function atualizarRelogio() {
@@ -298,9 +296,6 @@ function iniciarRelogio() {
   setInterval(atualizarRelogio, 1000);
 }
 
-// ============================================================
-// ATUALIZAR ÚLTIMA SINCRONIZAÇÃO
-// ============================================================
 function atualizarUltimaSinc() {
   const span = document.getElementById('last-sync-time');
   if (span) {
@@ -315,7 +310,7 @@ function atualizarUltimaSinc() {
 }
 
 // ============================================================
-// ATUALIZAÇÃO DA UI
+// ATUALIZAR UI
 // ============================================================
 function atualizarUI() {
   if (!state.estadoAtual) return;
@@ -354,7 +349,7 @@ function atualizarOnline(snap) {
 }
 
 // ============================================================
-// POPULAR SELECTORES DE FASES
+// SELECTORES DE FASES
 // ============================================================
 function popularSelectFases() {
   const select = document.getElementById('select-fase-ranking');
@@ -396,7 +391,7 @@ function onSelectFaseTorcidaChange() {
 }
 
 // ============================================================
-// FUNÇÕES DA TORCIDA
+// TORCIDA
 // ============================================================
 async function atualizarTorcidaIndividual() {
   if (state.meuTipo !== 'projecao' || state.abaTorcidaAtiva !== 'fase' || state.modoTorcida !== 'individual') return;
@@ -459,7 +454,7 @@ function pararAtualizacaoTorcida() {
 }
 
 // ============================================================
-// MODO PROFESSOR
+// MODOS
 // ============================================================
 function entrarModoProfessor() {
   state.meuTipo = 'professor';
@@ -482,9 +477,6 @@ function entrarModoProfessor() {
   atualizarStatusAviso(state.avisoAtual);
 }
 
-// ============================================================
-// MODO ALUNO
-// ============================================================
 function entrarModoAluno() {
   if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
     exibirToast('⏳ A fase não foi iniciada ou já terminou.');
@@ -504,9 +496,6 @@ function entrarModoAluno() {
   }, 300);
 }
 
-// ============================================================
-// MODO TORCIDA
-// ============================================================
 function entrarModoTorcida() {
   state.torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
   const torcidaRef = db.ref(`online/${state.torcidaId}`);
@@ -528,7 +517,7 @@ function entrarModoTorcida() {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DE EVENTOS
+// CONFIGURAR EVENTOS
 // ============================================================
 function configurarEventos() {
   document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
@@ -540,7 +529,6 @@ function configurarEventos() {
   document.getElementById('btn-fechar-tutorial')?.addEventListener('click', fecharTutorial);
   document.getElementById('btn-instalar-app')?.addEventListener('click', abrirInstalacao);
 
-  // ===== BOTÃO PROFESSOR =====
   document.getElementById('btn-professor')?.addEventListener('click', () => {
     const user = getCurrentUser();
     if (user) entrarModoProfessor();
@@ -567,29 +555,23 @@ function configurarEventos() {
   });
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
-  // ===== BOTÃO ALUNO =====
   document.getElementById('btn-aluno')?.addEventListener('click', entrarModoAluno);
-
-  // ===== BOTÃO TORCIDA =====
   document.getElementById('btn-projecao')?.addEventListener('click', entrarModoTorcida);
 
-  // ===== BOTÃO TREINO (NOVO) =====
+  // === MODO TREINO ===
   document.getElementById('btn-treino')?.addEventListener('click', () => {
     state.modoTreinoAtivo = true;
     mostrarConfiguracaoTreino();
   });
 
-  // ===== BOTÃO ESCOLHER AVATAR =====
   document.getElementById('btn-escolher-avatar')?.addEventListener('click', mostrarPopupAvatar);
 
-  // ===== BOTÕES DO MODO TREINO =====
+  // Botões do treino
   document.getElementById('btn-treino-iniciar')?.addEventListener('click', iniciarTreinoFromConfig);
-
   document.getElementById('btn-treino-voltar')?.addEventListener('click', () => {
     state.modoTreinoAtivo = false;
     mostrarTela('inicio');
   });
-
   document.getElementById('btn-treino-interromper')?.addEventListener('click', () => {
     if (confirm('Deseja interromper o treino?')) {
       state.modoTreinoAtivo = false;
@@ -597,7 +579,7 @@ function configurarEventos() {
     }
   });
 
-  // ===== BOTÕES DA TORCIDA =====
+  // Torcida - modos
   document.getElementById('btn-modo-individual')?.addEventListener('click', function() {
     state.modoTorcida = 'individual';
     state.prefTorcidaModo = 'individual';
@@ -656,7 +638,7 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
-  // ===== RANKING DO ALUNO =====
+  // Ranking do aluno
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -686,7 +668,7 @@ function configurarEventos() {
     location.reload();
   });
 
-  // ===== ABAS DO PROFESSOR =====
+  // Abas do professor
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -723,7 +705,7 @@ function configurarEventos() {
     });
   });
 
-  // ===== BOTÕES DE AVISO =====
+  // Avisos
   document.getElementById('btn-publicar-aviso')?.addEventListener('click', async () => {
     const mensagem = document.getElementById('input-aviso-mensagem').value.trim();
     const minutos = parseInt(document.getElementById('input-aviso-tempo').value) || 0;
@@ -739,7 +721,7 @@ function configurarEventos() {
     await removerAviso();
   });
 
-  // ===== TOGGLE DE AVATAR =====
+  // Toggle avatares
   document.getElementById('toggle-avatars')?.addEventListener('change', async function() {
     const habilitado = this.checked;
     await salvarConfigAvatar(habilitado);
@@ -756,7 +738,7 @@ function configurarEventos() {
     }
   });
 
-  // ===== BOTÃO SINCRONIZAR GLOBAL =====
+  // Sincronizar
   document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
     db.ref('copaV2').once('value', snap => {
       state.estadoAtual = snap.val() || state.estadoAtual;
@@ -775,7 +757,7 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
-  // ===== CONTROLE DE FASE =====
+  // Controle de fase
   document.getElementById('btn-iniciar-fase')?.addEventListener('click', async () => {
     if (!state.estadoAtual) return;
     const duracao = state.estadoAtual.tempoFase || 10;
@@ -845,6 +827,7 @@ function configurarEventos() {
     exibirToast(`✅ ${extra} minuto(s) adicionado(s)!`);
   });
 
+  // Intervalos
   document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
     const val = parseInt(document.getElementById('intervalo-individual').value);
     if (val >= 1) {
@@ -1026,7 +1009,7 @@ function configurarEventos() {
 }
 
 // ============================================================
-// FUNÇÕES AUXILIARES PARA PONTUAÇÃO
+// FUNÇÕES AUXILIARES
 // ============================================================
 function getPontuacaoDefault() {
   const obj = {};
