@@ -1,6 +1,8 @@
+// js/modules/config.js
 import { db } from '../config/firebase.js';
 import { state } from './state.js';
 import { exibirToast } from './ui.js';
+import { setDados, lerDados, atualizarDados } from './db.js';
 
 const BONUS_VELOCIDADE_KEY = 'copaV2/configuracoes/bonusVelocidade';
 const RECORDE_GERAL_KEY = 'copaV2/configuracoes/recordeGeral';
@@ -8,6 +10,9 @@ const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
 const MIN_PARTIDAS_KEY = 'copaV2/configuracoes/minPartidasPorFase';
 const COLUNAS_KEY = 'copaV2/configuracoes/colunasVisiveis';
 
+// ============================================================
+// BÔNUS DE VELOCIDADE
+// ============================================================
 export async function carregarConfigBonusVelocidade() {
   try {
     const snap = await db.ref(BONUS_VELOCIDADE_KEY).once('value');
@@ -31,6 +36,9 @@ export async function salvarConfigBonusVelocidade(ativo, pontos, precisaoMinima)
   exibirToast('✅ Bônus de velocidade salvo!');
 }
 
+// ============================================================
+// RECORDE GERAL
+// ============================================================
 export async function carregarRecordeGeral() {
   try {
     const snap = await db.ref(RECORDE_GERAL_KEY).once('value');
@@ -44,7 +52,14 @@ export async function atualizarRecordeGeral(jogadorId, velocidade, precisao, fas
   let recorde = state.recordeGeral;
   if (!recorde || velocidade < recorde.velocidade) {
     let nome = 'Anônimo', turma = '?';
-    // buscar nome e turma
+    // Buscar nome e turma
+    for (let f = fase; f >= 1; f--) {
+      if (state.estadoAtual?.participantes?.[f]?.[jogadorId]) {
+        nome = state.estadoAtual.participantes[f][jogadorId].nome || nome;
+        turma = state.estadoAtual.participantes[f][jogadorId].turma || turma;
+        break;
+      }
+    }
     const novoRecorde = { jogadorId, velocidade, precisao, fase, partidaIndex, nome, turma, timestamp: Date.now() };
     await db.ref(RECORDE_GERAL_KEY).set(novoRecorde);
     state.recordeGeral = novoRecorde;
@@ -54,7 +69,9 @@ export async function atualizarRecordeGeral(jogadorId, velocidade, precisao, fas
   return false;
 }
 
-// Valor da partida
+// ============================================================
+// VALOR DA PARTIDA
+// ============================================================
 export async function carregarValorPartida() {
   try {
     const snap = await db.ref(VALOR_PARTIDA_KEY).once('value');
@@ -67,12 +84,14 @@ export async function salvarValorPartida(novoValor) {
   state.VALOR_PARTIDA = novoValor;
 }
 
-// Mínimo de partidas
+// ============================================================
+// MÍNIMO DE PARTIDAS
+// ============================================================
 export async function carregarMinPartidas() {
   try {
     const snap = await db.ref(MIN_PARTIDAS_KEY).once('value');
     let config = snap.val();
-    if (!config) {
+    if (!config || Object.keys(config).length === 0) {
       config = {};
       for (let i = 1; i <= 5; i++) config[i] = 5;
       await db.ref(MIN_PARTIDAS_KEY).set(config);
@@ -85,7 +104,33 @@ export async function carregarMinPartidas() {
   }
 }
 
-// Colunas visíveis
+export async function salvarMinPartidas() {
+  const config = {};
+  for (let i = 1; i <= 5; i++) {
+    const input = document.getElementById(`min-partidas-fase-${i}`);
+    if (input) {
+      const val = parseInt(input.value);
+      if (isNaN(val) || val < 1) {
+        exibirToast(`❌ Valor inválido para Fase ${i}. Mínimo 1.`);
+        return;
+      }
+      config[i] = val;
+    } else {
+      config[i] = 5;
+    }
+  }
+  try {
+    await db.ref(MIN_PARTIDAS_KEY).set(config);
+    exibirToast('✅ Mínimo de partidas salvo com sucesso!');
+  } catch (e) {
+    exibirToast('❌ Erro ao salvar mínimo de partidas.');
+    console.error(e);
+  }
+}
+
+// ============================================================
+// COLUNAS VISÍVEIS
+// ============================================================
 export async function carregarColunasVisiveis() {
   try {
     const snap = await db.ref(COLUNAS_KEY).once('value');
@@ -93,7 +138,29 @@ export async function carregarColunasVisiveis() {
   } catch (e) { state.colunasVisiveis = {}; }
 }
 
-// Ranking de pontos
+export async function salvarColunasVisiveis() {
+  const config = {};
+  const colunasDef = [
+    'futPos', 'pontuacaoAtual', 'deltaLider', 'velocRecorde',
+    'progresso', 'partidas', 'tempo', 'mediaTempo', 'turma', 'projecaoPontos'
+  ];
+  colunasDef.forEach(id => {
+    const checkbox = document.getElementById(`col-${id}`);
+    config[id] = checkbox ? checkbox.checked : true;
+  });
+  try {
+    await db.ref(COLUNAS_KEY).set(config);
+    state.colunasVisiveis = config;
+    exibirToast('✅ Colunas salvas!');
+  } catch (e) {
+    exibirToast('❌ Erro ao salvar colunas.');
+    console.error(e);
+  }
+}
+
+// ============================================================
+// CONFIGURAÇÃO DE PONTOS (RANKING DE PONTOS)
+// ============================================================
 export async function carregarConfigRankingPontos() {
   try {
     const snapAtivo = await db.ref('copaV2/configuracoes/rankingPontos/ativo').once('value');
@@ -103,4 +170,42 @@ export async function carregarConfigRankingPontos() {
     state.tabelaPontosPadrao = snapPadrao.val() || {};
     state.tabelaPontosFase5 = snapFase5.val() || {};
   } catch (e) {}
+}
+
+export async function salvarConfigRankingPontos(ativo, tabelaPadrao, tabelaFase5) {
+  try {
+    const updates = {};
+    updates['copaV2/configuracoes/rankingPontos/ativo'] = ativo;
+    updates['copaV2/configuracoes/rankingPontos/tabelaPadrao'] = tabelaPadrao;
+    updates['copaV2/configuracoes/rankingPontos/tabelaFase5'] = tabelaFase5;
+    await db.ref().update(updates);
+    state.rankingPontosAtivo = ativo;
+    state.tabelaPontosPadrao = tabelaPadrao;
+    state.tabelaPontosFase5 = tabelaFase5;
+    exibirToast('✅ Configuração de pontos salva!');
+  } catch (e) {
+    exibirToast('❌ Erro ao salvar configuração de pontos.');
+    console.error(e);
+  }
+}
+
+// ============================================================
+// ADICIONAR/REMOVER TURMAS (para o gerenciamento)
+// ============================================================
+export async function adicionarTurma(novaTurma) {
+  const turmas = await lerDados('copaV2/turmas') || [];
+  if (!turmas.includes(novaTurma)) {
+    turmas.push(novaTurma);
+    await setDados('copaV2/turmas', turmas);
+    exibirToast(`Turma ${novaTurma} adicionada!`);
+  } else {
+    exibirToast("Turma já existe!");
+  }
+}
+
+export async function removerTurma(turma) {
+  let turmas = await lerDados('copaV2/turmas') || [];
+  turmas = turmas.filter(t => t !== turma);
+  await setDados('copaV2/turmas', turmas);
+  exibirToast(`Turma ${turma} removida!`);
 }
