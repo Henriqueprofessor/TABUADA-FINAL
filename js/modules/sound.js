@@ -1,21 +1,74 @@
 // js/modules/sound.js
 const SONS_CONFIG = {
-  acerto: { emoji: '✅', nome: 'Acerto', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' },
-  erro: { emoji: '❌', nome: 'Erro', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3' },
-  tempo_esgotado: { emoji: '⏰', nome: 'Tempo Esgotado', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3' },
-  inicio_fase: { emoji: '🏁', nome: 'Início da Fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2774/2774-preview.mp3' },
-  fim_fase: { emoji: '⏹️', nome: 'Fim da Fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2773/2773-preview.mp3' },
-  nova_fase: { emoji: '🚀', nome: 'Nova Fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2726/2726-preview.mp3' },
-  top3: { emoji: '🏆', nome: 'Pódio', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2754/2754-preview.mp3' },
-  subiu_ranking: { emoji: '📈', nome: 'Subiu Ranking', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2709/2709-preview.mp3' },
-  classificado: { emoji: '🔔', nome: 'Classificado', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2754/2754-preview.mp3' },
-  clique: { emoji: '🖱️', nome: 'Clique', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2706/2706-preview.mp3' },
-  notificacao: { emoji: '📢', nome: 'Notificação', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2579/2579-preview.mp3' }
+  acerto: { emoji: '✅', nome: 'Acerto', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3', freq: 800, duration: 0.15 },
+  erro: { emoji: '❌', nome: 'Erro', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3', freq: 300, duration: 0.2 },
+  tempo_esgotado: { emoji: '⏰', nome: 'Tempo Esgotado', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3', freq: 200, duration: 0.4 },
+  inicio_fase: { emoji: '🏁', nome: 'Início da Fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2774/2774-preview.mp3', freq: 523, duration: 0.3 },
+  fim_fase: { emoji: '⏹️', nome: 'Fim da Fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2773/2773-preview.mp3', freq: 440, duration: 0.5 },
+  nova_fase: { emoji: '🚀', nome: 'Nova Fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2726/2726-preview.mp3', freq: 660, duration: 0.25 },
+  top3: { emoji: '🏆', nome: 'Pódio', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2754/2754-preview.mp3', freq: 880, duration: 0.35 },
+  subiu_ranking: { emoji: '📈', nome: 'Subiu Ranking', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2709/2709-preview.mp3', freq: 600, duration: 0.2 },
+  classificado: { emoji: '🔔', nome: 'Classificado', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2754/2754-preview.mp3', freq: 1000, duration: 0.25 },
+  clique: { emoji: '🖱️', nome: 'Clique', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2706/2706-preview.mp3', freq: 600, duration: 0.05 },
+  notificacao: { emoji: '📢', nome: 'Notificação', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2579/2579-preview.mp3', freq: 700, duration: 0.2 }
 };
 
 let audioCache = new Map();
 let somMasterEnabled = true;
 let volumeGlobal = 0.7;
+
+// ============================================================
+// WEB AUDIO API (FALLBACK) - item 6
+// ============================================================
+
+let audioContext = null;
+
+function getAudioContext() {
+  if (!audioContext) {
+    try {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      console.warn('⚠️ Web Audio API não suportada. Sons sintéticos não estarão disponíveis.');
+      return null;
+    }
+  }
+  return audioContext;
+}
+
+// Gera um som sintético usando Web Audio API
+function playSyntheticSound(freq, duration, volume = 0.7) {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.value = freq;
+
+    gainNode.gain.setValueAtTime(Math.min(1, volume * 1.2), ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + duration);
+
+    // Resume o contexto se estiver suspenso (necessário para autoplay em alguns navegadores)
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+  } catch (e) {
+    // Fallback silencioso: simplesmente não toca
+    console.debug('🔇 Som sintético falhou:', e);
+  }
+}
+
+// ============================================================
+// CARREGAR PREFERÊNCIAS DO LOCALSTORAGE
+// ============================================================
 
 export function carregarPreferenciasSom() {
   try {
@@ -39,18 +92,55 @@ export function salvarPreferenciasSom() {
   } catch (e) {}
 }
 
+// ============================================================
+// TOCAR SOM (COM FALLBACK)
+// ============================================================
+
 export function tocarSom(key, volumeOverride = null) {
   if (!somMasterEnabled) return;
   const config = SONS_CONFIG[key];
   if (!config || !config.enabled) return;
+
   const volume = volumeOverride !== null ? volumeOverride : volumeGlobal;
+
+  // 1. Tenta tocar o áudio da URL (se já estiver em cache ou carregado)
   try {
     let audio = audioCache.get(key);
-    if (!audio) { audio = new Audio(config.url); audioCache.set(key, audio); }
-    audio.volume = Math.min(1, Math.max(0, volume));
-    audio.currentTime = 0;
-    audio.play().catch(e => {});
-  } catch (e) {}
+    if (!audio) {
+      audio = new Audio(config.url);
+      audioCache.set(key, audio);
+      // Pré-carrega para evitar atraso na primeira vez
+      audio.load();
+    }
+    // Se o áudio já estiver carregado e for reproduzível, toca
+    if (audio.readyState >= 2) { // HAVE_CURRENT_DATA ou mais
+      audio.volume = Math.min(1, Math.max(0, volume));
+      audio.currentTime = 0;
+      audio.play().catch(e => {
+        // Se falhar ao reproduzir (ex: erro de rede), usa fallback
+        console.debug('🔊 Áudio falhou, usando fallback sintético para:', key);
+        playSyntheticSound(config.freq, config.duration, volume);
+      });
+      return;
+    } else {
+      // Áudio ainda não carregado: tenta carregar e toca depois, mas usa fallback imediato
+      audio.load();
+      audio.addEventListener('canplaythrough', function onCanPlay() {
+        audio.removeEventListener('canplaythrough', onCanPlay);
+        if (somMasterEnabled && config.enabled) {
+          audio.volume = Math.min(1, Math.max(0, volume));
+          audio.currentTime = 0;
+          audio.play().catch(() => {});
+        }
+      }, { once: true });
+      // Fallback imediato com som sintético (para não atrasar o feedback)
+      playSyntheticSound(config.freq, config.duration, volume);
+    }
+  } catch (e) {
+    // 2. Fallback: Web Audio API
+    console.debug('🔊 Usando fallback sintético para:', key);
+    playSyntheticSound(config.freq, config.duration, volume);
+  }
 }
 
 export function testarSom(key) {
@@ -63,6 +153,10 @@ export function testarTodosSons() {
     setTimeout(() => tocarSom(key, Math.min(1, volumeGlobal * 1.2)), i * 400);
   });
 }
+
+// ============================================================
+// RENDERIZAR PAINEL DE SOM
+// ============================================================
 
 export function renderizarPainelSom() {
   const container = document.getElementById('som-grid-container');
@@ -86,7 +180,6 @@ export function renderizarPainelSom() {
   }
   container.innerHTML = html;
 
-  // Eventos dos toggles
   container.querySelectorAll('.som-toggle').forEach(toggle => {
     toggle.addEventListener('click', function() {
       const key = this.dataset.key;
@@ -96,13 +189,16 @@ export function renderizarPainelSom() {
     });
   });
 
-  // Eventos dos botões de teste
   container.querySelectorAll('.btn-testar-som').forEach(btn => {
     btn.addEventListener('click', function() {
       testarSom(this.dataset.key);
     });
   });
 }
+
+// ============================================================
+// INICIALIZAR SONS
+// ============================================================
 
 export function inicializarSons() {
   carregarPreferenciasSom();
