@@ -77,6 +77,7 @@ import {
   gerarAvatarHTML,
   obterCorTurma
 } from './modules/avatar.js';
+// ===== IMPORTAÇÃO CORRETA DO MODO TREINO =====
 import {
   mostrarConfiguracaoTreino,
   iniciarTreinoFromConfig,
@@ -558,9 +559,10 @@ function configurarEventos() {
   document.getElementById('btn-aluno')?.addEventListener('click', entrarModoAluno);
   document.getElementById('btn-projecao')?.addEventListener('click', entrarModoTorcida);
 
-  // === MODO TREINO ===
+  // ===== MODO TREINO (CORRIGIDO) =====
   document.getElementById('btn-treino')?.addEventListener('click', () => {
     state.modoTreinoAtivo = true;
+    console.log('🧠 Botão Treino clicado!');
     mostrarConfiguracaoTreino();
   });
 
