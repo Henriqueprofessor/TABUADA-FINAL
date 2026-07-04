@@ -41,7 +41,7 @@ export const state = {
   senhaBloqueada: false,
   carregando: true,
 
-  // Cache
+  // ===== CACHE =====
   senhaFase1: null,
   exigirSenhaFase1: true,
   modalidadeCache: null,
@@ -57,18 +57,14 @@ export const state = {
   cacheVersao: '2.0.0',
   ultimaSincCache: null,
 
-  // Aviso
+  // ===== AVISO =====
   avisoAtual: null,
   listenerAviso: null,
 
-   // ===== AVATAR =====
+  // ===== AVATAR E COR DA TURMA =====
   avatarAluno: '⭐',
   corTurma: '#95a5a6',
-  avatarsEnabled: true, // padrão ativado
-};
-// Adicione no objeto state (no final ou onde preferir)
-export const state = {
-  // ... (tudo que já existe) ...
+  avatarsEnabled: true,
 
   // ===== MODO TREINO =====
   modoTreinoAtivo: false,
