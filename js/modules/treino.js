@@ -4,22 +4,15 @@ import { exibirToast, mostrarTela } from './ui.js';
 import { tocarSom } from './sound.js';
 import { gerarPerguntas } from './game.js';
 
-// ============================================================
-// CONFIGURAÇÕES DO TREINO
-// ============================================================
-
 export const MODALIDADES_TREINO = {
   '2-5': { label: 'Tabuada 2 a 5', min: 2, max: 5 },
   '6-9': { label: 'Tabuada 6 a 9', min: 6, max: 9 },
   '0-10': { label: 'Tabuada 0 a 10 (Completa)', min: 0, max: 10 },
-  'fase5': { label: 'Fase 5 (Comutativa)', min: 6, max: 9, fase5: true },
   'especifica': { label: 'Tabuada específica', min: 0, max: 10, especifica: true }
 };
 
-// Número de perguntas disponíveis
 export const OPCOES_PERGUNTAS = [5, 10, 15, 20];
 
-// Estado do treino
 let treinoEstado = {
   ativo: false,
   perguntas: [],
@@ -31,32 +24,27 @@ let treinoEstado = {
   numeroEspecifico: null,
   totalEscolhido: 10,
   respondendo: false,
-  finalizado: false
+  finalizado: false,
+  fase5: false
 };
 
 // ============================================================
 // INICIAR TREINO
 // ============================================================
-
-export function iniciarTreino(modalidade, totalPerguntas, numeroEspecifico = null) {
-  // Gera as perguntas
+export function iniciarTreino(modalidade, totalPerguntas, numeroEspecifico = null, fase5 = false) {
   let perguntas = [];
 
-  if (modalidade === 'fase5') {
-    // Usa a lógica da fase 5 (comutativa)
-    perguntas = gerarPerguntasParaFase5(totalPerguntas);
-  } else if (modalidade === 'especifica' && numeroEspecifico) {
+  if (modalidade === 'especifica' && numeroEspecifico) {
     perguntas = gerarPerguntasEspecificas(numeroEspecifico, totalPerguntas);
+  } else if (fase5) {
+    perguntas = gerarPerguntasParaFase5(totalPerguntas);
   } else {
-    // Modalidade normal (2-5, 6-9, 0-10)
     const config = MODALIDADES_TREINO[modalidade];
     if (!config) return;
-    perguntas = gerarPerguntas(modalidade, 1); // fase 1 para gerar sem comutativa
-    // Corta para o número desejado
+    perguntas = gerarPerguntas(modalidade, 1);
     if (perguntas.length > totalPerguntas) {
       perguntas = perguntas.slice(0, totalPerguntas);
     } else {
-      // Se não tiver perguntas suficientes, repete
       while (perguntas.length < totalPerguntas) {
         const extra = gerarPerguntas(modalidade, 1);
         perguntas = perguntas.concat(extra);
@@ -65,7 +53,6 @@ export function iniciarTreino(modalidade, totalPerguntas, numeroEspecifico = nul
     }
   }
 
-  // Inicializa estado do treino
   treinoEstado.ativo = true;
   treinoEstado.perguntas = perguntas;
   treinoEstado.perguntaAtual = 0;
@@ -77,28 +64,24 @@ export function iniciarTreino(modalidade, totalPerguntas, numeroEspecifico = nul
   treinoEstado.totalEscolhido = totalPerguntas;
   treinoEstado.respondendo = false;
   treinoEstado.finalizado = false;
+  treinoEstado.fase5 = fase5;
 
-  // Mostra a tela do treino (jogo)
   mostrarTelaTreino();
   exibirPergunta();
 }
 
 // ============================================================
-// GERAR PERGUNTAS ESPECÍFICAS
+// GERAR PERGUNTAS
 // ============================================================
-
 function gerarPerguntasEspecificas(numero, total) {
   const perguntas = [];
   const base = [0,1,2,3,4,5,6,7,8,9,10];
-  // Gera combinações com o número específico
   for (let i = 0; i < base.length; i++) {
     const a = numero;
     const b = base[i];
     const correta = a * b;
-    // Gera distratores
     const distratores = gerarDistratores(correta, 3);
     const opcoes = [correta, ...distratores];
-    // Embaralha
     for (let j = opcoes.length - 1; j > 0; j--) {
       const k = Math.floor(Math.random() * (j + 1));
       [opcoes[j], opcoes[k]] = [opcoes[k], opcoes[j]];
@@ -111,14 +94,11 @@ function gerarPerguntasEspecificas(numero, total) {
       posicaoCorreta: opcoes.indexOf(correta) + 1
     });
   }
-  // Embaralha
   for (let i = perguntas.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [perguntas[i], perguntas[j]] = [perguntas[j], perguntas[i]];
   }
-  // Corta para o total desejado
   while (perguntas.length < total) {
-    // Duplica e embaralha
     const extra = [...perguntas];
     for (let i = extra.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -141,7 +121,6 @@ function gerarDistratores(correta, quantidade) {
       distratores.add(d);
     }
   }
-  // Se não tiver distratores suficientes, completa
   let fallback = 1;
   while (distratores.size < quantidade) {
     let d = correta + fallback;
@@ -154,16 +133,10 @@ function gerarDistratores(correta, quantidade) {
   return Array.from(distratores);
 }
 
-// ============================================================
-// GERAR PERGUNTAS PARA FASE 5 (COMUTATIVA)
-// ============================================================
-
 function gerarPerguntasParaFase5(total) {
   const perguntas = [];
   const H = [6,7,8,9];
-  const base = [6,7,8,9]; // fase 5 usa 6-9
-
-  // Gera todas as combinações com comutativa
+  const base = [6,7,8,9];
   const combinacoes = [];
   for (let a of base) {
     for (let b of H) {
@@ -172,7 +145,6 @@ function gerarPerguntasParaFase5(total) {
   }
   for (let a of H) {
     for (let b of base) {
-      // Evita duplicatas (a,b) e (b,a)
       const key1 = `${a}x${b}`;
       const key2 = `${b}x${a}`;
       if (!combinacoes.some(c => (c.a === a && c.b === b) || (c.a === b && c.b === a))) {
@@ -180,8 +152,6 @@ function gerarPerguntasParaFase5(total) {
       }
     }
   }
-
-  // Remove duplicatas
   const unique = [];
   const seen = new Set();
   for (let c of combinacoes) {
@@ -191,14 +161,10 @@ function gerarPerguntasParaFase5(total) {
       unique.push(c);
     }
   }
-
-  // Embaralha
   for (let i = unique.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [unique[i], unique[j]] = [unique[j], unique[i]];
   }
-
-  // Gera perguntas com distratores
   for (let item of unique) {
     const correta = item.a * item.b;
     const distratores = gerarDistratores(correta, 3);
@@ -215,10 +181,7 @@ function gerarPerguntasParaFase5(total) {
       posicaoCorreta: opcoes.indexOf(correta) + 1
     });
   }
-
-  // Corta para o total desejado
   while (perguntas.length < total) {
-    // Duplica e embaralha
     const extra = [...perguntas];
     for (let i = extra.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -232,7 +195,6 @@ function gerarPerguntasParaFase5(total) {
 // ============================================================
 // EXIBIR PERGUNTA
 // ============================================================
-
 function exibirPergunta() {
   if (treinoEstado.perguntaAtual >= treinoEstado.totalPerguntas) {
     finalizarTreino();
@@ -246,17 +208,14 @@ function exibirPergunta() {
 
   if (!container || !opcoesContainer) return;
 
-  // Atualiza progresso
   const total = treinoEstado.totalPerguntas;
   const atual = treinoEstado.perguntaAtual + 1;
   if (progresso) {
     progresso.innerText = `Pergunta ${atual} de ${total}`;
   }
 
-  // Mostra a pergunta
   container.innerText = `${p.a} x ${p.b} = ?`;
 
-  // Mostra as opções
   opcoesContainer.innerHTML = '';
   p.opcoes.forEach((opcao, idx) => {
     const btn = document.createElement('button');
@@ -267,7 +226,6 @@ function exibirPergunta() {
     opcoesContainer.appendChild(btn);
   });
 
-  // Atualiza placar
   document.getElementById('treino-acertos').innerText = treinoEstado.acertos;
   document.getElementById('treino-erros').innerText = treinoEstado.erros;
 
@@ -275,9 +233,8 @@ function exibirPergunta() {
 }
 
 // ============================================================
-// RESPONDER PERGUNTA
+// RESPONDER
 // ============================================================
-
 function responderTreino(idx) {
   if (treinoEstado.respondendo || treinoEstado.finalizado) return;
   treinoEstado.respondendo = true;
@@ -288,17 +245,14 @@ function responderTreino(idx) {
   const valorSelecionado = parseInt(opcaoSelecionada.innerText);
   const correta = p.correta;
 
-  // Desabilita todos os botões
   opcoes.forEach(btn => btn.disabled = true);
 
-  // Verifica se acertou
   if (valorSelecionado === correta) {
     opcaoSelecionada.classList.add('treino-certo');
     treinoEstado.acertos++;
     tocarSom('acerto');
   } else {
     opcaoSelecionada.classList.add('treino-errado');
-    // Mostra a resposta correta
     opcoes.forEach(btn => {
       if (parseInt(btn.innerText) === correta) {
         btn.classList.add('treino-certo');
@@ -308,11 +262,9 @@ function responderTreino(idx) {
     tocarSom('erro');
   }
 
-  // Atualiza placar
   document.getElementById('treino-acertos').innerText = treinoEstado.acertos;
   document.getElementById('treino-erros').innerText = treinoEstado.erros;
 
-  // Avança para a próxima pergunta após delay
   setTimeout(() => {
     treinoEstado.perguntaAtual++;
     exibirPergunta();
@@ -320,9 +272,8 @@ function responderTreino(idx) {
 }
 
 // ============================================================
-// FINALIZAR TREINO
+// FINALIZAR
 // ============================================================
-
 function finalizarTreino() {
   treinoEstado.finalizado = true;
   treinoEstado.ativo = false;
@@ -332,7 +283,6 @@ function finalizarTreino() {
   const erros = treinoEstado.erros;
   const percentual = total > 0 ? Math.round((acertos / total) * 100) : 0;
 
-  // Mostra resultado
   const container = document.getElementById('treino-resultado');
   const jogoContainer = document.getElementById('treino-jogo');
 
@@ -365,11 +315,9 @@ function finalizarTreino() {
     `;
 
     document.getElementById('btn-treino-novamente')?.addEventListener('click', () => {
-      // Volta para a tela de configuração
       mostrarConfiguracaoTreino();
     });
     document.getElementById('btn-treino-sair')?.addEventListener('click', () => {
-      // Volta ao menu principal
       mostrarTela('inicio');
       state.modoTreinoAtivo = false;
     });
@@ -379,15 +327,12 @@ function finalizarTreino() {
 // ============================================================
 // MOSTRAR TELAS
 // ============================================================
-
 function mostrarTelaTreino() {
-  // Oculta outros cards
   document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
   document.getElementById('tela-treino')?.classList.remove('hidden');
 }
 
 export function mostrarConfiguracaoTreino() {
-  // Reseta estado
   treinoEstado.ativo = false;
   treinoEstado.finalizado = false;
   treinoEstado.perguntas = [];
@@ -395,7 +340,6 @@ export function mostrarConfiguracaoTreino() {
   treinoEstado.acertos = 0;
   treinoEstado.erros = 0;
 
-  // Oculta outros cards e mostra a configuração
   document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
   const configContainer = document.getElementById('treino-config');
   const jogoContainer = document.getElementById('treino-jogo');
@@ -408,7 +352,7 @@ export function mostrarConfiguracaoTreino() {
   }
   if (configContainer) configContainer.style.display = 'block';
 
-  // Preenche as opções de modalidade
+  // Preenche modalidades
   const modalidadeContainer = document.getElementById('treino-modalidades');
   if (modalidadeContainer) {
     modalidadeContainer.innerHTML = '';
@@ -423,7 +367,6 @@ export function mostrarConfiguracaoTreino() {
       input.style.cssText = 'accent-color: #ffd966;';
       label.appendChild(input);
       label.appendChild(document.createTextNode(config.label));
-      // Se for específica, adiciona um campo para o número
       if (key === 'especifica') {
         const numInput = document.createElement('input');
         numInput.type = 'number';
@@ -436,9 +379,33 @@ export function mostrarConfiguracaoTreino() {
       }
       modalidadeContainer.appendChild(label);
     }
+
+    // Evento para habilitar/desabilitar checkbox Fase5
+    modalidadeContainer.querySelectorAll('input[name="modalidade"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        const fase5Checkbox = document.getElementById('treino-fase5');
+        if (this.value === 'especifica') {
+          fase5Checkbox.disabled = true;
+          fase5Checkbox.checked = false;
+          fase5Checkbox.parentElement.style.opacity = '0.5';
+        } else {
+          fase5Checkbox.disabled = false;
+          fase5Checkbox.parentElement.style.opacity = '1';
+        }
+      });
+    });
+    const radioEspecifica = modalidadeContainer.querySelector('input[value="especifica"]');
+    if (radioEspecifica && radioEspecifica.checked) {
+      const fase5Checkbox = document.getElementById('treino-fase5');
+      if (fase5Checkbox) {
+        fase5Checkbox.disabled = true;
+        fase5Checkbox.checked = false;
+        fase5Checkbox.parentElement.style.opacity = '0.5';
+      }
+    }
   }
 
-  // Preenche opções de quantidade de perguntas
+  // Preenche quantidades
   const quantidadeContainer = document.getElementById('treino-quantidades');
   if (quantidadeContainer) {
     quantidadeContainer.innerHTML = '';
@@ -457,16 +424,18 @@ export function mostrarConfiguracaoTreino() {
     });
   }
 
-  // Mostra a tela de configuração
   document.getElementById('tela-treino')?.classList.remove('hidden');
 }
 
 // ============================================================
 // INICIAR TREINO A PARTIR DA CONFIGURAÇÃO
 // ============================================================
+function getQuantidadeSelecionada() {
+  const qtdRadio = document.querySelector('input[name="quantidade"]:checked');
+  return qtdRadio ? parseInt(qtdRadio.value) : 10;
+}
 
 export function iniciarTreinoFromConfig() {
-  // Pega a modalidade selecionada
   const modalidadeRadio = document.querySelector('input[name="modalidade"]:checked');
   if (!modalidadeRadio) {
     exibirToast('❌ Selecione uma modalidade.');
@@ -474,27 +443,22 @@ export function iniciarTreinoFromConfig() {
   }
   const modalidade = modalidadeRadio.value;
 
-  // Pega o número específico se for o caso
-  let numeroEspecifico = null;
   if (modalidade === 'especifica') {
     const numInput = document.getElementById('treino-numero-especifico');
     if (numInput) {
-      numeroEspecifico = parseInt(numInput.value) || 7;
-      if (numeroEspecifico < 1 || numeroEspecifico > 10) {
+      const numero = parseInt(numInput.value) || 7;
+      if (numero < 1 || numero > 10) {
         exibirToast('❌ Digite um número entre 1 e 10.');
         return;
       }
+      const totalPerguntas = getQuantidadeSelecionada();
+      iniciarTreino(modalidade, totalPerguntas, numero, false);
+      return;
     }
   }
 
-  // Pega a quantidade de perguntas
-  const quantidadeRadio = document.querySelector('input[name="quantidade"]:checked');
-  if (!quantidadeRadio) {
-    exibirToast('❌ Selecione a quantidade de perguntas.');
-    return;
-  }
-  const totalPerguntas = parseInt(quantidadeRadio.value) || 10;
-
-  // Inicia o treino
-  iniciarTreino(modalidade, totalPerguntas, numeroEspecifico);
+  const fase5Checkbox = document.getElementById('treino-fase5');
+  const fase5 = fase5Checkbox ? fase5Checkbox.checked : false;
+  const totalPerguntas = getQuantidadeSelecionada();
+  iniciarTreino(modalidade, totalPerguntas, null, fase5);
 }
