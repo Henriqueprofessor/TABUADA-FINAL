@@ -25,21 +25,19 @@ export function exibirToast(mensagem) {
   }
 }
 
-// Toast especial para reconexão (item 2)
 export function exibirToastReconexao() {
   const t = document.getElementById('toast');
   if (t) {
     t.innerText = '🔄 Conexão restaurada! Dados sincronizados.';
     t.classList.remove('hidden');
-    t.style.background = '#2e7d32'; // verde
+    t.style.background = '#2e7d32';
     setTimeout(() => {
       t.classList.add('hidden');
-      t.style.background = ''; // reset
+      t.style.background = '';
     }, 4000);
   }
 }
 
-// Atualizar timer de fase
 export function atualizarTimerFase(milissegundos) {
   const segundos = Math.floor(milissegundos / 1000);
   const min = Math.floor(segundos / 60);
@@ -57,7 +55,6 @@ export function atualizarTimerFase(milissegundos) {
   }
 }
 
-// Modal genérico
 export function abrirModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) modal.style.display = 'flex';
@@ -68,17 +65,15 @@ export function fecharModal(modalId) {
   if (modal) modal.style.display = 'none';
 }
 
-// Atualizar informações de versão
 export function atualizarDisplayVersao(versao) {
   const el = document.getElementById('version-number');
   if (el) el.textContent = versao || '--';
 }
 
 // ============================================================
-// BADGE DE CONEXÃO (item 1)
+// BADGE DE CONEXÃO
 // ============================================================
 
-// Cria o elemento badge se não existir
 export function createConnectionBadge() {
   let badge = document.getElementById('connection-badge');
   if (!badge) {
@@ -86,12 +81,11 @@ export function createConnectionBadge() {
     badge.id = 'connection-badge';
     badge.className = 'connection-badge offline';
     badge.innerHTML = '⚡ Conectando...';
-    document.body.prepend(badge); // insere no topo do body
+    document.body.prepend(badge);
   }
   return badge;
 }
 
-// Atualiza o badge com base no status
 export function updateConnectionBadge(online) {
   const badge = createConnectionBadge();
   if (online) {
@@ -103,17 +97,15 @@ export function updateConnectionBadge(online) {
   }
 }
 
-// Função para iniciar o monitoramento e integrar com o Firebase
 export function initConnectionUI(onConnectionChangeCallback) {
   createConnectionBadge();
   onConnectionChangeCallback(updateConnectionBadge);
 }
 
 // ============================================================
-// CONTROLE DO OVERLAY DE CARREGAMENTO (item 4)
+// OVERLAY DE CARREGAMENTO
 // ============================================================
 
-// Mostra o overlay de carregamento
 export function mostrarCarregando() {
   const overlay = document.getElementById('loading-overlay');
   if (overlay) {
@@ -122,7 +114,6 @@ export function mostrarCarregando() {
   state.carregando = true;
 }
 
-// Esconde o overlay de carregamento
 export function esconderCarregando() {
   const overlay = document.getElementById('loading-overlay');
   if (overlay) {
@@ -131,7 +122,6 @@ export function esconderCarregando() {
   state.carregando = false;
 }
 
-// Exibe mensagem de erro no overlay (timeout)
 export function exibirErroCarregamento() {
   const errorEl = document.getElementById('loading-error');
   if (errorEl) {
@@ -140,23 +130,21 @@ export function exibirErroCarregamento() {
 }
 
 // ============================================================
-// CONTROLE DE TEMA (item adicional)
+// CONTROLE DE TEMA
 // ============================================================
 
 const TEMA_KEY = 'copa_theme';
 
-// Aplica o tema salvo ou o padrão (escuro)
 export function aplicarTema() {
   let tema = localStorage.getItem(TEMA_KEY);
   if (!tema) {
-    tema = 'tema-escuro'; // padrão
+    tema = 'tema-escuro';
     localStorage.setItem(TEMA_KEY, tema);
   }
   document.body.className = tema;
   atualizarIconeTema(tema);
 }
 
-// Alterna entre claro e escuro
 export function alternarTema() {
   const atual = document.body.className;
   const novoTema = atual === 'tema-escuro' ? 'tema-claro' : 'tema-escuro';
@@ -165,15 +153,14 @@ export function alternarTema() {
   atualizarIconeTema(novoTema);
 }
 
-// Atualiza o ícone do botão conforme o tema
 function atualizarIconeTema(tema) {
   const btn = document.getElementById('btn-tema');
   if (!btn) return;
   if (tema === 'tema-escuro') {
-    btn.textContent = '☀️'; // Ícone de sol = alternar para claro
+    btn.textContent = '☀️';
     btn.title = 'Alternar para tema claro';
   } else {
-    btn.textContent = '🌙'; // Ícone de lua = alternar para escuro
+    btn.textContent = '🌙';
     btn.title = 'Alternar para tema escuro';
   }
 }
