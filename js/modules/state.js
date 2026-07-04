@@ -39,4 +39,5 @@ export const state = {
   listenerCopa: null,
   listenerOnline: null,
   senhaBloqueada: false,
+  carregando: true, // <-- novo: flag de carregamento
 };
