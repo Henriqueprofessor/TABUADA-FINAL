@@ -73,6 +73,8 @@
             <button id="btn-tutorial-inicial" class="btn-info">📘 Tutorial</button>
             <button id="btn-instalar-app" style="background: #9b59b6; color: white; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px;">📱 Instalar App</button>
             <button id="btn-tema" class="btn-tema" title="Alternar tema">🌓</button>
+            <!-- NOVO: Botão Modo Treino -->
+            <button id="btn-treino" class="btn-treino">🧠 Treino</button>
         </div>
     </div>
 
@@ -265,7 +267,7 @@
         <div id="tab-configuracoes" class="tab-content hidden">
             <h3>⚙️ Configurações do Professor</h3>
             
-            <!-- ===== CARD: CONTROLE DE SOM ===== -->
+            <!-- CARD: Controle de Som -->
             <div id="bloco-controle-som" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🔊</span>
@@ -291,7 +293,7 @@
                 </div>
             </div>
 
-            <!-- ===== CARD: VALOR DA PARTIDA ===== -->
+            <!-- CARD: Valor da Partida -->
             <div id="bloco-valor-partida" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">💰</span>
@@ -326,7 +328,7 @@
                 </div>
             </div>
 
-            <!-- ===== CARD: MÍNIMO DE PARTIDAS ===== -->
+            <!-- CARD: Mínimo de Partidas -->
             <div id="bloco-min-partidas" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">📋</span>
@@ -342,7 +344,7 @@
                 <div id="feedback-min-partidas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
 
-            <!-- ===== CARD: VISIBILIDADE DAS COLUNAS ===== -->
+            <!-- CARD: Visibilidade das Colunas -->
             <div id="bloco-visibilidade-colunas" class="config-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">👁️</span>
@@ -361,7 +363,7 @@
                 <div id="feedback-colunas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
 
-            <!-- ===== CARD: SENHA ===== -->
+            <!-- CARD: Senha -->
             <div class="config-card senha-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🔑</span>
@@ -392,7 +394,7 @@
                 </p>
             </div>
 
-            <!-- ===== CARD: LIBERAR ALUNO ===== -->
+            <!-- CARD: Liberar Aluno -->
             <div class="config-card liberar-card">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🚪</span>
@@ -416,7 +418,7 @@
                 </div>
             </div>
 
-            <!-- ===== CARD: AVISOS DO PROFESSOR ===== -->
+            <!-- CARD: Avisos do Professor -->
             <div id="bloco-avisos" class="config-card" style="border-color: #f39c12;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">📢</span>
@@ -450,7 +452,7 @@
                 </div>
             </div>
 
-            <!-- ===== CARD: AVATAR TOGGLE ===== -->
+            <!-- CARD: Avatares no Ranking -->
             <div class="config-card" style="border-color: #8b5cf6; margin-top: 16px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🎨</span>
@@ -516,7 +518,7 @@
             <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
         </div>
 
-        <!-- ===== AVATAR E PERSONALIZAÇÃO ===== -->
+        <!-- Avatar e Personalização -->
         <div style="display: flex; align-items: center; gap: 16px; margin: 10px 0; flex-wrap: wrap; background: var(--bg-card-hover); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--borda-card);">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div id="avatar-aluno-display" style="display: flex; align-items: center;">
@@ -530,13 +532,12 @@
             <button id="btn-escolher-avatar" class="btn-info" style="margin-left: auto;">🎨 Escolher Avatar</button>
         </div>
 
-        <!-- Seu Melhor Resultado -->
         <div class="status-box">
             <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
             <div id="historico-aluno"></div>
         </div>
 
-        <!-- ===== MINHAS CONQUISTAS ===== -->
+        <!-- Minhas Conquistas -->
         <div class="status-box" style="margin-top: 20px;">
             <h3>🏅 Minhas Conquistas</h3>
             <div id="medalhas-container">
@@ -544,7 +545,7 @@
             </div>
         </div>
 
-        <!-- ===== GRÁFICO DE EVOLUÇÃO ===== -->
+        <!-- Gráfico de Evolução -->
         <div class="status-box" style="margin-top: 20px;">
             <h3>📈 Evolução da Pontuação</h3>
             <canvas id="grafico-evolucao" width="600" height="200" style="width:100%; height:auto; max-width:600px; background: transparent;"></canvas>
@@ -622,6 +623,64 @@
             </div>
         </div>
     </div>
+
+    <!-- ========================================================= -->
+    <!-- TELA DO MODO TREINO (NOVO)                                -->
+    <!-- ========================================================= -->
+    <div id="tela-treino" class="card hidden">
+        <!-- TELA DE CONFIGURAÇÃO -->
+        <div id="treino-config">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                <span style="font-size: 32px;">🧠</span>
+                <h2 style="margin: 0;">Modo de Treino</h2>
+            </div>
+            <p style="color: #94a3b8; margin-bottom: 20px;">Pratique a tabuada sem pressão! Nenhum dado é salvo.</p>
+
+            <div style="background: var(--bg-card-hover); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+                <h4 style="color: var(--texto-destaque); margin-bottom: 12px;">📚 Escolha a modalidade</h4>
+                <div id="treino-modalidades" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+
+            <div style="background: var(--bg-card-hover); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+                <h4 style="color: var(--texto-destaque); margin-bottom: 12px;">🔢 Número de perguntas</h4>
+                <div id="treino-quantidades" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px;">
+                <button id="btn-treino-iniciar" class="btn-success" style="padding: 12px 32px; font-size: 18px;">▶️ Iniciar Treino</button>
+                <button id="btn-treino-voltar" class="btn-secondary">🔙 Voltar</button>
+            </div>
+        </div>
+
+        <!-- TELA DO JOGO (treino ativo) -->
+        <div id="treino-jogo" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 16px;">
+                <h2 style="margin: 0;">🧠 Treino</h2>
+                <div style="display: flex; gap: 12px;">
+                    <span style="background: #27ae60; color: white; padding: 4px 12px; border-radius: 20px;">✅ <span id="treino-acertos">0</span></span>
+                    <span style="background: #e74c3c; color: white; padding: 4px 12px; border-radius: 20px;">❌ <span id="treino-erros">0</span></span>
+                    <button id="btn-treino-interromper" class="btn-danger">⏹️ Interromper</button>
+                </div>
+            </div>
+            <div id="treino-progresso" style="text-align: center; font-size: 16px; color: var(--texto-secundario); margin-bottom: 12px;">Pergunta 1 de 10</div>
+            <div id="treino-pergunta-container" style="background: var(--bg-card); border-radius: 24px; padding: 30px; text-align: center; border: 2px solid var(--borda-card); margin-bottom: 20px;">
+                <div id="treino-pergunta" style="font-size: 48px; font-weight: bold; color: var(--texto-destaque);">7 x 8 = ?</div>
+            </div>
+            <div id="treino-opcoes" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 400px; margin: 0 auto;">
+                <!-- Preenchido via JS -->
+            </div>
+        </div>
+
+        <!-- TELA DE RESULTADO -->
+        <div id="treino-resultado" style="display: none;">
+            <!-- Preenchido via JS -->
+        </div>
+    </div>
+
 </div>
 
 <!-- ===== TOAST ===== -->
