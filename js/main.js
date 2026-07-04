@@ -30,7 +30,9 @@ import {
   renderListaAlunosGerenciar,
   renderListaTurmas,
   renderizarConfigMinPartidas,
-  renderizarColunasVisiveis
+  renderizarColunasVisiveis,
+  carregarConfigAvatar,
+  salvarConfigAvatar
 } from './modules/ranking.js';
 import { inicializarSons, renderizarPainelSom } from './modules/sound.js';
 import { abrirTutorial, fecharTutorial } from './modules/tutorial.js';
@@ -66,6 +68,15 @@ import {
   removerBannerAviso,
   atualizarStatusAviso
 } from './modules/aviso.js';
+import {
+  obterAvatarAluno,
+  salvarAvatarAluno,
+  mostrarPopupAvatar,
+  atualizarAvatarAlunoUI,
+  AVATAR_EMOJIS,
+  gerarAvatarHTML,
+  obterCorTurma
+} from './modules/avatar.js';
 
 // ============================================================
 // INICIALIZAÇÃO
@@ -74,6 +85,9 @@ async function init() {
   aplicarTema();
   mostrarCarregando();
   carregarConfiguracoesDoCache();
+
+  // Carregar configuração de avatares
+  await carregarConfigAvatar();
 
   initConnectionMonitor();
   initConnectionUI(onConnectionChange);
@@ -191,6 +205,12 @@ async function init() {
     }
     atualizarUltimaSinc();
     aplicarPreferenciasUI();
+
+    // Se for aluno, carregar avatar
+    if (state.meuTipo === 'aluno') {
+      carregarAvatarAluno();
+      atualizarAvatarAlunoUI();
+    }
   });
 
   ouvirOnline((snap) => {
@@ -234,6 +254,28 @@ async function init() {
   if (state.tempoFaseCache) {
     const inputTempo = document.getElementById('input-tempo-fase');
     if (inputTempo) inputTempo.value = state.tempoFaseCache;
+  }
+
+  // Carregar avatar se já estiver logado como aluno
+  if (state.meuTipo === 'aluno') {
+    await carregarAvatarAluno();
+    atualizarAvatarAlunoUI();
+  }
+}
+
+// ============================================================
+// FUNÇÃO CARREGAR AVATAR DO ALUNO
+// ============================================================
+async function carregarAvatarAluno() {
+  try {
+    const snap = await db.ref(`copaV2/participantes/avatar/${state.alunoId}`).once('value');
+    state.avatarAluno = snap.val() || '⭐';
+    if (state.alunoTurma) {
+      const snapCor = await db.ref(`copaV2/turmas_cores/${state.alunoTurma}`).once('value');
+      state.corTurma = snapCor.val() || '#95a5a6';
+    }
+  } catch (e) {
+    console.warn('Erro ao carregar avatar:', e);
   }
 }
 
@@ -452,6 +494,11 @@ function entrarModoAluno() {
   } else {
     removerBannerAviso();
   }
+  // Carregar avatar
+  setTimeout(() => {
+    carregarAvatarAluno();
+    atualizarAvatarAlunoUI();
+  }, 300);
 }
 
 // ============================================================
@@ -518,6 +565,9 @@ function configurarEventos() {
 
   document.getElementById('btn-aluno')?.addEventListener('click', entrarModoAluno);
   document.getElementById('btn-projecao')?.addEventListener('click', entrarModoTorcida);
+
+  // ===== BOTÃO ESCOLHER AVATAR =====
+  document.getElementById('btn-escolher-avatar')?.addEventListener('click', mostrarPopupAvatar);
 
   document.getElementById('btn-modo-individual')?.addEventListener('click', function() {
     state.modoTorcida = 'individual';
@@ -634,6 +684,11 @@ function configurarEventos() {
         renderizarColunasVisiveis();
         renderizarPainelSom();
         atualizarStatusAviso(state.avisoAtual);
+        // Atualizar toggle de avatares
+        const toggle = document.getElementById('toggle-avatars');
+        if (toggle) {
+          toggle.checked = state.avatarsEnabled !== false;
+        }
       }
     });
   });
@@ -652,6 +707,24 @@ function configurarEventos() {
 
   document.getElementById('btn-remover-aviso')?.addEventListener('click', async () => {
     await removerAviso();
+  });
+
+  // ===== TOGGLE DE AVATAR =====
+  document.getElementById('toggle-avatars')?.addEventListener('change', async function() {
+    const habilitado = this.checked;
+    await salvarConfigAvatar(habilitado);
+    // Re-renderizar rankings se estiver no modo professor ou torcida
+    if (state.meuTipo === 'professor') {
+      const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
+      renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+    } else if (state.meuTipo === 'projecao') {
+      if (state.abaTorcidaAtiva === 'fase') {
+        if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
+        else atualizarTorcidaEquipes();
+      } else {
+        atualizarTorcidaPontos();
+      }
+    }
   });
 
   // ===== BOTÃO SINCRONIZAR GLOBAL =====
