@@ -110,3 +110,33 @@ export function initConnectionUI(onConnectionChangeCallback) {
   // Registra o callback para atualizar a UI
   onConnectionChangeCallback(updateConnectionBadge);
 }
+
+// ============================================================
+// CONTROLE DO OVERLAY DE CARREGAMENTO (item 4)
+// ============================================================
+
+// Mostra o overlay de carregamento
+export function mostrarCarregando() {
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) {
+    overlay.classList.remove('hidden');
+  }
+  state.carregando = true;
+}
+
+// Esconde o overlay de carregamento
+export function esconderCarregando() {
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) {
+    overlay.classList.add('hidden');
+  }
+  state.carregando = false;
+}
+
+// Exibe mensagem de erro no overlay (timeout)
+export function exibirErroCarregamento() {
+  const errorEl = document.getElementById('loading-error');
+  if (errorEl) {
+    errorEl.classList.remove('hidden');
+  }
+}
