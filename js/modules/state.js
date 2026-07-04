@@ -61,7 +61,8 @@ export const state = {
   avisoAtual: null,
   listenerAviso: null,
 
-  // ===== AVATAR E COR DA TURMA =====
+   // ===== AVATAR =====
   avatarAluno: '⭐',
   corTurma: '#95a5a6',
+  avatarsEnabled: true, // padrão ativado
 };
