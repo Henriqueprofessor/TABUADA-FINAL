@@ -21,12 +21,14 @@ import {
 import { inicializarSons, renderizarPainelSom } from './modules/sound.js';
 import { abrirTutorial, fecharTutorial } from './modules/tutorial.js';
 import {
+  carregarValorPartida,
+  carregarConfigRankingPontos,
   carregarConfigBonusVelocidade,
   carregarRecordeGeral,
-  carregarValorPartida,
-  carregarMinPartidas,
   carregarColunasVisiveis,
-  carregarConfigRankingPontos,
+  carregarMinPartidas,
+  carregarIntervaloIndividual,   // <-- item 3
+  carregarIntervaloEquipes,     // <-- item 3
   salvarMinPartidas,
   salvarColunasVisiveis,
   salvarConfigRankingPontos,
@@ -117,6 +119,10 @@ async function init() {
   await carregarRecordeGeral();
   await carregarColunasVisiveis();
   await carregarMinPartidas();
+
+  // === CARREGAR INTERVALOS DO FIREBASE (item 3) ===
+  await carregarIntervaloIndividual();
+  await carregarIntervaloEquipes();
 
   // Sons
   inicializarSons();
@@ -369,7 +375,7 @@ function entrarModoProfessor() {
       const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
       renderizarRanking(fase, 'ranking-parcial', 'individual', true);
     }
-  }, 4000);
+  }, state.intervaloIndividualSegundos * 1000); // <-- usa o intervalo carregado
   exibirToast('👨‍🏫 Bem-vindo, Professor!');
   document.querySelector('.tab-btn[data-tab="controle"]')?.click();
   popularSelectFases();
@@ -505,7 +511,7 @@ function configurarEventos() {
       if (document.getElementById('modal-ranking-aluno').style.display === 'flex' && !state.jogoAtivo) {
         atualizarRankingAluno();
       }
-    }, state.intervaloIndividualSegundos * 1000);
+    }, state.intervaloIndividualSegundos * 1000); // <-- usa o intervalo carregado
   });
   document.getElementById('btn-ranking-pontos-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
@@ -657,7 +663,7 @@ function configurarEventos() {
     exibirToast(`✅ ${extra} minuto(s) adicionado(s)!`);
   });
 
-  // Intervalos
+  // Intervalos (o botão "Aplicar" já salva no Firebase e atualiza o state)
   document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
     const val = parseInt(document.getElementById('intervalo-individual').value);
     if (val >= 1) {
