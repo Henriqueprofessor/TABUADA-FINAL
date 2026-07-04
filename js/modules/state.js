@@ -39,5 +39,28 @@ export const state = {
   listenerCopa: null,
   listenerOnline: null,
   senhaBloqueada: false,
-  carregando: true, // <-- novo: flag de carregamento
+  carregando: true,
+
+  // ===== NOVOS CAMPOS PARA CACHE (item 5) =====
+  // Configurações da competição (cache)
+  senhaFase1: null,
+  exigirSenhaFase1: true,
+  modalidadeCache: null,
+  tempoFaseCache: null,
+
+  // Dados do aluno (cache)
+  alunoNomeCache: null,
+  alunoTurmaCache: null,
+  alunoDeviceId: null,
+
+  // Preferências de interface (cache)
+  prefProfessorAba: 'controle',
+  prefTorcidaModo: 'individual',
+  prefTorcidaSubAba: 'fase',
+  prefTorcidaFase: 1,
+  prefColunasVisiveis: {},
+
+  // Controle de cache
+  cacheVersao: '1.0.0',
+  ultimaSincCache: null,
 };
