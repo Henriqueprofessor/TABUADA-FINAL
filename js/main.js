@@ -418,16 +418,19 @@ function entrarModoProfessor() {
     state.prefProfessorAba = abaAtiva.dataset.tab;
     setCacheItem('preferencias.professorAba', state.prefProfessorAba);
   }
+  // Garantir que o select exista antes de iniciar o intervalo
+  popularSelectFases();
+  
   if (state.intervaloRankingProfessor) clearInterval(state.intervaloRankingProfessor);
   state.intervaloRankingProfessor = setInterval(() => {
     if (state.meuTipo === 'professor' && state.atualizacaoRankingAuto) {
-      const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
+      const selectFase = document.getElementById('select-fase-ranking');
+      const fase = selectFase ? parseInt(selectFase.value) : (state.estadoAtual?.fase || 1);
       renderizarRanking(fase, 'ranking-parcial', 'individual', true);
     }
   }, 4000);
   exibirToast('👨‍🏫 Bem-vindo, Professor!');
   document.querySelector('.tab-btn[data-tab="controle"]')?.click();
-  popularSelectFases();
   atualizarStatusAviso(state.avisoAtual);
 }
 
@@ -612,7 +615,8 @@ function configurarEventos() {
       if (tab === 'ranking-geral') renderRankingGeral();
       if (tab === 'ranking-fase') {
         popularSelectFases();
-        const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
+        const selectFase = document.getElementById('select-fase-ranking');
+        const fase = selectFase ? parseInt(selectFase.value) : (state.estadoAtual?.fase || 1);
         renderizarRanking(fase, 'ranking-parcial', 'individual', true);
       }
       if (tab === 'ranking-turmas') {
