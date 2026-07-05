@@ -80,25 +80,18 @@ const TURMAS_ANTIGAS = ["Turma A", "Turma B", "Turma C"];
 async function garantirTurmasPadrao() {
   try {
     const turmasAtuais = await lerDados('copaV2/turmas');
-    
-    // Se não houver turmas, criar as padrão
     if (!turmasAtuais || turmasAtuais.length === 0) {
       await setDados('copaV2/turmas', TURMAS_PADRAO);
       state.turmasCache = TURMAS_PADRAO;
       console.log('✅ Turmas padrão criadas (vazio).');
       return TURMAS_PADRAO;
     }
-    
-    // Se as turmas atuais forem exatamente as antigas (Turma A, B, C), substituir
-    if (turmasAtuais.length === 3 && 
-        turmasAtuais.every(t => TURMAS_ANTIGAS.includes(t))) {
+    if (turmasAtuais.length === 3 && turmasAtuais.every(t => TURMAS_ANTIGAS.includes(t))) {
       await setDados('copaV2/turmas', TURMAS_PADRAO);
       state.turmasCache = TURMAS_PADRAO;
       console.log('✅ Turmas antigas substituídas pelas padrão.');
       return TURMAS_PADRAO;
     }
-    
-    // Caso contrário, manter as turmas existentes
     state.turmasCache = turmasAtuais;
     return turmasAtuais;
   } catch (e) {
@@ -252,10 +245,8 @@ function entrarModoProfessor() {
       }
     }
   }, 4000);
-  // Garantir que as turmas padrão existam (substituindo as antigas)
   garantirTurmasPadrao().then(() => {
     renderListaTurmas();
-    // Atualizar o select do modal de turma se estiver aberto
     const modal = document.getElementById('modalTurma');
     if (modal && modal.style.display === 'flex') {
       abrirModalTurma();
@@ -303,6 +294,14 @@ function entrarModoAluno(cadastrado = false) {
   }
 }
 
+// ============================================================
+// FUNÇÕES DA TORCIDA (MODIFICADAS)
+// ============================================================
+
+let torcidaAba = 'fase'; // 'fase' | 'equipes' | 'pontos'
+let intervaloTorcida = null;
+let faseTorcidaSelecionada = 1;
+
 function entrarModoTorcida() {
   state.torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
   const torcidaRef = db.ref(`online/${state.torcidaId}`);
@@ -312,15 +311,71 @@ function entrarModoTorcida() {
 
   state.meuTipo = 'projecao';
   mostrarTela('projecao');
-  state.abaTorcidaAtiva = 'fase';
-  state.modoTorcida = 'individual';
-  document.getElementById('btn-modo-individual').classList.add('ativo');
-  document.getElementById('btn-modo-equipes').classList.remove('ativo');
-  document.getElementById('btn-torcida-sub-fase').classList.add('ativo');
-  document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
+  
+  torcidaAba = 'fase';
+  document.getElementById('btn-torcida-fase').classList.add('ativo');
+  document.getElementById('btn-torcida-fase').setAttribute('aria-selected', 'true');
+  document.getElementById('btn-torcida-equipes').classList.remove('ativo');
+  document.getElementById('btn-torcida-equipes').setAttribute('aria-selected', 'false');
+  document.getElementById('btn-torcida-pontos').classList.remove('ativo');
+  document.getElementById('btn-torcida-pontos').setAttribute('aria-selected', 'false');
   document.getElementById('torcida-fase-selector').style.display = 'block';
+  
+  popularSelectFasesTorcida();
   iniciarAtualizacaoTorcida();
   exibirToast('📺 Modo Torcida ativado!', 'sucesso');
+}
+
+async function atualizarTorcidaFase() {
+  if (state.meuTipo !== 'projecao' || torcidaAba !== 'fase') return;
+  if (!state.estadoAtual) return;
+  let fase = parseInt(document.getElementById('select-fase-torcida').value);
+  if (isNaN(fase) || fase < 1 || fase > 5) fase = state.estadoAtual.fase;
+  faseTorcidaSelecionada = fase;
+  await renderizarRanking(fase, 'ranking-torcida-container', 'individual', true);
+  const infoSpan = document.getElementById('fase-torcida-info');
+  if (infoSpan) infoSpan.innerText = (fase === state.estadoAtual.fase) ? '(Fase atual)' : '(Fase anterior)';
+}
+
+async function atualizarTorcidaEquipes() {
+  if (state.meuTipo !== 'projecao' || torcidaAba !== 'equipes') return;
+  if (!state.estadoAtual) return;
+  await renderizarRanking(null, 'ranking-torcida-container', 'turmas', false);
+}
+
+async function atualizarTorcidaPontos() {
+  if (state.meuTipo !== 'projecao' || torcidaAba !== 'pontos') return;
+  if (!state.estadoAtual) return;
+  await renderizarRankingPontos('ranking-torcida-container');
+}
+
+function iniciarAtualizacaoTorcida() {
+  if (intervaloTorcida) clearInterval(intervaloTorcida);
+  intervaloTorcida = setInterval(() => {
+    if (state.meuTipo === 'projecao' && document.getElementById('tela-torcida') && !document.getElementById('tela-torcida').classList.contains('hidden')) {
+      if (torcidaAba === 'fase') {
+        atualizarTorcidaFase();
+      } else if (torcidaAba === 'equipes') {
+        atualizarTorcidaEquipes();
+      } else if (torcidaAba === 'pontos') {
+        atualizarTorcidaPontos();
+      }
+    }
+  }, state.intervaloIndividualSegundos * 1000);
+  
+  const span = document.getElementById('torcida-individual-intervalo');
+  if (span) span.innerText = state.intervaloIndividualSegundos;
+  
+  if (torcidaAba === 'fase') atualizarTorcidaFase();
+  else if (torcidaAba === 'equipes') atualizarTorcidaEquipes();
+  else if (torcidaAba === 'pontos') atualizarTorcidaPontos();
+}
+
+function pararAtualizacaoTorcida() {
+  if (intervaloTorcida) {
+    clearInterval(intervaloTorcida);
+    intervaloTorcida = null;
+  }
 }
 
 // ============================================================
@@ -450,78 +505,21 @@ function popularSelectFasesTorcida() {
   let options = '';
   for (let i = 1; i <= 5; i++) options += `<option value="${i}">Fase ${i}</option>`;
   select.innerHTML = options;
-  if (state.estadoAtual) select.value = state.estadoAtual.fase;
+  if (state.estadoAtual) {
+    select.value = state.estadoAtual.fase;
+    faseTorcidaSelecionada = state.estadoAtual.fase;
+  }
   select.removeEventListener('change', onSelectFaseTorcidaChange);
   select.addEventListener('change', onSelectFaseTorcidaChange);
 }
 
 function onSelectFaseTorcidaChange() {
-  if (state.meuTipo !== 'projecao' || state.modoTorcida !== 'individual' || state.abaTorcidaAtiva !== 'fase') return;
+  if (state.meuTipo !== 'projecao' || torcidaAba !== 'fase') return;
   const fase = parseInt(document.getElementById('select-fase-torcida').value);
   if (!isNaN(fase) && fase >= 1 && fase <= 5) {
-    state.faseTorcidaSelecionada = fase;
-    atualizarTorcidaIndividual();
+    faseTorcidaSelecionada = fase;
+    atualizarTorcidaFase();
   }
-}
-
-async function atualizarTorcidaIndividual() {
-  if (state.meuTipo !== 'projecao' || state.abaTorcidaAtiva !== 'fase' || state.modoTorcida !== 'individual') return;
-  if (!state.estadoAtual) return;
-  let fase = parseInt(document.getElementById('select-fase-torcida').value);
-  if (isNaN(fase) || fase < 1 || fase > 5) fase = state.estadoAtual.fase;
-  state.faseTorcidaSelecionada = fase;
-  await renderizarRanking(fase, 'ranking-torcida-container', 'individual', true);
-  const infoSpan = document.getElementById('fase-torcida-info');
-  if (infoSpan) infoSpan.innerText = (fase === state.estadoAtual.fase) ? '(Fase atual)' : '(Fase anterior)';
-}
-
-async function atualizarTorcidaEquipes() {
-  if (state.meuTipo !== 'projecao' || state.abaTorcidaAtiva !== 'fase' || state.modoTorcida !== 'equipes') return;
-  if (!state.estadoAtual) return;
-  await renderizarRanking(null, 'ranking-torcida-container', 'turmas', false);
-}
-
-async function atualizarTorcidaPontos() {
-  if (state.meuTipo !== 'projecao' || state.abaTorcidaAtiva !== 'pontos') return;
-  if (!state.estadoAtual) return;
-  await renderizarRankingPontos('ranking-torcida-container');
-}
-
-function iniciarAtualizacaoTorcida() {
-  if (state.intervaloTorcidaIndividual) clearInterval(state.intervaloTorcidaIndividual);
-  if (state.intervaloTorcidaEquipes) clearInterval(state.intervaloTorcidaEquipes);
-  
-  state.intervaloTorcidaIndividual = setInterval(() => {
-    if (state.meuTipo === 'projecao' && state.abaTorcidaAtiva === 'fase' && state.modoTorcida === 'individual') {
-      atualizarTorcidaIndividual();
-    } else if (state.meuTipo === 'projecao' && state.abaTorcidaAtiva === 'pontos') {
-      atualizarTorcidaPontos();
-    }
-  }, state.intervaloIndividualSegundos * 1000);
-
-  state.intervaloTorcidaEquipes = setInterval(() => {
-    if (state.meuTipo === 'projecao' && state.abaTorcidaAtiva === 'fase' && state.modoTorcida === 'equipes') {
-      atualizarTorcidaEquipes();
-    }
-  }, state.intervaloEquipesSegundos * 1000);
-
-  document.getElementById('torcida-individual-intervalo').innerText = state.intervaloIndividualSegundos;
-  document.getElementById('torcida-equipes-intervalo').innerText = state.intervaloEquipesSegundos;
-
-  popularSelectFasesTorcida();
-  state.abaTorcidaAtiva = 'fase';
-  document.getElementById('btn-torcida-sub-fase').classList.add('ativo');
-  document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
-  document.getElementById('torcida-fase-selector').style.display = 'block';
-  if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
-  else atualizarTorcidaEquipes();
-}
-
-function pararAtualizacaoTorcida() {
-  if (state.intervaloTorcidaIndividual) clearInterval(state.intervaloTorcidaIndividual);
-  if (state.intervaloTorcidaEquipes) clearInterval(state.intervaloTorcidaEquipes);
-  state.intervaloTorcidaIndividual = null;
-  state.intervaloTorcidaEquipes = null;
 }
 
 // ============================================================
@@ -589,51 +587,50 @@ function configurarEventos() {
     }
   });
 
-  // Botão Confirmar Aluno
   document.getElementById('btnConfirmarAluno')?.addEventListener('click', confirmarCadastroAluno);
   document.getElementById('btnCancelarAluno')?.addEventListener('click', fecharModalTurma);
 
   // Botão Torcida
   document.getElementById('btn-projecao')?.addEventListener('click', entrarModoTorcida);
 
-  // Modos da Torcida
-  document.getElementById('btn-modo-individual')?.addEventListener('click', function() {
-    state.modoTorcida = 'individual';
-    state.prefTorcidaModo = 'individual';
-    setCacheItem('preferencias.torcidaModo', 'individual');
+  // Botões da torcida (NOVOS)
+  document.getElementById('btn-torcida-fase')?.addEventListener('click', function() {
+    torcidaAba = 'fase';
+    document.querySelectorAll('.modo-buttons .btn-modo').forEach(b => {
+      b.classList.remove('ativo');
+      b.setAttribute('aria-selected', 'false');
+    });
     this.classList.add('ativo');
-    document.getElementById('btn-modo-equipes').classList.remove('ativo');
+    this.setAttribute('aria-selected', 'true');
     document.getElementById('torcida-fase-selector').style.display = 'block';
-    if (state.abaTorcidaAtiva === 'fase') atualizarTorcidaIndividual();
-  });
-  document.getElementById('btn-modo-equipes')?.addEventListener('click', function() {
-    state.modoTorcida = 'equipes';
-    state.prefTorcidaModo = 'equipes';
-    setCacheItem('preferencias.torcidaModo', 'equipes');
-    this.classList.add('ativo');
-    document.getElementById('btn-modo-individual').classList.remove('ativo');
-    document.getElementById('torcida-fase-selector').style.display = 'none';
-    if (state.abaTorcidaAtiva === 'fase') atualizarTorcidaEquipes();
+    atualizarTorcidaFase();
+    tocarSom('clique');
   });
 
-  document.getElementById('btn-torcida-sub-fase')?.addEventListener('click', function() {
-    state.abaTorcidaAtiva = 'fase';
-    state.prefTorcidaSubAba = 'fase';
-    setCacheItem('preferencias.torcidaSubAba', 'fase');
+  document.getElementById('btn-torcida-equipes')?.addEventListener('click', function() {
+    torcidaAba = 'equipes';
+    document.querySelectorAll('.modo-buttons .btn-modo').forEach(b => {
+      b.classList.remove('ativo');
+      b.setAttribute('aria-selected', 'false');
+    });
     this.classList.add('ativo');
-    document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
-    document.getElementById('torcida-fase-selector').style.display = 'block';
-    if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
-    else atualizarTorcidaEquipes();
-  });
-  document.getElementById('btn-torcida-sub-pontos')?.addEventListener('click', async function() {
-    state.abaTorcidaAtiva = 'pontos';
-    state.prefTorcidaSubAba = 'pontos';
-    setCacheItem('preferencias.torcidaSubAba', 'pontos');
-    this.classList.add('ativo');
-    document.getElementById('btn-torcida-sub-fase').classList.remove('ativo');
+    this.setAttribute('aria-selected', 'true');
     document.getElementById('torcida-fase-selector').style.display = 'none';
-    await atualizarTorcidaPontos();
+    atualizarTorcidaEquipes();
+    tocarSom('clique');
+  });
+
+  document.getElementById('btn-torcida-pontos')?.addEventListener('click', function() {
+    torcidaAba = 'pontos';
+    document.querySelectorAll('.modo-buttons .btn-modo').forEach(b => {
+      b.classList.remove('ativo');
+      b.setAttribute('aria-selected', 'false');
+    });
+    this.classList.add('ativo');
+    this.setAttribute('aria-selected', 'true');
+    document.getElementById('torcida-fase-selector').style.display = 'none';
+    atualizarTorcidaPontos();
+    tocarSom('clique');
   });
 
   document.getElementById('btn-sair-torcida')?.addEventListener('click', () => {
@@ -645,9 +642,10 @@ function configurarEventos() {
     location.reload();
   });
   document.getElementById('btn-sync-torcida')?.addEventListener('click', () => {
-    if (state.abaTorcidaAtiva === 'fase') {
-      if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
-      else atualizarTorcidaEquipes();
+    if (torcidaAba === 'fase') {
+      atualizarTorcidaFase();
+    } else if (torcidaAba === 'equipes') {
+      atualizarTorcidaEquipes();
     } else {
       atualizarTorcidaPontos();
     }
@@ -932,9 +930,10 @@ function configurarEventos() {
     atualizarUltimaSinc();
     if (state.meuTipo === 'professor') renderizarRankingPontos();
     if (state.meuTipo === 'projecao') {
-      if (state.abaTorcidaAtiva === 'fase') {
-        if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
-        else atualizarTorcidaEquipes();
+      if (torcidaAba === 'fase') {
+        atualizarTorcidaFase();
+      } else if (torcidaAba === 'equipes') {
+        atualizarTorcidaEquipes();
       } else {
         atualizarTorcidaPontos();
       }
@@ -1151,7 +1150,6 @@ async function init() {
         if (state.meuTipo === 'professor') {
           const fase = parseInt(document.getElementById('select-fase-ranking')?.value) || state.estadoAtual?.fase || 1;
           renderizarRanking(fase, 'ranking-parcial', 'individual', true);
-          // Garantir turmas padrão
           await garantirTurmasPadrao();
           renderListaAlunosGerenciar();
           renderListaTurmas();
@@ -1163,9 +1161,10 @@ async function init() {
             }
           }
         } else if (state.meuTipo === 'projecao') {
-          if (state.abaTorcidaAtiva === 'fase') {
-            if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
-            else atualizarTorcidaEquipes();
+          if (torcidaAba === 'fase') {
+            atualizarTorcidaFase();
+          } else if (torcidaAba === 'equipes') {
+            atualizarTorcidaEquipes();
           } else {
             atualizarTorcidaPontos();
           }
@@ -1190,7 +1189,7 @@ async function init() {
       exibirToast('⚠️ Algumas configurações podem não estar disponíveis.', 'aviso');
     }
 
-    // Carregar turmas para cache e garantir padrão
+    // Carregar turmas para cache
     try {
       state.turmasCache = await lerDados('copaV2/turmas') || TURMAS_PADRAO;
       await garantirTurmasPadrao();
@@ -1233,9 +1232,10 @@ async function init() {
         popularSelectFasesTorcida();
 
         if (state.meuTipo === 'projecao') {
-          if (state.abaTorcidaAtiva === 'fase') {
-            if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
-            else atualizarTorcidaEquipes();
+          if (torcidaAba === 'fase') {
+            atualizarTorcidaFase();
+          } else if (torcidaAba === 'equipes') {
+            atualizarTorcidaEquipes();
           } else {
             atualizarTorcidaPontos();
           }
@@ -1247,7 +1247,6 @@ async function init() {
             const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
             renderizarRanking(fase, 'ranking-parcial', 'individual', true);
           }
-          // Garantir turmas padrão
           garantirTurmasPadrao().then(() => {
             renderListaTurmas();
           });
