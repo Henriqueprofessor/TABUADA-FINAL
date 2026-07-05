@@ -11,10 +11,8 @@ import { atualizarExibicaoMedalhas, carregarMedalhasLocal } from './medals.js';
 // ============================================================
 
 const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
-
-// ===== CACHES PARA PERFORMANCE (Item 5) =====
-const rankingHtmlCache = {};    // Guarda o HTML gerado para evitar re-renderização desnecessária
-const rankingHistory = {};      // Guarda o histórico de IDs para calcular setas (subiu/desceu)
+const rankingHtmlCache = {};
+const rankingHistory = {};
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -80,7 +78,7 @@ export function calcularRankingFase(fase) {
       somaTempo,
       mediaTempo,
       melhorVelocidade,
-      partidas, // <-- já temos os dados aqui, não precisa buscar de novo!
+      partidas,
       melhorPartidaIndex: partidas.findIndex(p => p.pontos === melhor.pontos)
     });
   }
@@ -127,7 +125,7 @@ export function calcularRankingFase(fase) {
 }
 
 // ============================================================
-// RENDERIZAR RANKING (OTIMIZADO - Item 5)
+// RENDERIZAR RANKING (REFATORADO COM TEMPLATES - Item 10)
 // ============================================================
 
 export async function renderizarRanking(fase, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -140,7 +138,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     return;
   }
 
-  // ===== LEITURA DIRETA DA MEMÓRIA (sem await lerDados) =====
+  // --- Cálculo dos dados (mesmo de antes) ---
   const ranking = calcularRankingFase(fase);
   const snapTemp = state.estadoAtual?.resultados_temp?.[fase] || {};
   const snapFinal = state.estadoAtual?.resultados?.[fase] || {};
@@ -195,17 +193,15 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       status: statusInfo.status,
       isTemp: !!snapTemp[j.id],
       pontuacaoAtual: snapTemp[j.id]?.pontos || j.melhorPontuacao,
-      ultimaPosicao: null // será calculado pelo histórico
+      ultimaPosicao: null
     };
   });
 
-  // ===== HISTÓRICO PARA SETAS (subiu/desceu) =====
   const containerKey = containerId;
   const previousIds = rankingHistory[containerKey] || [];
   const currentIds = listaComInfo.map(j => j.id);
   rankingHistory[containerKey] = currentIds;
 
-  // Projeção de posição (Ritmo)
   let posProjetadaMap = new Map();
   if (state.estadoAtual.status !== 'finalizado') {
     let projecaoValida = false;
@@ -233,7 +229,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   const vagas = VAGAS_POR_FASE[fase] || 30;
   const maxMelhor = listaComInfo.length > 0 ? listaComInfo[0].melhorPontuacao : 0;
 
-  // Medalhas
   let medalhasMap = new Map();
   for (let item of listaComInfo) {
     const medalhas = await lerDados(`copaV2/medalhas/${item.id}`) || [];
@@ -242,21 +237,52 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     }
   }
 
-  // ===== MONTAGEM DO HTML =====
-  let html = `<table class="ranking-table"><thead><tr>
-    <th>Pos</th>
-    <th>Nome</th>
-    <th>Melhor Pontuação</th>`;
-  if (exibirClassificacao) html += '<th>Classificação</th>';
-  html += '<th>Ritmo</th><th>Pontuação Atual</th><th>Delta Líder</th><th>Veloc. Recorde</th><th>Progresso</th><th>Partidas</th>';
-  if (containerId === 'ranking-parcial') {
-    html += '<th>Tempo Total</th><th>% Tempo</th>';
+  // --- Construção do HTML usando TEMPLATES ---
+  const table = document.createElement('table');
+  table.className = 'ranking-table';
+
+  // 1. Cabeçalho
+  const theadTemplate = document.getElementById('template-cabecalho-ranking');
+  if (theadTemplate) {
+    const theadClone = theadTemplate.content.cloneNode(true);
+    // Ajusta colunas conforme exibirClassificacao
+    const thClassificacao = theadClone.querySelector('.col-classificacao');
+    if (!exibirClassificacao && thClassificacao) {
+      thClassificacao.style.display = 'none';
+    }
+    // Remove colunas extras se não for ranking parcial
+    if (containerId !== 'ranking-parcial') {
+      const ths = theadClone.querySelectorAll('th');
+      if (ths.length >= 12) {
+        ths[10].style.display = 'none';
+        ths[11].style.display = 'none';
+      }
+    }
+    // Remove coluna de Projeção se não estiver ativa
+    if (!(state.rankingPontosAtivo && state.estadoAtual.status === 'em_andamento' && fase === state.estadoAtual.fase)) {
+      const ths = theadClone.querySelectorAll('th');
+      const lastTh = ths[ths.length - 1];
+      if (lastTh && lastTh.textContent.trim() === 'Projeção') {
+        lastTh.style.display = 'none';
+      }
+    }
+    table.appendChild(theadClone);
+  } else {
+    // Fallback: cria cabeçalho manualmente
+    const thead = document.createElement('thead');
+    const tr = document.createElement('tr');
+    ['Pos','Nome','Melhor Pontuação','Classificação','Ritmo','Pontuação Atual','Delta Líder','Veloc. Recorde','Progresso','Partidas','Tempo Total','% Tempo','Turma','Projeção'].forEach(t => {
+      const th = document.createElement('th');
+      th.textContent = t;
+      tr.appendChild(th);
+    });
+    thead.appendChild(tr);
+    table.appendChild(thead);
   }
-  html += '<th>Turma</th>';
-  if (state.rankingPontosAtivo && state.estadoAtual.status === 'em_andamento' && fase === state.estadoAtual.fase) {
-    html += '<th>Projeção</th>';
-  }
-  html += '</tr></thead><tbody>';
+
+  // 2. Corpo da tabela
+  const tbody = document.createElement('tbody');
+  const linhaTemplate = document.getElementById('template-linha-ranking');
 
   for (let idx = 0; idx < listaComInfo.length; idx++) {
     const j = listaComInfo[idx];
@@ -302,9 +328,9 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     if (exibirClassificacao) {
       const classificado = (posAtual <= vagas) && (j.totalPartidas >= minPartidas);
       if (fase === 5) {
-        colunaClassificacao = classificado ? `<td class="classificado-sim">🏆 Finalista</td>` : `<td class="classificado-nao">Eliminado</td>`;
+        colunaClassificacao = classificado ? `<span class="classificado-sim">🏆 Finalista</span>` : `<span class="classificado-nao">Eliminado</span>`;
       } else {
-        colunaClassificacao = classificado ? `<td class="classificado-sim">Top${vagas}</td>` : `<td class="classificado-nao">Eliminado</td>`;
+        colunaClassificacao = classificado ? `<span class="classificado-sim">Top${vagas}</span>` : `<span class="classificado-nao">Eliminado</span>`;
       }
     }
 
@@ -346,38 +372,90 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       projecaoHtml = pts > 0 ? `${pts} pts` : "—";
     }
 
-    html += `<tr>
-      <td class="${classePos}">${posAtual}º</td>
-      <td>${nomeCompleto}</td>
-      <td>${melhorDisplay}</td>
-      ${exibirClassificacao ? colunaClassificacao : ''}
-      <td>${futPosHtml}</td>
-      <td>${j.pontuacaoAtual || "–"}</td>
-      <td>${deltaText}</td>
-      <td>${recordeStr}</td>
-      <td>${progressoHtml}</td>
-      <td>${j.totalPartidas}</td>`;
-    if (containerId === 'ranking-parcial') {
-      html += `<td>${tempoTotalStr}</td><td>${percentualTempo}</td>`;
+    // Clona a linha do template
+    if (linhaTemplate) {
+      const clone = linhaTemplate.content.cloneNode(true);
+      const tdPos = clone.querySelector('.posicao');
+      const tdNome = clone.querySelector('.nome-completo');
+      const tdMelhor = clone.querySelector('.melhor-pontuacao');
+      const tdClassificacao = clone.querySelector('.classificacao');
+      const tdRitmo = clone.querySelector('.ritmo');
+      const tdAtual = clone.querySelector('.pontuacao-atual');
+      const tdDelta = clone.querySelector('.delta-lider');
+      const tdVeloc = clone.querySelector('.veloc-recorde');
+      const tdProgresso = clone.querySelector('.progresso');
+      const tdPartidas = clone.querySelector('.partidas');
+      const tdTempo = clone.querySelector('.tempo-total');
+      const tdPercent = clone.querySelector('.percentual-tempo');
+      const tdTurma = clone.querySelector('.turma');
+      const tdProjecao = clone.querySelector('.projecao');
+
+      if (tdPos) {
+        tdPos.textContent = posAtual + 'º';
+        tdPos.className = `posicao ${classePos}`;
+      }
+      if (tdNome) tdNome.innerHTML = nomeCompleto;
+      if (tdMelhor) tdMelhor.textContent = melhorDisplay;
+      if (tdClassificacao) tdClassificacao.innerHTML = colunaClassificacao;
+      if (tdRitmo) tdRitmo.innerHTML = futPosHtml;
+      if (tdAtual) tdAtual.textContent = j.pontuacaoAtual || "–";
+      if (tdDelta) tdDelta.textContent = deltaText;
+      if (tdVeloc) tdVeloc.textContent = recordeStr;
+      if (tdProgresso) tdProgresso.textContent = progressoHtml;
+      if (tdPartidas) tdPartidas.textContent = j.totalPartidas;
+      if (tdTempo) tdTempo.textContent = tempoTotalStr;
+      if (tdPercent) tdPercent.textContent = percentualTempo;
+      if (tdTurma) tdTurma.textContent = escapeHtml(j.turma);
+      if (tdProjecao) tdProjecao.textContent = projecaoHtml;
+
+      // Esconde colunas conforme necessário
+      if (!exibirClassificacao && tdClassificacao) tdClassificacao.style.display = 'none';
+      if (containerId !== 'ranking-parcial') {
+        if (tdTempo) tdTempo.style.display = 'none';
+        if (tdPercent) tdPercent.style.display = 'none';
+      }
+      if (!(state.rankingPontosAtivo && state.estadoAtual.status === 'em_andamento' && fase === state.estadoAtual.fase)) {
+        if (tdProjecao) tdProjecao.style.display = 'none';
+      }
+
+      tbody.appendChild(clone);
+    } else {
+      // Fallback: cria a linha manualmente
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="${classePos}">${posAtual}º</td>
+        <td>${nomeCompleto}</td>
+        <td>${melhorDisplay}</td>
+        ${exibirClassificacao ? `<td>${colunaClassificacao}</td>` : ''}
+        <td>${futPosHtml}</td>
+        <td>${j.pontuacaoAtual || "–"}</td>
+        <td>${deltaText}</td>
+        <td>${recordeStr}</td>
+        <td>${progressoHtml}</td>
+        <td>${j.totalPartidas}</td>
+        ${containerId === 'ranking-parcial' ? `<td>${tempoTotalStr}</td><td>${percentualTempo}</td>` : ''}
+        <td>${escapeHtml(j.turma)}</td>
+        ${projecaoHtml ? `<td>${projecaoHtml}</td>` : ''}
+      `;
+      tbody.appendChild(tr);
     }
-    html += `<td>${escapeHtml(j.turma)}</td>`;
-    if (projecaoHtml) html += `<td>${projecaoHtml}</td>`;
-    html += `</tr>`;
   }
-  html += '</tbody></table>';
+
+  table.appendChild(tbody);
 
   // ===== CACHE DE HTML PARA EVITAR RE-RENDER DESNECESSÁRIO =====
+  const htmlString = table.outerHTML;
   const lastHTML = rankingHtmlCache[containerKey];
-  if (lastHTML === html) {
-    // Se o HTML é exatamente o mesmo, não mexe no DOM
+  if (lastHTML === htmlString) {
     return;
   }
-  rankingHtmlCache[containerKey] = html;
-  container.innerHTML = html;
+  rankingHtmlCache[containerKey] = htmlString;
+  container.innerHTML = '';
+  container.appendChild(table);
 }
 
 // ============================================================
-// RANKING DE TURMAS
+// RANKING DE TURMAS (REFATORADO COM TEMPLATES)
 // ============================================================
 
 export async function renderRankingTurmas(containerId) {
@@ -451,21 +529,54 @@ export async function renderRankingTurmas(containerId) {
     container.innerHTML = '<p>📭 Nenhum dado registrado ainda.</p>';
     return;
   }
-  let html = `<table class="ranking-table"><thead><tr>
-    <th>Pos</th><th>Turma</th><th>Média da Turma</th><th>Participantes</th><th>Total de Partidas</th><th>Maior Pontuação (Aluno)</th>
-  </tr></thead><tbody>`;
-  ranking.forEach((r, idx) => {
-    html += `<tr>
-      <td>${idx+1}º</td>
-      <td>${escapeHtml(r.turma)}</td>
-      <td>${r.media.toFixed(1)} pts</td>
-      <td>${r.totalAlunos}</td>
-      <td>${r.totalPartidas}</td>
-      <td>${escapeHtml(r.melhorNome)} (${r.melhorPontos} pts)</td>
-    </tr>`;
+
+  const table = document.createElement('table');
+  table.className = 'ranking-table';
+
+  // Cabeçalho
+  const thead = document.createElement('thead');
+  const trHead = document.createElement('tr');
+  ['Pos','Turma','Média da Turma','Participantes','Total de Partidas','Maior Pontuação (Aluno)'].forEach(t => {
+    const th = document.createElement('th');
+    th.textContent = t;
+    trHead.appendChild(th);
   });
-  html += '</tbody></table>';
-  container.innerHTML = html;
+  thead.appendChild(trHead);
+  table.appendChild(thead);
+
+  // Corpo
+  const tbody = document.createElement('tbody');
+  const linhaTemplate = document.getElementById('template-linha-turmas');
+
+  ranking.forEach((r, idx) => {
+    if (linhaTemplate) {
+      const clone = linhaTemplate.content.cloneNode(true);
+      const tdPos = clone.querySelector('.pos-turma');
+      const tdNome = clone.querySelector('.nome-turma');
+      const tdMedia = clone.querySelector('.media-turma');
+      const tdAlunos = clone.querySelector('.total-alunos');
+      const tdPartidas = clone.querySelector('.total-partidas-turma');
+      const tdMelhor = clone.querySelector('.melhor-aluno');
+
+      if (tdPos) tdPos.textContent = idx + 1 + 'º';
+      if (tdNome) tdNome.textContent = escapeHtml(r.turma);
+      if (tdMedia) tdMedia.textContent = r.media.toFixed(1) + ' pts';
+      if (tdAlunos) tdAlunos.textContent = r.totalAlunos;
+      if (tdPartidas) tdPartidas.textContent = r.totalPartidas;
+      if (tdMelhor) tdMelhor.textContent = `${escapeHtml(r.melhorNome)} (${r.melhorPontos} pts)`;
+
+      tbody.appendChild(clone);
+    } else {
+      // Fallback manual
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${idx+1}º</td><td>${escapeHtml(r.turma)}</td><td>${r.media.toFixed(1)} pts</td><td>${r.totalAlunos}</td><td>${r.totalPartidas}</td><td>${escapeHtml(r.melhorNome)} (${r.melhorPontos} pts)</td>`;
+      tbody.appendChild(tr);
+    }
+  });
+
+  table.appendChild(tbody);
+  container.innerHTML = '';
+  container.appendChild(table);
 }
 
 // ============================================================
@@ -567,14 +678,24 @@ export async function renderizarRankingPontos(containerId = 'ranking-pontos-cont
       return;
     }
 
-    let html = `<table class="ranking-table"><thead><tr>
-      <th>Pos</th>
-      <th>Nome</th>
-      <th>Pontuação Geral</th>`;
-    for (let f = 5; f >= 1; f--) {
-      html += `<th>Fase ${f}</th>`;
-    }
-    html += `</tr></thead><tbody>`;
+    // Montagem com template
+    const table = document.createElement('table');
+    table.className = 'ranking-table';
+
+    // Cabeçalho
+    const thead = document.createElement('thead');
+    const trHead = document.createElement('tr');
+    ['Pos','Nome','Pontuação Geral','Fase 5','Fase 4','Fase 3','Fase 2','Fase 1'].forEach(t => {
+      const th = document.createElement('th');
+      th.textContent = t;
+      trHead.appendChild(th);
+    });
+    thead.appendChild(trHead);
+    table.appendChild(thead);
+
+    // Corpo
+    const tbody = document.createElement('tbody');
+    const linhaTemplate = document.getElementById('template-linha-pontos');
 
     lista.forEach((item, idx) => {
       const pos = idx + 1;
@@ -601,19 +722,48 @@ export async function renderizarRankingPontos(containerId = 'ranking-pontos-cont
         return cell;
       };
 
-      html += `<tr>
-        <td>${pos}º</td>
-        <td>${escapeHtml(item.nome)}</td>
-        <td><strong>${item.total}</strong></td>
-        <td>${faseCell(f5, bonus5, rec5)}</td>
-        <td>${faseCell(f4, bonus4, rec4)}</td>
-        <td>${faseCell(f3, bonus3, rec3)}</td>
-        <td>${faseCell(f2, bonus2, rec2)}</td>
-        <td>${faseCell(f1, bonus1, rec1)}</td>
-      </tr>`;
+      if (linhaTemplate) {
+        const clone = linhaTemplate.content.cloneNode(true);
+        const tdPos = clone.querySelector('.posicao-pontos');
+        const tdNome = clone.querySelector('.nome-pontos');
+        const tdTotal = clone.querySelector('.total-pontos');
+        const tdF5 = clone.querySelector('.fase5');
+        const tdF4 = clone.querySelector('.fase4');
+        const tdF3 = clone.querySelector('.fase3');
+        const tdF2 = clone.querySelector('.fase2');
+        const tdF1 = clone.querySelector('.fase1');
+
+        if (tdPos) tdPos.textContent = pos + 'º';
+        if (tdNome) tdNome.textContent = escapeHtml(item.nome);
+        if (tdTotal) tdTotal.innerHTML = `<strong>${item.total}</strong>`;
+        if (tdF5) tdF5.innerHTML = faseCell(f5, bonus5, rec5);
+        if (tdF4) tdF4.innerHTML = faseCell(f4, bonus4, rec4);
+        if (tdF3) tdF3.innerHTML = faseCell(f3, bonus3, rec3);
+        if (tdF2) tdF2.innerHTML = faseCell(f2, bonus2, rec2);
+        if (tdF1) tdF1.innerHTML = faseCell(f1, bonus1, rec1);
+
+        tbody.appendChild(clone);
+      } else {
+        // Fallback
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${pos}º</td>
+          <td>${escapeHtml(item.nome)}</td>
+          <td><strong>${item.total}</strong></td>
+          <td>${faseCell(f5, bonus5, rec5)}</td>
+          <td>${faseCell(f4, bonus4, rec4)}</td>
+          <td>${faseCell(f3, bonus3, rec3)}</td>
+          <td>${faseCell(f2, bonus2, rec2)}</td>
+          <td>${faseCell(f1, bonus1, rec1)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
     });
-    html += '</tbody></table>';
-    container.innerHTML = html;
+
+    table.appendChild(tbody);
+    container.innerHTML = '';
+    container.appendChild(table);
+
   } catch (e) {
     container.innerHTML = '<p>❌ Erro ao carregar ranking de pontos.</p>';
     console.error(e);
@@ -729,6 +879,7 @@ export async function renderRankingGeral() {
     return;
   }
 
+  // Montagem manual (sem template específico)
   let html = `<table class="ranking-table"><thead><tr>
     <th>Pos</th>
     <th>Nome</th>
@@ -1282,25 +1433,44 @@ function mostrarFinalizacao() {
 
 function exibirModalFinalizacaoAluno() {
   if (state.meuTipo !== 'aluno') return;
-  const modalHtml = `
-    <div class="modal-resultados" id="modal-finalizacao">
-      <h2>🏆 COPA FINALIZADA!</h2>
-      <div style="font-size: 64px; margin: 15px 0;">🎉</div>
-      <p>A competição chegou ao fim.</p>
-      <div class="dica">
-        <p>📊 Consulte o <strong>Ranking de Pontos</strong> para ver sua classificação final.</p>
-        <p style="font-size: 0.9rem; opacity: 0.7;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
-      </div>
-      <button class="fechar" id="btn-fechar-finalizacao">Voltar ao Menu</button>
-    </div>
-  `;
+  
+  // Remove modal existente
   const modalExistente = document.getElementById('modal-finalizacao');
   if (modalExistente) modalExistente.remove();
-  document.body.insertAdjacentHTML('beforeend', modalHtml);
-  document.getElementById('btn-fechar-finalizacao')?.addEventListener('click', () => {
-    document.getElementById('modal-finalizacao')?.remove();
-    location.reload();
-  });
+
+  // Usa o template
+  const template = document.getElementById('template-modal-finalizacao');
+  if (template) {
+    const clone = template.content.cloneNode(true);
+    document.body.appendChild(clone);
+    
+    const btnFechar = document.getElementById('btn-fechar-finalizacao');
+    if (btnFechar) {
+      btnFechar.addEventListener('click', () => {
+        document.getElementById('modal-finalizacao')?.remove();
+        location.reload();
+      });
+    }
+  } else {
+    // Fallback: HTML antigo (mantido para segurança)
+    const modalHtml = `
+      <div class="modal-resultados" id="modal-finalizacao">
+        <h2>🏆 COPA FINALIZADA!</h2>
+        <div style="font-size: 64px; margin: 15px 0;">🎉</div>
+        <p>A competição chegou ao fim.</p>
+        <div class="dica">
+          <p>📊 Consulte o <strong>Ranking de Pontos</strong> para ver sua classificação final.</p>
+          <p style="font-size: 0.9rem; opacity: 0.7;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
+        </div>
+        <button class="fechar" id="btn-fechar-finalizacao">Voltar ao Menu</button>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.getElementById('btn-fechar-finalizacao')?.addEventListener('click', () => {
+      document.getElementById('modal-finalizacao')?.remove();
+      location.reload();
+    });
+  }
 }
 
 function forcarAlunosParaMenu() {
