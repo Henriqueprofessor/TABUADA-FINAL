@@ -70,11 +70,8 @@ import {
   atualizarStatusAviso
 } from './modules/aviso.js';
 
-// ============================================================
-// INICIALIZAÇÃO
-// ============================================================
 async function init() {
-  aplicarTema(); // Já chama carregarCorPrimaria()
+  aplicarTema();
   mostrarCarregando();
   carregarConfiguracoesDoCache();
 
@@ -194,7 +191,6 @@ async function init() {
     atualizarUltimaSinc();
     aplicarPreferenciasUI();
 
-    // Preencher seletores de cores (professor e aluno)
     preencherSeletorCores('seletor-cores');
     preencherSeletorCores('seletor-cores-aluno');
   });
@@ -243,9 +239,6 @@ async function init() {
   }
 }
 
-// ============================================================
-// FUNÇÃO PARA PREENCHER SELETOR DE CORES
-// ============================================================
 function preencherSeletorCores(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -268,16 +261,12 @@ function preencherSeletorCores(containerId) {
     container.appendChild(btn);
   }
   
-  // Marca o selecionado atualmente
   const corAtual = localStorage.getItem('copa_cor_primaria') || '#3b82f6';
   container.querySelectorAll('.btn-cor').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.cor === corAtual);
   });
 }
 
-// ============================================================
-// RELÓGIO
-// ============================================================
 function iniciarRelogio() {
   function atualizarRelogio() {
     const clock = document.getElementById('clock-display');
@@ -303,9 +292,6 @@ function atualizarUltimaSinc() {
   }
 }
 
-// ============================================================
-// ATUALIZAR UI
-// ============================================================
 function atualizarUI() {
   if (!state.estadoAtual) return;
   const fase = state.estadoAtual.fase;
@@ -342,9 +328,6 @@ function atualizarOnline(snap) {
   }
 }
 
-// ============================================================
-// SELECTORES DE FASES
-// ============================================================
 function popularSelectFases() {
   const select = document.getElementById('select-fase-ranking');
   if (!select) return;
@@ -384,9 +367,6 @@ function onSelectFaseTorcidaChange() {
   }
 }
 
-// ============================================================
-// FUNÇÕES DA TORCIDA
-// ============================================================
 async function atualizarTorcidaIndividual() {
   if (state.meuTipo !== 'projecao' || state.abaTorcidaAtiva !== 'fase' || state.modoTorcida !== 'individual') return;
   if (!state.estadoAtual) return;
@@ -447,9 +427,6 @@ function pararAtualizacaoTorcida() {
   state.intervaloTorcidaEquipes = null;
 }
 
-// ============================================================
-// MODOS
-// ============================================================
 function entrarModoProfessor() {
   state.meuTipo = 'professor';
   mostrarTela('professor');
@@ -512,9 +489,6 @@ function entrarModoTorcida() {
   exibirToast('📺 Modo Torcida ativado!');
 }
 
-// ============================================================
-// CONFIGURAR EVENTOS
-// ============================================================
 function configurarEventos() {
   document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
 
@@ -554,7 +528,6 @@ function configurarEventos() {
   document.getElementById('btn-aluno')?.addEventListener('click', entrarModoAluno);
   document.getElementById('btn-projecao')?.addEventListener('click', entrarModoTorcida);
 
-  // Torcida - modos
   document.getElementById('btn-modo-individual')?.addEventListener('click', function() {
     state.modoTorcida = 'individual';
     state.prefTorcidaModo = 'individual';
@@ -613,7 +586,6 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
-  // Ranking do aluno
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -643,9 +615,6 @@ function configurarEventos() {
     location.reload();
   });
 
-  // ============================================================
-  // ABAS DO PROFESSOR
-  // ============================================================
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function(e) {
       e.preventDefault();
@@ -703,7 +672,6 @@ function configurarEventos() {
     });
   });
 
-  // Avisos
   document.getElementById('btn-publicar-aviso')?.addEventListener('click', async () => {
     const mensagem = document.getElementById('input-aviso-mensagem').value.trim();
     const minutos = parseInt(document.getElementById('input-aviso-tempo').value) || 0;
@@ -719,7 +687,6 @@ function configurarEventos() {
     await removerAviso();
   });
 
-  // Sincronizar
   document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
     db.ref('copaV2').once('value', snap => {
       state.estadoAtual = snap.val() || state.estadoAtual;
@@ -738,7 +705,6 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
-  // Controle de fase
   document.getElementById('btn-iniciar-fase')?.addEventListener('click', async () => {
     if (!state.estadoAtual) return;
     const duracao = state.estadoAtual.tempoFase || 10;
@@ -808,7 +774,6 @@ function configurarEventos() {
     exibirToast(`✅ ${extra} minuto(s) adicionado(s)!`);
   });
 
-  // Intervalos
   document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
     const val = parseInt(document.getElementById('intervalo-individual').value);
     if (val >= 1) {
@@ -989,9 +954,6 @@ function configurarEventos() {
   });
 }
 
-// ============================================================
-// FUNÇÕES AUXILIARES
-// ============================================================
 function getPontuacaoDefault() {
   const obj = {};
   for (let i = 1; i <= 40; i++) obj[i] = 41 - i;
