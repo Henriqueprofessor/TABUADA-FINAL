@@ -69,201 +69,191 @@ import {
   removerBannerAviso,
   atualizarStatusAviso
 } from './modules/aviso.js';
-import { initGameLoop } from './modules/gameLoop.js'; // <-- NOVO
+import { initGameLoop } from './modules/gameLoop.js';
 
-async function init() {
-  try {
-    aplicarTema();
-    mostrarCarregando();
-    carregarConfiguracoesDoCache();
+// ============================================================
+// FUNÇÕES DE CADASTRO DO ALUNO
+// ============================================================
 
-    initConnectionMonitor();
-    initConnectionUI(onConnectionChange);
-
-    onConnectionChange(async (online) => {
-      if (online) {
-        if (!window._wasOnline) {
-          window._wasOnline = true;
-          return;
-        }
-        console.log('🔄 Reconectado ao Firebase! Recarregando dados...');
-        exibirToastReconexao();
-
-        try {
-          const snap = await db.ref('copaV2').once('value');
-          state.estadoAtual = snap.val() || state.estadoAtual;
-          atualizarUI();
-          atualizarCacheComDadosFirebase(state.estadoAtual);
-        } catch (e) {
-          console.warn('Erro ao recarregar estado na reconexão:', e);
-          exibirToast('⚠️ Falha ao sincronizar dados. Tente recarregar.', 'erro');
-        }
-
-        if (state.meuTipo === 'professor' && auth.currentUser) {
-          const uid = auth.currentUser.uid || 'professor';
-          recriarPresencaOnline(uid, 'professor');
-        } else if (state.meuTipo === 'aluno' && state.alunoId) {
-          recriarPresencaOnline(state.alunoId, 'aluno');
-        } else if (state.meuTipo === 'projecao' && state.torcidaId) {
-          recriarPresencaOnline(state.torcidaId, 'torcida');
-        }
-
-        if (state.meuTipo === 'professor') {
-          const fase = parseInt(document.getElementById('select-fase-ranking')?.value) || state.estadoAtual?.fase || 1;
-          renderizarRanking(fase, 'ranking-parcial', 'individual', true);
-          renderListaAlunosGerenciar();
-          renderListaTurmas();
-        } else if (state.meuTipo === 'aluno') {
-          if (!state.jogoAtivo) {
-            atualizarInfoAluno();
-            if (document.getElementById('modal-ranking-aluno').style.display === 'flex') {
-              atualizarRankingAluno();
-            }
-          }
-        } else if (state.meuTipo === 'projecao') {
-          if (state.abaTorcidaAtiva === 'fase') {
-            if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
-            else atualizarTorcidaEquipes();
-          } else {
-            atualizarTorcidaPontos();
-          }
-        }
-
-        atualizarUltimaSinc();
-      } else {
-        window._wasOnline = false;
-      }
+function abrirModalTurma() {
+  const modal = document.getElementById('modalTurma');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  // Preencher select com turmas
+  const select = document.getElementById('selectTurma');
+  if (select) {
+    select.innerHTML = '';
+    const turmas = state.turmasCache || ['Turma A', 'Turma B', 'Turma C'];
+    turmas.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t;
+      opt.textContent = t;
+      select.appendChild(opt);
     });
-
-    // Carregar configurações com tratamento de erros
-    try {
-      await carregarValorPartida();
-      await carregarConfigRankingPontos();
-      await carregarConfigBonusVelocidade();
-      await carregarRecordeGeral();
-      await carregarColunasVisiveis();
-      await carregarMinPartidas();
-    } catch (e) {
-      console.warn('Erro ao carregar configurações:', e);
-      exibirToast('⚠️ Algumas configurações podem não estar disponíveis.', 'aviso');
-    }
-
-    inicializarSons();
-    setTimeout(() => verificarVersao(false), 2000);
-    iniciarListenerVersao();
-
-    state.listenerAviso = escutarAviso((aviso) => {
-      state.avisoAtual = aviso;
-      atualizarStatusAviso(aviso);
-      if (state.meuTipo === 'aluno') {
-        if (aviso && aviso.ativo === true && aviso.expiracao > Date.now()) {
-          exibirBannerAviso(aviso);
-        } else {
-          removerBannerAviso();
-        }
-      }
-    });
-
-    let carregamentoConcluido = false;
-    const timeoutId = setTimeout(() => {
-      if (!carregamentoConcluido) {
-        console.warn('⏳ Carregamento demorou mais que 10 segundos. Exibindo erro...');
-        exibirErroCarregamento();
-      }
-    }, 10000);
-
-    carregarEstado((estado) => {
-      carregamentoConcluido = true;
-      clearTimeout(timeoutId);
-      try {
-        atualizarCacheComDadosFirebase(estado);
-        esconderCarregando();
-        atualizarUI();
-        popularSelectFases();
-        popularSelectFasesTorcida();
-
-        if (state.meuTipo === 'projecao') {
-          if (state.abaTorcidaAtiva === 'fase') {
-            if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
-            else atualizarTorcidaEquipes();
-          } else {
-            atualizarTorcidaPontos();
-          }
-        }
-
-        if (state.meuTipo === 'professor') {
-          const tabFase = document.getElementById('tab-ranking-fase');
-          if (tabFase && !tabFase.classList.contains('hidden')) {
-            const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
-            renderizarRanking(fase, 'ranking-parcial', 'individual', true);
-          }
-        }
-        atualizarUltimaSinc();
-        aplicarPreferenciasUI();
-
-        preencherSeletorCores('seletor-cores');
-        preencherSeletorCores('seletor-cores-aluno');
-      } catch (e) {
-        console.error('Erro ao processar dados do Firebase:', e);
-        exibirToast('❌ Erro ao carregar dados. Recarregue a página.', 'erro');
-      }
-    });
-
-    ouvirOnline((snap) => {
-      atualizarOnline(snap);
-    });
-
-    configurarEventos();
-
-    onAuthStateChanged((user) => {
-      if (user) {
-        console.log('Usuário logado:', user.email);
-      } else {
-        if (state.meuTipo === 'professor') {
-          location.reload();
-        }
-      }
-    });
-
-    mostrarTela('inicio');
-    popularSelectFases();
-    popularSelectFasesTorcida();
-    iniciarRelogio();
-    atualizarUltimaSinc();
-
-    document.getElementById('btn-recarregar-loading')?.addEventListener('click', () => {
-      location.reload();
-    });
-
-    if (state.senhaFase1) {
-      const inputSenha = document.getElementById('input-senha-fase1');
-      if (inputSenha) inputSenha.value = state.senhaFase1;
-    }
-    if (state.exigirSenhaFase1 !== undefined) {
-      const toggle = document.getElementById('toggle-exigir-senha');
-      if (toggle) toggle.checked = state.exigirSenhaFase1;
-    }
-    if (state.modalidadeCache) {
-      const select = document.getElementById('select-modalidade');
-      if (select) select.value = state.modalidadeCache;
-    }
-    if (state.tempoFaseCache) {
-      const inputTempo = document.getElementById('input-tempo-fase');
-      if (inputTempo) inputTempo.value = state.tempoFaseCache;
-    }
-
-    // ===== INICIALIZA O LOOP DO JOYSTICK (Item 11) =====
-    initGameLoop();
-
-  } catch (error) {
-    console.error('Erro fatal no init:', error);
-    exibirToast('❌ Erro ao iniciar o jogo. Recarregue a página.', 'erro');
-    esconderCarregando();
   }
+  // Verificar se exige senha na fase 1
+  const fase = state.estadoAtual?.fase || 1;
+  const exigirSenha = (fase === 1 && state.exigirSenhaFase1);
+  const senhaContainer = document.getElementById('senhaContainer');
+  if (senhaContainer) senhaContainer.style.display = exigirSenha ? 'block' : 'none';
+  document.getElementById('inputNomeAluno').value = '';
+  document.getElementById('inputSenhaAluno').value = '';
+  document.getElementById('erroAluno').textContent = '';
+  // Focar no nome
+  document.getElementById('inputNomeAluno').focus();
+}
+
+function fecharModalTurma() {
+  document.getElementById('modalTurma').style.display = 'none';
+}
+
+async function confirmarCadastroAluno() {
+  const nome = document.getElementById('inputNomeAluno').value.trim();
+  const turma = document.getElementById('selectTurma').value;
+  const senha = document.getElementById('inputSenhaAluno').value.trim();
+
+  if (!nome) {
+    document.getElementById('erroAluno').textContent = '❌ Digite seu nome.';
+    return;
+  }
+  if (nome.length < 2) {
+    document.getElementById('erroAluno').textContent = '❌ Nome muito curto.';
+    return;
+  }
+  if (!turma) {
+    document.getElementById('erroAluno').textContent = '❌ Selecione uma turma.';
+    return;
+  }
+
+  // Verifica senha se necessário
+  const fase = state.estadoAtual?.fase || 1;
+  if (fase === 1 && state.exigirSenhaFase1) {
+    if (!senha || senha.length !== 2 || isNaN(senha)) {
+      document.getElementById('erroAluno').textContent = '❌ Digite a senha numérica de 2 dígitos.';
+      return;
+    }
+    // Busca a senha salva no Firebase
+    const senhaSalva = await lerDados('copaV2/configuracoes/senhaFase1');
+    if (senhaSalva && senhaSalva !== senha) {
+      document.getElementById('erroAluno').textContent = '❌ Senha incorreta. Tente novamente.';
+      return;
+    }
+  }
+
+  // Gera um ID único para o aluno (baseado no dispositivo + timestamp)
+  let deviceId = state.alunoDeviceId;
+  if (!deviceId) {
+    deviceId = 'aluno_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    state.alunoDeviceId = deviceId;
+    setCacheItem('aluno.deviceId', deviceId);
+  }
+
+  // Salva os dados do aluno no Firebase
+  const faseAtual = state.estadoAtual.fase;
+  await atualizarDados(`copaV2/participantes/${faseAtual}/${deviceId}`, {
+    nome: nome,
+    turma: turma,
+    timestamp: Date.now()
+  });
+
+  // Define o estado do aluno
+  state.alunoId = deviceId;
+  state.alunoNome = nome;
+  state.alunoTurma = turma;
+  state.alunoNomeCache = nome;
+  state.alunoTurmaCache = turma;
+  setCacheItem('aluno.nome', nome);
+  setCacheItem('aluno.turma', turma);
+
+  // Fecha o modal e entra no modo aluno
+  fecharModalTurma();
+  entrarModoAluno(true);
 }
 
 // ============================================================
-// DEMAIS FUNÇÕES (preencherSeletorCores, iniciarRelogio, etc.)
+// FUNÇÕES DE ENTRADA EM MODOS
+// ============================================================
+
+function entrarModoProfessor() {
+  state.meuTipo = 'professor';
+  mostrarTela('professor');
+  const abaAtiva = document.querySelector('.tab-btn.active');
+  if (abaAtiva) {
+    state.prefProfessorAba = abaAtiva.dataset.tab;
+    setCacheItem('preferencias.professorAba', state.prefProfessorAba);
+  }
+  if (state.intervaloRankingProfessor) clearInterval(state.intervaloRankingProfessor);
+  state.intervaloRankingProfessor = setInterval(() => {
+    if (state.meuTipo === 'professor' && state.atualizacaoRankingAuto) {
+      const selectFase = document.getElementById('select-fase-ranking');
+      if (selectFase) {
+        const fase = parseInt(selectFase.value) || state.estadoAtual?.fase || 1;
+        renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+      }
+    }
+  }, 4000);
+  exibirToast('👨‍🏫 Bem-vindo, Professor!', 'sucesso');
+  document.querySelector('.tab-btn[data-tab="controle"]')?.click();
+  popularSelectFases();
+  atualizarStatusAviso(state.avisoAtual);
+  carregarCorPrimaria();
+}
+
+function entrarModoAluno(cadastrado = false) {
+  if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
+    exibirToast('⏳ A fase não foi iniciada ou já terminou.', 'aviso');
+    return;
+  }
+  state.meuTipo = 'aluno';
+  mostrarTela('aluno');
+  exibirToast('🎮 Modo Aluno ativado!', 'sucesso');
+  if (state.avisoAtual && state.avisoAtual.ativo === true && state.avisoAtual.expiracao > Date.now()) {
+    exibirBannerAviso(state.avisoAtual);
+  } else {
+    removerBannerAviso();
+  }
+  carregarCorPrimaria();
+  preencherSeletorCores('seletor-cores-aluno');
+  // Atualiza informações do aluno na tela
+  if (state.alunoId) {
+    document.getElementById('aluno-nome-display').textContent = state.alunoNome || 'Aluno';
+    document.getElementById('aluno-turma-display').textContent = state.alunoTurma || '-';
+    document.getElementById('aluno-modalidade').textContent = state.estadoAtual.modalidade || '--';
+    document.getElementById('aluno-fase-info').textContent = `Fase ${state.estadoAtual.fase}/5`;
+    atualizarInfoAluno();
+    // Verifica se deve exibir o botão JOGAR
+    if (state.estadoAtual.status === 'em_andamento' && Date.now() < state.estadoAtual.fim) {
+      document.getElementById('btn-iniciar-partida').classList.remove('hidden');
+      document.getElementById('msg-status-aluno').textContent = 'Pronto para jogar!';
+    } else {
+      document.getElementById('btn-iniciar-partida').classList.add('hidden');
+      document.getElementById('msg-status-aluno').textContent = 'Aguardando fase...';
+    }
+  }
+}
+
+function entrarModoTorcida() {
+  state.torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+  const torcidaRef = db.ref(`online/${state.torcidaId}`);
+  torcidaRef.set({ tipo: 'torcida', timestamp: Date.now() });
+  torcidaRef.onDisconnect().remove();
+  sessionStorage.setItem('torcidaId', state.torcidaId);
+
+  state.meuTipo = 'projecao';
+  mostrarTela('projecao');
+  state.abaTorcidaAtiva = 'fase';
+  state.modoTorcida = 'individual';
+  document.getElementById('btn-modo-individual').classList.add('ativo');
+  document.getElementById('btn-modo-equipes').classList.remove('ativo');
+  document.getElementById('btn-torcida-sub-fase').classList.add('ativo');
+  document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
+  document.getElementById('torcida-fase-selector').style.display = 'block';
+  iniciarAtualizacaoTorcida();
+  exibirToast('📺 Modo Torcida ativado!', 'sucesso');
+}
+
+// ============================================================
+// DEMAIS FUNÇÕES (POPULAR SELECTS, ATUALIZAR UI, ETC)
 // ============================================================
 
 function preencherSeletorCores(containerId) {
@@ -342,6 +332,16 @@ function atualizarUI() {
       document.getElementById('competicao-finalizada-torcida').classList.remove('hidden');
     } else {
       document.getElementById('competicao-finalizada-torcida').classList.add('hidden');
+    }
+  }
+  // Atualiza botão JOGAR se estiver na tela do aluno
+  if (state.meuTipo === 'aluno' && state.alunoId) {
+    if (state.estadoAtual.status === 'em_andamento' && Date.now() < state.estadoAtual.fim) {
+      document.getElementById('btn-iniciar-partida').classList.remove('hidden');
+      document.getElementById('msg-status-aluno').textContent = 'Pronto para jogar!';
+    } else {
+      document.getElementById('btn-iniciar-partida').classList.add('hidden');
+      document.getElementById('msg-status-aluno').textContent = 'Aguardando fase...';
     }
   }
 }
@@ -454,67 +454,9 @@ function pararAtualizacaoTorcida() {
   state.intervaloTorcidaEquipes = null;
 }
 
-function entrarModoProfessor() {
-  state.meuTipo = 'professor';
-  mostrarTela('professor');
-  const abaAtiva = document.querySelector('.tab-btn.active');
-  if (abaAtiva) {
-    state.prefProfessorAba = abaAtiva.dataset.tab;
-    setCacheItem('preferencias.professorAba', state.prefProfessorAba);
-  }
-  if (state.intervaloRankingProfessor) clearInterval(state.intervaloRankingProfessor);
-  state.intervaloRankingProfessor = setInterval(() => {
-    if (state.meuTipo === 'professor' && state.atualizacaoRankingAuto) {
-      const selectFase = document.getElementById('select-fase-ranking');
-      if (selectFase) {
-        const fase = parseInt(selectFase.value) || state.estadoAtual?.fase || 1;
-        renderizarRanking(fase, 'ranking-parcial', 'individual', true);
-      }
-    }
-  }, 4000);
-  exibirToast('👨‍🏫 Bem-vindo, Professor!', 'sucesso');
-  document.querySelector('.tab-btn[data-tab="controle"]')?.click();
-  popularSelectFases();
-  atualizarStatusAviso(state.avisoAtual);
-  carregarCorPrimaria();
-}
-
-function entrarModoAluno() {
-  if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
-    exibirToast('⏳ A fase não foi iniciada ou já terminou.', 'aviso');
-    return;
-  }
-  state.meuTipo = 'aluno';
-  mostrarTela('aluno');
-  exibirToast('🎮 Modo Aluno ativado!', 'sucesso');
-  if (state.avisoAtual && state.avisoAtual.ativo === true && state.avisoAtual.expiracao > Date.now()) {
-    exibirBannerAviso(state.avisoAtual);
-  } else {
-    removerBannerAviso();
-  }
-  carregarCorPrimaria();
-  preencherSeletorCores('seletor-cores-aluno');
-}
-
-function entrarModoTorcida() {
-  state.torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-  const torcidaRef = db.ref(`online/${state.torcidaId}`);
-  torcidaRef.set({ tipo: 'torcida', timestamp: Date.now() });
-  torcidaRef.onDisconnect().remove();
-  sessionStorage.setItem('torcidaId', state.torcidaId);
-
-  state.meuTipo = 'projecao';
-  mostrarTela('projecao');
-  state.abaTorcidaAtiva = 'fase';
-  state.modoTorcida = 'individual';
-  document.getElementById('btn-modo-individual').classList.add('ativo');
-  document.getElementById('btn-modo-equipes').classList.remove('ativo');
-  document.getElementById('btn-torcida-sub-fase').classList.add('ativo');
-  document.getElementById('btn-torcida-sub-pontos').classList.remove('ativo');
-  document.getElementById('torcida-fase-selector').style.display = 'block';
-  iniciarAtualizacaoTorcida();
-  exibirToast('📺 Modo Torcida ativado!', 'sucesso');
-}
+// ============================================================
+// CONFIGURAÇÃO DE EVENTOS
+// ============================================================
 
 function configurarEventos() {
   document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
@@ -526,6 +468,7 @@ function configurarEventos() {
   document.getElementById('btn-fechar-tutorial')?.addEventListener('click', fecharTutorial);
   document.getElementById('btn-instalar-app')?.addEventListener('click', abrirInstalacao);
 
+  // Botão Professor
   document.getElementById('btn-professor')?.addEventListener('click', () => {
     const user = getCurrentUser();
     if (user) entrarModoProfessor();
@@ -552,9 +495,43 @@ function configurarEventos() {
   });
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
-  document.getElementById('btn-aluno')?.addEventListener('click', entrarModoAluno);
+  // Botão Aluno
+  document.getElementById('btn-aluno')?.addEventListener('click', () => {
+    // Verifica se já está cadastrado (se tem um deviceId salvo)
+    const deviceId = state.alunoDeviceId || getCacheItem('aluno.deviceId');
+    if (deviceId) {
+      // Tenta carregar os dados do aluno do Firebase
+      const faseAtual = state.estadoAtual?.fase || 1;
+      lerDados(`copaV2/participantes/${faseAtual}/${deviceId}`).then(dados => {
+        if (dados && dados.nome) {
+          state.alunoId = deviceId;
+          state.alunoNome = dados.nome;
+          state.alunoTurma = dados.turma || '?';
+          state.alunoNomeCache = dados.nome;
+          state.alunoTurmaCache = dados.turma || '?';
+          entrarModoAluno(true);
+        } else {
+          // Se não encontrou no Firebase, abre cadastro
+          abrirModalTurma();
+        }
+      }).catch(() => {
+        // Erro ao ler, abre cadastro
+        abrirModalTurma();
+      });
+    } else {
+      // Sem deviceId, abre cadastro
+      abrirModalTurma();
+    }
+  });
+
+  // Botão Confirmar Aluno
+  document.getElementById('btnConfirmarAluno')?.addEventListener('click', confirmarCadastroAluno);
+  document.getElementById('btnCancelarAluno')?.addEventListener('click', fecharModalTurma);
+
+  // Botão Torcida
   document.getElementById('btn-projecao')?.addEventListener('click', entrarModoTorcida);
 
+  // Modos da Torcida
   document.getElementById('btn-modo-individual')?.addEventListener('click', function() {
     state.modoTorcida = 'individual';
     state.prefTorcidaModo = 'individual';
@@ -613,6 +590,7 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!', 'sucesso');
   });
 
+  // Ranking do Aluno
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -636,12 +614,14 @@ function configurarEventos() {
     location.reload();
   });
 
+  // Iniciar Partida
   document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarPartida);
   document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
     if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
     location.reload();
   });
 
+  // Abas do Professor
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function(e) {
       e.preventDefault();
@@ -699,6 +679,7 @@ function configurarEventos() {
     });
   });
 
+  // Avisos
   document.getElementById('btn-publicar-aviso')?.addEventListener('click', async () => {
     const mensagem = document.getElementById('input-aviso-mensagem').value.trim();
     const minutos = parseInt(document.getElementById('input-aviso-tempo').value) || 0;
@@ -714,6 +695,7 @@ function configurarEventos() {
     await removerAviso();
   });
 
+  // Sincronizar Global
   document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
     db.ref('copaV2').once('value', snap => {
       state.estadoAtual = snap.val() || state.estadoAtual;
@@ -732,6 +714,7 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!', 'sucesso');
   });
 
+  // Controles da Fase
   document.getElementById('btn-iniciar-fase')?.addEventListener('click', async () => {
     if (!state.estadoAtual) return;
     const duracao = state.estadoAtual.tempoFase || 10;
@@ -801,6 +784,7 @@ function configurarEventos() {
     exibirToast(`✅ ${extra} minuto(s) adicionado(s)!`, 'sucesso');
   });
 
+  // Intervalos
   document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
     const val = parseInt(document.getElementById('intervalo-individual').value);
     if (val >= 1) {
@@ -820,15 +804,19 @@ function configurarEventos() {
     }
   });
 
+  // Turmas
   document.getElementById('btn-adicionar-turma')?.addEventListener('click', async () => {
     const nova = prompt('Digite o nome da nova turma:');
     if (nova && nova.trim()) {
       await adicionarTurma(nova.trim());
       renderListaTurmas();
+      // Atualiza cache de turmas
+      state.turmasCache = await lerDados('copaV2/turmas') || [];
       atualizarUltimaSinc();
     }
   });
 
+  // Configurações
   document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', async () => {
     await salvarMinPartidas();
     atualizarUltimaSinc();
@@ -853,6 +841,7 @@ function configurarEventos() {
     exibirToast('✅ Colunas restauradas para o padrão (todas visíveis)', 'sucesso');
   });
 
+  // Ranking Pontos
   document.getElementById('toggle-ranking-pontos')?.addEventListener('change', async function() {
     const ativo = this.checked;
     document.getElementById('status-ranking-pontos').innerText = ativo ? '✅ Ativado' : '❌ Desativado';
@@ -902,6 +891,7 @@ function configurarEventos() {
     exibirToast('Padrão restaurado para Fase 5', 'sucesso');
   });
 
+  // Bônus Velocidade
   document.getElementById('btn-salvar-bonus-velocidade')?.addEventListener('click', async function() {
     const ativo = document.getElementById('toggle-bonus-velocidade').checked;
     const pontos = parseInt(document.getElementById('input-bonus-velocidade').value) || 1;
@@ -916,6 +906,7 @@ function configurarEventos() {
     setTimeout(() => document.getElementById('feedback-bonus-velocidade').style.display = 'none', 5000);
   });
 
+  // Valor Partida
   document.getElementById('btn-atualizar-valor-partida')?.addEventListener('click', async function() {
     const novoValor = parseInt(document.getElementById('input-valor-partida').value);
     if (!novoValor || novoValor < 1) { exibirToast('❌ Digite um valor válido maior que 0.', 'erro'); return; }
@@ -928,6 +919,7 @@ function configurarEventos() {
     setTimeout(() => document.getElementById('feedback-valor-partida').style.display = 'none', 5000);
   });
 
+  // Senha
   document.getElementById('btn-gerar-senha')?.addEventListener('click', () => {
     if (state.senhaBloqueada) { exibirToast('❌ Senha bloqueada após iniciar a fase.', 'erro'); return; }
     const num = Math.floor(Math.random() * 90) + 10;
@@ -957,6 +949,7 @@ function configurarEventos() {
     }
   });
 
+  // Liberar Aluno
   document.getElementById('btn-liberar-aluno')?.addEventListener('click', async () => {
     const nome = document.getElementById('input-liberar-nome').value.trim();
     const turma = document.getElementById('input-liberar-turma').value.trim();
@@ -980,6 +973,10 @@ function configurarEventos() {
     atualizarUltimaSinc();
   });
 }
+
+// ============================================================
+// FUNÇÕES AUXILIARES
+// ============================================================
 
 function getPontuacaoDefault() {
   const obj = {};
@@ -1025,6 +1022,224 @@ async function atualizarListaLiberados() {
   } else {
     container.innerText = liberados.join(', ');
     container.style.color = '#4ade80';
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+
+async function init() {
+  try {
+    aplicarTema();
+    mostrarCarregando();
+    carregarConfiguracoesDoCache();
+
+    initConnectionMonitor();
+    initConnectionUI(onConnectionChange);
+
+    onConnectionChange(async (online) => {
+      if (online) {
+        if (!window._wasOnline) {
+          window._wasOnline = true;
+          return;
+        }
+        console.log('🔄 Reconectado ao Firebase! Recarregando dados...');
+        exibirToastReconexao();
+
+        try {
+          const snap = await db.ref('copaV2').once('value');
+          state.estadoAtual = snap.val() || state.estadoAtual;
+          atualizarUI();
+          atualizarCacheComDadosFirebase(state.estadoAtual);
+        } catch (e) {
+          console.warn('Erro ao recarregar estado na reconexão:', e);
+          exibirToast('⚠️ Falha ao sincronizar dados. Tente recarregar.', 'erro');
+        }
+
+        if (state.meuTipo === 'professor' && auth.currentUser) {
+          const uid = auth.currentUser.uid || 'professor';
+          recriarPresencaOnline(uid, 'professor');
+        } else if (state.meuTipo === 'aluno' && state.alunoId) {
+          recriarPresencaOnline(state.alunoId, 'aluno');
+        } else if (state.meuTipo === 'projecao' && state.torcidaId) {
+          recriarPresencaOnline(state.torcidaId, 'torcida');
+        }
+
+        if (state.meuTipo === 'professor') {
+          const fase = parseInt(document.getElementById('select-fase-ranking')?.value) || state.estadoAtual?.fase || 1;
+          renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+          renderListaAlunosGerenciar();
+          renderListaTurmas();
+        } else if (state.meuTipo === 'aluno') {
+          if (!state.jogoAtivo) {
+            atualizarInfoAluno();
+            if (document.getElementById('modal-ranking-aluno').style.display === 'flex') {
+              atualizarRankingAluno();
+            }
+          }
+        } else if (state.meuTipo === 'projecao') {
+          if (state.abaTorcidaAtiva === 'fase') {
+            if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
+            else atualizarTorcidaEquipes();
+          } else {
+            atualizarTorcidaPontos();
+          }
+        }
+
+        atualizarUltimaSinc();
+      } else {
+        window._wasOnline = false;
+      }
+    });
+
+    // Carregar configurações
+    try {
+      await carregarValorPartida();
+      await carregarConfigRankingPontos();
+      await carregarConfigBonusVelocidade();
+      await carregarRecordeGeral();
+      await carregarColunasVisiveis();
+      await carregarMinPartidas();
+    } catch (e) {
+      console.warn('Erro ao carregar configurações:', e);
+      exibirToast('⚠️ Algumas configurações podem não estar disponíveis.', 'aviso');
+    }
+
+    // Carregar turmas para cache
+    try {
+      state.turmasCache = await lerDados('copaV2/turmas') || ['Turma A', 'Turma B', 'Turma C'];
+    } catch (e) {
+      state.turmasCache = ['Turma A', 'Turma B', 'Turma C'];
+    }
+
+    inicializarSons();
+    setTimeout(() => verificarVersao(false), 2000);
+    iniciarListenerVersao();
+
+    state.listenerAviso = escutarAviso((aviso) => {
+      state.avisoAtual = aviso;
+      atualizarStatusAviso(aviso);
+      if (state.meuTipo === 'aluno') {
+        if (aviso && aviso.ativo === true && aviso.expiracao > Date.now()) {
+          exibirBannerAviso(aviso);
+        } else {
+          removerBannerAviso();
+        }
+      }
+    });
+
+    let carregamentoConcluido = false;
+    const timeoutId = setTimeout(() => {
+      if (!carregamentoConcluido) {
+        console.warn('⏳ Carregamento demorou mais que 10 segundos. Exibindo erro...');
+        exibirErroCarregamento();
+      }
+    }, 10000);
+
+    carregarEstado((estado) => {
+      carregamentoConcluido = true;
+      clearTimeout(timeoutId);
+      try {
+        atualizarCacheComDadosFirebase(estado);
+        esconderCarregando();
+        atualizarUI();
+        popularSelectFases();
+        popularSelectFasesTorcida();
+
+        if (state.meuTipo === 'projecao') {
+          if (state.abaTorcidaAtiva === 'fase') {
+            if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
+            else atualizarTorcidaEquipes();
+          } else {
+            atualizarTorcidaPontos();
+          }
+        }
+
+        if (state.meuTipo === 'professor') {
+          const tabFase = document.getElementById('tab-ranking-fase');
+          if (tabFase && !tabFase.classList.contains('hidden')) {
+            const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
+            renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+          }
+        }
+        atualizarUltimaSinc();
+        aplicarPreferenciasUI();
+
+        preencherSeletorCores('seletor-cores');
+        preencherSeletorCores('seletor-cores-aluno');
+
+        // Se já houver deviceId, tenta entrar automaticamente no modo aluno (se estiver na tela inicial)
+        const deviceId = state.alunoDeviceId || getCacheItem('aluno.deviceId');
+        if (deviceId && state.estadoAtual && state.estadoAtual.status === 'em_andamento') {
+          const faseAtual = state.estadoAtual.fase;
+          lerDados(`copaV2/participantes/${faseAtual}/${deviceId}`).then(dados => {
+            if (dados && dados.nome) {
+              state.alunoId = deviceId;
+              state.alunoNome = dados.nome;
+              state.alunoTurma = dados.turma || '?';
+              state.alunoNomeCache = dados.nome;
+              state.alunoTurmaCache = dados.turma || '?';
+              // Não entra automaticamente, apenas deixa pronto
+            }
+          }).catch(() => {});
+        }
+      } catch (e) {
+        console.error('Erro ao processar dados do Firebase:', e);
+        exibirToast('❌ Erro ao carregar dados. Recarregue a página.', 'erro');
+      }
+    });
+
+    ouvirOnline((snap) => {
+      atualizarOnline(snap);
+    });
+
+    configurarEventos();
+
+    onAuthStateChanged((user) => {
+      if (user) {
+        console.log('Usuário logado:', user.email);
+      } else {
+        if (state.meuTipo === 'professor') {
+          location.reload();
+        }
+      }
+    });
+
+    mostrarTela('inicio');
+    popularSelectFases();
+    popularSelectFasesTorcida();
+    iniciarRelogio();
+    atualizarUltimaSinc();
+
+    document.getElementById('btn-recarregar-loading')?.addEventListener('click', () => {
+      location.reload();
+    });
+
+    if (state.senhaFase1) {
+      const inputSenha = document.getElementById('input-senha-fase1');
+      if (inputSenha) inputSenha.value = state.senhaFase1;
+    }
+    if (state.exigirSenhaFase1 !== undefined) {
+      const toggle = document.getElementById('toggle-exigir-senha');
+      if (toggle) toggle.checked = state.exigirSenhaFase1;
+    }
+    if (state.modalidadeCache) {
+      const select = document.getElementById('select-modalidade');
+      if (select) select.value = state.modalidadeCache;
+    }
+    if (state.tempoFaseCache) {
+      const inputTempo = document.getElementById('input-tempo-fase');
+      if (inputTempo) inputTempo.value = state.tempoFaseCache;
+    }
+
+    // Inicializa o loop do joystick
+    initGameLoop();
+
+  } catch (error) {
+    console.error('Erro fatal no init:', error);
+    exibirToast('❌ Erro ao iniciar o jogo. Recarregue a página.', 'erro');
+    esconderCarregando();
   }
 }
 
