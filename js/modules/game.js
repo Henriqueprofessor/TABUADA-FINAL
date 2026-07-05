@@ -20,14 +20,10 @@ export function gerarPerguntas(modalidade, fase) {
   const config = configs[modalidade];
   if (!config) return [];
 
-  // Base de números para a tabuada
   let base = [];
   for (let i = config.min; i <= config.max; i++) base.push(i);
-
-  // Fase 5: inclui números 6-9 como segundo fator (tabuada "difícil")
   const H = (fase === 5) ? [6,7,8,9] : [];
 
-  // Pool de pares (a, b) sem repetição direta
   let pool = [];
   const used = new Set();
   if (fase === 5) {
@@ -46,13 +42,11 @@ export function gerarPerguntas(modalidade, fase) {
     }
   }
 
-  // Se pool for menor que 20, duplica aleatoriamente
   while (pool.length < 20) {
     const extra = pool.slice(0, 20 - pool.length);
     pool = pool.concat(extra);
   }
 
-  // Embaralha
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -61,7 +55,6 @@ export function gerarPerguntas(modalidade, fase) {
     return arr;
   }
 
-  // Seleciona 20 perguntas com o mínimo de repetição consecutiva
   let selecionadas = [];
   let tentativas = 0;
   const maxTentativas = 100;
@@ -91,16 +84,9 @@ export function gerarPerguntas(modalidade, fase) {
     selecionadas.push({ a: p.a, b: p.b });
   }
 
-  // ============================================================
-  // GERAR DISTRATORES INTELIGENTES (Item 7)
-  // ============================================================
-
   function gerarDistratoresInteligentes(correta, posAlvo, count = 3) {
     const distratores = new Set();
     const margem = Math.max(2, Math.round(correta * 0.2));
-    const minVal = Math.max(0, correta - margem * 2);
-    const maxVal = Math.min(100, correta + margem * 2);
-
     let tentativas = 0;
     while (distratores.size < count && tentativas < 200) {
       tentativas++;
@@ -109,29 +95,24 @@ export function gerarPerguntas(modalidade, fase) {
       if (r < 0.4) offset = Math.floor(Math.random() * (margem + 1));
       else if (r < 0.7) offset = Math.floor(Math.random() * (margem * 2 + 1)) + margem;
       else offset = Math.floor(Math.random() * (margem * 4 + 1)) + margem * 2;
-
       const sinal = Math.random() < 0.5 ? 1 : -1;
       let candidato = correta + sinal * offset;
       candidato = Math.max(0, Math.min(100, candidato));
-
       if (candidato !== correta && !distratores.has(candidato)) {
         distratores.add(candidato);
       }
     }
-
     while (distratores.size < count) {
       let candidato = Math.floor(Math.random() * 101);
       if (candidato !== correta && !distratores.has(candidato)) {
         distratores.add(candidato);
       }
     }
-
     let resultado = Array.from(distratores);
     shuffle(resultado);
     return resultado;
   }
 
-  // Gera as opções para cada pergunta
   const resultado = selecionadas.map((p, idx) => {
     const correta = p.a * p.b;
     const posAlvo = (idx % 4) + 1;
@@ -139,7 +120,6 @@ export function gerarPerguntas(modalidade, fase) {
     let opcoes = [correta, ...distratores];
     shuffle(opcoes);
     const novaPos = opcoes.indexOf(correta) + 1;
-
     return {
       a: p.a,
       b: p.b,
@@ -152,7 +132,7 @@ export function gerarPerguntas(modalidade, fase) {
 }
 
 // ============================================================
-// INICIAR PARTIDA (com tratamento de erros)
+// INICIAR PARTIDA
 // ============================================================
 
 export async function iniciarPartida() {
@@ -179,6 +159,7 @@ export async function iniciarPartida() {
     state.tempoTotalPartida = 0;
     state.partidaFinalizada = false;
     state.jogoAtivo = true;
+    state.timerPergunta = null; // limpa timer anterior
 
     document.body.classList.add('em-jogo');
     document.getElementById('jogo-area').classList.remove('hidden');
@@ -225,29 +206,35 @@ function proximaPergunta() {
 }
 
 // ============================================================
-// TIMER DA PERGUNTA
+// TIMER DA PERGUNTA (CORRIGIDO - usa setInterval)
 // ============================================================
 
 function iniciarTimerPergunta() {
-  state.tempoRestantePergunta = 10;
-  const barra = document.getElementById('progresso-tempo');
-  if (state.timerPergunta) clearInterval(state.timerPergunta);
+  // Cancela qualquer timer anterior
+  if (state.timerPergunta) {
+    clearInterval(state.timerPergunta);
+    state.timerPergunta = null;
+  }
 
-  let inicio = performance.now();
-  function atualizar(timestamp) {
-    const decorrido = (timestamp - inicio) / 1000;
-    state.tempoRestantePergunta = Math.max(0, 10 - decorrido);
+  state.tempoRestantePergunta = 10; // 10 segundos
+  const barra = document.getElementById('progresso-tempo');
+
+  // Atualiza a barra a cada 100ms
+  state.timerPergunta = setInterval(() => {
+    state.tempoRestantePergunta -= 0.1;
+    if (state.tempoRestantePergunta < 0) state.tempoRestantePergunta = 0;
     if (barra) {
-      barra.style.width = (state.tempoRestantePergunta * 10) + '%';
-      barra.setAttribute('aria-valuenow', Math.round(state.tempoRestantePergunta * 10));
+      const pct = (state.tempoRestantePergunta / 10) * 100;
+      barra.style.width = pct + '%';
+      barra.setAttribute('aria-valuenow', Math.round(pct));
     }
-    if (state.tempoRestantePergunta > 0) {
-      requestAnimationFrame(atualizar);
-    } else {
+    // Se o tempo acabou, responde com -1 (tempo esgotado)
+    if (state.tempoRestantePergunta <= 0) {
+      clearInterval(state.timerPergunta);
+      state.timerPergunta = null;
       responder(-1);
     }
-  }
-  requestAnimationFrame(atualizar);
+  }, 100);
 }
 
 // ============================================================
@@ -256,22 +243,26 @@ function iniciarTimerPergunta() {
 
 export async function responder(idx) {
   if (!state.jogoAtivo || state.partidaFinalizada) return;
-  if (state.timerPergunta) clearInterval(state.timerPergunta);
+
+  // Cancela o timer da pergunta atual
+  if (state.timerPergunta) {
+    clearInterval(state.timerPergunta);
+    state.timerPergunta = null;
+  }
 
   try {
     const btns = document.querySelectorAll('.opcao-vertical');
     btns.forEach(b => b.disabled = true);
 
+    // Tempo gasto: 10 - tempo restante (aproximado)
     const tempoGasto = 10 - Math.max(0, state.tempoRestantePergunta);
     state.tempoTotalPartida += tempoGasto;
 
-    let acertou = false;
     if (idx !== -1) {
       const resp = parseInt(btns[idx].innerText);
       const p = state.perguntas[state.perguntaIdx];
       const correta = p.a * p.b;
       if (resp === correta) {
-        acertou = true;
         state.acertosPartida++;
         const pontosGanhos = Math.round(100 * (Math.max(0, state.tempoRestantePergunta) / 10));
         state.pontosPartida += pontosGanhos;
