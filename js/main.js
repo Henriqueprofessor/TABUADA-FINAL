@@ -1,4 +1,3 @@
-// js/main.js
 import { db, auth, initConnectionMonitor, onConnectionChange, recriarPresencaOnline } from './config/firebase.js';
 import { state } from './modules/state.js';
 import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './modules/auth.js';
@@ -83,30 +82,23 @@ const TURMAS_ANTIGAS = ["Turma A", "Turma B", "Turma C"];
 let timerGlobalInterval = null;
 
 function iniciarTimerGlobal() {
-  // Se já existe um timer, não cria outro
   if (timerGlobalInterval) return;
-
   timerGlobalInterval = setInterval(() => {
     if (!state.estadoAtual) return;
     if (state.estadoAtual.status !== 'em_andamento') {
-      // Se a fase não está em andamento, para o timer
       pararTimerGlobal();
       return;
     }
     const agora = Date.now();
     const restante = state.estadoAtual.fim - agora;
     if (restante <= 0) {
-      // Tempo esgotado, para o timer e dispara verificação
       pararTimerGlobal();
-      // Atualiza os displays para 00:00
       atualizarTimerFase(0);
-      // Verifica se deve avançar a fase (já existe lógica em verificarTempoEsgotado)
       if (state.estadoAtual.status === 'em_andamento') {
         import('./modules/ranking.js').then(({ avancarFase }) => avancarFase());
       }
       return;
     }
-    // Atualiza os displays de tempo
     atualizarTimerFase(restante);
   }, 1000);
 }
@@ -276,7 +268,6 @@ function entrarModoProfessor() {
   atualizarStatusAviso(state.avisoAtual);
   carregarCorPrimaria();
   
-  // Iniciar timer global se a fase estiver em andamento
   if (state.estadoAtual && state.estadoAtual.status === 'em_andamento') {
     iniciarTimerGlobal();
   }
@@ -318,10 +309,10 @@ function entrarModoAluno(cadastrado = false) {
 }
 
 // ============================================================
-// FUNÇÕES DA TORCIDA
+// FUNÇÕES DA TORCIDA (CORRIGIDAS)
 // ============================================================
 
-let torcidaAba = 'fase'; // 'fase' | 'equipes' | 'pontos'
+let torcidaAba = 'fase';
 let intervaloTorcida = null;
 let faseTorcidaSelecionada = 1;
 
@@ -344,11 +335,15 @@ function entrarModoTorcida() {
   document.getElementById('btn-torcida-pontos').setAttribute('aria-selected', 'false');
   document.getElementById('torcida-fase-selector').style.display = 'block';
   
+  // CORREÇÃO: Define a fase inicial da torcida para a fase atual
+  const faseAtual = state.estadoAtual?.fase || 1;
+  faseTorcidaSelecionada = faseAtual;
+  
   popularSelectFasesTorcida();
   const select = document.getElementById('select-fase-torcida');
-  if (select && state.estadoAtual) {
-    select.value = state.estadoAtual.fase;
-    faseTorcidaSelecionada = state.estadoAtual.fase;
+  if (select) {
+    select.value = faseAtual;
+    faseTorcidaSelecionada = faseAtual;
   }
   
   iniciarAtualizacaoTorcida();
@@ -358,12 +353,27 @@ function entrarModoTorcida() {
 async function atualizarTorcidaFase() {
   if (state.meuTipo !== 'projecao' || torcidaAba !== 'fase') return;
   if (!state.estadoAtual) return;
-  let fase = parseInt(document.getElementById('select-fase-torcida').value);
-  if (isNaN(fase) || fase < 1 || fase > 5) fase = state.estadoAtual.fase;
+  
+  const select = document.getElementById('select-fase-torcida');
+  let fase = parseInt(select.value);
+  if (isNaN(fase) || fase < 1 || fase > 5) {
+    // Se a fase selecionada for inválida, usa a fase atual
+    fase = state.estadoAtual.fase;
+    if (select) select.value = fase;
+  }
+  
+  // Se a fase selecionada for maior que a fase atual, ajusta para a fase atual (não pode mostrar fases futuras)
+  if (fase > state.estadoAtual.fase) {
+    fase = state.estadoAtual.fase;
+    if (select) select.value = fase;
+  }
+  
   faseTorcidaSelecionada = fase;
   await renderizarRanking(fase, 'ranking-torcida-container', 'individual', true);
   const infoSpan = document.getElementById('fase-torcida-info');
-  if (infoSpan) infoSpan.innerText = (fase === state.estadoAtual.fase) ? '(Fase atual)' : '(Fase anterior)';
+  if (infoSpan) {
+    infoSpan.innerText = (fase === state.estadoAtual.fase) ? '(Fase atual)' : '(Fase anterior)';
+  }
 }
 
 async function atualizarTorcidaEquipes() {
@@ -471,7 +481,6 @@ function atualizarUI() {
   const configs = { "2-5": "Tabuada 2️⃣➡️5️⃣", "6-9": "Tabuada 6️⃣➡️9️⃣", "0-10": "Tabuada 0️⃣➡️🔟" };
   document.getElementById('modalidade-titulo').innerText = configs[state.estadoAtual.modalidade] || state.estadoAtual.modalidade;
   
-  // Gerenciar timer global
   if (state.estadoAtual.status === 'em_andamento' && state.estadoAtual.fim > 0) {
     const restante = state.estadoAtual.fim - Date.now();
     if (restante > 0) {
@@ -480,17 +489,14 @@ function atualizarUI() {
     } else {
       pararTimerGlobal();
       atualizarTimerFase(0);
-      // Verificar se deve avançar fase (já existe lógica em outro lugar, mas garantimos)
       if (state.estadoAtual.status === 'em_andamento') {
         import('./modules/ranking.js').then(({ avancarFase }) => avancarFase());
       }
     }
   } else if (state.estadoAtual.status === 'pausado' && state.estadoAtual.tempoRestantePausa) {
-    // Quando pausado, mostramos o tempo restante (não precisa de timer contínuo)
     atualizarTimerFase(state.estadoAtual.tempoRestantePausa);
     pararTimerGlobal();
   } else {
-    // Se não está em andamento nem pausado, para o timer e zera
     pararTimerGlobal();
     atualizarTimerFase(0);
   }
@@ -509,10 +515,19 @@ function atualizarUI() {
     } else {
       document.getElementById('competicao-finalizada-torcida').classList.add('hidden');
     }
+    
+    // ===== CORREÇÃO DA TORCIDA =====
     const select = document.getElementById('select-fase-torcida');
     if (select && torcidaAba === 'fase') {
-      select.value = fase;
-      faseTorcidaSelecionada = fase;
+      const faseSelecionada = parseInt(select.value);
+      // Se a fase selecionada for inválida ou maior que a fase atual, ajusta para a fase atual
+      if (isNaN(faseSelecionada) || faseSelecionada > fase) {
+        select.value = fase;
+        faseTorcidaSelecionada = fase;
+      } else {
+        // Mantém a fase que o usuário escolheu
+        faseTorcidaSelecionada = faseSelecionada;
+      }
     }
   }
   if (state.meuTipo === 'aluno' && state.alunoId) {
@@ -561,8 +576,9 @@ function popularSelectFasesTorcida() {
   for (let i = 1; i <= 5; i++) options += `<option value="${i}">Fase ${i}</option>`;
   select.innerHTML = options;
   if (state.estadoAtual) {
-    select.value = state.estadoAtual.fase;
-    faseTorcidaSelecionada = state.estadoAtual.fase;
+    const faseAtual = state.estadoAtual.fase;
+    select.value = faseAtual;
+    faseTorcidaSelecionada = faseAtual;
   }
   select.removeEventListener('change', onSelectFaseTorcidaChange);
   select.addEventListener('change', onSelectFaseTorcidaChange);
@@ -572,6 +588,12 @@ function onSelectFaseTorcidaChange() {
   if (state.meuTipo !== 'projecao' || torcidaAba !== 'fase') return;
   const fase = parseInt(document.getElementById('select-fase-torcida').value);
   if (!isNaN(fase) && fase >= 1 && fase <= 5) {
+    // Não permite selecionar uma fase futura (maior que a fase atual)
+    if (state.estadoAtual && fase > state.estadoAtual.fase) {
+      exibirToast('⚠️ Esta fase ainda não aconteceu.', 'aviso');
+      document.getElementById('select-fase-torcida').value = state.estadoAtual.fase;
+      return;
+    }
     faseTorcidaSelecionada = fase;
     atualizarTorcidaFase();
   }
@@ -591,7 +613,6 @@ function configurarEventos() {
   document.getElementById('btn-fechar-tutorial')?.addEventListener('click', fecharTutorial);
   document.getElementById('btn-instalar-app')?.addEventListener('click', abrirInstalacao);
 
-  // Botão Professor
   document.getElementById('btn-professor')?.addEventListener('click', () => {
     const user = getCurrentUser();
     if (user) entrarModoProfessor();
@@ -618,7 +639,6 @@ function configurarEventos() {
   });
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
-  // Botão Aluno
   document.getElementById('btn-aluno')?.addEventListener('click', () => {
     const deviceId = state.alunoDeviceId || getCacheItem('aluno.deviceId');
     if (deviceId) {
@@ -645,10 +665,8 @@ function configurarEventos() {
   document.getElementById('btnConfirmarAluno')?.addEventListener('click', confirmarCadastroAluno);
   document.getElementById('btnCancelarAluno')?.addEventListener('click', fecharModalTurma);
 
-  // Botão Torcida
   document.getElementById('btn-projecao')?.addEventListener('click', entrarModoTorcida);
 
-  // Botões da torcida
   document.getElementById('btn-torcida-fase')?.addEventListener('click', function() {
     torcidaAba = 'fase';
     document.querySelectorAll('.modo-buttons .btn-modo').forEach(b => {
@@ -660,8 +678,15 @@ function configurarEventos() {
     document.getElementById('torcida-fase-selector').style.display = 'block';
     const select = document.getElementById('select-fase-torcida');
     if (select && state.estadoAtual) {
-      select.value = state.estadoAtual.fase;
-      faseTorcidaSelecionada = state.estadoAtual.fase;
+      const faseAtual = state.estadoAtual.fase;
+      // Se a fase selecionada for inválida ou futura, ajusta para a atual
+      const faseSelecionada = parseInt(select.value);
+      if (isNaN(faseSelecionada) || faseSelecionada > faseAtual) {
+        select.value = faseAtual;
+        faseTorcidaSelecionada = faseAtual;
+      } else {
+        faseTorcidaSelecionada = faseSelecionada;
+      }
     }
     atualizarTorcidaFase();
     tocarSom('clique');
@@ -713,7 +738,6 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!', 'sucesso');
   });
 
-  // Ranking do Aluno
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -737,7 +761,6 @@ function configurarEventos() {
     location.reload();
   });
 
-  // Iniciar Partida
   document.getElementById('btn-iniciar-partida')?.addEventListener('click', async () => {
     const fase = state.estadoAtual.fase;
     const resultados = state.estadoAtual?.resultados?.[fase] || {};
@@ -758,7 +781,6 @@ function configurarEventos() {
     location.reload();
   });
 
-  // Abas do Professor
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function(e) {
       e.preventDefault();
@@ -816,7 +838,6 @@ function configurarEventos() {
     });
   });
 
-  // Avisos
   document.getElementById('btn-publicar-aviso')?.addEventListener('click', async () => {
     const mensagem = document.getElementById('input-aviso-mensagem').value.trim();
     const minutos = parseInt(document.getElementById('input-aviso-tempo').value) || 0;
@@ -832,7 +853,6 @@ function configurarEventos() {
     await removerAviso();
   });
 
-  // Sincronizar Global
   document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
     db.ref('copaV2').once('value', snap => {
       state.estadoAtual = snap.val() || state.estadoAtual;
@@ -851,14 +871,12 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!', 'sucesso');
   });
 
-  // Controles da Fase
   document.getElementById('btn-iniciar-fase')?.addEventListener('click', async () => {
     if (!state.estadoAtual) return;
     const duracao = state.estadoAtual.tempoFase || 10;
     const fim = Date.now() + duracao * 60000;
     await setDados('copaV2', { ...state.estadoAtual, status: 'em_andamento', fim, tempoRestantePausa: null });
     atualizarUltimaSinc();
-    // Iniciar timer global
     iniciarTimerGlobal();
     exibirToast('▶️ Fase iniciada!', 'sucesso');
   });
@@ -870,7 +888,6 @@ function configurarEventos() {
       const tempoRestante = Math.max(0, state.estadoAtual.fim - agora);
       await setDados('copaV2', { ...state.estadoAtual, status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
       atualizarUltimaSinc();
-      // Para o timer global
       pararTimerGlobal();
       exibirToast('⏸️ Fase pausada.', 'aviso');
     } else if (state.estadoAtual?.status === 'pausado') {
@@ -879,7 +896,6 @@ function configurarEventos() {
       const novoFim = Date.now() + tempoRestante;
       await setDados('copaV2', { ...state.estadoAtual, status: 'em_andamento', fim: novoFim, tempoRestantePausa: null });
       atualizarUltimaSinc();
-      // Reiniciar timer global
       iniciarTimerGlobal();
       exibirToast('▶️ Fase retomada!', 'sucesso');
     }
@@ -927,7 +943,6 @@ function configurarEventos() {
     exibirToast(`✅ ${extra} minuto(s) adicionado(s)!`, 'sucesso');
   });
 
-  // Intervalos
   document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
     const val = parseInt(document.getElementById('intervalo-individual').value);
     if (val >= 1) {
@@ -947,7 +962,6 @@ function configurarEventos() {
     }
   });
 
-  // Turmas
   document.getElementById('btn-adicionar-turma')?.addEventListener('click', async () => {
     const nova = prompt('Digite o nome da nova turma:');
     if (nova && nova.trim()) {
@@ -962,7 +976,6 @@ function configurarEventos() {
     }
   });
 
-  // Configurações
   document.getElementById('btn-salvar-min-partidas')?.addEventListener('click', async () => {
     await salvarMinPartidas();
     atualizarUltimaSinc();
@@ -987,7 +1000,6 @@ function configurarEventos() {
     exibirToast('✅ Colunas restauradas para o padrão (todas visíveis)', 'sucesso');
   });
 
-  // Ranking Pontos
   document.getElementById('toggle-ranking-pontos')?.addEventListener('change', async function() {
     const ativo = this.checked;
     document.getElementById('status-ranking-pontos').innerText = ativo ? '✅ Ativado' : '❌ Desativado';
@@ -1038,7 +1050,6 @@ function configurarEventos() {
     exibirToast('Padrão restaurado para Fase 5', 'sucesso');
   });
 
-  // Bônus Velocidade
   document.getElementById('btn-salvar-bonus-velocidade')?.addEventListener('click', async function() {
     const ativo = document.getElementById('toggle-bonus-velocidade').checked;
     const pontos = parseInt(document.getElementById('input-bonus-velocidade').value) || 1;
@@ -1053,7 +1064,6 @@ function configurarEventos() {
     setTimeout(() => document.getElementById('feedback-bonus-velocidade').style.display = 'none', 5000);
   });
 
-  // Valor Partida
   document.getElementById('btn-atualizar-valor-partida')?.addEventListener('click', async function() {
     const novoValor = parseInt(document.getElementById('input-valor-partida').value);
     if (!novoValor || novoValor < 1) { exibirToast('❌ Digite um valor válido maior que 0.', 'erro'); return; }
@@ -1066,7 +1076,6 @@ function configurarEventos() {
     setTimeout(() => document.getElementById('feedback-valor-partida').style.display = 'none', 5000);
   });
 
-  // Senha
   document.getElementById('btn-gerar-senha')?.addEventListener('click', () => {
     if (state.senhaBloqueada) { exibirToast('❌ Senha bloqueada após iniciar a fase.', 'erro'); return; }
     const num = Math.floor(Math.random() * 90) + 10;
@@ -1096,7 +1105,6 @@ function configurarEventos() {
     }
   });
 
-  // Liberar Aluno
   document.getElementById('btn-liberar-aluno')?.addEventListener('click', async () => {
     const nome = document.getElementById('input-liberar-nome').value.trim();
     const turma = document.getElementById('input-liberar-turma').value.trim();
@@ -1219,7 +1227,6 @@ async function init() {
           await garantirTurmasPadrao();
           renderListaAlunosGerenciar();
           renderListaTurmas();
-          // Iniciar timer se a fase estiver em andamento
           if (state.estadoAtual && state.estadoAtual.status === 'em_andamento') {
             iniciarTimerGlobal();
           }
@@ -1234,8 +1241,14 @@ async function init() {
           if (torcidaAba === 'fase') {
             const select = document.getElementById('select-fase-torcida');
             if (select && state.estadoAtual) {
-              select.value = state.estadoAtual.fase;
-              faseTorcidaSelecionada = state.estadoAtual.fase;
+              const faseAtual = state.estadoAtual.fase;
+              const faseSelecionada = parseInt(select.value);
+              if (isNaN(faseSelecionada) || faseSelecionada > faseAtual) {
+                select.value = faseAtual;
+                faseTorcidaSelecionada = faseAtual;
+              } else {
+                faseTorcidaSelecionada = faseSelecionada;
+              }
             }
             atualizarTorcidaFase();
           } else if (torcidaAba === 'equipes') {
@@ -1251,7 +1264,6 @@ async function init() {
       }
     });
 
-    // Carregar configurações
     try {
       await carregarValorPartida();
       await carregarConfigRankingPontos();
@@ -1264,7 +1276,6 @@ async function init() {
       exibirToast('⚠️ Algumas configurações podem não estar disponíveis.', 'aviso');
     }
 
-    // Carregar turmas para cache
     try {
       state.turmasCache = await lerDados('copaV2/turmas') || TURMAS_PADRAO;
       await garantirTurmasPadrao();
@@ -1310,8 +1321,14 @@ async function init() {
           if (torcidaAba === 'fase') {
             const select = document.getElementById('select-fase-torcida');
             if (select && state.estadoAtual) {
-              select.value = state.estadoAtual.fase;
-              faseTorcidaSelecionada = state.estadoAtual.fase;
+              const faseAtual = state.estadoAtual.fase;
+              const faseSelecionada = parseInt(select.value);
+              if (isNaN(faseSelecionada) || faseSelecionada > faseAtual) {
+                select.value = faseAtual;
+                faseTorcidaSelecionada = faseAtual;
+              } else {
+                faseTorcidaSelecionada = faseSelecionada;
+              }
             }
             atualizarTorcidaFase();
           } else if (torcidaAba === 'equipes') {
@@ -1330,7 +1347,6 @@ async function init() {
           garantirTurmasPadrao().then(() => {
             renderListaTurmas();
           });
-          // Iniciar timer se a fase estiver em andamento
           if (state.estadoAtual && state.estadoAtual.status === 'em_andamento') {
             iniciarTimerGlobal();
           }
@@ -1403,7 +1419,6 @@ async function init() {
       if (inputTempo) inputTempo.value = state.tempoFaseCache;
     }
 
-    // Inicializa o loop do joystick
     initGameLoop();
 
   } catch (error) {
