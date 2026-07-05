@@ -69,6 +69,7 @@ import {
   removerBannerAviso,
   atualizarStatusAviso
 } from './modules/aviso.js';
+import { initGameLoop } from './modules/gameLoop.js'; // <-- NOVO
 
 async function init() {
   try {
@@ -250,12 +251,20 @@ async function init() {
       const inputTempo = document.getElementById('input-tempo-fase');
       if (inputTempo) inputTempo.value = state.tempoFaseCache;
     }
+
+    // ===== INICIALIZA O LOOP DO JOYSTICK (Item 11) =====
+    initGameLoop();
+
   } catch (error) {
     console.error('Erro fatal no init:', error);
     exibirToast('❌ Erro ao iniciar o jogo. Recarregue a página.', 'erro');
     esconderCarregando();
   }
 }
+
+// ============================================================
+// DEMAIS FUNÇÕES (preencherSeletorCores, iniciarRelogio, etc.)
+// ============================================================
 
 function preencherSeletorCores(containerId) {
   const container = document.getElementById(containerId);
