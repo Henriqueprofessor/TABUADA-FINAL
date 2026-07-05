@@ -236,7 +236,7 @@ async function init() {
 }
 
 // ============================================================
-// RELÓGIO EM TEMPO REAL
+// RELÓGIO
 // ============================================================
 function iniciarRelogio() {
   function atualizarRelogio() {
@@ -250,9 +250,6 @@ function iniciarRelogio() {
   setInterval(atualizarRelogio, 1000);
 }
 
-// ============================================================
-// ATUALIZAR ÚLTIMA SINCRONIZAÇÃO
-// ============================================================
 function atualizarUltimaSinc() {
   const span = document.getElementById('last-sync-time');
   if (span) {
@@ -267,7 +264,7 @@ function atualizarUltimaSinc() {
 }
 
 // ============================================================
-// ATUALIZAÇÃO DA UI
+// ATUALIZAR UI
 // ============================================================
 function atualizarUI() {
   if (!state.estadoAtual) return;
@@ -306,7 +303,7 @@ function atualizarOnline(snap) {
 }
 
 // ============================================================
-// POPULAR SELECTORES DE FASES
+// SELECTORES DE FASES
 // ============================================================
 function popularSelectFases() {
   const select = document.getElementById('select-fase-ranking');
@@ -411,7 +408,7 @@ function pararAtualizacaoTorcida() {
 }
 
 // ============================================================
-// MODO PROFESSOR
+// MODOS
 // ============================================================
 function entrarModoProfessor() {
   state.meuTipo = 'professor';
@@ -434,9 +431,6 @@ function entrarModoProfessor() {
   atualizarStatusAviso(state.avisoAtual);
 }
 
-// ============================================================
-// MODO ALUNO
-// ============================================================
 function entrarModoAluno() {
   if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
     exibirToast('⏳ A fase não foi iniciada ou já terminou.');
@@ -452,9 +446,6 @@ function entrarModoAluno() {
   }
 }
 
-// ============================================================
-// MODO TORCIDA
-// ============================================================
 function entrarModoTorcida() {
   state.torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
   const torcidaRef = db.ref(`online/${state.torcidaId}`);
@@ -476,7 +467,7 @@ function entrarModoTorcida() {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DE EVENTOS
+// CONFIGURAR EVENTOS
 // ============================================================
 function configurarEventos() {
   document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
@@ -517,6 +508,7 @@ function configurarEventos() {
   document.getElementById('btn-aluno')?.addEventListener('click', entrarModoAluno);
   document.getElementById('btn-projecao')?.addEventListener('click', entrarModoTorcida);
 
+  // Torcida - modos
   document.getElementById('btn-modo-individual')?.addEventListener('click', function() {
     state.modoTorcida = 'individual';
     state.prefTorcidaModo = 'individual';
@@ -575,6 +567,7 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
+  // Ranking do aluno
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -637,6 +630,7 @@ function configurarEventos() {
     });
   });
 
+  // Avisos
   document.getElementById('btn-publicar-aviso')?.addEventListener('click', async () => {
     const mensagem = document.getElementById('input-aviso-mensagem').value.trim();
     const minutos = parseInt(document.getElementById('input-aviso-tempo').value) || 0;
@@ -652,7 +646,7 @@ function configurarEventos() {
     await removerAviso();
   });
 
-  // ===== BOTÃO SINCRONIZAR GLOBAL =====
+  // Sincronizar
   document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
     db.ref('copaV2').once('value', snap => {
       state.estadoAtual = snap.val() || state.estadoAtual;
@@ -671,7 +665,7 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
-  // ===== CONTROLE DE FASE =====
+  // Controle de fase
   document.getElementById('btn-iniciar-fase')?.addEventListener('click', async () => {
     if (!state.estadoAtual) return;
     const duracao = state.estadoAtual.tempoFase || 10;
@@ -741,7 +735,7 @@ function configurarEventos() {
     exibirToast(`✅ ${extra} minuto(s) adicionado(s)!`);
   });
 
-  // ===== INTERVALOS =====
+  // Intervalos
   document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
     const val = parseInt(document.getElementById('intervalo-individual').value);
     if (val >= 1) {
@@ -923,7 +917,7 @@ function configurarEventos() {
 }
 
 // ============================================================
-// FUNÇÕES AUXILIARES PARA PONTUAÇÃO
+// FUNÇÕES AUXILIARES
 // ============================================================
 function getPontuacaoDefault() {
   const obj = {};
