@@ -8,7 +8,7 @@ import { atualizarRecordeGeral } from './config.js';
 import { verificarEConcederMedalhas, atualizarExibicaoMedalhas } from './medals.js';
 
 // ============================================================
-// GERAR PERGUNTAS COM DISTRATORES INTELIGENTES (Item 7)
+// GERAR PERGUNTAS COM DISTRATORES INTELIGENTES
 // ============================================================
 
 export function gerarPerguntas(modalidade, fase) {
@@ -159,7 +159,7 @@ export async function iniciarPartida() {
     state.tempoTotalPartida = 0;
     state.partidaFinalizada = false;
     state.jogoAtivo = true;
-    state.timerPergunta = null; // limpa timer anterior
+    state.timerPergunta = null;
 
     document.body.classList.add('em-jogo');
     document.getElementById('jogo-area').classList.remove('hidden');
@@ -206,20 +206,18 @@ function proximaPergunta() {
 }
 
 // ============================================================
-// TIMER DA PERGUNTA (CORRIGIDO - usa setInterval)
+// TIMER DA PERGUNTA (CORRIGIDO - usa setInterval a cada 100ms)
 // ============================================================
 
 function iniciarTimerPergunta() {
-  // Cancela qualquer timer anterior
   if (state.timerPergunta) {
     clearInterval(state.timerPergunta);
     state.timerPergunta = null;
   }
 
-  state.tempoRestantePergunta = 10; // 10 segundos
+  state.tempoRestantePergunta = 10;
   const barra = document.getElementById('progresso-tempo');
 
-  // Atualiza a barra a cada 100ms
   state.timerPergunta = setInterval(() => {
     state.tempoRestantePergunta -= 0.1;
     if (state.tempoRestantePergunta < 0) state.tempoRestantePergunta = 0;
@@ -228,7 +226,6 @@ function iniciarTimerPergunta() {
       barra.style.width = pct + '%';
       barra.setAttribute('aria-valuenow', Math.round(pct));
     }
-    // Se o tempo acabou, responde com -1 (tempo esgotado)
     if (state.tempoRestantePergunta <= 0) {
       clearInterval(state.timerPergunta);
       state.timerPergunta = null;
@@ -244,7 +241,6 @@ function iniciarTimerPergunta() {
 export async function responder(idx) {
   if (!state.jogoAtivo || state.partidaFinalizada) return;
 
-  // Cancela o timer da pergunta atual
   if (state.timerPergunta) {
     clearInterval(state.timerPergunta);
     state.timerPergunta = null;
@@ -254,7 +250,6 @@ export async function responder(idx) {
     const btns = document.querySelectorAll('.opcao-vertical');
     btns.forEach(b => b.disabled = true);
 
-    // Tempo gasto: 10 - tempo restante (aproximado)
     const tempoGasto = 10 - Math.max(0, state.tempoRestantePergunta);
     state.tempoTotalPartida += tempoGasto;
 
@@ -290,7 +285,6 @@ export async function responder(idx) {
   }
 }
 
-// Exportar para o escopo global (onclick)
 window.responder = responder;
 
 // ============================================================
