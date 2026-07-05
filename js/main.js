@@ -15,8 +15,7 @@ import {
   esconderCarregando, 
   exibirErroCarregamento,
   aplicarTema,
-  alternarTema,
-  atualizarBannerAviso
+  alternarTema
 } from './modules/ui.js';
 import { iniciarPartida } from './modules/game.js';
 import { 
@@ -30,9 +29,7 @@ import {
   renderListaAlunosGerenciar,
   renderListaTurmas,
   renderizarConfigMinPartidas,
-  renderizarColunasVisiveis,
-  carregarConfigAvatar,
-  salvarConfigAvatar
+  renderizarColunasVisiveis
 } from './modules/ranking.js';
 import { inicializarSons, renderizarPainelSom } from './modules/sound.js';
 import { abrirTutorial, fecharTutorial } from './modules/tutorial.js';
@@ -68,22 +65,6 @@ import {
   removerBannerAviso,
   atualizarStatusAviso
 } from './modules/aviso.js';
-import {
-  obterAvatarAluno,
-  salvarAvatarAluno,
-  mostrarPopupAvatar,
-  atualizarAvatarAlunoUI,
-  AVATAR_EMOJIS,
-  gerarAvatarHTML,
-  obterCorTurma
-} from './modules/avatar.js';
-// ===== IMPORTAÇÃO CORRETA DO MODO TREINO =====
-import {
-  mostrarConfiguracaoTreino,
-  iniciarTreinoFromConfig,
-  MODALIDADES_TREINO,
-  OPCOES_PERGUNTAS
-} from './modules/treino.js';
 
 // ============================================================
 // INICIALIZAÇÃO
@@ -92,8 +73,6 @@ async function init() {
   aplicarTema();
   mostrarCarregando();
   carregarConfiguracoesDoCache();
-
-  await carregarConfigAvatar();
 
   initConnectionMonitor();
   initConnectionUI(onConnectionChange);
@@ -210,11 +189,6 @@ async function init() {
     }
     atualizarUltimaSinc();
     aplicarPreferenciasUI();
-
-    if (state.meuTipo === 'aluno') {
-      carregarAvatarAluno();
-      atualizarAvatarAlunoUI();
-    }
   });
 
   ouvirOnline((snap) => {
@@ -259,31 +233,10 @@ async function init() {
     const inputTempo = document.getElementById('input-tempo-fase');
     if (inputTempo) inputTempo.value = state.tempoFaseCache;
   }
-
-  if (state.meuTipo === 'aluno') {
-    await carregarAvatarAluno();
-    atualizarAvatarAlunoUI();
-  }
 }
 
 // ============================================================
-// CARREGAR AVATAR
-// ============================================================
-async function carregarAvatarAluno() {
-  try {
-    const snap = await db.ref(`copaV2/participantes/avatar/${state.alunoId}`).once('value');
-    state.avatarAluno = snap.val() || '⭐';
-    if (state.alunoTurma) {
-      const snapCor = await db.ref(`copaV2/turmas_cores/${state.alunoTurma}`).once('value');
-      state.corTurma = snapCor.val() || '#95a5a6';
-    }
-  } catch (e) {
-    console.warn('Erro ao carregar avatar:', e);
-  }
-}
-
-// ============================================================
-// RELÓGIO
+// RELÓGIO EM TEMPO REAL
 // ============================================================
 function iniciarRelogio() {
   function atualizarRelogio() {
@@ -297,6 +250,9 @@ function iniciarRelogio() {
   setInterval(atualizarRelogio, 1000);
 }
 
+// ============================================================
+// ATUALIZAR ÚLTIMA SINCRONIZAÇÃO
+// ============================================================
 function atualizarUltimaSinc() {
   const span = document.getElementById('last-sync-time');
   if (span) {
@@ -311,7 +267,7 @@ function atualizarUltimaSinc() {
 }
 
 // ============================================================
-// ATUALIZAR UI
+// ATUALIZAÇÃO DA UI
 // ============================================================
 function atualizarUI() {
   if (!state.estadoAtual) return;
@@ -350,7 +306,7 @@ function atualizarOnline(snap) {
 }
 
 // ============================================================
-// SELECTORES DE FASES
+// POPULAR SELECTORES DE FASES
 // ============================================================
 function popularSelectFases() {
   const select = document.getElementById('select-fase-ranking');
@@ -392,7 +348,7 @@ function onSelectFaseTorcidaChange() {
 }
 
 // ============================================================
-// TORCIDA
+// FUNÇÕES DA TORCIDA
 // ============================================================
 async function atualizarTorcidaIndividual() {
   if (state.meuTipo !== 'projecao' || state.abaTorcidaAtiva !== 'fase' || state.modoTorcida !== 'individual') return;
@@ -455,7 +411,7 @@ function pararAtualizacaoTorcida() {
 }
 
 // ============================================================
-// MODOS
+// MODO PROFESSOR
 // ============================================================
 function entrarModoProfessor() {
   state.meuTipo = 'professor';
@@ -478,6 +434,9 @@ function entrarModoProfessor() {
   atualizarStatusAviso(state.avisoAtual);
 }
 
+// ============================================================
+// MODO ALUNO
+// ============================================================
 function entrarModoAluno() {
   if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
     exibirToast('⏳ A fase não foi iniciada ou já terminou.');
@@ -491,12 +450,11 @@ function entrarModoAluno() {
   } else {
     removerBannerAviso();
   }
-  setTimeout(() => {
-    carregarAvatarAluno();
-    atualizarAvatarAlunoUI();
-  }, 300);
 }
 
+// ============================================================
+// MODO TORCIDA
+// ============================================================
 function entrarModoTorcida() {
   state.torcidaId = 'torcida_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
   const torcidaRef = db.ref(`online/${state.torcidaId}`);
@@ -518,7 +476,7 @@ function entrarModoTorcida() {
 }
 
 // ============================================================
-// CONFIGURAR EVENTOS
+// CONFIGURAÇÃO DE EVENTOS
 // ============================================================
 function configurarEventos() {
   document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
@@ -559,29 +517,6 @@ function configurarEventos() {
   document.getElementById('btn-aluno')?.addEventListener('click', entrarModoAluno);
   document.getElementById('btn-projecao')?.addEventListener('click', entrarModoTorcida);
 
-  // ===== MODO TREINO (CORRIGIDO) =====
-  document.getElementById('btn-treino')?.addEventListener('click', () => {
-    state.modoTreinoAtivo = true;
-    console.log('🧠 Botão Treino clicado!');
-    mostrarConfiguracaoTreino();
-  });
-
-  document.getElementById('btn-escolher-avatar')?.addEventListener('click', mostrarPopupAvatar);
-
-  // Botões do treino
-  document.getElementById('btn-treino-iniciar')?.addEventListener('click', iniciarTreinoFromConfig);
-  document.getElementById('btn-treino-voltar')?.addEventListener('click', () => {
-    state.modoTreinoAtivo = false;
-    mostrarTela('inicio');
-  });
-  document.getElementById('btn-treino-interromper')?.addEventListener('click', () => {
-    if (confirm('Deseja interromper o treino?')) {
-      state.modoTreinoAtivo = false;
-      mostrarConfiguracaoTreino();
-    }
-  });
-
-  // Torcida - modos
   document.getElementById('btn-modo-individual')?.addEventListener('click', function() {
     state.modoTorcida = 'individual';
     state.prefTorcidaModo = 'individual';
@@ -640,7 +575,6 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
-  // Ranking do aluno
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -699,15 +633,10 @@ function configurarEventos() {
         renderizarColunasVisiveis();
         renderizarPainelSom();
         atualizarStatusAviso(state.avisoAtual);
-        const toggle = document.getElementById('toggle-avatars');
-        if (toggle) {
-          toggle.checked = state.avatarsEnabled !== false;
-        }
       }
     });
   });
 
-  // Avisos
   document.getElementById('btn-publicar-aviso')?.addEventListener('click', async () => {
     const mensagem = document.getElementById('input-aviso-mensagem').value.trim();
     const minutos = parseInt(document.getElementById('input-aviso-tempo').value) || 0;
@@ -723,24 +652,7 @@ function configurarEventos() {
     await removerAviso();
   });
 
-  // Toggle avatares
-  document.getElementById('toggle-avatars')?.addEventListener('change', async function() {
-    const habilitado = this.checked;
-    await salvarConfigAvatar(habilitado);
-    if (state.meuTipo === 'professor') {
-      const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
-      renderizarRanking(fase, 'ranking-parcial', 'individual', true);
-    } else if (state.meuTipo === 'projecao') {
-      if (state.abaTorcidaAtiva === 'fase') {
-        if (state.modoTorcida === 'individual') atualizarTorcidaIndividual();
-        else atualizarTorcidaEquipes();
-      } else {
-        atualizarTorcidaPontos();
-      }
-    }
-  });
-
-  // Sincronizar
+  // ===== BOTÃO SINCRONIZAR GLOBAL =====
   document.getElementById('btn-sincronizar-global')?.addEventListener('click', () => {
     db.ref('copaV2').once('value', snap => {
       state.estadoAtual = snap.val() || state.estadoAtual;
@@ -759,7 +671,7 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!');
   });
 
-  // Controle de fase
+  // ===== CONTROLE DE FASE =====
   document.getElementById('btn-iniciar-fase')?.addEventListener('click', async () => {
     if (!state.estadoAtual) return;
     const duracao = state.estadoAtual.tempoFase || 10;
@@ -829,7 +741,7 @@ function configurarEventos() {
     exibirToast(`✅ ${extra} minuto(s) adicionado(s)!`);
   });
 
-  // Intervalos
+  // ===== INTERVALOS =====
   document.getElementById('btn-atualizar-intervalo-individual')?.addEventListener('click', () => {
     const val = parseInt(document.getElementById('intervalo-individual').value);
     if (val >= 1) {
@@ -1011,7 +923,7 @@ function configurarEventos() {
 }
 
 // ============================================================
-// FUNÇÕES AUXILIARES
+// FUNÇÕES AUXILIARES PARA PONTUAÇÃO
 // ============================================================
 function getPontuacaoDefault() {
   const obj = {};
