@@ -1,6 +1,6 @@
 // js/modules/game.js
 import { state } from './state.js';
-import { exibirToast } from './ui.js';
+import { exibirToast, exibirModalResultados } from './ui.js';
 import { lerDados, atualizarDados, removerDados } from './db.js';
 import { tocarSom } from './sound.js';
 import { calcularRankingFase } from './ranking.js';
@@ -84,7 +84,7 @@ export function gerarPerguntas(modalidade, fase) {
     selecionadas.push({ a: p.a, b: p.b });
   }
 
-  function gerarDistratoresInteligentes(correta, posAlvo, count = 3) {
+  function gerarDistratoresInteligentes(correta, count = 3) {
     const distratores = new Set();
     const margem = Math.max(2, Math.round(correta * 0.2));
     let tentativas = 0;
@@ -113,18 +113,19 @@ export function gerarPerguntas(modalidade, fase) {
     return resultado;
   }
 
-  const resultado = selecionadas.map((p, idx) => {
+  const resultado = selecionadas.map((p) => {
     const correta = p.a * p.b;
-    const posAlvo = (idx % 4) + 1;
-    const distratores = gerarDistratoresInteligentes(correta, posAlvo, 3);
+    const distratores = gerarDistratoresInteligentes(correta, 3);
     let opcoes = [correta, ...distratores];
-    shuffle(opcoes);
-    const novaPos = opcoes.indexOf(correta) + 1;
+    // Ordena as opções em ordem crescente (Item 7)
+    opcoes.sort((a, b) => a - b);
+    // Encontra a posição correta após ordenação
+    const posicaoCorreta = opcoes.indexOf(correta) + 1;
     return {
       a: p.a,
       b: p.b,
       opts: opcoes,
-      posicaoCorreta: novaPos
+      posicaoCorreta: posicaoCorreta
     };
   });
 
@@ -206,7 +207,7 @@ function proximaPergunta() {
 }
 
 // ============================================================
-// TIMER DA PERGUNTA (CORRIGIDO - usa setInterval a cada 100ms)
+// TIMER DA PERGUNTA (10 segundos)
 // ============================================================
 
 function iniciarTimerPergunta() {
@@ -310,7 +311,7 @@ async function atualizarPontuacaoParcial() {
 }
 
 // ============================================================
-// FINALIZAR PARTIDA
+// FINALIZAR PARTIDA (COM MODAL DE RESULTADOS DETALHADO)
 // ============================================================
 
 async function finalizarPartida() {
@@ -328,14 +329,16 @@ async function finalizarPartida() {
     const fase = state.estadoAtual.fase;
     const ref = `copaV2/resultados/${fase}/${state.alunoId}`;
     const partidas = await lerDados(ref) || [];
-    partidas.push({
+    const novaPartida = {
       pontos: state.pontosPartida,
       acertos: state.acertosPartida,
       tempo: state.tempoTotalPartida
-    });
+    };
+    partidas.push(novaPartida);
     await atualizarDados(ref, partidas);
     await removerDados(`copaV2/resultados_temp/${fase}/${state.alunoId}`);
 
+    // Atualiza recorde geral se for o caso
     if (state.acertosPartida > 0 && state.tempoTotalPartida > 0) {
       const precisao = (state.acertosPartida / 20) * 100;
       const velocidade = state.tempoTotalPartida / state.acertosPartida;
@@ -343,15 +346,60 @@ async function finalizarPartida() {
       await atualizarRecordeGeral(state.alunoId, velocidade, precisao, fase, partidaIndex);
     }
 
+    // Verifica medalhas
     await verificarEConcederMedalhas();
     atualizarExibicaoMedalhas();
 
+    // Atualiza a bolinha e informações do aluno
+    const { atualizarInfoAluno } = await import('./ranking.js');
+    await atualizarInfoAluno();
+
+    // ==== EXIBE O MODAL DE RESULTADOS DETALHADO ====
+    // Calcula posição atual
+    const resultadosFase = state.estadoAtual?.resultados?.[fase] || {};
+    let ranking = [];
+    for (const [id, partidas] of Object.entries(resultadosFase)) {
+      if (partidas && partidas.length > 0) {
+        const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+        ranking.push({ id, pontos: melhor.pontos });
+      }
+    }
+    ranking.sort((a, b) => b.pontos - a.pontos);
+    const posicaoAtual = ranking.findIndex(p => p.id === state.alunoId) + 1;
+
+    // Posição anterior (antes da partida)
+    let posicaoAnterior = state.posicaoAntesPartida || null;
+
+    // Busca último registro para evolução
+    let ultimaPartida = null;
+    if (partidas.length > 1) {
+      ultimaPartida = partidas[partidas.length - 2]; // penúltima
+    }
+
+    // Dados para o modal
+    const dadosModal = {
+      posicao: posicaoAtual > 0 ? posicaoAtual : 0,
+      posicaoAnterior: posicaoAnterior,
+      pontos: state.pontosPartida,
+      acertos: state.acertosPartida,
+      tempoTotal: state.tempoTotalPartida,
+      ultimaPartida: ultimaPartida,
+      fase: fase,
+      totalPartidas: partidas.length,
+      ranking: ranking,
+      id: state.alunoId,
+      nome: state.alunoNome,
+      turma: state.alunoTurma
+    };
+
+    // Exibe o modal
+    exibirModalResultados(dadosModal);
+
+    // Atualiza gráfico
     const { desenharGraficoEvolucao } = await import('./game.js');
     desenharGraficoEvolucao();
 
     exibirToast(`✅ Partida finalizada! Pontos: ${state.pontosPartida}`);
-    const { atualizarInfoAluno } = await import('./ranking.js');
-    atualizarInfoAluno();
 
   } catch (error) {
     console.error('Erro ao finalizar partida:', error);
