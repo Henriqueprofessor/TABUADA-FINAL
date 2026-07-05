@@ -12,6 +12,10 @@ import { atualizarExibicaoMedalhas, carregarMedalhasLocal } from './medals.js';
 
 const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
 
+// ===== CACHES PARA PERFORMANCE (Item 5) =====
+const rankingHtmlCache = {};    // Guarda o HTML gerado para evitar re-renderização desnecessária
+const rankingHistory = {};      // Guarda o histórico de IDs para calcular setas (subiu/desceu)
+
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/[&<>]/g, function(m) {
@@ -33,7 +37,7 @@ async function carregarMinPartidas() {
 }
 
 // ============================================================
-// CÁLCULO DE RANKING
+// CÁLCULO DE RANKING (já utiliza state em memória)
 // ============================================================
 
 export function calcularRankingFase(fase) {
@@ -76,7 +80,7 @@ export function calcularRankingFase(fase) {
       somaTempo,
       mediaTempo,
       melhorVelocidade,
-      partidas,
+      partidas, // <-- já temos os dados aqui, não precisa buscar de novo!
       melhorPartidaIndex: partidas.findIndex(p => p.pontos === melhor.pontos)
     });
   }
@@ -123,7 +127,7 @@ export function calcularRankingFase(fase) {
 }
 
 // ============================================================
-// RENDERIZAR RANKING (sem avatares)
+// RENDERIZAR RANKING (OTIMIZADO - Item 5)
 // ============================================================
 
 export async function renderizarRanking(fase, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -136,8 +140,11 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     return;
   }
 
+  // ===== LEITURA DIRETA DA MEMÓRIA (sem await lerDados) =====
   const ranking = calcularRankingFase(fase);
-  const snapTemp = await lerDados(`copaV2/resultados_temp/${fase}`) || {};
+  const snapTemp = state.estadoAtual?.resultados_temp?.[fase] || {};
+  const snapFinal = state.estadoAtual?.resultados?.[fase] || {};
+
   const statusMap = new Map();
   for (const [id, data] of Object.entries(snapTemp)) {
     if (data) {
@@ -149,7 +156,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       });
     }
   }
-  const snapFinal = await lerDados(`copaV2/resultados/${fase}`) || {};
   for (const id in snapFinal) {
     const partidas = snapFinal[id];
     if (partidas && partidas.length) {
@@ -189,18 +195,17 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       status: statusInfo.status,
       isTemp: !!snapTemp[j.id],
       pontuacaoAtual: snapTemp[j.id]?.pontos || j.melhorPontuacao,
-      ultimaPosicao: null
+      ultimaPosicao: null // será calculado pelo histórico
     };
   });
 
-  for (let item of listaComInfo) {
-    const partidas = await lerDados(`copaV2/resultados/${fase}/${item.id}`);
-    if (partidas && partidas.length > 0) {
-      const ultima = partidas[partidas.length - 1];
-      item.ultimaPosicao = ultima.posicao || null;
-    }
-  }
+  // ===== HISTÓRICO PARA SETAS (subiu/desceu) =====
+  const containerKey = containerId;
+  const previousIds = rankingHistory[containerKey] || [];
+  const currentIds = listaComInfo.map(j => j.id);
+  rankingHistory[containerKey] = currentIds;
 
+  // Projeção de posição (Ritmo)
   let posProjetadaMap = new Map();
   if (state.estadoAtual.status !== 'finalizado') {
     let projecaoValida = false;
@@ -228,7 +233,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   const vagas = VAGAS_POR_FASE[fase] || 30;
   const maxMelhor = listaComInfo.length > 0 ? listaComInfo[0].melhorPontuacao : 0;
 
-  // Carregar medalhas
+  // Medalhas
   let medalhasMap = new Map();
   for (let item of listaComInfo) {
     const medalhas = await lerDados(`copaV2/medalhas/${item.id}`) || [];
@@ -237,6 +242,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     }
   }
 
+  // ===== MONTAGEM DO HTML =====
   let html = `<table class="ranking-table"><thead><tr>
     <th>Pos</th>
     <th>Nome</th>
@@ -255,12 +261,13 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   for (let idx = 0; idx < listaComInfo.length; idx++) {
     const j = listaComInfo[idx];
     const posAtual = idx + 1;
-    const posAnterior = j.ultimaPosicao || null;
+    const posAnterior = previousIds.indexOf(j.id) + 1;
     let classePos = '';
-    if (posAnterior !== null && posAnterior > 0) {
+    if (posAnterior > 0) {
       if (posAtual < posAnterior) classePos = 'posicao-subiu';
       else if (posAtual > posAnterior) classePos = 'posicao-desceu';
     }
+
     const deltaLider = maxMelhor - j.melhorPontuacao;
     const deltaText = deltaLider === 0 ? "🏆 Líder" : `${deltaLider}`;
     let recordeStr = "-";
@@ -358,6 +365,14 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     html += `</tr>`;
   }
   html += '</tbody></table>';
+
+  // ===== CACHE DE HTML PARA EVITAR RE-RENDER DESNECESSÁRIO =====
+  const lastHTML = rankingHtmlCache[containerKey];
+  if (lastHTML === html) {
+    // Se o HTML é exatamente o mesmo, não mexe no DOM
+    return;
+  }
+  rankingHtmlCache[containerKey] = html;
   container.innerHTML = html;
 }
 
