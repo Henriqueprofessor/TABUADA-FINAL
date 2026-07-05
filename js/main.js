@@ -1,4 +1,4 @@
-// js/main.js
+// js/main.js (corrigido)
 import { db, auth, initConnectionMonitor, onConnectionChange, recriarPresencaOnline } from './config/firebase.js';
 import { state } from './modules/state.js';
 import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './modules/auth.js';
@@ -78,61 +78,85 @@ import { initGameLoop } from './modules/gameLoop.js';
 async function abrirModalTurma() {
   const modal = document.getElementById('modalTurma');
   if (!modal) return;
+  
+  // Força o modal a ficar visível
   modal.style.display = 'flex';
   
-  // Carrega turmas do Firebase (ou usa cache, garantindo que não fique vazio)
-  let turmas = state.turmasCache;
-  if (!turmas || turmas.length === 0) {
-    // Tenta buscar do Firebase
+  // ===== PREENCHE O SELECT COM TURMAS =====
+  // Primeiro, tenta do cache ou Firebase, mas garante um fallback imediato
+  let turmas = [];
+  
+  // 1. Tenta usar o cache
+  if (state.turmasCache && state.turmasCache.length > 0) {
+    turmas = state.turmasCache;
+  } else {
+    // 2. Tenta buscar do Firebase
     try {
-      turmas = await lerDados('copaV2/turmas');
-      if (!turmas || turmas.length === 0) {
+      const firebaseTurmas = await lerDados('copaV2/turmas');
+      if (firebaseTurmas && firebaseTurmas.length > 0) {
+        turmas = firebaseTurmas;
+        state.turmasCache = turmas;
+      } else {
+        // 3. Fallback: turmas padrão
         turmas = ['Turma A', 'Turma B', 'Turma C'];
+        state.turmasCache = turmas;
+        // Salva no Firebase se estiver vazio
+        await setDados('copaV2/turmas', turmas);
       }
-      state.turmasCache = turmas;
     } catch (e) {
       console.warn('Erro ao carregar turmas, usando padrão:', e);
       turmas = ['Turma A', 'Turma B', 'Turma C'];
       state.turmasCache = turmas;
     }
   }
-  
+
   // Preenche o select
   const select = document.getElementById('selectTurma');
   if (select) {
     select.innerHTML = '';
-    // Adiciona uma opção vazia como placeholder
-    const emptyOpt = document.createElement('option');
-    emptyOpt.value = '';
-    emptyOpt.textContent = '-- Selecione uma turma --';
-    emptyOpt.disabled = true;
-    emptyOpt.selected = true;
-    select.appendChild(emptyOpt);
+    // Opção placeholder
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = '-- Selecione uma turma --';
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    select.appendChild(placeholder);
     
+    // Opções das turmas
     turmas.forEach(t => {
       const opt = document.createElement('option');
       opt.value = t;
       opt.textContent = t;
       select.appendChild(opt);
     });
+    
+    console.log('✅ Select preenchido com', turmas.length, 'turmas');
+  } else {
+    console.error('❌ Select #selectTurma não encontrado!');
   }
-  
+
   // Verifica se exige senha na fase 1
   const fase = state.estadoAtual?.fase || 1;
   const exigirSenha = (fase === 1 && state.exigirSenhaFase1);
   const senhaContainer = document.getElementById('senhaContainer');
-  if (senhaContainer) senhaContainer.style.display = exigirSenha ? 'block' : 'none';
+  if (senhaContainer) {
+    senhaContainer.style.display = exigirSenha ? 'block' : 'none';
+  }
   
+  // Limpa campos
   document.getElementById('inputNomeAluno').value = '';
   document.getElementById('inputSenhaAluno').value = '';
   document.getElementById('erroAluno').textContent = '';
   
   // Foca no nome
-  document.getElementById('inputNomeAluno').focus();
+  setTimeout(() => document.getElementById('inputNomeAluno').focus(), 100);
 }
 
 function fecharModalTurma() {
-  document.getElementById('modalTurma').style.display = 'none';
+  const modal = document.getElementById('modalTurma');
+  if (modal) {
+    modal.style.display = 'none';
+  }
 }
 
 async function confirmarCadastroAluno() {
@@ -141,6 +165,7 @@ async function confirmarCadastroAluno() {
   const turma = select ? select.value : '';
   const senha = document.getElementById('inputSenhaAluno').value.trim();
 
+  // Validações
   if (!nome) {
     document.getElementById('erroAluno').textContent = '❌ Digite seu nome.';
     return;
@@ -161,7 +186,6 @@ async function confirmarCadastroAluno() {
       document.getElementById('erroAluno').textContent = '❌ Digite a senha numérica de 2 dígitos.';
       return;
     }
-    // Busca a senha salva no Firebase
     const senhaSalva = await lerDados('copaV2/configuracoes/senhaFase1');
     if (senhaSalva && senhaSalva !== senha) {
       document.getElementById('erroAluno').textContent = '❌ Senha incorreta. Tente novamente.';
@@ -169,7 +193,7 @@ async function confirmarCadastroAluno() {
     }
   }
 
-  // Gera um ID único para o aluno (baseado no dispositivo + timestamp)
+  // Gera ID único
   let deviceId = state.alunoDeviceId;
   if (!deviceId) {
     deviceId = 'aluno_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
@@ -177,7 +201,7 @@ async function confirmarCadastroAluno() {
     setCacheItem('aluno.deviceId', deviceId);
   }
 
-  // Salva os dados do aluno no Firebase
+  // Salva no Firebase
   const faseAtual = state.estadoAtual.fase;
   await atualizarDados(`copaV2/participantes/${faseAtual}/${deviceId}`, {
     nome: nome,
@@ -185,7 +209,7 @@ async function confirmarCadastroAluno() {
     timestamp: Date.now()
   });
 
-  // Define o estado do aluno
+  // Define estado do aluno
   state.alunoId = deviceId;
   state.alunoNome = nome;
   state.alunoTurma = turma;
@@ -194,8 +218,10 @@ async function confirmarCadastroAluno() {
   setCacheItem('aluno.nome', nome);
   setCacheItem('aluno.turma', turma);
 
-  // Fecha o modal e entra no modo aluno
+  // Fecha o modal
   fecharModalTurma();
+  
+  // Entra no modo aluno
   entrarModoAluno(true);
 }
 
@@ -229,29 +255,34 @@ function entrarModoProfessor() {
 }
 
 function entrarModoAluno(cadastrado = false) {
+  // Verifica se a fase está ativa
   if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
     exibirToast('⏳ A fase não foi iniciada ou já terminou.', 'aviso');
-    return;
+  } else {
+    exibirToast('🎮 Modo Aluno ativado!', 'sucesso');
   }
+  
   state.meuTipo = 'aluno';
   mostrarTela('aluno');
-  exibirToast('🎮 Modo Aluno ativado!', 'sucesso');
+  
   if (state.avisoAtual && state.avisoAtual.ativo === true && state.avisoAtual.expiracao > Date.now()) {
     exibirBannerAviso(state.avisoAtual);
   } else {
     removerBannerAviso();
   }
+  
   carregarCorPrimaria();
   preencherSeletorCores('seletor-cores-aluno');
+  
   // Atualiza informações do aluno na tela
   if (state.alunoId) {
     document.getElementById('aluno-nome-display').textContent = state.alunoNome || 'Aluno';
     document.getElementById('aluno-turma-display').textContent = state.alunoTurma || '-';
-    document.getElementById('aluno-modalidade').textContent = state.estadoAtual.modalidade || '--';
-    document.getElementById('aluno-fase-info').textContent = `Fase ${state.estadoAtual.fase}/5`;
+    document.getElementById('aluno-modalidade').textContent = state.estadoAtual?.modalidade || '--';
+    document.getElementById('aluno-fase-info').textContent = `Fase ${state.estadoAtual?.fase || 1}/5`;
     atualizarInfoAluno();
     // Verifica se deve exibir o botão JOGAR
-    if (state.estadoAtual.status === 'em_andamento' && Date.now() < state.estadoAtual.fim) {
+    if (state.estadoAtual && state.estadoAtual.status === 'em_andamento' && Date.now() < state.estadoAtual.fim) {
       document.getElementById('btn-iniciar-partida').classList.remove('hidden');
       document.getElementById('msg-status-aluno').textContent = 'Pronto para jogar!';
     } else {
@@ -282,7 +313,7 @@ function entrarModoTorcida() {
 }
 
 // ============================================================
-// DEMAIS FUNÇÕES (POPULAR SELECTS, ATUALIZAR UI, ETC)
+// DEMAIS FUNÇÕES (POPULAR SELECTS, ATUALIZAR UI, ETC) - mantidas
 // ============================================================
 
 function preencherSeletorCores(containerId) {
@@ -524,12 +555,11 @@ function configurarEventos() {
   });
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
-  // Botão Aluno
+  // Botão Aluno (CORRIGIDO)
   document.getElementById('btn-aluno')?.addEventListener('click', () => {
-    // Verifica se já está cadastrado (se tem um deviceId salvo)
+    // Verifica se já está cadastrado
     const deviceId = state.alunoDeviceId || getCacheItem('aluno.deviceId');
     if (deviceId) {
-      // Tenta carregar os dados do aluno do Firebase
       const faseAtual = state.estadoAtual?.fase || 1;
       lerDados(`copaV2/participantes/${faseAtual}/${deviceId}`).then(dados => {
         if (dados && dados.nome) {
@@ -540,15 +570,12 @@ function configurarEventos() {
           state.alunoTurmaCache = dados.turma || '?';
           entrarModoAluno(true);
         } else {
-          // Se não encontrou no Firebase, abre cadastro
           abrirModalTurma();
         }
       }).catch(() => {
-        // Erro ao ler, abre cadastro
         abrirModalTurma();
       });
     } else {
-      // Sem deviceId, abre cadastro
       abrirModalTurma();
     }
   });
