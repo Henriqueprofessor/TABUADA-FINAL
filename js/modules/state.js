@@ -41,7 +41,7 @@ export const state = {
   senhaBloqueada: false,
   carregando: true,
 
-  // Cache
+  // ===== CACHE =====
   senhaFase1: null,
   exigirSenhaFase1: true,
   modalidadeCache: null,
@@ -57,15 +57,7 @@ export const state = {
   cacheVersao: '2.0.0',
   ultimaSincCache: null,
 
-  // Aviso
+  // ===== AVISO =====
   avisoAtual: null,
   listenerAviso: null,
-
-  // Avatar
-  avatarAluno: '⭐',
-  corTurma: '#95a5a6',
-  avatarsEnabled: true,
-
-  // Modo Treino
-  modoTreinoAtivo: false,
 };
