@@ -321,7 +321,16 @@ function entrarModoTorcida() {
   document.getElementById('btn-torcida-pontos').setAttribute('aria-selected', 'false');
   document.getElementById('torcida-fase-selector').style.display = 'block';
   
+  // Preenche o select e força a fase atual
   popularSelectFasesTorcida();
+  
+  // Força a seleção da fase atual
+  const select = document.getElementById('select-fase-torcida');
+  if (select && state.estadoAtual) {
+    select.value = state.estadoAtual.fase;
+    faseTorcidaSelecionada = state.estadoAtual.fase;
+  }
+  
   iniciarAtualizacaoTorcida();
   exibirToast('📺 Modo Torcida ativado!', 'sucesso');
 }
@@ -458,6 +467,12 @@ function atualizarUI() {
       document.getElementById('competicao-finalizada-torcida').classList.remove('hidden');
     } else {
       document.getElementById('competicao-finalizada-torcida').classList.add('hidden');
+    }
+    // Atualiza o seletor de fase da torcida para a fase atual quando a UI for atualizada
+    const select = document.getElementById('select-fase-torcida');
+    if (select && torcidaAba === 'fase') {
+      select.value = fase;
+      faseTorcidaSelecionada = fase;
     }
   }
   if (state.meuTipo === 'aluno' && state.alunoId) {
@@ -603,6 +618,12 @@ function configurarEventos() {
     this.classList.add('ativo');
     this.setAttribute('aria-selected', 'true');
     document.getElementById('torcida-fase-selector').style.display = 'block';
+    // Garantir que o select mostre a fase atual
+    const select = document.getElementById('select-fase-torcida');
+    if (select && state.estadoAtual) {
+      select.value = state.estadoAtual.fase;
+      faseTorcidaSelecionada = state.estadoAtual.fase;
+    }
     atualizarTorcidaFase();
     tocarSom('clique');
   });
@@ -1162,6 +1183,12 @@ async function init() {
           }
         } else if (state.meuTipo === 'projecao') {
           if (torcidaAba === 'fase') {
+            // Força a fase atual no select
+            const select = document.getElementById('select-fase-torcida');
+            if (select && state.estadoAtual) {
+              select.value = state.estadoAtual.fase;
+              faseTorcidaSelecionada = state.estadoAtual.fase;
+            }
             atualizarTorcidaFase();
           } else if (torcidaAba === 'equipes') {
             atualizarTorcidaEquipes();
@@ -1233,6 +1260,11 @@ async function init() {
 
         if (state.meuTipo === 'projecao') {
           if (torcidaAba === 'fase') {
+            const select = document.getElementById('select-fase-torcida');
+            if (select && state.estadoAtual) {
+              select.value = state.estadoAtual.fase;
+              faseTorcidaSelecionada = state.estadoAtual.fase;
+            }
             atualizarTorcidaFase();
           } else if (torcidaAba === 'equipes') {
             atualizarTorcidaEquipes();
