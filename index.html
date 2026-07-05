@@ -616,7 +616,7 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- TELA DA TORCIDA                                            -->
+    <!-- TELA DA TORCIDA (MODIFICADA)                               -->
     <!-- ========================================================= -->
     <div id="tela-torcida" class="card hidden">
         <div class="header-actions">
@@ -627,24 +627,30 @@
                 <button id="btn-sair-torcida" class="btn-danger">🏠 Voltar</button>
             </div>
         </div>
-        <div class="modo-buttons" role="group" aria-label="Modo de visualização">
-            <button id="btn-modo-individual" class="btn-modo ativo" aria-pressed="true">👤 Ranking Individual</button>
-            <button id="btn-modo-equipes" class="btn-modo" aria-pressed="false">👥 Ranking por Equipes</button>
+
+        <!-- Abas principais da torcida -->
+        <div class="modo-buttons" role="tablist">
+            <button id="btn-torcida-fase" class="btn-modo ativo" role="tab" aria-selected="true">📊 Ranking Fases</button>
+            <button id="btn-torcida-equipes" class="btn-modo" role="tab" aria-selected="false">👥 Ranking por Equipes</button>
+            <button id="btn-torcida-pontos" class="btn-modo" role="tab" aria-selected="false">🏆 Ranking de Pontos</button>
         </div>
-        <div style="display: flex; gap: 10px; margin: 10px 0;" role="group" aria-label="Sub-aba">
-            <button id="btn-torcida-sub-fase" class="btn-modo ativo" aria-pressed="true">📊 Fase</button>
-            <button id="btn-torcida-sub-pontos" class="btn-modo" aria-pressed="false">🏆 Pontos</button>
-        </div>
+
+        <!-- Seletor de fase (visível apenas na aba "Ranking Fases") -->
         <div class="fase-selector" id="torcida-fase-selector">
             <label for="select-fase-torcida">Selecione a Fase: </label>
             <select id="select-fase-torcida" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
             <span style="margin-left: 15px; font-size: 14px; color: #ffd966;" id="fase-torcida-info"></span>
         </div>
+
         <div style="margin: 15px 0;">
             <p>Modalidade: <strong id="torcida-modalidade">--</strong> | <span id="torcida-fase-info" class="fase-info"></span> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;">--:--</strong></p>
-            <p><small>Individual: atualização a cada <span id="torcida-individual-intervalo">4</span>s | Equipes: atualização a cada <span id="torcida-equipes-intervalo">60</span>s | Última atualização: <span id="torcida-last-update">--</span></small></p>
+            <p><small>Atualização a cada <span id="torcida-individual-intervalo">4</span>s | Última atualização: <span id="torcida-last-update">--</span></small></p>
         </div>
+
+        <!-- Container do ranking -->
         <div id="ranking-torcida-container" class="status-box" aria-live="polite">Carregando ranking ao vivo...</div>
+
+        <!-- Mensagem de competição finalizada -->
         <div id="competicao-finalizada-torcida" class="competicao-finalizada hidden">
             <h2>🏆 COPA FINALIZADA!</h2>
             <p>A competição chegou ao fim.</p>
