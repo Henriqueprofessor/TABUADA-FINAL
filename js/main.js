@@ -418,19 +418,19 @@ function entrarModoProfessor() {
     state.prefProfessorAba = abaAtiva.dataset.tab;
     setCacheItem('preferencias.professorAba', state.prefProfessorAba);
   }
-  // Garantir que o select exista antes de iniciar o intervalo
-  popularSelectFases();
-  
   if (state.intervaloRankingProfessor) clearInterval(state.intervaloRankingProfessor);
   state.intervaloRankingProfessor = setInterval(() => {
     if (state.meuTipo === 'professor' && state.atualizacaoRankingAuto) {
       const selectFase = document.getElementById('select-fase-ranking');
-      const fase = selectFase ? parseInt(selectFase.value) : (state.estadoAtual?.fase || 1);
-      renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+      if (selectFase) {
+        const fase = parseInt(selectFase.value) || state.estadoAtual?.fase || 1;
+        renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+      }
     }
   }, 4000);
   exibirToast('👨‍🏫 Bem-vindo, Professor!');
   document.querySelector('.tab-btn[data-tab="controle"]')?.click();
+  popularSelectFases();
   atualizarStatusAviso(state.avisoAtual);
 }
 
@@ -600,31 +600,55 @@ function configurarEventos() {
     location.reload();
   });
 
-  // Abas do professor
+  // ============================================================
+  // ABAS DO PROFESSOR (CORRIGIDO)
+  // ============================================================
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      // Remove active de todos
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       this.classList.add('active');
       const tab = this.dataset.tab;
+      if (!tab) return;
+
+      // Salva preferência
       state.prefProfessorAba = tab;
       setCacheItem('preferencias.professorAba', tab);
-      
+
+      // Oculta todas as abas
       document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-      document.getElementById(`tab-${tab}`).classList.remove('hidden');
-      
-      if (tab === 'ranking-geral') renderRankingGeral();
+
+      // Mostra a aba selecionada
+      const targetTab = document.getElementById(`tab-${tab}`);
+      if (targetTab) {
+        targetTab.classList.remove('hidden');
+      } else {
+        console.warn(`Abas ${tab} não encontrada`);
+        return;
+      }
+
+      // Executa ações específicas da aba
+      if (tab === 'ranking-geral') {
+        renderRankingGeral();
+      }
       if (tab === 'ranking-fase') {
         popularSelectFases();
-        const selectFase = document.getElementById('select-fase-ranking');
-        const fase = selectFase ? parseInt(selectFase.value) : (state.estadoAtual?.fase || 1);
+        const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
         renderizarRanking(fase, 'ranking-parcial', 'individual', true);
       }
       if (tab === 'ranking-turmas') {
         renderizarRanking(null, 'ranking-turmas-container', 'turmas', false);
       }
-      if (tab === 'ranking-pontos') renderizarRankingPontos();
-      if (tab === 'gerenciar-alunos') renderListaAlunosGerenciar();
-      if (tab === 'gerenciar-turmas') renderListaTurmas();
+      if (tab === 'ranking-pontos') {
+        renderizarRankingPontos();
+      }
+      if (tab === 'gerenciar-alunos') {
+        renderListaAlunosGerenciar();
+      }
+      if (tab === 'gerenciar-turmas') {
+        renderListaTurmas();
+      }
       if (tab === 'configuracoes') {
         carregarMinPartidas().then(config => renderizarConfigMinPartidas(config));
         renderizarColunasVisiveis();
