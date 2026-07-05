@@ -11,8 +11,8 @@
 <!-- ========================================================= -->
 <!-- OVERLAY DE CARREGAMENTO                                   -->
 <!-- ========================================================= -->
-<div id="loading-overlay" class="loading-overlay">
-    <div class="loading-spinner"></div>
+<div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite">
+    <div class="loading-spinner" aria-hidden="true"></div>
     <div class="loading-text">Carregando dados da Copa Tabuada...</div>
     <div class="loading-sub">Aguarde um instante...</div>
     <div id="loading-error" class="loading-error hidden">
@@ -27,15 +27,18 @@
     <!-- ========================================================= -->
     <!-- MODAL DE LOGIN DO PROFESSOR                                -->
     <!-- ========================================================= -->
-    <div id="modalLoginProfessor" class="modal-login">
+    <div id="modalLoginProfessor" class="modal-login" role="dialog" aria-modal="true" aria-labelledby="login-title">
         <div class="modal-login-content">
-            <h2>🔐 Acesso do Professor</h2>
+            <h2 id="login-title">🔐 Acesso do Professor</h2>
             <p style="color: #94a3b8; margin: 10px 0 20px;">Digite seu e-mail e senha cadastrados.</p>
-            <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="email">
-            <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password">
+            <label for="loginEmail" class="visually-hidden">E-mail</label>
+            <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="email" aria-describedby="login-desc">
+            <label for="loginSenha" class="visually-hidden">Senha</label>
+            <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" aria-describedby="login-desc">
+            <span id="login-desc" class="visually-hidden">Digite as credenciais cadastradas</span>
             <button id="btnLoginProfessor" class="btn-login">✅ Entrar</button>
             <button id="btnCancelarLogin" class="btn-cancelar">❌ Cancelar</button>
-            <div id="loginErro" class="erro-msg"></div>
+            <div id="loginErro" class="erro-msg" role="alert"></div>
         </div>
     </div>
 
@@ -48,13 +51,13 @@
             <a href="https://henriqueprofessor.github.io/Tabuada/" target="_blank" class="link-classificatoria" rel="noopener noreferrer">🔗 Fase Classificatória</a>
             <span class="version-display" id="version-display">
                 📌 Versão: <span class="version-number" id="version-number">--</span>
-                <span class="version-check" id="version-check-icon" title="Verificar atualizações">🔄</span>
+                <span class="version-check" id="version-check-icon" title="Verificar atualizações" role="button" tabindex="0">🔄</span>
             </span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
             <div>
                 <p>Fase atual: <strong id="fase-atual-titulo">--</strong> <span id="fase-progresso" class="fase-info"></span></p>
-                <div id="timer-fase" class="timer-display">00:00</div>
+                <div id="timer-fase" class="timer-display" aria-live="polite">00:00</div>
                 <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 5px; font-size: 13px;">
                     <div>🕐 <span id="clock-display">--:--:--</span></div>
                     <div>📅 Última Sinc: <span id="last-sync-time">--</span></div>
@@ -72,7 +75,7 @@
             <button id="btn-projecao">📺 Torcida</button>
             <button id="btn-tutorial-inicial" class="btn-info">📘 Tutorial</button>
             <button id="btn-instalar-app" style="background: #9b59b6; color: white; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px;">📱 Instalar App</button>
-            <button id="btn-tema" class="btn-tema" title="Alternar tema">🌓</button>
+            <button id="btn-tema" class="btn-tema" title="Alternar tema" aria-label="Alternar tema">🌓</button>
         </div>
     </div>
 
@@ -89,15 +92,15 @@
             </div>
         </div>
 
-        <div class="tab-buttons">
-            <div class="tab-btn active" data-tab="controle">🎮 Controle</div>
-            <div class="tab-btn" data-tab="ranking-geral">🏆 Ranking Geral</div>
-            <div class="tab-btn" data-tab="ranking-fase">📊 Ranking por Fase <span class="live-badge" id="live-badge-prof">LIVE</span></div>
-            <div class="tab-btn" data-tab="ranking-turmas">🏆 Ranking por Turma</div>
-            <div class="tab-btn" data-tab="ranking-pontos">🏆 Pontos Copa</div>
-            <div class="tab-btn" data-tab="gerenciar-alunos">✏️ Gerenciar Alunos</div>
-            <div class="tab-btn" data-tab="gerenciar-turmas">🏷️ Gerenciar Turmas</div>
-            <div class="tab-btn" data-tab="configuracoes">⚙️ Configurações</div>
+        <div class="tab-buttons" role="tablist">
+            <div class="tab-btn active" data-tab="controle" role="tab" aria-selected="true" tabindex="0">🎮 Controle</div>
+            <div class="tab-btn" data-tab="ranking-geral" role="tab" aria-selected="false" tabindex="-1">🏆 Ranking Geral</div>
+            <div class="tab-btn" data-tab="ranking-fase" role="tab" aria-selected="false" tabindex="-1">📊 Ranking por Fase <span class="live-badge" id="live-badge-prof">LIVE</span></div>
+            <div class="tab-btn" data-tab="ranking-turmas" role="tab" aria-selected="false" tabindex="-1">🏆 Ranking por Turma</div>
+            <div class="tab-btn" data-tab="ranking-pontos" role="tab" aria-selected="false" tabindex="-1">🏆 Pontos Copa</div>
+            <div class="tab-btn" data-tab="gerenciar-alunos" role="tab" aria-selected="false" tabindex="-1">✏️ Gerenciar Alunos</div>
+            <div class="tab-btn" data-tab="gerenciar-turmas" role="tab" aria-selected="false" tabindex="-1">🏷️ Gerenciar Turmas</div>
+            <div class="tab-btn" data-tab="configuracoes" role="tab" aria-selected="false" tabindex="-1">⚙️ Configurações</div>
         </div>
 
         <!-- ========================================================= -->
@@ -108,7 +111,7 @@
                 <div>
                     <h3>Controle da Fase</h3>
                     <div class="status-box">
-                        <label>Modalidade da Tabuada:</label>
+                        <label for="select-modalidade">Modalidade da Tabuada:</label>
                         <select id="select-modalidade" style="width:100%; padding:8px; margin:10px 0; border-radius:20px; background:#1f3a4b; color:white;">
                             <option value="2-5">📚 Tabuada do 2 ao 5</option>
                             <option value="6-9">📚 Tabuada do 6 ao 9</option>
@@ -116,7 +119,7 @@
                         </select>
                         <button id="btn-aplicar-modalidade" class="btn-warning" style="width:100%;">🎯 Aplicar e Reiniciar Copa</button>
                         <hr>
-                        <label>Tempo (minutos):</label>
+                        <label for="input-tempo-fase">Tempo (minutos):</label>
                         <input type="number" id="input-tempo-fase" value="10" min="1" style="width: 80px; padding: 5px; border-radius: 5px;">
                         <button id="btn-salvar-tempo" class="btn-warning">💾 Salvar</button>
                         <hr>
@@ -142,12 +145,12 @@
                 <h3>⚙️ Controle de Atualização dos Rankings</h3>
                 <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
                     <div>
-                        <label>📊 Ranking Individual (segundos):</label>
+                        <label for="intervalo-individual">📊 Ranking Individual (segundos):</label>
                         <input type="number" id="intervalo-individual" min="1" max="300" value="4" step="1">
                         <button id="btn-atualizar-intervalo-individual" class="btn-warning">Aplicar</button>
                     </div>
                     <div>
-                        <label>👥 Ranking por Equipes (segundos):</label>
+                        <label for="intervalo-equipes">👥 Ranking por Equipes (segundos):</label>
                         <input type="number" id="intervalo-equipes" min="1" max="600" value="60" step="1">
                         <button id="btn-atualizar-intervalo-equipes" class="btn-warning">Aplicar</button>
                     </div>
@@ -178,11 +181,11 @@
         <div id="tab-ranking-fase" class="tab-content hidden">
             <h3>Ranking por Fase (Atualização automática)</h3>
             <div class="fase-selector">
-                <label>Selecione a Fase: </label>
+                <label for="select-fase-ranking">Selecione a Fase: </label>
                 <select id="select-fase-ranking" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
                 <button id="btn-toggle-auto-ranking" class="btn-secondary">⏸️ Pausar Atualização</button>
             </div>
-            <div id="ranking-parcial" class="status-box">Aguardando dados...</div>
+            <div id="ranking-parcial" class="status-box" aria-live="polite">Aguardando dados...</div>
         </div>
 
         <!-- ========================================================= -->
@@ -193,7 +196,7 @@
             <div style="margin-bottom: 15px;">
                 <button id="btn-atualizar-ranking-turmas" class="btn-secondary">🔄 Atualizar</button>
             </div>
-            <div id="ranking-turmas-container" class="status-box">Carregando...</div>
+            <div id="ranking-turmas-container" class="status-box" aria-live="polite">Carregando...</div>
         </div>
 
         <!-- ========================================================= -->
@@ -256,7 +259,7 @@
             </div>
 
             <h4 style="margin-top: 20px;">📊 Ranking Geral de Pontos</h4>
-            <div id="ranking-pontos-container" class="status-box">Carregando...</div>
+            <div id="ranking-pontos-container" class="status-box" aria-live="polite">Carregando...</div>
             <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">
                 ⚡ = Bônus de velocidade na fase | 🚀 = Recorde de velocidade da competição
             </p>
@@ -395,7 +398,7 @@
                 </p>
                 <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
                     <div>
-                        <label style="color: #94a3b8; font-size: 14px;">Senha atual:</label>
+                        <label for="input-senha-fase1" style="color: #94a3b8; font-size: 14px;">Senha atual:</label>
                         <input type="number" id="input-senha-fase1" min="10" max="99" value="42" 
                             style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; font-size: 24px; width: 100px; text-align: center; font-weight: bold;">
                     </div>
@@ -450,12 +453,12 @@
                 </p>
                 <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
                     <div style="flex: 1; min-width: 200px;">
-                        <label style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Mensagem:</label>
+                        <label for="input-aviso-mensagem" style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Mensagem:</label>
                         <input type="text" id="input-aviso-mensagem" placeholder="Ex: Atenção, última semana!" 
                             style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 14px; border-radius: 10px; width: 100%;">
                     </div>
                     <div style="min-width: 120px;">
-                        <label style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Duração (min):</label>
+                        <label for="input-aviso-tempo" style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Duração (min):</label>
                         <input type="number" id="input-aviso-tempo" value="30" min="1" max="1440"
                             style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 14px; border-radius: 10px; width: 100%;">
                     </div>
@@ -482,7 +485,7 @@
                     Escolha a cor de destaque do jogo. A alteração é <strong>apenas no seu dispositivo</strong>.
                 </p>
                 <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
-                    <div id="seletor-cores" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                    <div id="seletor-cores" style="display: flex; flex-wrap: wrap; gap: 8px;" role="radiogroup" aria-label="Cores disponíveis"></div>
                 </div>
             </div>
 
@@ -498,14 +501,14 @@
     <div id="tela-aluno" class="card hidden">
         <div id="jogo-area" class="hidden jogo-topo">
             <div id="pergunta-container" class="pergunta-container brilho-cinza">
-                <div class="barra-tempo" style="margin-top: 0; margin-bottom: 20px;"><div id="progresso-tempo" class="progresso-tempo"></div></div>
+                <div class="barra-tempo" style="margin-top: 0; margin-bottom: 20px;"><div id="progresso-tempo" class="progresso-tempo" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div></div>
                 <div id="pergunta" style="font-size:64px; font-weight: bold; margin-bottom: 0;">0 x 0 = ?</div>
             </div>
-            <div class="opcoes-vertical">
-                <button class="opcao-vertical" onclick="window.responder(0)"></button>
-                <button class="opcao-vertical" onclick="window.responder(1)"></button>
-                <button class="opcao-vertical" onclick="window.responder(2)"></button>
-                <button class="opcao-vertical" onclick="window.responder(3)"></button>
+            <div class="opcoes-vertical" role="group" aria-label="Opções de resposta">
+                <button class="opcao-vertical" onclick="window.responder(0)" aria-label="Opção 1"></button>
+                <button class="opcao-vertical" onclick="window.responder(1)" aria-label="Opção 2"></button>
+                <button class="opcao-vertical" onclick="window.responder(2)" aria-label="Opção 3"></button>
+                <button class="opcao-vertical" onclick="window.responder(3)" aria-label="Opção 4"></button>
             </div>
             <div style="text-align: center; margin-top: 15px; font-size: 18px; opacity: 0.8; font-weight: bold;">
                 Pergunta: <span id="pergunta-num">1</span> / 20
@@ -535,9 +538,9 @@
 
         <!-- ===== SELETOR DE CORES (ALUNO) ===== -->
         <div style="display: flex; align-items: center; gap: 16px; margin: 10px 0; flex-wrap: wrap; background: var(--bg-card-hover); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--borda-card);">
-            <span style="font-size: 20px;">🎨</span>
+            <span style="font-size: 20px;" aria-hidden="true">🎨</span>
             <span style="color: var(--texto-secundario); font-size: 14px;">Cor de destaque:</span>
-            <div id="seletor-cores-aluno" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+            <div id="seletor-cores-aluno" style="display: flex; flex-wrap: wrap; gap: 6px;" role="radiogroup" aria-label="Seleção de cor"></div>
         </div>
 
         <div class="status-box">
@@ -548,7 +551,7 @@
         <!-- Medalhas -->
         <div class="status-box" style="margin-top: 20px;">
             <h3>🏅 Minhas Conquistas</h3>
-            <div id="medalhas-container">
+            <div id="medalhas-container" aria-live="polite">
                 <p style="color: #94a3b8; font-size: 14px;">Nenhuma conquista ainda. Continue jogando!</p>
             </div>
         </div>
@@ -556,21 +559,21 @@
         <!-- Gráfico -->
         <div class="status-box" style="margin-top: 20px;">
             <h3>📈 Evolução da Pontuação</h3>
-            <canvas id="grafico-evolucao" width="600" height="200" style="width:100%; height:auto; max-width:600px; background: transparent;"></canvas>
+            <canvas id="grafico-evolucao" width="600" height="200" style="width:100%; height:auto; max-width:600px; background: transparent;" aria-label="Gráfico de evolução da pontuação"></canvas>
         </div>
     </div>
 
     <!-- ========================================================= -->
     <!-- MODAL DE RANKING DO ALUNO                                  -->
     <!-- ========================================================= -->
-    <div id="modal-ranking-aluno" class="modal-ranking">
+    <div id="modal-ranking-aluno" class="modal-ranking" role="dialog" aria-modal="true" aria-labelledby="ranking-aluno-title">
         <div class="modal-ranking-content">
-            <h2 style="color: #ffd966; text-align: center;">📊 Ranking</h2>
-            <div class="modal-sub-tabs">
-                <div class="sub-tab active" data-subtab="fase">📊 Fase Atual</div>
-                <div class="sub-tab" data-subtab="pontos">🏆 Pontos Copa</div>
+            <h2 id="ranking-aluno-title" style="color: #ffd966; text-align: center;">📊 Ranking</h2>
+            <div class="modal-sub-tabs" role="tablist">
+                <div class="sub-tab active" data-subtab="fase" role="tab" aria-selected="true" tabindex="0">📊 Fase Atual</div>
+                <div class="sub-tab" data-subtab="pontos" role="tab" aria-selected="false" tabindex="-1">🏆 Pontos Copa</div>
             </div>
-            <div id="ranking-aluno-container" class="status-box" style="max-height: 60vh; overflow-y: auto;">Carregando...</div>
+            <div id="ranking-aluno-container" class="status-box" style="max-height: 60vh; overflow-y: auto;" aria-live="polite">Carregando...</div>
             <div class="acoes-modal">
                 <button id="btn-fechar-modal-ranking" class="btn-fechar">🔙 Voltar ao Jogo</button>
                 <button id="btn-sair-modal-ranking" class="btn-sair-modal">🚪 Sair</button>
@@ -581,11 +584,11 @@
     <!-- ========================================================= -->
     <!-- MODAL DE TUTORIAL                                          -->
     <!-- ========================================================= -->
-    <div id="modal-tutorial" class="modal-ranking" style="display:none;">
+    <div id="modal-tutorial" class="modal-ranking" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="tutorial-titulo">
         <div class="modal-ranking-content" style="max-width: 800px;">
             <h2 style="color:#ffd966; text-align:center;" id="tutorial-titulo">📘 Tutorial</h2>
-            <div class="modal-sub-tabs" id="tutorial-tabs"></div>
-            <div id="tut-conteudo" class="tutorial-content"></div>
+            <div class="modal-sub-tabs" id="tutorial-tabs" role="tablist"></div>
+            <div id="tut-conteudo" class="tutorial-content" aria-live="polite"></div>
             <div class="acoes-modal">
                 <button id="btn-fechar-tutorial" class="btn-fechar">🔙 Fechar</button>
             </div>
@@ -604,16 +607,16 @@
                 <button id="btn-sair-torcida" class="btn-danger">🏠 Voltar</button>
             </div>
         </div>
-        <div class="modo-buttons">
-            <button id="btn-modo-individual" class="btn-modo ativo">👤 Ranking Individual</button>
-            <button id="btn-modo-equipes" class="btn-modo">👥 Ranking por Equipes</button>
+        <div class="modo-buttons" role="group" aria-label="Modo de visualização">
+            <button id="btn-modo-individual" class="btn-modo ativo" aria-pressed="true">👤 Ranking Individual</button>
+            <button id="btn-modo-equipes" class="btn-modo" aria-pressed="false">👥 Ranking por Equipes</button>
         </div>
-        <div style="display: flex; gap: 10px; margin: 10px 0;">
-            <button id="btn-torcida-sub-fase" class="btn-modo ativo">📊 Fase</button>
-            <button id="btn-torcida-sub-pontos" class="btn-modo">🏆 Pontos</button>
+        <div style="display: flex; gap: 10px; margin: 10px 0;" role="group" aria-label="Sub-aba">
+            <button id="btn-torcida-sub-fase" class="btn-modo ativo" aria-pressed="true">📊 Fase</button>
+            <button id="btn-torcida-sub-pontos" class="btn-modo" aria-pressed="false">🏆 Pontos</button>
         </div>
         <div class="fase-selector" id="torcida-fase-selector">
-            <label>Selecione a Fase: </label>
+            <label for="select-fase-torcida">Selecione a Fase: </label>
             <select id="select-fase-torcida" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
             <span style="margin-left: 15px; font-size: 14px; color: #ffd966;" id="fase-torcida-info"></span>
         </div>
@@ -621,7 +624,7 @@
             <p>Modalidade: <strong id="torcida-modalidade">--</strong> | <span id="torcida-fase-info" class="fase-info"></span> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;">--:--</strong></p>
             <p><small>Individual: atualização a cada <span id="torcida-individual-intervalo">4</span>s | Equipes: atualização a cada <span id="torcida-equipes-intervalo">60</span>s | Última atualização: <span id="torcida-last-update">--</span></small></p>
         </div>
-        <div id="ranking-torcida-container" class="status-box">Carregando ranking ao vivo...</div>
+        <div id="ranking-torcida-container" class="status-box" aria-live="polite">Carregando ranking ao vivo...</div>
         <div id="competicao-finalizada-torcida" class="competicao-finalizada hidden">
             <h2>🏆 COPA FINALIZADA!</h2>
             <p>A competição chegou ao fim.</p>
@@ -635,7 +638,7 @@
 </div>
 
 <!-- ===== TOAST ===== -->
-<div id="toast" class="toast hidden"></div>
+<div id="toast" class="toast hidden" role="alert" aria-live="assertive"></div>
 
 <!-- ===== RODAPÉ ===== -->
 <div style="text-align: center; margin-top: 30px; padding: 15px; color: #666; font-size: 14px; border-top: 1px solid #2c3e50;">
