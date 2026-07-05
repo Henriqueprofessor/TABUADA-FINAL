@@ -41,7 +41,7 @@ export const state = {
   senhaBloqueada: false,
   carregando: true,
 
-  // ===== CACHE =====
+  // Cache
   senhaFase1: null,
   exigirSenhaFase1: true,
   modalidadeCache: null,
@@ -57,7 +57,7 @@ export const state = {
   cacheVersao: '2.0.0',
   ultimaSincCache: null,
 
-  // ===== AVISO =====
+  // Aviso
   avisoAtual: null,
   listenerAviso: null,
 };
