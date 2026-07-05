@@ -18,7 +18,7 @@ let somMasterEnabled = true;
 let volumeGlobal = 0.7;
 
 // ============================================================
-// WEB AUDIO API (FALLBACK) - item 6
+// WEB AUDIO API (FALLBACK) - com tratamento de erros
 // ============================================================
 
 let audioContext = null;
@@ -35,7 +35,6 @@ function getAudioContext() {
   return audioContext;
 }
 
-// Gera um som sintético usando Web Audio API
 function playSyntheticSound(freq, duration, volume = 0.7) {
   try {
     const ctx = getAudioContext();
@@ -56,18 +55,17 @@ function playSyntheticSound(freq, duration, volume = 0.7) {
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + duration);
 
-    // Resume o contexto se estiver suspenso (necessário para autoplay em alguns navegadores)
     if (ctx.state === 'suspended') {
       ctx.resume();
     }
   } catch (e) {
-    // Fallback silencioso: simplesmente não toca
+    // Fallback silencioso
     console.debug('🔇 Som sintético falhou:', e);
   }
 }
 
 // ============================================================
-// CARREGAR PREFERÊNCIAS DO LOCALSTORAGE
+// CARREGAR PREFERÊNCIAS (com tratamento de erros)
 // ============================================================
 
 export function carregarPreferenciasSom() {
@@ -81,7 +79,9 @@ export function carregarPreferenciasSom() {
         if (prefs[key] !== undefined) SONS_CONFIG[key].enabled = prefs[key];
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Erro ao carregar preferências de som:', e);
+  }
 }
 
 export function salvarPreferenciasSom() {
@@ -89,11 +89,13 @@ export function salvarPreferenciasSom() {
     const prefs = { master: somMasterEnabled, volume: Math.round(volumeGlobal * 100) };
     for (const key in SONS_CONFIG) prefs[key] = SONS_CONFIG[key].enabled;
     localStorage.setItem('copa_som_prefs', JSON.stringify(prefs));
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Erro ao salvar preferências de som:', e);
+  }
 }
 
 // ============================================================
-// TOCAR SOM (COM FALLBACK)
+// TOCAR SOM (com fallback e tratamento de erros)
 // ============================================================
 
 export function tocarSom(key, volumeOverride = null) {
@@ -103,27 +105,23 @@ export function tocarSom(key, volumeOverride = null) {
 
   const volume = volumeOverride !== null ? volumeOverride : volumeGlobal;
 
-  // 1. Tenta tocar o áudio da URL (se já estiver em cache ou carregado)
   try {
     let audio = audioCache.get(key);
     if (!audio) {
       audio = new Audio(config.url);
       audioCache.set(key, audio);
-      // Pré-carrega para evitar atraso na primeira vez
       audio.load();
     }
-    // Se o áudio já estiver carregado e for reproduzível, toca
-    if (audio.readyState >= 2) { // HAVE_CURRENT_DATA ou mais
+
+    if (audio.readyState >= 2) {
       audio.volume = Math.min(1, Math.max(0, volume));
       audio.currentTime = 0;
       audio.play().catch(e => {
-        // Se falhar ao reproduzir (ex: erro de rede), usa fallback
         console.debug('🔊 Áudio falhou, usando fallback sintético para:', key);
         playSyntheticSound(config.freq, config.duration, volume);
       });
       return;
     } else {
-      // Áudio ainda não carregado: tenta carregar e toca depois, mas usa fallback imediato
       audio.load();
       audio.addEventListener('canplaythrough', function onCanPlay() {
         audio.removeEventListener('canplaythrough', onCanPlay);
@@ -133,11 +131,9 @@ export function tocarSom(key, volumeOverride = null) {
           audio.play().catch(() => {});
         }
       }, { once: true });
-      // Fallback imediato com som sintético (para não atrasar o feedback)
       playSyntheticSound(config.freq, config.duration, volume);
     }
   } catch (e) {
-    // 2. Fallback: Web Audio API
     console.debug('🔊 Usando fallback sintético para:', key);
     playSyntheticSound(config.freq, config.duration, volume);
   }
@@ -204,7 +200,6 @@ export function inicializarSons() {
   carregarPreferenciasSom();
   renderizarPainelSom();
 
-  // Botão master
   const btnMaster = document.getElementById('btn-som-master');
   if (btnMaster) {
     btnMaster.textContent = somMasterEnabled ? '🔊 Sons Ativados' : '🔇 Sons Desativados';
@@ -217,7 +212,6 @@ export function inicializarSons() {
     });
   }
 
-  // Volume
   const volumeSlider = document.getElementById('volume-global');
   const volumeLabel = document.getElementById('volume-label');
   if (volumeSlider && volumeLabel) {
@@ -230,6 +224,5 @@ export function inicializarSons() {
     });
   }
 
-  // Testar todos
   document.getElementById('btn-testar-todos-sons')?.addEventListener('click', testarTodosSons);
 }
