@@ -75,20 +75,34 @@ import { initGameLoop } from './modules/gameLoop.js';
 // TURMAS PADRÃO
 // ============================================================
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
+const TURMAS_ANTIGAS = ["Turma A", "Turma B", "Turma C"];
 
 async function garantirTurmasPadrao() {
   try {
     const turmasAtuais = await lerDados('copaV2/turmas');
+    
+    // Se não houver turmas, criar as padrão
     if (!turmasAtuais || turmasAtuais.length === 0) {
       await setDados('copaV2/turmas', TURMAS_PADRAO);
       state.turmasCache = TURMAS_PADRAO;
-      console.log('✅ Turmas padrão criadas:', TURMAS_PADRAO);
+      console.log('✅ Turmas padrão criadas (vazio).');
       return TURMAS_PADRAO;
     }
+    
+    // Se as turmas atuais forem exatamente as antigas (Turma A, B, C), substituir
+    if (turmasAtuais.length === 3 && 
+        turmasAtuais.every(t => TURMAS_ANTIGAS.includes(t))) {
+      await setDados('copaV2/turmas', TURMAS_PADRAO);
+      state.turmasCache = TURMAS_PADRAO;
+      console.log('✅ Turmas antigas substituídas pelas padrão.');
+      return TURMAS_PADRAO;
+    }
+    
+    // Caso contrário, manter as turmas existentes
     state.turmasCache = turmasAtuais;
     return turmasAtuais;
   } catch (e) {
-    console.warn('Erro ao verificar turmas padrão:', e);
+    console.warn('Erro ao verificar turmas:', e);
     return TURMAS_PADRAO;
   }
 }
@@ -238,9 +252,14 @@ function entrarModoProfessor() {
       }
     }
   }, 4000);
-  // Garantir que as turmas padrão existam
+  // Garantir que as turmas padrão existam (substituindo as antigas)
   garantirTurmasPadrao().then(() => {
     renderListaTurmas();
+    // Atualizar o select do modal de turma se estiver aberto
+    const modal = document.getElementById('modalTurma');
+    if (modal && modal.style.display === 'flex') {
+      abrirModalTurma();
+    }
   });
   exibirToast('👨‍🏫 Bem-vindo, Professor!', 'sucesso');
   document.querySelector('.tab-btn[data-tab="controle"]')?.click();
@@ -1171,10 +1190,9 @@ async function init() {
       exibirToast('⚠️ Algumas configurações podem não estar disponíveis.', 'aviso');
     }
 
-    // Carregar turmas para cache
+    // Carregar turmas para cache e garantir padrão
     try {
       state.turmasCache = await lerDados('copaV2/turmas') || TURMAS_PADRAO;
-      // Garantir que as turmas padrão existam no Firebase
       await garantirTurmasPadrao();
     } catch (e) {
       state.turmasCache = TURMAS_PADRAO;
