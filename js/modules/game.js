@@ -3,7 +3,7 @@ import { state } from './state.js';
 import { exibirToast, exibirModalResultados } from './ui.js';
 import { lerDados, atualizarDados, removerDados } from './db.js';
 import { tocarSom } from './sound.js';
-import { calcularRankingFase } from './ranking.js';
+import { calcularRankingFase, atualizarInfoAluno } from './ranking.js';
 import { atualizarRecordeGeral } from './config.js';
 import { verificarEConcederMedalhas, atualizarExibicaoMedalhas } from './medals.js';
 
@@ -117,7 +117,6 @@ export function gerarPerguntas(modalidade, fase) {
     const correta = p.a * p.b;
     const distratores = gerarDistratoresInteligentes(correta, 3);
     let opcoes = [correta, ...distratores];
-    // Ordena as opções em ordem crescente (Item 7)
     opcoes.sort((a, b) => a - b);
     const posicaoCorreta = opcoes.indexOf(correta) + 1;
     return {
@@ -181,6 +180,9 @@ export async function iniciarPartida() {
 // ============================================================
 
 function proximaPergunta() {
+  // Atualiza a barra de tempo para a nova pergunta
+  atualizarInfoAluno();
+
   if (state.perguntaIdx >= 20) {
     finalizarPartida();
     return;
@@ -272,6 +274,9 @@ export async function responder(idx) {
     document.getElementById('pontuacao-acumulada').innerText = state.pontosPartida;
     state.perguntaIdx++;
 
+    // Atualiza a barra de tempo com a nova projeção
+    atualizarInfoAluno();
+
     if (state.perguntaIdx >= 20) {
       await finalizarPartida();
     } else {
@@ -350,7 +355,6 @@ async function finalizarPartida() {
     atualizarExibicaoMedalhas();
 
     // Atualiza a bolinha e informações do aluno
-    const { atualizarInfoAluno } = await import('./ranking.js');
     await atualizarInfoAluno();
 
     // ==== EXIBE O MODAL DE RESULTADOS DETALHADO ====
@@ -395,7 +399,6 @@ async function finalizarPartida() {
     exibirModalResultados(dadosModal);
 
     // Atualiza gráfico
-    const { desenharGraficoEvolucao } = await import('./game.js');
     desenharGraficoEvolucao();
 
     exibirToast(`✅ Partida finalizada! Pontos: ${state.pontosPartida}`);
