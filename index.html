@@ -645,6 +645,105 @@
     🏆 Copa Tabuada CEIB 2026 - Desenvolvido por <strong style="color: #ffd966;">HENRIQUE ANGELO DA SILVA</strong>
 </div>
 
+<!-- ========================================================= -->
+<!-- TEMPLATES PARA REFATORAÇÃO HTML (Item 10)                 -->
+<!-- ========================================================= -->
+
+<!-- Template: Linha do Ranking Individual -->
+<template id="template-linha-ranking">
+  <tr>
+    <td class="posicao"></td>
+    <td class="nome-completo"></td>
+    <td class="melhor-pontuacao"></td>
+    <td class="classificacao"></td>
+    <td class="ritmo"></td>
+    <td class="pontuacao-atual"></td>
+    <td class="delta-lider"></td>
+    <td class="veloc-recorde"></td>
+    <td class="progresso"></td>
+    <td class="partidas"></td>
+    <td class="tempo-total"></td>
+    <td class="percentual-tempo"></td>
+    <td class="turma"></td>
+    <td class="projecao"></td>
+  </tr>
+</template>
+
+<!-- Template: Cabeçalho do Ranking Individual -->
+<template id="template-cabecalho-ranking">
+  <thead>
+    <tr>
+      <th>Pos</th>
+      <th>Nome</th>
+      <th>Melhor Pontuação</th>
+      <th class="col-classificacao">Classificação</th>
+      <th>Ritmo</th>
+      <th>Pontuação Atual</th>
+      <th>Delta Líder</th>
+      <th>Veloc. Recorde</th>
+      <th>Progresso</th>
+      <th>Partidas</th>
+      <th>Tempo Total</th>
+      <th>% Tempo</th>
+      <th>Turma</th>
+      <th>Projeção</th>
+    </tr>
+  </thead>
+</template>
+
+<!-- Template: Linha do Ranking de Pontos -->
+<template id="template-linha-pontos">
+  <tr>
+    <td class="posicao-pontos"></td>
+    <td class="nome-pontos"></td>
+    <td class="total-pontos"></td>
+    <td class="fase5"></td>
+    <td class="fase4"></td>
+    <td class="fase3"></td>
+    <td class="fase2"></td>
+    <td class="fase1"></td>
+  </tr>
+</template>
+
+<!-- Template: Modal de Finalização -->
+<template id="template-modal-finalizacao">
+  <div class="modal-resultados" id="modal-finalizacao">
+    <h2>🏆 COPA FINALIZADA!</h2>
+    <div style="font-size: 64px; margin: 15px 0;">🎉</div>
+    <p>A competição chegou ao fim.</p>
+    <div class="dica">
+      <p>📊 Consulte o <strong>Ranking de Pontos</strong> para ver sua classificação final.</p>
+      <p style="font-size: 0.9rem; opacity: 0.7;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
+    </div>
+    <button class="fechar" id="btn-fechar-finalizacao">Voltar ao Menu</button>
+  </div>
+</template>
+
+<!-- Template: Medalhas do Aluno (vazio) -->
+<template id="template-medalhas-vazio">
+  <p style="color: #94a3b8; font-size: 14px;">Nenhuma conquista ainda. Continue jogando!</p>
+</template>
+
+<!-- Template: Medalha Individual -->
+<template id="template-medalha-item">
+  <div class="medalha-item" title="">
+    <span class="medalha-icone"></span>
+    <span class="medalha-nome"></span>
+  </div>
+</template>
+
+<!-- Template: Linha do Ranking por Turmas -->
+<template id="template-linha-turmas">
+  <tr>
+    <td class="pos-turma"></td>
+    <td class="nome-turma"></td>
+    <td class="media-turma"></td>
+    <td class="total-alunos"></td>
+    <td class="total-partidas-turma"></td>
+    <td class="melhor-aluno"></td>
+  </tr>
+</template>
+
 <!-- ============================================================ -->
 <!-- FIREBASE                                                     -->
 <!-- ============================================================ -->
