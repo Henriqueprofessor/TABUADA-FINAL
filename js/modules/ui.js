@@ -21,7 +21,6 @@ export function exibirToast(mensagem, tipo = 'info') {
   if (t) {
     t.innerText = mensagem;
     t.classList.remove('hidden');
-    // Cores diferentes conforme tipo
     if (tipo === 'erro') {
       t.style.background = '#c0392b';
     } else if (tipo === 'sucesso') {
@@ -74,7 +73,6 @@ export function abrirModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.style.display = 'flex';
-    // Focar no primeiro elemento interativo (input ou botão) para acessibilidade
     const focusable = modal.querySelector('input, button:not([disabled])');
     if (focusable) focusable.focus();
   }
