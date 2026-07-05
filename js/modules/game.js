@@ -119,7 +119,6 @@ export function gerarPerguntas(modalidade, fase) {
     let opcoes = [correta, ...distratores];
     // Ordena as opções em ordem crescente (Item 7)
     opcoes.sort((a, b) => a - b);
-    // Encontra a posição correta após ordenação
     const posicaoCorreta = opcoes.indexOf(correta) + 1;
     return {
       a: p.a,
@@ -373,7 +372,7 @@ async function finalizarPartida() {
     // Busca último registro para evolução
     let ultimaPartida = null;
     if (partidas.length > 1) {
-      ultimaPartida = partidas[partidas.length - 2]; // penúltima
+      ultimaPartida = partidas[partidas.length - 2];
     }
 
     // Dados para o modal
