@@ -72,6 +72,28 @@ import {
 import { initGameLoop } from './modules/gameLoop.js';
 
 // ============================================================
+// TURMAS PADRÃO
+// ============================================================
+const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
+
+async function garantirTurmasPadrao() {
+  try {
+    const turmasAtuais = await lerDados('copaV2/turmas');
+    if (!turmasAtuais || turmasAtuais.length === 0) {
+      await setDados('copaV2/turmas', TURMAS_PADRAO);
+      state.turmasCache = TURMAS_PADRAO;
+      console.log('✅ Turmas padrão criadas:', TURMAS_PADRAO);
+      return TURMAS_PADRAO;
+    }
+    state.turmasCache = turmasAtuais;
+    return turmasAtuais;
+  } catch (e) {
+    console.warn('Erro ao verificar turmas padrão:', e);
+    return TURMAS_PADRAO;
+  }
+}
+
+// ============================================================
 // FUNÇÕES DE CADASTRO DO ALUNO
 // ============================================================
 
@@ -88,13 +110,13 @@ async function abrirModalTurma() {
       turmas = firebaseTurmas;
       state.turmasCache = turmas;
     } else {
-      turmas = ['Turma A', 'Turma B', 'Turma C'];
+      turmas = TURMAS_PADRAO;
       state.turmasCache = turmas;
       await setDados('copaV2/turmas', turmas);
     }
   } catch (e) {
     console.warn('Erro ao carregar turmas, usando cache/padrão:', e);
-    turmas = state.turmasCache || ['Turma A', 'Turma B', 'Turma C'];
+    turmas = state.turmasCache || TURMAS_PADRAO;
     state.turmasCache = turmas;
   }
 
@@ -216,6 +238,10 @@ function entrarModoProfessor() {
       }
     }
   }, 4000);
+  // Garantir que as turmas padrão existam
+  garantirTurmasPadrao().then(() => {
+    renderListaTurmas();
+  });
   exibirToast('👨‍🏫 Bem-vindo, Professor!', 'sucesso');
   document.querySelector('.tab-btn[data-tab="controle"]')?.click();
   popularSelectFases();
@@ -636,7 +662,6 @@ function configurarEventos() {
 
   // Iniciar Partida
   document.getElementById('btn-iniciar-partida')?.addEventListener('click', async () => {
-    // Captura posição atual antes de iniciar
     const fase = state.estadoAtual.fase;
     const resultados = state.estadoAtual?.resultados?.[fase] || {};
     let ranking = [];
@@ -1107,6 +1132,8 @@ async function init() {
         if (state.meuTipo === 'professor') {
           const fase = parseInt(document.getElementById('select-fase-ranking')?.value) || state.estadoAtual?.fase || 1;
           renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+          // Garantir turmas padrão
+          await garantirTurmasPadrao();
           renderListaAlunosGerenciar();
           renderListaTurmas();
         } else if (state.meuTipo === 'aluno') {
@@ -1146,9 +1173,11 @@ async function init() {
 
     // Carregar turmas para cache
     try {
-      state.turmasCache = await lerDados('copaV2/turmas') || ['Turma A', 'Turma B', 'Turma C'];
+      state.turmasCache = await lerDados('copaV2/turmas') || TURMAS_PADRAO;
+      // Garantir que as turmas padrão existam no Firebase
+      await garantirTurmasPadrao();
     } catch (e) {
-      state.turmasCache = ['Turma A', 'Turma B', 'Turma C'];
+      state.turmasCache = TURMAS_PADRAO;
     }
 
     inicializarSons();
@@ -1200,6 +1229,10 @@ async function init() {
             const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
             renderizarRanking(fase, 'ranking-parcial', 'individual', true);
           }
+          // Garantir turmas padrão
+          garantirTurmasPadrao().then(() => {
+            renderListaTurmas();
+          });
         }
         atualizarUltimaSinc();
         aplicarPreferenciasUI();
