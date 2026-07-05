@@ -1,6 +1,7 @@
 // js/modules/ui.js
 import { state } from './state.js';
 
+// ===== CONTROLE DE TELA =====
 export function mostrarTela(tipo) {
   document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
   if (tipo === 'professor') document.getElementById('painel-professor').classList.remove('hidden');
@@ -14,6 +15,7 @@ export function mostrarTela(tipo) {
   }
 }
 
+// ===== TOAST =====
 export function exibirToast(mensagem) {
   const t = document.getElementById('toast');
   if (t) {
@@ -36,6 +38,7 @@ export function exibirToastReconexao() {
   }
 }
 
+// ===== TIMER =====
 export function atualizarTimerFase(milissegundos) {
   const segundos = Math.floor(milissegundos / 1000);
   const min = Math.floor(segundos / 60);
@@ -53,6 +56,7 @@ export function atualizarTimerFase(milissegundos) {
   }
 }
 
+// ===== MODAL =====
 export function abrirModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) modal.style.display = 'flex';
@@ -121,7 +125,7 @@ export function exibirErroCarregamento() {
   }
 }
 
-// ===== CONTROLE DE TEMA =====
+// ===== CONTROLE DE TEMA (claro/escuro) =====
 const TEMA_KEY = 'copa_theme';
 
 export function aplicarTema() {
@@ -132,6 +136,8 @@ export function aplicarTema() {
   }
   document.body.className = tema;
   atualizarIconeTema(tema);
+  // Aplica a cor primária após definir o tema
+  carregarCorPrimaria();
 }
 
 export function alternarTema() {
@@ -140,6 +146,8 @@ export function alternarTema() {
   document.body.className = novoTema;
   localStorage.setItem(TEMA_KEY, novoTema);
   atualizarIconeTema(novoTema);
+  // Reaplica a cor primária no novo tema
+  carregarCorPrimaria();
 }
 
 function atualizarIconeTema(tema) {
@@ -152,6 +160,54 @@ function atualizarIconeTema(tema) {
     btn.textContent = '🌙';
     btn.title = 'Alternar para tema escuro';
   }
+}
+
+// ===== COR PRIMÁRIA (novo) =====
+const COR_PRIMARIA_KEY = 'copa_cor_primaria';
+
+export const CORES_DISPONIVEIS = {
+  '#3b82f6': { nome: 'Azul', icone: '🔵' },
+  '#22c55e': { nome: 'Verde', icone: '🟢' },
+  '#8b5cf6': { nome: 'Roxo', icone: '🟣' },
+  '#ef4444': { nome: 'Vermelho', icone: '🔴' },
+  '#f59e0b': { nome: 'Laranja', icone: '🟠' },
+  '#eab308': { nome: 'Amarelo', icone: '🟡' },
+  '#ec4899': { nome: 'Rosa', icone: '🩷' },
+  '#64748b': { nome: 'Cinza', icone: '⚫' }
+};
+
+export function carregarCorPrimaria() {
+  let cor = localStorage.getItem(COR_PRIMARIA_KEY);
+  if (!cor) {
+    cor = '#3b82f6'; // padrão: azul
+    localStorage.setItem(COR_PRIMARIA_KEY, cor);
+  }
+  aplicarCorPrimaria(cor);
+  // Marca o botão correspondente como selecionado
+  document.querySelectorAll('.btn-cor').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.cor === cor);
+  });
+}
+
+export function aplicarCorPrimaria(cor) {
+  // Salva no localStorage
+  localStorage.setItem(COR_PRIMARIA_KEY, cor);
+  // Aplica como variável CSS
+  document.documentElement.style.setProperty('--cor-primaria', cor);
+  // Atualiza elementos que usam a cor
+  document.querySelectorAll('.btn-primary, .tab-btn.active, .btn-cor.selected').forEach(el => {
+    // O CSS cuidará disso via variável
+  });
+  // Atualiza o seletor de cores para marcar o botão selecionado
+  document.querySelectorAll('.btn-cor').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.cor === cor);
+  });
+}
+
+export function definirCorPrimaria(cor) {
+  if (!CORES_DISPONIVEIS[cor]) return;
+  aplicarCorPrimaria(cor);
+  exibirToast(`🎨 Cor alterada para ${CORES_DISPONIVEIS[cor].nome}!`);
 }
 
 // ===== BANNER DE AVISO =====
