@@ -136,7 +136,6 @@ export function aplicarTema() {
   }
   document.body.className = tema;
   atualizarIconeTema(tema);
-  // Aplica a cor primária após definir o tema
   carregarCorPrimaria();
 }
 
@@ -146,7 +145,6 @@ export function alternarTema() {
   document.body.className = novoTema;
   localStorage.setItem(TEMA_KEY, novoTema);
   atualizarIconeTema(novoTema);
-  // Reaplica a cor primária no novo tema
   carregarCorPrimaria();
 }
 
@@ -162,7 +160,7 @@ function atualizarIconeTema(tema) {
   }
 }
 
-// ===== COR PRIMÁRIA (novo) =====
+// ===== COR PRIMÁRIA =====
 const COR_PRIMARIA_KEY = 'copa_cor_primaria';
 
 export const CORES_DISPONIVEIS = {
@@ -179,26 +177,19 @@ export const CORES_DISPONIVEIS = {
 export function carregarCorPrimaria() {
   let cor = localStorage.getItem(COR_PRIMARIA_KEY);
   if (!cor) {
-    cor = '#3b82f6'; // padrão: azul
+    cor = '#3b82f6';
     localStorage.setItem(COR_PRIMARIA_KEY, cor);
   }
   aplicarCorPrimaria(cor);
-  // Marca o botão correspondente como selecionado
   document.querySelectorAll('.btn-cor').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.cor === cor);
   });
 }
 
 export function aplicarCorPrimaria(cor) {
-  // Salva no localStorage
   localStorage.setItem(COR_PRIMARIA_KEY, cor);
-  // Aplica como variável CSS
   document.documentElement.style.setProperty('--cor-primaria', cor);
-  // Atualiza elementos que usam a cor
-  document.querySelectorAll('.btn-primary, .tab-btn.active, .btn-cor.selected').forEach(el => {
-    // O CSS cuidará disso via variável
-  });
-  // Atualiza o seletor de cores para marcar o botão selecionado
+  document.querySelectorAll('.btn-primary, .tab-btn.active, .btn-cor.selected').forEach(el => {});
   document.querySelectorAll('.btn-cor').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.cor === cor);
   });
