@@ -16,12 +16,25 @@ export function mostrarTela(tipo) {
 }
 
 // ===== TOAST =====
-export function exibirToast(mensagem) {
+export function exibirToast(mensagem, tipo = 'info') {
   const t = document.getElementById('toast');
   if (t) {
     t.innerText = mensagem;
     t.classList.remove('hidden');
-    setTimeout(() => t.classList.add('hidden'), 3000);
+    // Cores diferentes conforme tipo
+    if (tipo === 'erro') {
+      t.style.background = '#c0392b';
+    } else if (tipo === 'sucesso') {
+      t.style.background = '#27ae60';
+    } else if (tipo === 'aviso') {
+      t.style.background = '#f39c12';
+    } else {
+      t.style.background = '#e67e22';
+    }
+    setTimeout(() => {
+      t.classList.add('hidden');
+      t.style.background = '';
+    }, 3000);
   }
 }
 
@@ -202,7 +215,7 @@ export function aplicarCorPrimaria(cor) {
 export function definirCorPrimaria(cor) {
   if (!CORES_DISPONIVEIS[cor]) return;
   aplicarCorPrimaria(cor);
-  exibirToast(`🎨 Cor alterada para ${CORES_DISPONIVEIS[cor].nome}!`);
+  exibirToast(`🎨 Cor alterada para ${CORES_DISPONIVEIS[cor].nome}!`, 'sucesso');
 }
 
 // ===== BANNER DE AVISO =====
