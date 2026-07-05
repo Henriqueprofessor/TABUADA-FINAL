@@ -95,7 +95,6 @@ export function coletarDadosAluno() {
 
   const evolucao500 = (ultimaPontuacao - primeiraPontuacao) >= 500;
   let primeiroLugar = false;
-  // Verifica se o aluno é o líder do ranking de pontos da fase atual
   if (state.rankingPontosAtivo && state.estadoAtual) {
     const faseAtual = state.estadoAtual.fase;
     const ranking = calcularRankingFase(faseAtual);
@@ -114,8 +113,6 @@ export function coletarDadosAluno() {
   };
 }
 
-// Importação circular: precisamos importar calcularRankingFase aqui
-// Para evitar erro, faremos import dinâmico
 async function calcularRankingFase(fase) {
   const { calcularRankingFase: calc } = await import('./ranking.js');
   return calc(fase);
@@ -146,7 +143,7 @@ export async function verificarEConcederMedalhas() {
     await salvarMedalhasFirebase(state.alunoId, todasMedalhas);
 
     for (const medal of novasMedalhas) {
-      exibirToast(`${medal.icone} NOVA CONQUISTA! Você ganhou a medalha "${medal.nome}"!`);
+      exibirToast(`${medal.icone} NOVA CONQUISTA! Você ganhou a medalha "${medal.nome}"!`, 'sucesso');
       mostrarPopupMedalha(medal);
     }
 
@@ -157,7 +154,7 @@ export async function verificarEConcederMedalhas() {
 }
 
 // ============================================================
-// EXIBIÇÃO DE MEDALHAS NA TELA DO ALUNO
+// EXIBIÇÃO DE MEDALHAS (REFATORADO COM TEMPLATES)
 // ============================================================
 
 export function atualizarExibicaoMedalhas() {
@@ -166,21 +163,43 @@ export function atualizarExibicaoMedalhas() {
 
   const medalhas = carregarMedalhasLocal();
   if (medalhas.length === 0) {
-    container.innerHTML = '<p style="color: #94a3b8; font-size: 14px;">Nenhuma conquista ainda. Continue jogando!</p>';
+    // Usa template vazio
+    const template = document.getElementById('template-medalhas-vazio');
+    if (template) {
+      container.innerHTML = '';
+      container.appendChild(template.content.cloneNode(true));
+    } else {
+      container.innerHTML = '<p style="color: #94a3b8; font-size: 14px;">Nenhuma conquista ainda. Continue jogando!</p>';
+    }
     return;
   }
 
-  let html = '<div class="medalhas-grid">';
+  const grid = document.createElement('div');
+  grid.className = 'medalhas-grid';
+  const itemTemplate = document.getElementById('template-medalha-item');
+
   for (const medal of medalhas) {
-    html += `
-      <div class="medalha-item" title="${medal.nome} - ${new Date(medal.data).toLocaleDateString('pt-BR')}">
-        <span class="medalha-icone">${medal.icone}</span>
-        <span class="medalha-nome">${medal.nome}</span>
-      </div>
-    `;
+    if (itemTemplate) {
+      const clone = itemTemplate.content.cloneNode(true);
+      const icone = clone.querySelector('.medalha-icone');
+      const nome = clone.querySelector('.medalha-nome');
+      const item = clone.querySelector('.medalha-item');
+      if (icone) icone.textContent = medal.icone;
+      if (nome) nome.textContent = medal.nome;
+      if (item) item.title = `${medal.nome} - ${new Date(medal.data).toLocaleDateString('pt-BR')}`;
+      grid.appendChild(clone);
+    } else {
+      // Fallback
+      const div = document.createElement('div');
+      div.className = 'medalha-item';
+      div.title = `${medal.nome} - ${new Date(medal.data).toLocaleDateString('pt-BR')}`;
+      div.innerHTML = `<span class="medalha-icone">${medal.icone}</span><span class="medalha-nome">${medal.nome}</span>`;
+      grid.appendChild(div);
+    }
   }
-  html += '</div>';
-  container.innerHTML = html;
+
+  container.innerHTML = '';
+  container.appendChild(grid);
 }
 
 function mostrarPopupMedalha(medal) {
