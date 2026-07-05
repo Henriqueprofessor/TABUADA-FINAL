@@ -81,7 +81,6 @@ async function abrirModalTurma() {
   
   modal.style.display = 'flex';
   
-  // Busca turmas do Firebase SEMPRE
   let turmas = [];
   try {
     const firebaseTurmas = await lerDados('copaV2/turmas');
@@ -636,7 +635,22 @@ function configurarEventos() {
   });
 
   // Iniciar Partida
-  document.getElementById('btn-iniciar-partida')?.addEventListener('click', iniciarPartida);
+  document.getElementById('btn-iniciar-partida')?.addEventListener('click', async () => {
+    // Captura posição atual antes de iniciar
+    const fase = state.estadoAtual.fase;
+    const resultados = state.estadoAtual?.resultados?.[fase] || {};
+    let ranking = [];
+    for (const [id, partidas] of Object.entries(resultados)) {
+      if (partidas && partidas.length > 0) {
+        const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+        ranking.push({ id, pontos: melhor.pontos });
+      }
+    }
+    ranking.sort((a, b) => b.pontos - a.pontos);
+    const posAtual = ranking.findIndex(p => p.id === state.alunoId) + 1;
+    state.posicaoAntesPartida = posAtual > 0 ? posAtual : null;
+    await iniciarPartida();
+  });
   document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
     if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
     location.reload();
@@ -832,7 +846,6 @@ function configurarEventos() {
       await adicionarTurma(nova.trim());
       renderListaTurmas();
       state.turmasCache = await lerDados('copaV2/turmas') || [];
-      // Atualiza o select do modal de turma se estiver aberto
       const modal = document.getElementById('modalTurma');
       if (modal && modal.style.display === 'flex') {
         await abrirModalTurma();
@@ -1194,7 +1207,6 @@ async function init() {
         preencherSeletorCores('seletor-cores');
         preencherSeletorCores('seletor-cores-aluno');
 
-        // Se já houver deviceId, tenta entrar automaticamente no modo aluno (se estiver na tela inicial)
         const deviceId = state.alunoDeviceId || getCacheItem('aluno.deviceId');
         if (deviceId && state.estadoAtual && state.estadoAtual.status === 'em_andamento') {
           const faseAtual = state.estadoAtual.fase;
@@ -1205,7 +1217,6 @@ async function init() {
               state.alunoTurma = dados.turma || '?';
               state.alunoNomeCache = dados.nome;
               state.alunoTurmaCache = dados.turma || '?';
-              // Não entra automaticamente, apenas deixa pronto
             }
           }).catch(() => {});
         }
