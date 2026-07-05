@@ -183,8 +183,11 @@ async function init() {
     if (state.meuTipo === 'professor') {
       const tabFase = document.getElementById('tab-ranking-fase');
       if (tabFase && !tabFase.classList.contains('hidden')) {
-        const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
-        renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+        const select = document.getElementById('select-fase-ranking');
+        if (select) {
+          const fase = parseInt(select.value) || state.estadoAtual?.fase || 1;
+          renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+        }
       }
     }
     atualizarUltimaSinc();
@@ -318,7 +321,9 @@ function popularSelectFases() {
 
 function onSelectFaseProfessorChange() {
   if (state.meuTipo !== 'professor') return;
-  const fase = parseInt(document.getElementById('select-fase-ranking').value);
+  const select = document.getElementById('select-fase-ranking');
+  if (!select) return;
+  const fase = parseInt(select.value);
   if (!isNaN(fase) && fase >= 1 && fase <= 5) {
     renderizarRanking(fase, 'ranking-parcial', 'individual', true);
   }
@@ -337,7 +342,9 @@ function popularSelectFasesTorcida() {
 
 function onSelectFaseTorcidaChange() {
   if (state.meuTipo !== 'projecao' || state.modoTorcida !== 'individual' || state.abaTorcidaAtiva !== 'fase') return;
-  const fase = parseInt(document.getElementById('select-fase-torcida').value);
+  const select = document.getElementById('select-fase-torcida');
+  if (!select) return;
+  const fase = parseInt(select.value);
   if (!isNaN(fase) && fase >= 1 && fase <= 5) {
     state.faseTorcidaSelecionada = fase;
     atualizarTorcidaIndividual();
@@ -601,7 +608,7 @@ function configurarEventos() {
   });
 
   // ============================================================
-  // ABAS DO PROFESSOR (CORRIGIDO COM VERIFICAÇÃO)
+  // ABAS DO PROFESSOR
   // ============================================================
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function(e) {
@@ -624,7 +631,7 @@ function configurarEventos() {
       if (targetTab) {
         targetTab.classList.remove('hidden');
       } else {
-        console.warn(`Aba ${tab} não encontrada`);
+        console.warn(`Abas ${tab} não encontrada`);
         return;
       }
 
@@ -633,15 +640,14 @@ function configurarEventos() {
         renderRankingGeral();
       }
       if (tab === 'ranking-fase') {
-        // Garante que o select existe
-        let selectFase = document.getElementById('select-fase-ranking');
-        if (!selectFase) {
-          // Se não existe, cria as opções
-          popularSelectFases();
-          selectFase = document.getElementById('select-fase-ranking');
+        popularSelectFases();
+        const select = document.getElementById('select-fase-ranking');
+        if (select) {
+          const fase = parseInt(select.value) || state.estadoAtual?.fase || 1;
+          renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+        } else {
+          renderizarRanking(state.estadoAtual?.fase || 1, 'ranking-parcial', 'individual', true);
         }
-        const fase = parseInt(selectFase.value) || state.estadoAtual?.fase || 1;
-        renderizarRanking(fase, 'ranking-parcial', 'individual', true);
       }
       if (tab === 'ranking-turmas') {
         renderizarRanking(null, 'ranking-turmas-container', 'turmas', false);
@@ -686,8 +692,11 @@ function configurarEventos() {
       state.estadoAtual = snap.val() || state.estadoAtual;
       atualizarUI();
       if (state.meuTipo === 'professor') {
-        const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
-        renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+        const select = document.getElementById('select-fase-ranking');
+        if (select) {
+          const fase = parseInt(select.value) || state.estadoAtual?.fase || 1;
+          renderizarRanking(fase, 'ranking-parcial', 'individual', true);
+        }
       }
       atualizarUltimaSinc();
       exibirToast('✅ Dados sincronizados!');
