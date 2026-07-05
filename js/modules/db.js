@@ -50,35 +50,10 @@ export async function lerDados(caminho) {
   }
 }
 
-// Listener para mudanças em tempo real (ex: online)
 export function ouvirOnline(callback) {
   db.ref('online').on('value', snap => callback(snap));
 }
 
-// Desconectar listener
 export function removerListener(ref) {
   ref.off();
-}
-
-// ============================================================
-// FUNÇÕES ESPECÍFICAS PARA AVATAR
-// ============================================================
-
-// Carrega o avatar do aluno e a cor da turma
-export async function carregarAvatarAluno() {
-  if (!state.alunoId) return;
-
-  try {
-    // Carrega avatar do aluno
-    const snapAvatar = await db.ref(`copaV2/participantes/avatar/${state.alunoId}`).once('value');
-    state.avatarAluno = snapAvatar.val() || '⭐';
-
-    // Carrega cor da turma
-    if (state.alunoTurma) {
-      const snapCor = await db.ref(`copaV2/turmas_cores/${state.alunoTurma}`).once('value');
-      state.corTurma = snapCor.val() || '#95a5a6';
-    }
-  } catch (e) {
-    console.warn('Erro ao carregar avatar:', e);
-  }
 }
