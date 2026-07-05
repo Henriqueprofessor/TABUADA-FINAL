@@ -101,7 +101,7 @@
         </div>
 
         <!-- ========================================================= -->
-        <!-- ABA CONTROLE (COMPLETA)                                  -->
+        <!-- ABA CONTROLE                                              -->
         <!-- ========================================================= -->
         <div id="tab-controle" class="tab-content">
             <div class="flex-grid">
@@ -471,6 +471,21 @@
                 </div>
             </div>
 
+            <!-- ===== CARD: CORES E TEMAS (NOVO) ===== -->
+            <div id="bloco-cores" class="config-card" style="border-color: var(--cor-primaria);">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">🎨</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Temas e Cores</h4>
+                    <span style="background: var(--cor-primaria); color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Escolha a cor de destaque do jogo. A alteração é <strong>apenas no seu dispositivo</strong>.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <div id="seletor-cores" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                </div>
+            </div>
+
         </div>
         <!-- Fim da aba Configurações -->
 
@@ -516,6 +531,13 @@
         <div id="aguardando-aluno" style="text-align:center; padding:20px;">
             <div id="msg-status-aluno">Aguardando...</div>
             <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
+        </div>
+
+        <!-- ===== SELETOR DE CORES (ALUNO) ===== -->
+        <div style="display: flex; align-items: center; gap: 16px; margin: 10px 0; flex-wrap: wrap; background: var(--bg-card-hover); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--borda-card);">
+            <span style="font-size: 20px;">🎨</span>
+            <span style="color: var(--texto-secundario); font-size: 14px;">Cor de destaque:</span>
+            <div id="seletor-cores-aluno" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
         </div>
 
         <div class="status-box">
