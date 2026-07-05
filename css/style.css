@@ -157,14 +157,12 @@ body.em-jogo #tela-aluno { border: none; background: transparent; padding: 0; }
     transition: all 0.3s ease;
     text-align: center;
 }
+
+/* ===== BRILHOS DA PERGUNTA (F1) ===== */
+.brilho-roxo { box-shadow: 0 0 30px rgba(139, 92, 246, 0.5); border-color: rgba(139, 92, 246, 0.6); }
+.brilho-verde { box-shadow: 0 0 30px rgba(34, 197, 94, 0.5); border-color: rgba(34, 197, 94, 0.6); }
+.brilho-amarelo { box-shadow: 0 0 30px rgba(250, 204, 21, 0.5); border-color: rgba(250, 204, 21, 0.6); }
 .brilho-cinza { box-shadow: 0 0 20px rgba(148, 163, 184, 0.2); }
-.brilho-roxo { box-shadow: 0 0 30px rgba(139, 92, 246, 0.4); border-color: rgba(139, 92, 246, 0.5); }
-.brilho-verde { box-shadow: 0 0 30px rgba(34, 197, 94, 0.4); border-color: rgba(34, 197, 94, 0.5); }
-.brilho-amarelo { box-shadow: 0 0 30px rgba(250, 204, 21, 0.4); border-color: rgba(250, 204, 21, 0.5); }
-.brilho-vermelha { box-shadow: 0 0 50px rgba(231, 76, 60, 0.8); border-color: rgba(231, 76, 60, 0.9); animation: pulse-brilho 1.5s infinite; } /* mantido para compatibilidade */
-.brilho-laranja { box-shadow: 0 0 40px rgba(243, 156, 18, 0.6); border-color: rgba(243, 156, 18, 0.7); }
-.brilho-amarela { box-shadow: 0 0 30px rgba(255, 217, 102, 0.4); border-color: rgba(255, 217, 102, 0.5); }
-.brilho-branca { box-shadow: 0 0 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.4); }
 
 @keyframes pulse-brilho {
     0% { transform: scale(1); }
@@ -229,7 +227,7 @@ body.em-jogo #tela-aluno { border: none; background: transparent; padding: 0; }
 .posicao-subiu { color: #2ecc71; font-weight: bold; }
 .posicao-desceu { color: #e74c3c; font-weight: bold; }
 
-/* ===== BARRA DE TEMPO - CORES DINÂMICAS ===== */
+/* ===== BARRA DE TEMPO - CORES DINÂMICAS (F1) ===== */
 .barra-tempo {
   width: 100%;
   height: 12px;
@@ -242,25 +240,24 @@ body.em-jogo #tela-aluno { border: none; background: transparent; padding: 0; }
 .progresso-tempo {
   width: 100%;
   height: 100%;
-  background: #27ae60; /* padrão verde */
+  background: #94a3b8;
   transition: width 0.05s linear, background 0.3s ease, box-shadow 0.3s ease;
 }
-/* Cores dinâmicas da barra de tempo (estilo F1) */
 .progresso-tempo-roxo {
-  background: #8b5cf6;
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
+  background: #8b5cf6 !important;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.8) !important;
 }
 .progresso-tempo-verde {
-  background: #22c55e;
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+  background: #22c55e !important;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.6) !important;
 }
 .progresso-tempo-amarelo {
-  background: #facc15;
-  box-shadow: 0 0 20px rgba(250, 204, 21, 0.5);
+  background: #facc15 !important;
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.5) !important;
 }
 .progresso-tempo-cinza {
-  background: #94a3b8;
-  box-shadow: none;
+  background: #94a3b8 !important;
+  box-shadow: none !important;
 }
 
 /* ===== CORES DO RITMO (RANKING) ===== */
