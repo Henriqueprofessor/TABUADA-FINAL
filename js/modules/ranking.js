@@ -134,7 +134,7 @@ export function calcularRankingFase(fase) {
 }
 
 // ============================================================
-// RENDERIZAR RANKING (OTIMIZADO)
+// RENDERIZAR RANKING (OTIMIZADO E COM CORREÇÕES)
 // ============================================================
 
 export async function renderizarRanking(fase, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -191,20 +191,44 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   const minConfig = await carregarMinPartidas();
   const minPartidas = minConfig[fase] || 1;
 
+  // ============================================================
+  // CORREÇÃO: Calcular a pontuação da ÚLTIMA partida finalizada
+  // ============================================================
   let listaComInfo = ranking.map(j => {
     const statusInfo = statusMap.get(j.id) || { status: 'aguardando', progresso: 0 };
     let progresso = statusInfo.progresso;
     if (statusInfo.status === 'aguardando') progresso = 0;
+
+    // Obter a última partida finalizada (se houver)
+    const partidas = state.estadoAtual?.resultados?.[fase]?.[j.id] || [];
+    let ultimaPontuacao = null;
+    if (partidas.length > 0) {
+      const ultima = partidas[partidas.length - 1];
+      ultimaPontuacao = ultima.pontos;
+    }
+
+    // Se estiver em jogo, usar pontuação atual do temp; senão, usar última pontuação
+    const tempData = snapTemp[j.id];
+    let pontuacaoAtual = null;
+    if (tempData) {
+      pontuacaoAtual = tempData.pontos;
+    } else if (ultimaPontuacao !== null) {
+      pontuacaoAtual = ultimaPontuacao;
+    } else {
+      pontuacaoAtual = j.melhorPontuacao; // fallback (melhor pontuação se não houver última)
+    }
+
     return {
       ...j,
       progresso,
       status: statusInfo.status,
-      isTemp: !!snapTemp[j.id],
-      pontuacaoAtual: snapTemp[j.id]?.pontos || j.melhorPontuacao,
+      isTemp: !!tempData,
+      pontuacaoAtual: pontuacaoAtual,
       ultimaPosicao: null
     };
   });
 
+  // ===== HISTÓRICO PARA SETAS (subiu/desceu) =====
   const containerKey = containerId;
   const previousIds = rankingHistory[containerKey] || [];
   const currentIds = listaComInfo.map(j => j.id);
@@ -237,13 +261,9 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   const vagas = VAGAS_POR_FASE[fase] || 30;
   const maxMelhor = listaComInfo.length > 0 ? listaComInfo[0].melhorPontuacao : 0;
 
-  let medalhasMap = new Map();
-  for (let item of listaComInfo) {
-    const medalhas = await lerDados(`copaV2/medalhas/${item.id}`) || [];
-    if (medalhas.length > 0) {
-      medalhasMap.set(item.id, medalhas.map(m => m.icone).join(' '));
-    }
-  }
+  // ============================================================
+  // MEDALHAS REMOVIDAS DO RANKING (conforme solicitado)
+  // ============================================================
 
   // Montagem do HTML usando templates
   const table = document.createElement('table');
@@ -339,16 +359,14 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     }
 
     let nomeCompleto = escapeHtml(j.nome);
+    // Mantém apenas os ícones de recorde e bônus (medalhas removidas)
     if (jogadorRecordeId === j.id) {
       nomeCompleto += ' <span class="foguete-vermelho">🚀</span>';
     }
     if (jogadorBonusId === j.id && state.bonusVelocidadeConfig?.ativo) {
       nomeCompleto += ' <span class="raio-amarelo">⚡</span>';
     }
-    const medalhasStr = medalhasMap.get(j.id) || '';
-    if (medalhasStr) {
-      nomeCompleto += ` <span class="medalhas-ranking" title="Conquistas">${medalhasStr}</span>`;
-    }
+    // NÃO ADICIONA MEDALHAS DE CONQUISTA AQUI
 
     let melhorDisplay = j.melhorPontuacao;
     if (containerId === 'ranking-parcial' && j.melhorPartidaIndex !== null && j.melhorPartidaIndex !== -1) {
@@ -401,7 +419,12 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       if (tdMelhor) tdMelhor.textContent = melhorDisplay;
       if (tdClassificacao) tdClassificacao.innerHTML = colunaClassificacao;
       if (tdRitmo) tdRitmo.innerHTML = futPosHtml;
-      if (tdAtual) tdAtual.textContent = j.pontuacaoAtual || "–";
+      if (tdAtual) {
+        tdAtual.textContent = j.pontuacaoAtual !== null ? j.pontuacaoAtual : "–";
+        // Garantir que a fonte seja normalizada (remover qualquer estilo inline ou classe extra)
+        tdAtual.style.fontWeight = 'normal';
+        tdAtual.style.fontSize = 'inherit';
+      }
       if (tdDelta) tdDelta.textContent = deltaText;
       if (tdVeloc) tdVeloc.textContent = recordeStr;
       if (tdProgresso) tdProgresso.textContent = progressoHtml;
@@ -430,7 +453,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
         <td>${melhorDisplay}</td>
         ${exibirClassificacao ? `<td>${colunaClassificacao}</td>` : ''}
         <td>${futPosHtml}</td>
-        <td>${j.pontuacaoAtual || "–"}</td>
+        <td style="font-weight:normal; font-size:inherit;">${j.pontuacaoAtual !== null ? j.pontuacaoAtual : "–"}</td>
         <td>${deltaText}</td>
         <td>${recordeStr}</td>
         <td>${progressoHtml}</td>
