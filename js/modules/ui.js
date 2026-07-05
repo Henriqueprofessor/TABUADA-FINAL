@@ -189,7 +189,6 @@ export function carregarCorPrimaria() {
 export function aplicarCorPrimaria(cor) {
   localStorage.setItem(COR_PRIMARIA_KEY, cor);
   document.documentElement.style.setProperty('--cor-primaria', cor);
-  document.querySelectorAll('.btn-primary, .tab-btn.active, .btn-cor.selected').forEach(el => {});
   document.querySelectorAll('.btn-cor').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.cor === cor);
   });
