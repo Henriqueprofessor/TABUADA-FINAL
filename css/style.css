@@ -12,7 +12,7 @@ body.tema-escuro {
   --bg-card: rgba(12, 20, 35, 0.9);
   --bg-card-hover: #1e293b;
   --texto-principal: #eee;
-  --texto-secundario: #cbd5e1;  /* aumento de contraste */
+  --texto-secundario: #cbd5e1;
   --texto-destaque: #ffd966;
   --borda-card: rgba(0, 255, 255, 0.2);
   --sombra-card: 0 4px 6px -1px rgba(0,0,0,0.3);
@@ -38,7 +38,7 @@ body.tema-claro {
   --bg-card: #ffffff;
   --bg-card-hover: #e2e8f0;
   --texto-principal: #1a1a2e;
-  --texto-secundario: #2d3748;  /* aumento de contraste */
+  --texto-secundario: #2d3748;
   --texto-destaque: #2d3748;
   --borda-card: #d1d5db;
   --sombra-card: 0 4px 6px -1px rgba(0,0,0,0.1);
@@ -158,9 +158,12 @@ body.em-jogo #tela-aluno { border: none; background: transparent; padding: 0; }
     text-align: center;
 }
 .brilho-cinza { box-shadow: 0 0 20px rgba(148, 163, 184, 0.2); }
-.brilho-amarela { box-shadow: 0 0 30px rgba(255, 217, 102, 0.4); border-color: rgba(255, 217, 102, 0.5); }
+.brilho-roxo { box-shadow: 0 0 30px rgba(139, 92, 246, 0.4); border-color: rgba(139, 92, 246, 0.5); }
+.brilho-verde { box-shadow: 0 0 30px rgba(34, 197, 94, 0.4); border-color: rgba(34, 197, 94, 0.5); }
+.brilho-amarelo { box-shadow: 0 0 30px rgba(250, 204, 21, 0.4); border-color: rgba(250, 204, 21, 0.5); }
+.brilho-vermelha { box-shadow: 0 0 50px rgba(231, 76, 60, 0.8); border-color: rgba(231, 76, 60, 0.9); animation: pulse-brilho 1.5s infinite; } /* mantido para compatibilidade */
 .brilho-laranja { box-shadow: 0 0 40px rgba(243, 156, 18, 0.6); border-color: rgba(243, 156, 18, 0.7); }
-.brilho-vermelha { box-shadow: 0 0 50px rgba(231, 76, 60, 0.8); border-color: rgba(231, 76, 60, 0.9); animation: pulse-brilho 1.5s infinite; }
+.brilho-amarela { box-shadow: 0 0 30px rgba(255, 217, 102, 0.4); border-color: rgba(255, 217, 102, 0.5); }
 .brilho-branca { box-shadow: 0 0 25px rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.4); }
 
 @keyframes pulse-brilho {
@@ -210,10 +213,9 @@ body.em-jogo #tela-aluno { border: none; background: transparent; padding: 0; }
     display: inline-block;
     box-shadow: 0 0 5px rgba(0,0,0,0.5);
 }
-.bolinha-mini-vermelha { background: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
-.bolinha-mini-laranja { background: #e67e22; box-shadow: 0 0 10px #e67e22; }
-.bolinha-mini-amarela { background: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
-.bolinha-mini-branca { background: #bdc3c7; box-shadow: 0 0 10px #bdc3c7; }
+.bolinha-mini-roxa { background: #8b5cf6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.6); }
+.bolinha-mini-verde { background: #22c55e; box-shadow: 0 0 10px rgba(34, 197, 94, 0.6); }
+.bolinha-mini-amarela { background: #facc15; box-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
 .bolinha-mini-cinza { background: #2c3e50; }
 
 .flex-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
@@ -226,8 +228,60 @@ body.em-jogo #tela-aluno { border: none; background: transparent; padding: 0; }
 .classificado-nao { color: #e74c3c; font-weight: bold; }
 .posicao-subiu { color: #2ecc71; font-weight: bold; }
 .posicao-desceu { color: #e74c3c; font-weight: bold; }
-.barra-tempo { width: 100%; height: 12px; background: #2c3e50; border-radius: 6px; overflow: hidden; margin: 15px 0; }
-.progresso-tempo { width: 100%; height: 100%; background: #27ae60; transition: width 0.05s linear; }
+
+/* ===== BARRA DE TEMPO - CORES DINÂMICAS ===== */
+.barra-tempo {
+  width: 100%;
+  height: 12px;
+  background: #2c3e50;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 15px 0;
+  transition: box-shadow 0.3s ease;
+}
+.progresso-tempo {
+  width: 100%;
+  height: 100%;
+  background: #27ae60; /* padrão verde */
+  transition: width 0.05s linear, background 0.3s ease, box-shadow 0.3s ease;
+}
+/* Cores dinâmicas da barra de tempo (estilo F1) */
+.progresso-tempo-roxo {
+  background: #8b5cf6;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
+}
+.progresso-tempo-verde {
+  background: #22c55e;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+}
+.progresso-tempo-amarelo {
+  background: #facc15;
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.5);
+}
+.progresso-tempo-cinza {
+  background: #94a3b8;
+  box-shadow: none;
+}
+
+/* ===== CORES DO RITMO (RANKING) ===== */
+.fut-roxo {
+  color: #8b5cf6;
+  font-weight: bold;
+  text-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+}
+.fut-verde {
+  color: #22c55e;
+  font-weight: bold;
+  text-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
+}
+.fut-amarelo {
+  color: #facc15;
+  font-weight: bold;
+  text-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
+}
+/* classes antigas mantidas para compatibilidade */
+.fut-vermelho { color: #e74c3c; font-weight: bold; text-shadow: 0 0 8px rgba(231, 76, 60, 0.4); }
+.fut-laranja { color: #e67e22; font-weight: bold; }
 
 .opcoes-vertical {
     display: flex;
@@ -1513,6 +1567,7 @@ body.em-jogo #banner-aviso .banner-aviso-icone {
   box-shadow: 0 0 16px rgba(255,255,255,0.6);
   transform: scale(1.1);
 }
+
 /* ============================================================
    JOYSTICK / GAMEPAD (Item 11)
    ============================================================ */
