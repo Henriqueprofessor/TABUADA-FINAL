@@ -327,6 +327,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     else if (j.status === 'finalizado') progressoHtml = `✅ Finalizado`;
     else progressoHtml = `—`;
 
+    // ===== NOVA LÓGICA DE CORES ESTILO F1 =====
     let futPosHtml = "—";
     if (j.status !== 'finalizado' && j.progresso < 20) {
       const posProjetada = posProjetadaMap.get(j.id);
@@ -335,13 +336,20 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       const recordeLider = maxMelhor || 0;
       if (projecao > 0 && j.progresso >= 4) {
         let icone = "", classe = "";
-        if (posAtual === 1) {
-          if (projecao > recordePessoal) { icone = "🔴"; classe = "fut-vermelho"; }
-          else { icone = "🟡"; classe = "fut-amarelo"; }
-        } else {
-          if (projecao > recordeLider) { icone = "🔴"; classe = "fut-vermelho"; }
-          else if (projecao > recordePessoal) { icone = "🟠"; classe = "fut-laranja"; }
-          else { icone = "🟡"; classe = "fut-amarelo"; }
+        // 🟣 Roxo: projeta superar o líder (melhor absoluto)
+        if (projecao > recordeLider) {
+          icone = "🟣";
+          classe = "fut-roxo";
+        }
+        // 🟢 Verde: projeta superar o próprio recorde, mas não o líder
+        else if (projecao > recordePessoal) {
+          icone = "🟢";
+          classe = "fut-verde";
+        }
+        // 🟡 Amarelo: projeta abaixo do próprio recorde
+        else {
+          icone = "🟡";
+          classe = "fut-amarelo";
         }
         const posExibida = posProjetada !== undefined ? posProjetada : "—";
         futPosHtml = `<span class="${classe}">${posExibida}° ${icone}</span>`;
@@ -953,7 +961,7 @@ export async function renderRankingGeral() {
 }
 
 // ============================================================
-// ATUALIZAR INFORMAÇÕES DO ALUNO
+// ATUALIZAR INFORMAÇÕES DO ALUNO (com barra de tempo F1)
 // ============================================================
 
 export async function atualizarInfoAluno() {
@@ -1017,23 +1025,38 @@ export async function atualizarInfoAluno() {
     }
   }
 
+  // ===== NOVA LÓGICA DE CORES ESTILO F1 (Brilho e Barra) =====
   let cor = 'cinza';
   if (perguntasRespondidas >= 4 && projecao > 0) {
-    if (posicao === 1) {
-      if (projecao > recordePessoal) cor = 'vermelha';
-      else cor = 'amarela';
+    if (projecao > recordeLider) {
+      cor = 'roxo';      // 🟣 Projeta superar o líder
+    } else if (projecao > recordePessoal) {
+      cor = 'verde';     // 🟢 Projeta superar o próprio recorde
     } else {
-      if (projecao > recordeLider) cor = 'vermelha';
-      else if (projecao > recordePessoal) cor = 'laranja';
-      else cor = 'amarela';
+      cor = 'amarelo';   // 🟡 Projeta abaixo do próprio recorde
     }
-  } else {
-    cor = 'cinza';
   }
+
+  // Aplica a cor no brilho da pergunta
   const container = document.getElementById('pergunta-container');
   if (container) {
-    container.classList.remove('brilho-amarela', 'brilho-laranja', 'brilho-vermelha', 'brilho-branca', 'brilho-cinza');
+    container.classList.remove('brilho-roxo', 'brilho-verde', 'brilho-amarelo', 'brilho-cinza', 'brilho-branca');
     container.classList.add('brilho-' + cor);
+  }
+
+  // ===== ATUALIZA A COR DA BARRA DE TEMPO =====
+  const barra = document.getElementById('progresso-tempo');
+  if (barra) {
+    // Remove classes antigas de cor
+    barra.classList.remove('progresso-tempo-roxo', 'progresso-tempo-verde', 'progresso-tempo-amarelo', 'progresso-tempo-cinza');
+    // Adiciona a classe correspondente
+    const corClasse = 'progresso-tempo-' + cor;
+    barra.classList.add(corClasse);
+    // Se for cinza, mantém o fundo neutro
+    if (cor === 'cinza') {
+      barra.style.background = '#94a3b8';
+      barra.style.boxShadow = 'none';
+    }
   }
 
   let velocidadeMedia = 0;
