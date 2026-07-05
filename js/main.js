@@ -15,7 +15,11 @@ import {
   esconderCarregando, 
   exibirErroCarregamento,
   aplicarTema,
-  alternarTema
+  alternarTema,
+  atualizarBannerAviso,
+  definirCorPrimaria,
+  carregarCorPrimaria,
+  CORES_DISPONIVEIS
 } from './modules/ui.js';
 import { iniciarPartida } from './modules/game.js';
 import { 
@@ -70,7 +74,7 @@ import {
 // INICIALIZAÇÃO
 // ============================================================
 async function init() {
-  aplicarTema();
+  aplicarTema(); // Já chama carregarCorPrimaria()
   mostrarCarregando();
   carregarConfiguracoesDoCache();
 
@@ -183,15 +187,16 @@ async function init() {
     if (state.meuTipo === 'professor') {
       const tabFase = document.getElementById('tab-ranking-fase');
       if (tabFase && !tabFase.classList.contains('hidden')) {
-        const select = document.getElementById('select-fase-ranking');
-        if (select) {
-          const fase = parseInt(select.value) || state.estadoAtual?.fase || 1;
-          renderizarRanking(fase, 'ranking-parcial', 'individual', true);
-        }
+        const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
+        renderizarRanking(fase, 'ranking-parcial', 'individual', true);
       }
     }
     atualizarUltimaSinc();
     aplicarPreferenciasUI();
+
+    // Preencher seletores de cores (professor e aluno)
+    preencherSeletorCores('seletor-cores');
+    preencherSeletorCores('seletor-cores-aluno');
   });
 
   ouvirOnline((snap) => {
@@ -236,6 +241,38 @@ async function init() {
     const inputTempo = document.getElementById('input-tempo-fase');
     if (inputTempo) inputTempo.value = state.tempoFaseCache;
   }
+}
+
+// ============================================================
+// FUNÇÃO PARA PREENCHER SELETOR DE CORES
+// ============================================================
+function preencherSeletorCores(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  
+  for (const [cor, info] of Object.entries(CORES_DISPONIVEIS)) {
+    const btn = document.createElement('button');
+    btn.className = 'btn-cor';
+    btn.dataset.cor = cor;
+    btn.style.backgroundColor = cor;
+    btn.title = info.nome;
+    btn.innerHTML = `<span style="font-size: 18px; line-height: 1;">${info.icone}</span>`;
+    btn.style.color = '#fff';
+    btn.style.textShadow = '0 1px 3px rgba(0,0,0,0.5)';
+    btn.addEventListener('click', function() {
+      definirCorPrimaria(cor);
+      document.querySelectorAll('.btn-cor').forEach(b => b.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+    container.appendChild(btn);
+  }
+  
+  // Marca o selecionado atualmente
+  const corAtual = localStorage.getItem('copa_cor_primaria') || '#3b82f6';
+  container.querySelectorAll('.btn-cor').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.cor === corAtual);
+  });
 }
 
 // ============================================================
@@ -321,9 +358,7 @@ function popularSelectFases() {
 
 function onSelectFaseProfessorChange() {
   if (state.meuTipo !== 'professor') return;
-  const select = document.getElementById('select-fase-ranking');
-  if (!select) return;
-  const fase = parseInt(select.value);
+  const fase = parseInt(document.getElementById('select-fase-ranking').value);
   if (!isNaN(fase) && fase >= 1 && fase <= 5) {
     renderizarRanking(fase, 'ranking-parcial', 'individual', true);
   }
@@ -342,9 +377,7 @@ function popularSelectFasesTorcida() {
 
 function onSelectFaseTorcidaChange() {
   if (state.meuTipo !== 'projecao' || state.modoTorcida !== 'individual' || state.abaTorcidaAtiva !== 'fase') return;
-  const select = document.getElementById('select-fase-torcida');
-  if (!select) return;
-  const fase = parseInt(select.value);
+  const fase = parseInt(document.getElementById('select-fase-torcida').value);
   if (!isNaN(fase) && fase >= 1 && fase <= 5) {
     state.faseTorcidaSelecionada = fase;
     atualizarTorcidaIndividual();
@@ -439,6 +472,7 @@ function entrarModoProfessor() {
   document.querySelector('.tab-btn[data-tab="controle"]')?.click();
   popularSelectFases();
   atualizarStatusAviso(state.avisoAtual);
+  carregarCorPrimaria();
 }
 
 function entrarModoAluno() {
@@ -454,6 +488,8 @@ function entrarModoAluno() {
   } else {
     removerBannerAviso();
   }
+  carregarCorPrimaria();
+  preencherSeletorCores('seletor-cores-aluno');
 }
 
 function entrarModoTorcida() {
@@ -613,40 +649,36 @@ function configurarEventos() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function(e) {
       e.preventDefault();
-      // Remove active de todos
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       this.classList.add('active');
       const tab = this.dataset.tab;
       if (!tab) return;
 
-      // Salva preferência
       state.prefProfessorAba = tab;
       setCacheItem('preferencias.professorAba', tab);
 
-      // Oculta todas as abas
       document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
 
-      // Mostra a aba selecionada
       const targetTab = document.getElementById(`tab-${tab}`);
       if (targetTab) {
         targetTab.classList.remove('hidden');
       } else {
-        console.warn(`Abas ${tab} não encontrada`);
+        console.warn(`Aba ${tab} não encontrada`);
         return;
       }
 
-      // Executa ações específicas da aba
       if (tab === 'ranking-geral') {
         renderRankingGeral();
       }
       if (tab === 'ranking-fase') {
         popularSelectFases();
-        const select = document.getElementById('select-fase-ranking');
-        if (select) {
-          const fase = parseInt(select.value) || state.estadoAtual?.fase || 1;
+        const selectFase = document.getElementById('select-fase-ranking');
+        if (selectFase) {
+          const fase = parseInt(selectFase.value) || state.estadoAtual?.fase || 1;
           renderizarRanking(fase, 'ranking-parcial', 'individual', true);
         } else {
-          renderizarRanking(state.estadoAtual?.fase || 1, 'ranking-parcial', 'individual', true);
+          const fase = state.estadoAtual?.fase || 1;
+          renderizarRanking(fase, 'ranking-parcial', 'individual', true);
         }
       }
       if (tab === 'ranking-turmas') {
@@ -666,6 +698,7 @@ function configurarEventos() {
         renderizarColunasVisiveis();
         renderizarPainelSom();
         atualizarStatusAviso(state.avisoAtual);
+        preencherSeletorCores('seletor-cores');
       }
     });
   });
@@ -692,11 +725,8 @@ function configurarEventos() {
       state.estadoAtual = snap.val() || state.estadoAtual;
       atualizarUI();
       if (state.meuTipo === 'professor') {
-        const select = document.getElementById('select-fase-ranking');
-        if (select) {
-          const fase = parseInt(select.value) || state.estadoAtual?.fase || 1;
-          renderizarRanking(fase, 'ranking-parcial', 'individual', true);
-        }
+        const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
+        renderizarRanking(fase, 'ranking-parcial', 'individual', true);
       }
       atualizarUltimaSinc();
       exibirToast('✅ Dados sincronizados!');
