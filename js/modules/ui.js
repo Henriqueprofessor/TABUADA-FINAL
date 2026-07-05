@@ -1,6 +1,6 @@
+// js/modules/ui.js
 import { state } from './state.js';
 
-// Mostrar/ocultar telas
 export function mostrarTela(tipo) {
   document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
   if (tipo === 'professor') document.getElementById('painel-professor').classList.remove('hidden');
@@ -152,4 +152,26 @@ function atualizarIconeTema(tema) {
     btn.textContent = '🌙';
     btn.title = 'Alternar para tema escuro';
   }
+}
+
+// ===== BANNER DE AVISO =====
+export function atualizarBannerAviso(aviso) {
+  if (!aviso || !aviso.mensagem) {
+    const banner = document.getElementById('banner-aviso');
+    if (banner) banner.remove();
+    return;
+  }
+
+  let banner = document.getElementById('banner-aviso');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'banner-aviso';
+    banner.className = 'banner-aviso';
+    document.body.prepend(banner);
+  }
+
+  banner.innerHTML = `
+    <span class="banner-aviso-icone">📢</span>
+    <span class="banner-aviso-texto">${aviso.mensagem}</span>
+  `;
 }
