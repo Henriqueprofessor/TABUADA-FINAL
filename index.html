@@ -43,6 +43,26 @@
     </div>
 
     <!-- ========================================================= -->
+    <!-- MODAL DE SELEÇÃO DE TURMA (ALUNO)                        -->
+    <!-- ========================================================= -->
+    <div id="modalTurma" class="modal-turma" role="dialog" aria-modal="true" aria-labelledby="turma-title">
+        <div class="modal-turma-content">
+            <h2 id="turma-title">🏫 Selecione sua Turma</h2>
+            <p style="color: #94a3b8; margin: 10px 0;">Escolha sua turma para continuar.</p>
+            <select id="selectTurma" style="width:100%; padding:12px; border-radius:20px; background:#1f3a4b; color:white; font-size:16px;"></select>
+            <label for="inputNomeAluno" style="display:block; margin-top:15px; color:#f1f5f9;">Seu nome completo:</label>
+            <input type="text" id="inputNomeAluno" placeholder="Digite seu nome" style="width:100%; padding:12px; border-radius:20px; background:#1e293b; border:1px solid #334155; color:#f1f5f9; margin-top:5px;">
+            <div id="senhaContainer" style="display:none; margin-top:15px;">
+                <label for="inputSenhaAluno" style="color:#f1f5f9;">Senha da Fase 1 (2 dígitos):</label>
+                <input type="password" id="inputSenhaAluno" placeholder="Ex: 42" maxlength="2" style="width:100%; padding:12px; border-radius:20px; background:#1e293b; border:1px solid #334155; color:#f1f5f9; margin-top:5px;">
+            </div>
+            <button id="btnConfirmarAluno" class="btn-success" style="width:100%; margin-top:20px;">✅ Entrar na Copa</button>
+            <button id="btnCancelarAluno" class="btn-danger" style="width:100%; margin-top:10px;">❌ Cancelar</button>
+            <div id="erroAluno" class="erro-msg" style="margin-top:10px;"></div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
     <!-- CABEÇALHO PRINCIPAL                                        -->
     <!-- ========================================================= -->
     <div class="card esconder-durante-jogo">
