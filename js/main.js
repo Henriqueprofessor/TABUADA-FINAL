@@ -1,4 +1,4 @@
-// js/main.js (corrigido)
+// js/main.js
 import { db, auth, initConnectionMonitor, onConnectionChange, recriarPresencaOnline } from './config/firebase.js';
 import { state } from './modules/state.js';
 import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './modules/auth.js';
@@ -72,49 +72,36 @@ import {
 import { initGameLoop } from './modules/gameLoop.js';
 
 // ============================================================
-// FUNÇÕES DE CADASTRO DO ALUNO (CORRIGIDAS)
+// FUNÇÕES DE CADASTRO DO ALUNO
 // ============================================================
 
 async function abrirModalTurma() {
   const modal = document.getElementById('modalTurma');
   if (!modal) return;
   
-  // Força o modal a ficar visível
   modal.style.display = 'flex';
   
-  // ===== PREENCHE O SELECT COM TURMAS =====
-  // Primeiro, tenta do cache ou Firebase, mas garante um fallback imediato
+  // Busca turmas do Firebase SEMPRE
   let turmas = [];
-  
-  // 1. Tenta usar o cache
-  if (state.turmasCache && state.turmasCache.length > 0) {
-    turmas = state.turmasCache;
-  } else {
-    // 2. Tenta buscar do Firebase
-    try {
-      const firebaseTurmas = await lerDados('copaV2/turmas');
-      if (firebaseTurmas && firebaseTurmas.length > 0) {
-        turmas = firebaseTurmas;
-        state.turmasCache = turmas;
-      } else {
-        // 3. Fallback: turmas padrão
-        turmas = ['Turma A', 'Turma B', 'Turma C'];
-        state.turmasCache = turmas;
-        // Salva no Firebase se estiver vazio
-        await setDados('copaV2/turmas', turmas);
-      }
-    } catch (e) {
-      console.warn('Erro ao carregar turmas, usando padrão:', e);
+  try {
+    const firebaseTurmas = await lerDados('copaV2/turmas');
+    if (firebaseTurmas && firebaseTurmas.length > 0) {
+      turmas = firebaseTurmas;
+      state.turmasCache = turmas;
+    } else {
       turmas = ['Turma A', 'Turma B', 'Turma C'];
       state.turmasCache = turmas;
+      await setDados('copaV2/turmas', turmas);
     }
+  } catch (e) {
+    console.warn('Erro ao carregar turmas, usando cache/padrão:', e);
+    turmas = state.turmasCache || ['Turma A', 'Turma B', 'Turma C'];
+    state.turmasCache = turmas;
   }
 
-  // Preenche o select
   const select = document.getElementById('selectTurma');
   if (select) {
     select.innerHTML = '';
-    // Opção placeholder
     const placeholder = document.createElement('option');
     placeholder.value = '';
     placeholder.textContent = '-- Selecione uma turma --';
@@ -122,20 +109,14 @@ async function abrirModalTurma() {
     placeholder.selected = true;
     select.appendChild(placeholder);
     
-    // Opções das turmas
     turmas.forEach(t => {
       const opt = document.createElement('option');
       opt.value = t;
       opt.textContent = t;
       select.appendChild(opt);
     });
-    
-    console.log('✅ Select preenchido com', turmas.length, 'turmas');
-  } else {
-    console.error('❌ Select #selectTurma não encontrado!');
   }
 
-  // Verifica se exige senha na fase 1
   const fase = state.estadoAtual?.fase || 1;
   const exigirSenha = (fase === 1 && state.exigirSenhaFase1);
   const senhaContainer = document.getElementById('senhaContainer');
@@ -143,12 +124,9 @@ async function abrirModalTurma() {
     senhaContainer.style.display = exigirSenha ? 'block' : 'none';
   }
   
-  // Limpa campos
   document.getElementById('inputNomeAluno').value = '';
   document.getElementById('inputSenhaAluno').value = '';
   document.getElementById('erroAluno').textContent = '';
-  
-  // Foca no nome
   setTimeout(() => document.getElementById('inputNomeAluno').focus(), 100);
 }
 
@@ -165,7 +143,6 @@ async function confirmarCadastroAluno() {
   const turma = select ? select.value : '';
   const senha = document.getElementById('inputSenhaAluno').value.trim();
 
-  // Validações
   if (!nome) {
     document.getElementById('erroAluno').textContent = '❌ Digite seu nome.';
     return;
@@ -179,7 +156,6 @@ async function confirmarCadastroAluno() {
     return;
   }
 
-  // Verifica senha se necessário
   const fase = state.estadoAtual?.fase || 1;
   if (fase === 1 && state.exigirSenhaFase1) {
     if (!senha || senha.length !== 2 || isNaN(senha)) {
@@ -193,7 +169,6 @@ async function confirmarCadastroAluno() {
     }
   }
 
-  // Gera ID único
   let deviceId = state.alunoDeviceId;
   if (!deviceId) {
     deviceId = 'aluno_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
@@ -201,7 +176,6 @@ async function confirmarCadastroAluno() {
     setCacheItem('aluno.deviceId', deviceId);
   }
 
-  // Salva no Firebase
   const faseAtual = state.estadoAtual.fase;
   await atualizarDados(`copaV2/participantes/${faseAtual}/${deviceId}`, {
     nome: nome,
@@ -209,7 +183,6 @@ async function confirmarCadastroAluno() {
     timestamp: Date.now()
   });
 
-  // Define estado do aluno
   state.alunoId = deviceId;
   state.alunoNome = nome;
   state.alunoTurma = turma;
@@ -218,10 +191,7 @@ async function confirmarCadastroAluno() {
   setCacheItem('aluno.nome', nome);
   setCacheItem('aluno.turma', turma);
 
-  // Fecha o modal
   fecharModalTurma();
-  
-  // Entra no modo aluno
   entrarModoAluno(true);
 }
 
@@ -255,7 +225,6 @@ function entrarModoProfessor() {
 }
 
 function entrarModoAluno(cadastrado = false) {
-  // Verifica se a fase está ativa
   if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
     exibirToast('⏳ A fase não foi iniciada ou já terminou.', 'aviso');
   } else {
@@ -274,14 +243,12 @@ function entrarModoAluno(cadastrado = false) {
   carregarCorPrimaria();
   preencherSeletorCores('seletor-cores-aluno');
   
-  // Atualiza informações do aluno na tela
   if (state.alunoId) {
     document.getElementById('aluno-nome-display').textContent = state.alunoNome || 'Aluno';
     document.getElementById('aluno-turma-display').textContent = state.alunoTurma || '-';
     document.getElementById('aluno-modalidade').textContent = state.estadoAtual?.modalidade || '--';
     document.getElementById('aluno-fase-info').textContent = `Fase ${state.estadoAtual?.fase || 1}/5`;
     atualizarInfoAluno();
-    // Verifica se deve exibir o botão JOGAR
     if (state.estadoAtual && state.estadoAtual.status === 'em_andamento' && Date.now() < state.estadoAtual.fim) {
       document.getElementById('btn-iniciar-partida').classList.remove('hidden');
       document.getElementById('msg-status-aluno').textContent = 'Pronto para jogar!';
@@ -313,7 +280,7 @@ function entrarModoTorcida() {
 }
 
 // ============================================================
-// DEMAIS FUNÇÕES (POPULAR SELECTS, ATUALIZAR UI, ETC) - mantidas
+// DEMAIS FUNÇÕES (POPULAR SELECTS, ATUALIZAR UI, ETC)
 // ============================================================
 
 function preencherSeletorCores(containerId) {
@@ -394,7 +361,6 @@ function atualizarUI() {
       document.getElementById('competicao-finalizada-torcida').classList.add('hidden');
     }
   }
-  // Atualiza botão JOGAR se estiver na tela do aluno
   if (state.meuTipo === 'aluno' && state.alunoId) {
     if (state.estadoAtual.status === 'em_andamento' && Date.now() < state.estadoAtual.fim) {
       document.getElementById('btn-iniciar-partida').classList.remove('hidden');
@@ -555,9 +521,8 @@ function configurarEventos() {
   });
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
 
-  // Botão Aluno (CORRIGIDO)
+  // Botão Aluno
   document.getElementById('btn-aluno')?.addEventListener('click', () => {
-    // Verifica se já está cadastrado
     const deviceId = state.alunoDeviceId || getCacheItem('aluno.deviceId');
     if (deviceId) {
       const faseAtual = state.estadoAtual?.fase || 1;
@@ -866,8 +831,12 @@ function configurarEventos() {
     if (nova && nova.trim()) {
       await adicionarTurma(nova.trim());
       renderListaTurmas();
-      // Atualiza cache de turmas
       state.turmasCache = await lerDados('copaV2/turmas') || [];
+      // Atualiza o select do modal de turma se estiver aberto
+      const modal = document.getElementById('modalTurma');
+      if (modal && modal.style.display === 'flex') {
+        await abrirModalTurma();
+      }
       atualizarUltimaSinc();
     }
   });
