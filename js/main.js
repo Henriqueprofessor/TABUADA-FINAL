@@ -77,26 +77,44 @@ import { initGameLoop } from './modules/gameLoop.js';
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 const TURMAS_ANTIGAS = ["Turma A", "Turma B", "Turma C"];
 
-async function garantirTurmasPadrao() {
-  try {
-    const turmasAtuais = await lerDados('copaV2/turmas');
-    if (!turmasAtuais || turmasAtuais.length === 0) {
-      await setDados('copaV2/turmas', TURMAS_PADRAO);
-      state.turmasCache = TURMAS_PADRAO;
-      console.log('✅ Turmas padrão criadas (vazio).');
-      return TURMAS_PADRAO;
+// ============================================================
+// TIMER GLOBAL (CONTÍNUO)
+// ============================================================
+let timerGlobalInterval = null;
+
+function iniciarTimerGlobal() {
+  // Se já existe um timer, não cria outro
+  if (timerGlobalInterval) return;
+
+  timerGlobalInterval = setInterval(() => {
+    if (!state.estadoAtual) return;
+    if (state.estadoAtual.status !== 'em_andamento') {
+      // Se a fase não está em andamento, para o timer
+      pararTimerGlobal();
+      return;
     }
-    if (turmasAtuais.length === 3 && turmasAtuais.every(t => TURMAS_ANTIGAS.includes(t))) {
-      await setDados('copaV2/turmas', TURMAS_PADRAO);
-      state.turmasCache = TURMAS_PADRAO;
-      console.log('✅ Turmas antigas substituídas pelas padrão.');
-      return TURMAS_PADRAO;
+    const agora = Date.now();
+    const restante = state.estadoAtual.fim - agora;
+    if (restante <= 0) {
+      // Tempo esgotado, para o timer e dispara verificação
+      pararTimerGlobal();
+      // Atualiza os displays para 00:00
+      atualizarTimerFase(0);
+      // Verifica se deve avançar a fase (já existe lógica em verificarTempoEsgotado)
+      if (state.estadoAtual.status === 'em_andamento') {
+        import('./modules/ranking.js').then(({ avancarFase }) => avancarFase());
+      }
+      return;
     }
-    state.turmasCache = turmasAtuais;
-    return turmasAtuais;
-  } catch (e) {
-    console.warn('Erro ao verificar turmas:', e);
-    return TURMAS_PADRAO;
+    // Atualiza os displays de tempo
+    atualizarTimerFase(restante);
+  }, 1000);
+}
+
+function pararTimerGlobal() {
+  if (timerGlobalInterval) {
+    clearInterval(timerGlobalInterval);
+    timerGlobalInterval = null;
   }
 }
 
@@ -257,6 +275,11 @@ function entrarModoProfessor() {
   popularSelectFases();
   atualizarStatusAviso(state.avisoAtual);
   carregarCorPrimaria();
+  
+  // Iniciar timer global se a fase estiver em andamento
+  if (state.estadoAtual && state.estadoAtual.status === 'em_andamento') {
+    iniciarTimerGlobal();
+  }
 }
 
 function entrarModoAluno(cadastrado = false) {
@@ -295,7 +318,7 @@ function entrarModoAluno(cadastrado = false) {
 }
 
 // ============================================================
-// FUNÇÕES DA TORCIDA (MODIFICADAS)
+// FUNÇÕES DA TORCIDA
 // ============================================================
 
 let torcidaAba = 'fase'; // 'fase' | 'equipes' | 'pontos'
@@ -321,10 +344,7 @@ function entrarModoTorcida() {
   document.getElementById('btn-torcida-pontos').setAttribute('aria-selected', 'false');
   document.getElementById('torcida-fase-selector').style.display = 'block';
   
-  // Preenche o select e força a fase atual
   popularSelectFasesTorcida();
-  
-  // Força a seleção da fase atual
   const select = document.getElementById('select-fase-torcida');
   if (select && state.estadoAtual) {
     select.value = state.estadoAtual.fase;
@@ -450,10 +470,31 @@ function atualizarUI() {
   document.getElementById('fase-atual-titulo').innerText = `Fase ${fase} de 5`;
   const configs = { "2-5": "Tabuada 2️⃣➡️5️⃣", "6-9": "Tabuada 6️⃣➡️9️⃣", "0-10": "Tabuada 0️⃣➡️🔟" };
   document.getElementById('modalidade-titulo').innerText = configs[state.estadoAtual.modalidade] || state.estadoAtual.modalidade;
+  
+  // Gerenciar timer global
   if (state.estadoAtual.status === 'em_andamento' && state.estadoAtual.fim > 0) {
     const restante = state.estadoAtual.fim - Date.now();
-    if (restante > 0) atualizarTimerFase(restante);
+    if (restante > 0) {
+      atualizarTimerFase(restante);
+      iniciarTimerGlobal();
+    } else {
+      pararTimerGlobal();
+      atualizarTimerFase(0);
+      // Verificar se deve avançar fase (já existe lógica em outro lugar, mas garantimos)
+      if (state.estadoAtual.status === 'em_andamento') {
+        import('./modules/ranking.js').then(({ avancarFase }) => avancarFase());
+      }
+    }
+  } else if (state.estadoAtual.status === 'pausado' && state.estadoAtual.tempoRestantePausa) {
+    // Quando pausado, mostramos o tempo restante (não precisa de timer contínuo)
+    atualizarTimerFase(state.estadoAtual.tempoRestantePausa);
+    pararTimerGlobal();
+  } else {
+    // Se não está em andamento nem pausado, para o timer e zera
+    pararTimerGlobal();
+    atualizarTimerFase(0);
   }
+  
   if (state.meuTipo === 'professor') {
     document.getElementById('prof-fase-info').innerText = `Fase ${fase}`;
     document.getElementById('select-modalidade').value = state.estadoAtual.modalidade;
@@ -468,7 +509,6 @@ function atualizarUI() {
     } else {
       document.getElementById('competicao-finalizada-torcida').classList.add('hidden');
     }
-    // Atualiza o seletor de fase da torcida para a fase atual quando a UI for atualizada
     const select = document.getElementById('select-fase-torcida');
     if (select && torcidaAba === 'fase') {
       select.value = fase;
@@ -608,7 +648,7 @@ function configurarEventos() {
   // Botão Torcida
   document.getElementById('btn-projecao')?.addEventListener('click', entrarModoTorcida);
 
-  // Botões da torcida (NOVOS)
+  // Botões da torcida
   document.getElementById('btn-torcida-fase')?.addEventListener('click', function() {
     torcidaAba = 'fase';
     document.querySelectorAll('.modo-buttons .btn-modo').forEach(b => {
@@ -618,7 +658,6 @@ function configurarEventos() {
     this.classList.add('ativo');
     this.setAttribute('aria-selected', 'true');
     document.getElementById('torcida-fase-selector').style.display = 'block';
-    // Garantir que o select mostre a fase atual
     const select = document.getElementById('select-fase-torcida');
     if (select && state.estadoAtual) {
       select.value = state.estadoAtual.fase;
@@ -819,6 +858,8 @@ function configurarEventos() {
     const fim = Date.now() + duracao * 60000;
     await setDados('copaV2', { ...state.estadoAtual, status: 'em_andamento', fim, tempoRestantePausa: null });
     atualizarUltimaSinc();
+    // Iniciar timer global
+    iniciarTimerGlobal();
     exibirToast('▶️ Fase iniciada!', 'sucesso');
   });
 
@@ -829,6 +870,8 @@ function configurarEventos() {
       const tempoRestante = Math.max(0, state.estadoAtual.fim - agora);
       await setDados('copaV2', { ...state.estadoAtual, status: 'pausado', tempoRestantePausa: tempoRestante, fim: 0 });
       atualizarUltimaSinc();
+      // Para o timer global
+      pararTimerGlobal();
       exibirToast('⏸️ Fase pausada.', 'aviso');
     } else if (state.estadoAtual?.status === 'pausado') {
       const tempoRestante = state.estadoAtual.tempoRestantePausa || 0;
@@ -836,6 +879,8 @@ function configurarEventos() {
       const novoFim = Date.now() + tempoRestante;
       await setDados('copaV2', { ...state.estadoAtual, status: 'em_andamento', fim: novoFim, tempoRestantePausa: null });
       atualizarUltimaSinc();
+      // Reiniciar timer global
+      iniciarTimerGlobal();
       exibirToast('▶️ Fase retomada!', 'sucesso');
     }
   });
@@ -1174,6 +1219,10 @@ async function init() {
           await garantirTurmasPadrao();
           renderListaAlunosGerenciar();
           renderListaTurmas();
+          // Iniciar timer se a fase estiver em andamento
+          if (state.estadoAtual && state.estadoAtual.status === 'em_andamento') {
+            iniciarTimerGlobal();
+          }
         } else if (state.meuTipo === 'aluno') {
           if (!state.jogoAtivo) {
             atualizarInfoAluno();
@@ -1183,7 +1232,6 @@ async function init() {
           }
         } else if (state.meuTipo === 'projecao') {
           if (torcidaAba === 'fase') {
-            // Força a fase atual no select
             const select = document.getElementById('select-fase-torcida');
             if (select && state.estadoAtual) {
               select.value = state.estadoAtual.fase;
@@ -1282,6 +1330,10 @@ async function init() {
           garantirTurmasPadrao().then(() => {
             renderListaTurmas();
           });
+          // Iniciar timer se a fase estiver em andamento
+          if (state.estadoAtual && state.estadoAtual.status === 'em_andamento') {
+            iniciarTimerGlobal();
+          }
         }
         atualizarUltimaSinc();
         aplicarPreferenciasUI();
