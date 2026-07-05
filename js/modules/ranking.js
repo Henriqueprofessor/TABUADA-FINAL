@@ -1,18 +1,16 @@
 // js/modules/ranking.js
-import { db } from '../config/firebase.js'; // <-- CORREÇÃO: importação do Firebase
+import { db } from '../config/firebase.js';
 import { state } from './state.js';
 import { lerDados, atualizarDados, removerDados, setDados } from './db.js';
 import { exibirToast, atualizarTimerFase, mostrarTela } from './ui.js';
 import { tocarSom } from './sound.js';
 import { atualizarExibicaoMedalhas, carregarMedalhasLocal } from './medals.js';
-import { gerarAvatarHTML, obterCorTurma } from './avatar.js';
 
 // ============================================================
 // CONSTANTES E FUNÇÕES AUXILIARES
 // ============================================================
 
 const VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
-const AVATAR_ENABLED_KEY = 'copaV2/configuracoes/avatarsEnabled';
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -125,7 +123,7 @@ export function calcularRankingFase(fase) {
 }
 
 // ============================================================
-// RENDERIZAR RANKING (com avatares e toggle)
+// RENDERIZAR RANKING (sem avatares)
 // ============================================================
 
 export async function renderizarRanking(fase, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -239,50 +237,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     }
   }
 
-  // ===== CARREGAR AVATARES EM LOTE (otimizado) =====
-  const avatarsEnabled = state.avatarsEnabled !== false;
-  let avatarsMap = new Map();
-  let coresMap = new Map();
-
-  if (avatarsEnabled) {
-    try {
-      // Busca todos os avatares de uma vez
-      const snapAvatars = await db.ref('copaV2/participantes/avatar').once('value');
-      const allAvatars = snapAvatars.val() || {};
-      
-      // Busca todas as cores de turmas de uma vez
-      const snapCores = await db.ref('copaV2/turmas_cores').once('value');
-      const allCores = snapCores.val() || {};
-
-      for (let item of listaComInfo) {
-        const avatar = allAvatars[item.id] || '⭐';
-        avatarsMap.set(item.id, avatar);
-        
-        const turma = item.turma || '?';
-        let cor = allCores[turma];
-        if (!cor) {
-          // Gera cor automaticamente se não tiver
-          cor = gerarCorPorNome(turma);
-          // Salva para cache futuro (opcional)
-          try {
-            await db.ref(`copaV2/turmas_cores/${turma}`).set(cor);
-          } catch (e) {}
-        }
-        coresMap.set(turma, cor);
-        // Também guarda no item para uso posterior
-        item._corTurma = cor;
-        item._avatar = avatar;
-      }
-    } catch (e) {
-      console.warn('Erro ao carregar avatares em lote:', e);
-      // Fallback: usa valores padrão
-      for (let item of listaComInfo) {
-        item._avatar = '⭐';
-        item._corTurma = '#95a5a6';
-      }
-    }
-  }
-
   let html = `<table class="ranking-table"><thead><tr>
     <th>Pos</th>
     <th>Nome</th>
@@ -347,15 +301,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       }
     }
 
-    // ===== CONSTRUIR NOME COM AVATAR =====
-    let nomeCompleto = '';
-    if (avatarsEnabled && j._avatar && j._corTurma) {
-      const avatarHtml = gerarAvatarHTML(j._avatar, j._corTurma, '28px');
-      nomeCompleto = avatarHtml + ' ' + escapeHtml(j.nome);
-    } else {
-      nomeCompleto = escapeHtml(j.nome);
-    }
-
+    let nomeCompleto = escapeHtml(j.nome);
     if (jogadorRecordeId === j.id) {
       nomeCompleto += ' <span class="foguete-vermelho">🚀</span>';
     }
@@ -364,7 +310,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     }
     const medalhasStr = medalhasMap.get(j.id) || '';
     if (medalhasStr) {
-      nomeCompleto += ` <span class="medalhas-ranking" title="Conquistas">${medalhasStr}</span>`;
+      nomeCompleto += ` <span class="medalhas-ranking" title="Conquistas">${medalhasStr}</span>';
     }
 
     let melhorDisplay = j.melhorPontuacao;
@@ -413,19 +359,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   }
   html += '</tbody></table>';
   container.innerHTML = html;
-}
-
-// ============================================================
-// FUNÇÕES AUXILIARES PARA CORES (geração automática)
-// ============================================================
-
-function gerarCorPorNome(nome) {
-  let hash = 0;
-  for (let i = 0; i < nome.length; i++) {
-    hash = nome.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hue = Math.abs(hash % 360);
-  return `hsl(${hue}, 70%, 55%)`;
 }
 
 // ============================================================
@@ -948,18 +881,10 @@ export async function atualizarInfoAluno() {
     }
   }
 
-  // Atualiza medalhas
   atualizarExibicaoMedalhas();
 
-  // Desenha gráfico de evolução
   const { desenharGraficoEvolucao } = await import('./game.js');
   desenharGraficoEvolucao();
-
-  // Atualiza avatar do aluno na UI
-  try {
-    const { atualizarAvatarAlunoUI } = await import('./avatar.js');
-    atualizarAvatarAlunoUI();
-  } catch (e) {}
 }
 
 // ============================================================
@@ -1385,31 +1310,5 @@ export async function atualizarRankingAluno() {
     await renderizarRanking(faseAtual, 'ranking-aluno-container', 'individual', true);
   } else {
     await renderizarRankingPontos('ranking-aluno-container');
-  }
-}
-
-// ============================================================
-// TOGGLE PARA AVATAR (Configurações do Professor)
-// ============================================================
-
-export async function carregarConfigAvatar() {
-  try {
-    const snap = await db.ref('copaV2/configuracoes/avatarsEnabled').once('value');
-    state.avatarsEnabled = snap.val() !== null ? snap.val() : true;
-  } catch (e) {
-    state.avatarsEnabled = true;
-  }
-}
-
-export async function salvarConfigAvatar(habilitado) {
-  try {
-    await db.ref('copaV2/configuracoes/avatarsEnabled').set(habilitado);
-    state.avatarsEnabled = habilitado;
-    exibirToast(`✅ Avatares ${habilitado ? 'habilitados' : 'desabilitados'}!`);
-    return true;
-  } catch (e) {
-    exibirToast('❌ Erro ao salvar configuração de avatares.');
-    console.error(e);
-    return false;
   }
 }
