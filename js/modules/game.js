@@ -96,39 +96,29 @@ export function gerarPerguntas(modalidade, fase) {
   // ============================================================
 
   function gerarDistratoresInteligentes(correta, posAlvo, count = 3) {
-    // Evita distratores iguais ao correto ou repetidos
     const distratores = new Set();
-
-    // Define um intervalo razoável: ±20% do valor correto, com limite mínimo 1 e máximo 100
     const margem = Math.max(2, Math.round(correta * 0.2));
     const minVal = Math.max(0, correta - margem * 2);
     const maxVal = Math.min(100, correta + margem * 2);
 
-    // Tenta gerar distratores variados
     let tentativas = 0;
     while (distratores.size < count && tentativas < 200) {
       tentativas++;
-      // Gera um valor dentro do intervalo, com viés para valores próximos
       let offset = 0;
       const r = Math.random();
-      if (r < 0.4) offset = Math.floor(Math.random() * (margem + 1));       // perto
-      else if (r < 0.7) offset = Math.floor(Math.random() * (margem * 2 + 1)) + margem; // médio
-      else offset = Math.floor(Math.random() * (margem * 4 + 1)) + margem * 2; // longe, mas dentro do limite
+      if (r < 0.4) offset = Math.floor(Math.random() * (margem + 1));
+      else if (r < 0.7) offset = Math.floor(Math.random() * (margem * 2 + 1)) + margem;
+      else offset = Math.floor(Math.random() * (margem * 4 + 1)) + margem * 2;
 
-      // Decide se soma ou subtrai
       const sinal = Math.random() < 0.5 ? 1 : -1;
       let candidato = correta + sinal * offset;
-
-      // Garante que não fique negativo nem ultrapasse 100
       candidato = Math.max(0, Math.min(100, candidato));
 
-      // Não pode ser igual ao correto, nem repetido
       if (candidato !== correta && !distratores.has(candidato)) {
         distratores.add(candidato);
       }
     }
 
-    // Se ainda faltar distratores, preenche com números aleatórios longe do correto
     while (distratores.size < count) {
       let candidato = Math.floor(Math.random() * 101);
       if (candidato !== correta && !distratores.has(candidato)) {
@@ -136,7 +126,6 @@ export function gerarPerguntas(modalidade, fase) {
       }
     }
 
-    // Converte para array e embaralha
     let resultado = Array.from(distratores);
     shuffle(resultado);
     return resultado;
@@ -145,20 +134,10 @@ export function gerarPerguntas(modalidade, fase) {
   // Gera as opções para cada pergunta
   const resultado = selecionadas.map((p, idx) => {
     const correta = p.a * p.b;
-
-    // Determina a posição correta de forma alternada para variar
-    // Usamos o índice para distribuir as posições (1 a 4)
-    const posAlvo = (idx % 4) + 1; // 1,2,3,4,1,2,3,4,...
-
-    // Gera 3 distratores inteligentes
+    const posAlvo = (idx % 4) + 1;
     const distratores = gerarDistratoresInteligentes(correta, posAlvo, 3);
-
-    // Monta as 4 opções (correta + 3 distratores)
     let opcoes = [correta, ...distratores];
-    // Embaralha para não ficar sempre na mesma posição
     shuffle(opcoes);
-
-    // Encontra a nova posição da resposta correta
     const novaPos = opcoes.indexOf(correta) + 1;
 
     return {
@@ -173,7 +152,7 @@ export function gerarPerguntas(modalidade, fase) {
 }
 
 // ============================================================
-// INICIAR PARTIDA (com tratamento de erros - Item 6)
+// INICIAR PARTIDA (com tratamento de erros)
 // ============================================================
 
 export async function iniciarPartida() {
@@ -324,7 +303,7 @@ export async function responder(idx) {
 window.responder = responder;
 
 // ============================================================
-// ATUALIZAR PONTUAÇÃO PARCIAL (com tratamento de erros)
+// ATUALIZAR PONTUAÇÃO PARCIAL
 // ============================================================
 
 async function atualizarPontuacaoParcial() {
@@ -342,12 +321,11 @@ async function atualizarPontuacaoParcial() {
     });
   } catch (error) {
     console.warn('Erro ao salvar pontuação parcial:', error);
-    // Não exibe toast para não poluir a tela durante o jogo
   }
 }
 
 // ============================================================
-// FINALIZAR PARTIDA (com tratamento de erros)
+// FINALIZAR PARTIDA
 // ============================================================
 
 async function finalizarPartida() {
@@ -380,11 +358,9 @@ async function finalizarPartida() {
       await atualizarRecordeGeral(state.alunoId, velocidade, precisao, fase, partidaIndex);
     }
 
-    // Verificar medalhas
     await verificarEConcederMedalhas();
     atualizarExibicaoMedalhas();
 
-    // Atualizar gráfico
     const { desenharGraficoEvolucao } = await import('./game.js');
     desenharGraficoEvolucao();
 
@@ -424,7 +400,6 @@ export function desenharGraficoEvolucao() {
   const graficoWidth = canvas.width - padding * 2;
   const graficoHeight = canvas.height - padding * 2;
 
-  // Eixos
   ctx.strokeStyle = '#4a5568';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -433,7 +408,6 @@ export function desenharGraficoEvolucao() {
   ctx.lineTo(canvas.width - padding, canvas.height - padding);
   ctx.stroke();
 
-  // Linha
   ctx.beginPath();
   ctx.strokeStyle = '#ffd966';
   ctx.lineWidth = 3;
@@ -445,7 +419,6 @@ export function desenharGraficoEvolucao() {
   }
   ctx.stroke();
 
-  // Pontos
   for (let i = 0; i < pontuacoes.length; i++) {
     const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
     const y = canvas.height - padding - (pontuacoes[i] / maxPontos) * graficoHeight;
@@ -462,7 +435,6 @@ export function desenharGraficoEvolucao() {
     ctx.fillText(pontuacoes[i], x, y - 12);
   }
 
-  // Rótulos
   ctx.fillStyle = '#94a3b8';
   ctx.font = '12px sans-serif';
   ctx.textAlign = 'center';
