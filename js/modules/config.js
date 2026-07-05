@@ -11,7 +11,7 @@ const MIN_PARTIDAS_KEY = 'copaV2/configuracoes/minPartidasPorFase';
 const COLUNAS_KEY = 'copaV2/configuracoes/colunasVisiveis';
 
 // ============================================================
-// CACHE LOCAL (item 5)
+// CACHE LOCAL
 // ============================================================
 
 const CACHE_KEY = 'copa_cache_v2';
@@ -391,18 +391,43 @@ export async function salvarColunasVisiveis() {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DE PONTOS
+// FUNÇÃO AUXILIAR PARA TABELA DE PONTOS PADRÃO
+// ============================================================
+export function getPontuacaoDefault() {
+  const obj = {};
+  for (let i = 1; i <= 40; i++) obj[i] = 41 - i;
+  return obj;
+}
+
+// ============================================================
+// CONFIGURAÇÃO DE PONTOS (CORRIGIDA)
 // ============================================================
 export async function carregarConfigRankingPontos() {
   try {
     const snapAtivo = await db.ref('copaV2/configuracoes/rankingPontos/ativo').once('value');
     state.rankingPontosAtivo = snapAtivo.val() !== null ? snapAtivo.val() : true;
+    
     const snapPadrao = await db.ref('copaV2/configuracoes/rankingPontos/tabelaPadrao').once('value');
     const snapFase5 = await db.ref('copaV2/configuracoes/rankingPontos/tabelaFase5').once('value');
-    state.tabelaPontosPadrao = snapPadrao.val() || {};
-    state.tabelaPontosFase5 = snapFase5.val() || {};
+    
+    let tabelaPadrao = snapPadrao.val() || {};
+    if (Object.keys(tabelaPadrao).length === 0) {
+      tabelaPadrao = getPontuacaoDefault();
+      await db.ref('copaV2/configuracoes/rankingPontos/tabelaPadrao').set(tabelaPadrao);
+    }
+    
+    let tabelaFase5 = snapFase5.val() || {};
+    if (Object.keys(tabelaFase5).length === 0) {
+      tabelaFase5 = getPontuacaoDefault();
+      await db.ref('copaV2/configuracoes/rankingPontos/tabelaFase5').set(tabelaFase5);
+    }
+    
+    state.tabelaPontosPadrao = tabelaPadrao;
+    state.tabelaPontosFase5 = tabelaFase5;
   } catch (e) {
-    console.warn('Erro ao carregar configuração de pontos:', e);
+    console.warn('Erro ao carregar configuração de pontos, usando padrão:', e);
+    state.tabelaPontosPadrao = getPontuacaoDefault();
+    state.tabelaPontosFase5 = getPontuacaoDefault();
   }
 }
 
