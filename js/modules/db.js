@@ -1,21 +1,37 @@
+// js/modules/db.js
 import { db } from '../config/firebase.js';
 import { state } from './state.js';
+import { exibirToast } from './ui.js';
 
-// Carregar estado completo da competição
+// ============================================================
+// CARREGAR ESTADO (com tratamento de erros)
+// ============================================================
+
 export function carregarEstado(callback) {
-  return db.ref('copaV2').on('value', snap => {
-    state.estadoAtual = snap.val() || { fase: 1, status: 'aguardando', tempoFase: 10, fim: 0, modalidade: "2-5", classificados: {}, resultados: {}, participantes: {} };
-    if (callback) callback(state.estadoAtual);
-  });
+  try {
+    return db.ref('copaV2').on('value', snap => {
+      state.estadoAtual = snap.val() || { fase: 1, status: 'aguardando', tempoFase: 10, fim: 0, modalidade: "2-5", classificados: {}, resultados: {}, participantes: {} };
+      if (callback) callback(state.estadoAtual);
+    });
+  } catch (error) {
+    console.error('Erro ao carregar estado:', error);
+    exibirToast('❌ Erro ao carregar dados do servidor. Verifique sua conexão.');
+    if (callback) callback(null);
+    return null;
+  }
 }
 
-// Atualizar dados (com tratamento silencioso de erros)
+// ============================================================
+// ATUALIZAR DADOS (com tratamento de erros silencioso)
+// ============================================================
+
 export async function atualizarDados(caminho, dados) {
   try {
     await db.ref(caminho).update(dados);
     return true;
   } catch (e) {
     console.warn('⚠️ Erro ao atualizar dados (offline):', caminho, e);
+    // Não exibe toast para não poluir a tela em operações frequentes
     return false;
   }
 }
@@ -50,10 +66,23 @@ export async function lerDados(caminho) {
   }
 }
 
+// ============================================================
+// OUVIDOR DE ONLINE (com tratamento de erros)
+// ============================================================
+
 export function ouvirOnline(callback) {
-  db.ref('online').on('value', snap => callback(snap));
+  try {
+    db.ref('online').on('value', snap => callback(snap));
+  } catch (error) {
+    console.error('Erro ao ouvir online:', error);
+    exibirToast('❌ Erro ao monitorar conexões online.');
+  }
 }
 
 export function removerListener(ref) {
-  ref.off();
+  try {
+    if (ref) ref.off();
+  } catch (error) {
+    console.warn('Erro ao remover listener:', error);
+  }
 }
