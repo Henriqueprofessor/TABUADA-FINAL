@@ -310,7 +310,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     }
     const medalhasStr = medalhasMap.get(j.id) || '';
     if (medalhasStr) {
-      nomeCompleto += ` <span class="medalhas-ranking" title="Conquistas">${medalhasStr}</span>';
+      nomeCompleto += ` <span class="medalhas-ranking" title="Conquistas">${medalhasStr}</span>`;
     }
 
     let melhorDisplay = j.melhorPontuacao;
