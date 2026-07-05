@@ -237,20 +237,17 @@ export function atualizarBannerAviso(aviso) {
     <span class="banner-aviso-texto">${aviso.mensagem}</span>
   `;
 }
-// js/modules/ui.js (adicionar ao final)
 
 // ============================================================
-// MODAL DE RESULTADOS PÓS-PARTIDA (extraído do monolítico)
+// MODAL DE RESULTADOS PÓS-PARTIDA
 // ============================================================
 
 export function exibirModalResultados(dados) {
-  // dados: { posicao, posicaoAnterior, pontos, acertos, tempoTotal, ultimaPartida, fase, totalPartidas, ranking, id, nome, turma }
   const {
     posicao, posicaoAnterior, pontos, acertos, tempoTotal,
     ultimaPartida, fase, totalPartidas, ranking, id, nome, turma
   } = dados;
 
-  // Calcula métricas
   const tempoMedio = acertos > 0 ? tempoTotal / acertos : 0;
   const precisao = (acertos / 20) * 100;
   let evolucaoPontos = null;
@@ -258,30 +255,29 @@ export function exibirModalResultados(dados) {
     evolucaoPontos = pontos - ultimaPartida.pontos;
   }
 
-  // Streak (sequência de acertos) – simulado com base na precisão
-  const streak = Math.round(precisao / 5); // simplificação
+  const streak = Math.round(precisao / 5);
 
-  // Badges
   const badges = [];
   if (totalPartidas === 1) badges.push('🏅 Primeira partida!');
   if (tempoMedio < 1.5 && acertos > 0) badges.push('⚡ Velocista (média < 1.5s)');
   if (precisao === 100) badges.push('🎯 Precisão Máxima (100%)');
   if (evolucaoPontos !== null && evolucaoPontos > 0) badges.push('💪 Melhora contínua');
   if (streak >= 10) badges.push(`🔥 Streak de ${streak} acertos!`);
-  // Recorde de velocidade (verificar se bateu o melhor)
-  const melhorTempoMedio = state.melhorTempoMedio || Infinity;
-  if (tempoMedio > 0 && tempoMedio < melhorTempoMedio) {
-    badges.push(`⚡ Novo recorde de velocidade (${tempoMedio.toFixed(2)}s)!`);
-    state.melhorTempoMedio = tempoMedio;
+
+  // Recordes (simplificado, pois não temos histórico no state)
+  if (tempoMedio > 0) {
+    const melhorTempoAnterior = state.melhorTempoMedio || Infinity;
+    if (tempoMedio < melhorTempoAnterior) {
+      badges.push(`⚡ Novo recorde de velocidade (${tempoMedio.toFixed(2)}s)!`);
+      state.melhorTempoMedio = tempoMedio;
+    }
   }
-  // Recorde de pontuação
-  const melhorPontuacao = state.melhorPontuacao || 0;
-  if (pontos > melhorPontuacao) {
+  const melhorPontuacaoAnterior = state.melhorPontuacao || 0;
+  if (pontos > melhorPontuacaoAnterior) {
     badges.push(`🎯 Novo recorde de pontuação (${pontos} pts)!`);
     state.melhorPontuacao = pontos;
   }
 
-  // Mensagem personalizada
   let mensagem = '';
   let mensagemEmoji = '';
   if (posicao === 1) {
@@ -304,7 +300,6 @@ export function exibirModalResultados(dados) {
     mensagemEmoji = '🔄';
   }
 
-  // Informações de classificação
   const vagas = state.VAGAS_POR_FASE?.[fase] || 30;
   const minPartidas = state.minPartidasPorFase?.[fase] || 1;
   const dentroVagas = posicao <= vagas && totalPartidas >= minPartidas;
@@ -318,7 +313,6 @@ export function exibirModalResultados(dados) {
     statusVaga = `📋 Você precisa de mais ${minPartidas - totalPartidas} partida${minPartidas - totalPartidas > 1 ? 's' : ''} para ser elegível.`;
   }
 
-  // Proximidade do colega acima
   let proximoColegaHtml = '';
   const minhaPosIndex = ranking.findIndex(p => p.id === id);
   if (minhaPosIndex > 0 && minhaPosIndex < ranking.length) {
@@ -329,10 +323,8 @@ export function exibirModalResultados(dados) {
     }
   }
 
-  // Velocidade vs líder
   let velocidadeVsLider = '';
   if (ranking.length > 0 && ranking[0].id !== id) {
-    // Buscar velocidade do líder – simplificado, usamos tempo médio
     const liderId = ranking[0].id;
     const liderResultados = state.estadoAtual?.resultados?.[fase]?.[liderId] || [];
     if (liderResultados.length > 0) {
@@ -353,7 +345,6 @@ export function exibirModalResultados(dados) {
     }
   }
 
-  // Bônus de velocidade (se houver)
   let bonusMessage = '';
   if (state.bonusVelocidadeConfig?.ativo) {
     const bonus = state.bonusVelocidadePorFase?.[fase]?.[id] || 0;
@@ -362,16 +353,11 @@ export function exibirModalResultados(dados) {
     }
   }
 
-  // Projeção de posição (ritmo)
   let projecaoPos = null;
   if (state.estadoAtual?.status === 'em_andamento' && fase === state.estadoAtual.fase) {
-    const ritmo = pontos / 20;
-    const proj = ritmo * 20;
-    // posição projetada é a atual (simplificado)
     projecaoPos = posicao;
   }
 
-  // Monta o HTML do modal
   const modalHtml = `
     <div class="modal-resultados" id="modal-pos-jogo">
       <h2 style="margin-top: 0;">🏁 RESULTADO DA PARTIDA</h2>
@@ -462,25 +448,20 @@ export function exibirModalResultados(dados) {
     </div>
   `;
 
-  // Remove modal anterior se existir
   const modalExistente = document.getElementById('modal-pos-jogo');
   if (modalExistente) modalExistente.remove();
 
-  // Adiciona ao body
   document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-  // Eventos dos botões
   document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
     document.getElementById('modal-pos-jogo')?.remove();
   });
   document.getElementById('btn-jogar-novamente')?.addEventListener('click', () => {
     document.getElementById('modal-pos-jogo')?.remove();
-    // Dispara nova partida
     import('./game.js').then(({ iniciarPartida }) => iniciarPartida());
   });
   document.getElementById('btn-ver-ranking')?.addEventListener('click', () => {
     document.getElementById('modal-pos-jogo')?.remove();
-    // Abre o ranking (modal já existe)
     const modalRanking = document.getElementById('modal-ranking-aluno');
     if (modalRanking) {
       modalRanking.style.display = 'flex';
@@ -488,7 +469,6 @@ export function exibirModalResultados(dados) {
     }
   });
 
-  // Fecha ao clicar fora
   document.getElementById('modal-pos-jogo')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) {
       document.getElementById('modal-pos-jogo')?.remove();
@@ -496,7 +476,6 @@ export function exibirModalResultados(dados) {
   });
 }
 
-// Função auxiliar para escapar HTML (já existe no ranking.js, mas usamos localmente)
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/[&<>]/g, function(m) {
