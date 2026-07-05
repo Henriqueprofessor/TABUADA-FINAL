@@ -73,12 +73,11 @@
             <button id="btn-tutorial-inicial" class="btn-info">📘 Tutorial</button>
             <button id="btn-instalar-app" style="background: #9b59b6; color: white; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px;">📱 Instalar App</button>
             <button id="btn-tema" class="btn-tema" title="Alternar tema">🌓</button>
-            <!-- Botão Treino removido -->
         </div>
     </div>
 
     <!-- ========================================================= -->
-    <!-- PAINEL DO PROFESSOR (resumido)                            -->
+    <!-- PAINEL DO PROFESSOR                                       -->
     <!-- ========================================================= -->
     <div id="painel-professor" class="card hidden">
         <div class="header-actions">
@@ -101,16 +100,111 @@
             <div class="tab-btn" data-tab="configuracoes">⚙️ Configurações</div>
         </div>
 
-        <!-- Conteúdo das abas mantido do original (resumido) -->
+        <!-- Conteúdo das abas -->
         <div id="tab-controle" class="tab-content">
-            <!-- ... conteúdo ... -->
+            <!-- ... conteúdo do controle ... -->
         </div>
-        <div id="tab-ranking-geral" class="tab-content hidden"><!-- ... --></div>
-        <div id="tab-ranking-fase" class="tab-content hidden"><!-- ... --></div>
-        <div id="tab-ranking-turmas" class="tab-content hidden"><!-- ... --></div>
-        <div id="tab-ranking-pontos" class="tab-content hidden"><!-- ... --></div>
-        <div id="tab-gerenciar-alunos" class="tab-content hidden"><!-- ... --></div>
-        <div id="tab-gerenciar-turmas" class="tab-content hidden"><!-- ... --></div>
+
+        <div id="tab-ranking-geral" class="tab-content hidden">
+            <h3>📊 Classificação Geral - Todos os Participantes</h3>
+            <div id="ranking-geral-container" class="status-box">Processando ranking geral...</div>
+        </div>
+
+        <!-- ===== ABA RANKING POR FASE (CORRIGIDA) ===== -->
+        <div id="tab-ranking-fase" class="tab-content hidden">
+            <h3>Ranking por Fase (Atualização automática)</h3>
+            <div class="fase-selector">
+                <label>Selecione a Fase: </label>
+                <select id="select-fase-ranking" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
+                <button id="btn-toggle-auto-ranking" class="btn-secondary">⏸️ Pausar Atualização</button>
+            </div>
+            <div id="ranking-parcial" class="status-box">Aguardando dados...</div>
+        </div>
+
+        <div id="tab-ranking-turmas" class="tab-content hidden">
+            <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
+            <div style="margin-bottom: 15px;">
+                <button id="btn-atualizar-ranking-turmas" class="btn-secondary">🔄 Atualizar</button>
+            </div>
+            <div id="ranking-turmas-container" class="status-box">Carregando...</div>
+        </div>
+
+        <div id="tab-ranking-pontos" class="tab-content hidden">
+            <h3>🏆 Ranking de Pontos Acumulados</h3>
+            <p style="color: #94a3b8; margin-bottom: 15px;">O campeão da Copa será o jogador com o maior total de pontos ao final das 5 fases.</p>
+            <div class="toggle-ativo">
+                <label for="toggle-ranking-pontos">📌 Habilitar Ranking de Pontos</label>
+                <input type="checkbox" id="toggle-ranking-pontos" checked>
+                <span id="status-ranking-pontos" style="color: #94a3b8; font-size: 14px;">Desativado</span>
+            </div>
+            <div class="config-card">
+                <h4>📋 Configuração da Pontuação</h4>
+                <div class="pontos-config-area">
+                    <label style="color: #f1f5f9;">Fases 1 a 4 (padrão: 1º=40, 2º=39, ..., 40º=1)</label>
+                    <div class="dica-config">Digite no formato <strong>posição: pontos</strong>, separados por vírgula. Ex: 1:40, 2:39, 3:38</div>
+                    <textarea id="textarea-pontos-padrao" rows="3"></textarea>
+                    <button id="btn-restaurar-padrao" class="btn-secondary" style="margin-top: 6px;">🔄 Restaurar Padrão (40..1)</button>
+                </div>
+                <hr>
+                <div class="pontos-config-area">
+                    <label style="color: #f1f5f9;">Fase 5 (pode ser alterada a qualquer momento)</label>
+                    <div class="dica-config">Digite no formato <strong>posição: pontos</strong>, separados por vírgula.</div>
+                    <textarea id="textarea-pontos-fase5" rows="3"></textarea>
+                    <button id="btn-restaurar-padrao-fase5" class="btn-secondary" style="margin-top: 6px;">🔄 Restaurar Padrão (40..1)</button>
+                </div>
+                <button id="btn-salvar-pontuacao" class="btn-success" style="margin-top: 15px;">💾 Salvar Configuração de Pontos</button>
+                <div id="feedback-pontuacao" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <div class="config-card" style="border-color: #facc15;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">⚡</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Bônus de Velocidade</h4>
+                    <span style="background: #facc15; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Concede pontos extras ao jogador com a <strong>maior velocidade recorde</strong> da fase, 
+                    desde que ele atinja a precisão mínima exigida (porcentagem de acertos).
+                    O bônus é concedido apenas ao <strong>1º colocado</strong> em velocidade válido.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <label style="color: #f1f5f9; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="toggle-bonus-velocidade" checked>
+                        Habilitar Bônus
+                    </label>
+                    <label style="color: #f1f5f9;">
+                        Pontos:
+                        <input type="number" id="input-bonus-velocidade" value="1" min="1" max="100" style="width: 70px; padding: 5px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9;">
+                    </label>
+                    <label style="color: #f1f5f9;">
+                        Precisão Mínima (%):
+                        <input type="number" id="input-precisao-bonus" value="80" min="50" max="100" style="width: 70px; padding: 5px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9;">
+                    </label>
+                </div>
+                <button id="btn-salvar-bonus-velocidade" class="btn-success" style="margin-top: 15px;">💾 Salvar Bônus</button>
+                <div id="feedback-bonus-velocidade" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <h4 style="margin-top: 20px;">📊 Ranking Geral de Pontos</h4>
+            <div id="ranking-pontos-container" class="status-box">Carregando...</div>
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">
+                ⚡ = Bônus de velocidade na fase | 🚀 = Recorde de velocidade da competição
+            </p>
+        </div>
+
+        <div id="tab-gerenciar-alunos" class="tab-content hidden">
+            <h3>📝 Gerenciar Alunos da Fase Atual</h3>
+            <div id="lista-alunos-gerenciavel" class="status-box scroll-list">Carregando...</div>
+            <button id="btn-atualizar-lista-alunos" class="btn-secondary">🔄 Recarregar</button>
+        </div>
+
+        <div id="tab-gerenciar-turmas" class="tab-content hidden">
+            <h3>🏷️ Gerenciar Turmas Disponíveis</h3>
+            <button id="btn-adicionar-turma" class="btn-success">➕ Adicionar Nova Turma</button>
+            <div id="lista-turmas-gerenciavel" class="status-box scroll-list" style="margin-top: 15px;">Carregando...</div>
+        </div>
+
+        <!-- Aba Configurações -->
         <div id="tab-configuracoes" class="tab-content hidden">
             <h3>⚙️ Configurações do Professor</h3>
             
@@ -299,8 +393,6 @@
                 </div>
             </div>
 
-            <!-- CARD: Avatares (removido) -->
-
         </div>
         <!-- Fim da aba Configurações -->
 
@@ -347,8 +439,6 @@
             <div id="msg-status-aluno">Aguardando...</div>
             <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
         </div>
-
-        <!-- Seção de Avatar removida -->
 
         <div class="status-box">
             <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
@@ -441,8 +531,6 @@
             </div>
         </div>
     </div>
-
-    <!-- TELA DE TREINO REMOVIDA -->
 
 </div>
 
