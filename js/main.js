@@ -601,7 +601,7 @@ function configurarEventos() {
   });
 
   // ============================================================
-  // ABAS DO PROFESSOR (CORRIGIDO)
+  // ABAS DO PROFESSOR (CORRIGIDO COM VERIFICAÇÃO)
   // ============================================================
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function(e) {
@@ -624,7 +624,7 @@ function configurarEventos() {
       if (targetTab) {
         targetTab.classList.remove('hidden');
       } else {
-        console.warn(`Abas ${tab} não encontrada`);
+        console.warn(`Aba ${tab} não encontrada`);
         return;
       }
 
@@ -633,8 +633,14 @@ function configurarEventos() {
         renderRankingGeral();
       }
       if (tab === 'ranking-fase') {
-        popularSelectFases();
-        const fase = parseInt(document.getElementById('select-fase-ranking').value) || state.estadoAtual?.fase || 1;
+        // Garante que o select existe
+        let selectFase = document.getElementById('select-fase-ranking');
+        if (!selectFase) {
+          // Se não existe, cria as opções
+          popularSelectFases();
+          selectFase = document.getElementById('select-fase-ranking');
+        }
+        const fase = parseInt(selectFase.value) || state.estadoAtual?.fase || 1;
         renderizarRanking(fase, 'ranking-parcial', 'individual', true);
       }
       if (tab === 'ranking-turmas') {
