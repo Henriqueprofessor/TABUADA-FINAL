@@ -72,18 +72,43 @@ import {
 import { initGameLoop } from './modules/gameLoop.js';
 
 // ============================================================
-// FUNÇÕES DE CADASTRO DO ALUNO
+// FUNÇÕES DE CADASTRO DO ALUNO (CORRIGIDAS)
 // ============================================================
 
-function abrirModalTurma() {
+async function abrirModalTurma() {
   const modal = document.getElementById('modalTurma');
   if (!modal) return;
   modal.style.display = 'flex';
-  // Preencher select com turmas
+  
+  // Carrega turmas do Firebase (ou usa cache, garantindo que não fique vazio)
+  let turmas = state.turmasCache;
+  if (!turmas || turmas.length === 0) {
+    // Tenta buscar do Firebase
+    try {
+      turmas = await lerDados('copaV2/turmas');
+      if (!turmas || turmas.length === 0) {
+        turmas = ['Turma A', 'Turma B', 'Turma C'];
+      }
+      state.turmasCache = turmas;
+    } catch (e) {
+      console.warn('Erro ao carregar turmas, usando padrão:', e);
+      turmas = ['Turma A', 'Turma B', 'Turma C'];
+      state.turmasCache = turmas;
+    }
+  }
+  
+  // Preenche o select
   const select = document.getElementById('selectTurma');
   if (select) {
     select.innerHTML = '';
-    const turmas = state.turmasCache || ['Turma A', 'Turma B', 'Turma C'];
+    // Adiciona uma opção vazia como placeholder
+    const emptyOpt = document.createElement('option');
+    emptyOpt.value = '';
+    emptyOpt.textContent = '-- Selecione uma turma --';
+    emptyOpt.disabled = true;
+    emptyOpt.selected = true;
+    select.appendChild(emptyOpt);
+    
     turmas.forEach(t => {
       const opt = document.createElement('option');
       opt.value = t;
@@ -91,15 +116,18 @@ function abrirModalTurma() {
       select.appendChild(opt);
     });
   }
-  // Verificar se exige senha na fase 1
+  
+  // Verifica se exige senha na fase 1
   const fase = state.estadoAtual?.fase || 1;
   const exigirSenha = (fase === 1 && state.exigirSenhaFase1);
   const senhaContainer = document.getElementById('senhaContainer');
   if (senhaContainer) senhaContainer.style.display = exigirSenha ? 'block' : 'none';
+  
   document.getElementById('inputNomeAluno').value = '';
   document.getElementById('inputSenhaAluno').value = '';
   document.getElementById('erroAluno').textContent = '';
-  // Focar no nome
+  
+  // Foca no nome
   document.getElementById('inputNomeAluno').focus();
 }
 
@@ -109,7 +137,8 @@ function fecharModalTurma() {
 
 async function confirmarCadastroAluno() {
   const nome = document.getElementById('inputNomeAluno').value.trim();
-  const turma = document.getElementById('selectTurma').value;
+  const select = document.getElementById('selectTurma');
+  const turma = select ? select.value : '';
   const senha = document.getElementById('inputSenhaAluno').value.trim();
 
   if (!nome) {
