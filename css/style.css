@@ -27,6 +27,7 @@ body.tema-escuro {
   --bg-loading: rgba(10, 15, 30, 0.92);
   --bg-spinner: rgba(255, 217, 102, 0.15);
   --cor-spinner: #ffd966;
+  --cor-primaria: #3b82f6;
 }
 
 /* ----- TEMA CLARO ----- */
@@ -53,6 +54,7 @@ body.tema-claro {
   --bg-loading: rgba(255, 255, 255, 0.95);
   --bg-spinner: rgba(45, 55, 72, 0.15);
   --cor-spinner: #2d3748;
+  --cor-primaria: #3b82f6;
 }
 
 /* ============================================================
@@ -98,7 +100,7 @@ button {
 button:hover { background: var(--bg-botao-padrao-hover); transform: scale(1.02); }
 button:disabled { background: #333; cursor: not-allowed; opacity: 0.5; }
 
-.btn-primary { background: #e67e22; color: white; }
+.btn-primary { background: var(--cor-primaria); color: white; }
 .btn-success { background: #27ae60; color: white; }
 .btn-danger { background: #c0392b; color: white; }
 .btn-warning { background: #f39c12; color: white; }
@@ -244,7 +246,7 @@ body.em-jogo #tela-aluno { border: none; background: transparent; padding: 0; }
 hr { margin: 15px 0; border-color: var(--borda-card); }
 .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
 .tab-btn { background: var(--bg-botao-padrao); padding: 8px 20px; border-radius: 30px; cursor: pointer; color: var(--texto-principal); }
-.tab-btn.active { background: #e67e22; color: white; }
+.tab-btn.active { background: var(--cor-primaria); color: white; }
 .modalidade-badge { background: #2c5a6e; padding: 4px 12px; border-radius: 20px; font-size: 14px; display: inline-block; margin-left: 15px; color: white; }
 .live-badge { background: #e74c3c; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 10px; animation: pulse 1s infinite; }
 @keyframes pulse { 0% { opacity: 0.6; } 100% { opacity: 1; } }
@@ -255,7 +257,7 @@ hr { margin: 15px 0; border-color: var(--borda-card); }
 .resumo-card { background: var(--bg-botao-padrao); border-radius: 15px; padding: 15px; margin-bottom: 15px; }
 .modo-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
 .btn-modo { background: var(--bg-botao-padrao); padding: 6px 12px; font-size: 12px; color: var(--texto-principal); }
-.btn-modo.ativo { background: #e67e22; color: white; }
+.btn-modo.ativo { background: var(--cor-primaria); color: white; }
 .fase-info { font-size: 14px; background: var(--bg-botao-padrao); display: inline-block; padding: 4px 12px; border-radius: 20px; margin-left: 15px; color: var(--texto-principal); }
 .top-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 15px; flex-wrap: wrap; }
 .pontuacao-atual { font-size: 24px; font-weight: bold; background: #000000aa; padding: 6px 18px; border-radius: 40px; display: inline-block; }
@@ -738,7 +740,7 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
     color: var(--texto-principal);
 }
 .modal-ranking-content .modal-sub-tabs .sub-tab.active {
-    background: #e67e22;
+    background: var(--cor-primaria);
     color: white;
 }
 
@@ -1146,7 +1148,7 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
 }
 
 #connection-badge.online {
-  background-color: #2e7d32;
+  background-color: var(--cor-primaria);
 }
 
 #connection-badge.offline {
@@ -1169,7 +1171,7 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
   }
 }
 
-/* ===== OVERLAY DE CARREGAMENTO (item 4) ===== */
+/* ===== OVERLAY DE CARREGAMENTO ===== */
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -1282,7 +1284,7 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
   background: var(--bg-botao-padrao-hover);
 }
 
-/* ===== MEDALHAS (mantido) ===== */
+/* ===== MEDALHAS ===== */
 .medalhas-grid {
     display: flex;
     flex-wrap: wrap;
@@ -1390,7 +1392,7 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
     100% { transform: scale(1.1); }
 }
 
-/* ===== GRÁFICO DE EVOLUÇÃO (mantido) ===== */
+/* ===== GRÁFICO DE EVOLUÇÃO ===== */
 #grafico-evolucao {
     background: transparent;
     border-radius: 12px;
@@ -1399,7 +1401,7 @@ input[type="number"]::-webkit-outer-spin-button { opacity: 0.5; }
     max-width: 600px;
 }
 
-/* ===== BANNER DE AVISO (mantido) ===== */
+/* ===== BANNER DE AVISO ===== */
 #banner-aviso {
   position: fixed;
   top: 0;
@@ -1458,4 +1460,31 @@ body.em-jogo #banner-aviso {
 
 body.em-jogo #banner-aviso .banner-aviso-icone {
   font-size: 18px;
+}
+
+/* ===== SELETOR DE CORES ===== */
+.btn-cor {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: 0.2s;
+  padding: 0;
+  margin: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.btn-cor:hover {
+  transform: scale(1.15);
+}
+
+.btn-cor.selected {
+  border-color: #ffffff;
+  box-shadow: 0 0 16px rgba(255,255,255,0.6);
+  transform: scale(1.1);
 }
