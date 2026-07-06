@@ -55,7 +55,8 @@ import {
   atualizarCacheComDadosFirebase,
   setCacheItem,
   getCacheItem,
-  salvarCache
+  salvarCache,
+  getPontuacaoDefault
 } from './modules/config.js';
 import { verificarVersao, iniciarListenerVersao } from './modules/version.js';
 import { abrirInstalacao } from './modules/install.js';
@@ -915,11 +916,33 @@ function configurarEventos() {
     }
   });
 
+  // ===== CORREÇÃO DO RESET DA COMPETIÇÃO (PRESERVA PONTUAÇÃO PADRÃO) =====
   document.getElementById('btn-reset-total')?.addEventListener('click', async () => {
     if (confirm('Resetar toda a competição?')) {
-      await setDados('copaV2', { fase:1, status:'aguardando', tempoFase:10, fim:0, modalidade: state.estadoAtual?.modalidade || "2-5", resultados:{}, participantes:{}, classificados:{} });
+      // Resetar os dados principais
+      await setDados('copaV2', { 
+        fase:1, 
+        status:'aguardando', 
+        tempoFase:10, 
+        fim:0, 
+        modalidade: state.estadoAtual?.modalidade || "2-5", 
+        resultados:{}, 
+        participantes:{}, 
+        classificados:{} 
+      });
       await removerDados('online');
+      
+      // ===== RECRIAR CONFIGURAÇÃO DE PONTOS COM VALORES PADRÃO =====
+      const pontosPadrao = getPontuacaoDefault();
+      await db.ref('copaV2/configuracoes/rankingPontos/tabelaPadrao').set(pontosPadrao);
+      await db.ref('copaV2/configuracoes/rankingPontos/tabelaFase5').set(pontosPadrao);
+      await db.ref('copaV2/configuracoes/rankingPontos/ativo').set(true);
+      
+      // Recarregar a configuração no state
+      await carregarConfigRankingPontos();
+      
       atualizarUltimaSinc();
+      exibirToast('✅ Competição resetada com configuração de pontos padrão!', 'sucesso');
       location.reload();
     }
   });
@@ -1132,12 +1155,6 @@ function configurarEventos() {
 // ============================================================
 // FUNÇÕES AUXILIARES
 // ============================================================
-
-function getPontuacaoDefault() {
-  const obj = {};
-  for (let i = 1; i <= 40; i++) obj[i] = 41 - i;
-  return obj;
-}
 
 function parsePontuacaoText(text) {
   const obj = {};
