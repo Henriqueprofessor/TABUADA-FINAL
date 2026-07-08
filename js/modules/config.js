@@ -8,7 +8,8 @@ const RECORDE_GERAL_KEY = 'copaV2/configuracoes/recordeGeral';
 const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
 const MIN_PARTIDAS_KEY = 'copaV2/configuracoes/minPartidasPorFase';
 const COLUNAS_KEY = 'copaV2/configuracoes/colunasVisiveis';
-const TEMPO_FEEDBACK_KEY = 'copaV2/configuracoes/tempoFeedback'; // NOVO
+const TEMPO_FEEDBACK_KEY = 'copaV2/configuracoes/tempoFeedback';
+const ESTRELAS_CONFIG_KEY = 'copaV2/configuracoes/estrelas'; // NOVO
 
 // ============================================================
 // CACHE LOCAL
@@ -103,9 +104,18 @@ export function carregarConfiguracoesDoCache() {
       state.prefColunasVisiveis = cache.preferencias.colunasVisiveis || {};
     }
 
-    // NOVO: carregar tempoFeedback do cache
     if (cache.tempoFeedback !== undefined) {
       state.tempoFeedback = cache.tempoFeedback;
+    }
+
+    // Carregar config de estrelas do cache
+    if (cache.configEstrelas) {
+      if (cache.configEstrelas.acoes) {
+        state.configEstrelas.acoes = { ...state.configEstrelas.acoes, ...cache.configEstrelas.acoes };
+      }
+      if (cache.configEstrelas.visibilidade) {
+        state.configEstrelas.visibilidade = cache.configEstrelas.visibilidade;
+      }
     }
 
     state.ultimaSincCache = cache.ultimaSinc || null;
@@ -181,8 +191,13 @@ export function atualizarCacheComDadosFirebase(estado) {
       colunasVisiveis: state.prefColunasVisiveis || state.colunasVisiveis || {},
     };
 
-    // NOVO: salvar tempoFeedback no cache
     cache.tempoFeedback = state.tempoFeedback;
+
+    // Salvar config de estrelas no cache
+    cache.configEstrelas = {
+      acoes: state.configEstrelas.acoes,
+      visibilidade: state.configEstrelas.visibilidade
+    };
 
     cache.ultimaSinc = new Date().toISOString();
     salvarCache(cache);
@@ -457,7 +472,7 @@ export async function salvarConfigRankingPontos(ativo, tabelaPadrao, tabelaFase5
 }
 
 // ============================================================
-// TEMPO DE FEEDBACK VISUAL (NOVO)
+// TEMPO DE FEEDBACK VISUAL
 // ============================================================
 export async function carregarTempoFeedback() {
   try {
@@ -467,7 +482,6 @@ export async function carregarTempoFeedback() {
       state.tempoFeedback = valor;
     } else {
       state.tempoFeedback = 2;
-      // salva padrão se não existir
       await db.ref(TEMPO_FEEDBACK_KEY).set(2);
     }
     console.log(`⏱️ Tempo de feedback carregado: ${state.tempoFeedback}s`);
@@ -491,6 +505,51 @@ export async function salvarTempoFeedback(valor) {
   } catch (e) {
     console.error('Erro ao salvar tempo de feedback:', e);
     exibirToast('❌ Erro ao salvar tempo de feedback.', 'erro');
+    return false;
+  }
+}
+
+// ============================================================
+// CONFIGURAÇÃO DE ESTRELAS (NOVO)
+// ============================================================
+export async function carregarConfigEstrelas() {
+  try {
+    const snap = await db.ref(ESTRELAS_CONFIG_KEY).once('value');
+    const config = snap.val();
+    if (config) {
+      if (config.acoes) {
+        state.configEstrelas.acoes = { ...state.configEstrelas.acoes, ...config.acoes };
+      }
+      if (config.visibilidade) {
+        state.configEstrelas.visibilidade = config.visibilidade;
+      }
+    } else {
+      // Salvar valores padrão no Firebase
+      await db.ref(ESTRELAS_CONFIG_KEY).set({
+        acoes: state.configEstrelas.acoes,
+        visibilidade: state.configEstrelas.visibilidade
+      });
+    }
+    // Atualizar cache
+    setCacheItem('configEstrelas', state.configEstrelas);
+    console.log('⭐ Configuração de estrelas carregada:', state.configEstrelas);
+  } catch (e) {
+    console.warn('Erro ao carregar configuração de estrelas:', e);
+  }
+}
+
+export async function salvarConfigEstrelas(acoes, visibilidade) {
+  try {
+    const payload = { acoes, visibilidade };
+    await db.ref(ESTRELAS_CONFIG_KEY).set(payload);
+    state.configEstrelas.acoes = acoes;
+    state.configEstrelas.visibilidade = visibilidade;
+    setCacheItem('configEstrelas', state.configEstrelas);
+    exibirToast('✅ Configuração de estrelas salva!', 'sucesso');
+    return true;
+  } catch (e) {
+    console.error('Erro ao salvar configuração de estrelas:', e);
+    exibirToast('❌ Erro ao salvar configuração de estrelas.', 'erro');
     return false;
   }
 }
