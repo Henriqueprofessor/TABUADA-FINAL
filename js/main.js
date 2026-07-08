@@ -279,7 +279,7 @@ function entrarModoProfessor() {
   }
 }
 
-function entrarModoAluno(cadastrado = false) {
+async function entrarModoAluno(cadastrado = false) {
   if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
     exibirToast('⏳ A fase não foi iniciada ou já terminou.', 'aviso');
   } else {
@@ -303,10 +303,11 @@ function entrarModoAluno(cadastrado = false) {
     document.getElementById('aluno-turma-display').textContent = state.alunoTurma || '-';
     document.getElementById('aluno-modalidade').textContent = state.estadoAtual?.modalidade || '--';
     document.getElementById('aluno-fase-info').textContent = `Fase ${state.estadoAtual?.fase || 1}/5`;
+    
     // Carregar estrelas do aluno
-    carregarEstrelasAluno(state.alunoId).then(() => {
-      atualizarNivelEstrelasUI();
-    });
+    await carregarEstrelasAluno(state.alunoId);
+    atualizarNivelEstrelasUI();
+    
     atualizarInfoAluno();
     if (state.estadoAtual && state.estadoAtual.status === 'em_andamento' && Date.now() < state.estadoAtual.fim) {
       document.getElementById('btn-iniciar-partida').classList.remove('hidden');
@@ -424,7 +425,7 @@ function pararAtualizacaoTorcida() {
 }
 
 // ============================================================
-// DEMAIS FUNÇÕES
+// DEMAIS FUNÇÕES (POPULAR SELECTS, ATUALIZAR UI, ETC)
 // ============================================================
 
 function preencherSeletorCores(containerId) {
@@ -599,6 +600,33 @@ function onSelectFaseTorcidaChange() {
     faseTorcidaSelecionada = fase;
     atualizarTorcidaFase();
   }
+}
+
+// ============================================================
+// FUNÇÃO PARA PREENCHER CONFIG DE ESTRELAS
+// ============================================================
+function preencherConfigEstrelasUI() {
+  const container = document.getElementById('estrelas-acoes-container');
+  if (!container) return;
+  const acoes = state.configEstrelas.acoes;
+  const labels = {
+    partida_completa: 'Partida completa',
+    acertos_18_19: '18 ou 19 acertos',
+    acertos_20: 'Perfeição (20 acertos)',
+    subiu_ranking: 'Subiu no ranking',
+    avancou_fase: 'Avançou de fase',
+    recorde_pessoal: 'Recorde pessoal'
+  };
+  let html = '';
+  for (const [key, valor] of Object.entries(acoes)) {
+    html += `
+      <div style="display: flex; align-items: center; gap: 8px; background: var(--bg-card); padding: 6px 12px; border-radius: 8px;">
+        <label style="font-size: 13px; color: var(--texto-secundario); flex: 1;">${labels[key] || key}</label>
+        <input type="number" data-acao="${key}" value="${valor}" min="0" max="50" style="width: 60px; padding: 4px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9; text-align: center;">
+      </div>
+    `;
+  }
+  container.innerHTML = html;
 }
 
 // ============================================================
@@ -835,11 +863,12 @@ function configurarEventos() {
         renderizarPainelSom();
         atualizarStatusAviso(state.avisoAtual);
         preencherSeletorCores('seletor-cores');
-        document.getElementById('input-tempo-feedback').value = state.tempoFeedback;
-        // Preencher configurações de estrelas
+        // Carregar valores de feedback
+        document.getElementById('input-tempo-feedback-acerto').value = state.tempoFeedbackAcerto;
+        document.getElementById('input-tempo-feedback-erro').value = state.tempoFeedbackErro;
         preencherConfigEstrelasUI();
-        const selectVis = document.getElementById('select-visibilidade-estrelas');
-        if (selectVis) selectVis.value = state.configEstrelas.visibilidade || 'todos';
+        // Carregar visibilidade
+        document.getElementById('select-visibilidade-estrelas').value = state.configEstrelas.visibilidade || 'todos';
       }
     });
   });
@@ -1152,22 +1181,28 @@ function configurarEventos() {
     atualizarUltimaSinc();
   });
 
+  // ===== SALVAR FEEDBACK =====
   document.getElementById('btn-salvar-feedback')?.addEventListener('click', async () => {
-    const valor = parseFloat(document.getElementById('input-tempo-feedback').value);
-    if (isNaN(valor) || valor < 0.5 || valor > 2) {
-      exibirToast('❌ O tempo deve estar entre 0.5 e 2 segundos.', 'erro');
+    const acerto = parseFloat(document.getElementById('input-tempo-feedback-acerto').value);
+    const erro = parseFloat(document.getElementById('input-tempo-feedback-erro').value);
+    if (isNaN(acerto) || acerto < 0.1 || acerto > 2) {
+      exibirToast('❌ Tempo de acerto deve estar entre 0.1 e 2 segundos.', 'erro');
       return;
     }
-    const sucesso = await salvarTempoFeedback(valor);
-    if (sucesso) {
+    if (isNaN(erro) || erro < 0.1 || erro > 2) {
+      exibirToast('❌ Tempo de erro deve estar entre 0.1 e 2 segundos.', 'erro');
+      return;
+    }
+    const ok = await salvarTempoFeedback(acerto, erro);
+    if (ok) {
       document.getElementById('feedback-feedback').style.display = 'block';
       document.getElementById('feedback-feedback').className = 'feedback-sucesso';
-      document.getElementById('feedback-feedback').textContent = `✅ Tempo de feedback atualizado para ${valor}s!`;
+      document.getElementById('feedback-feedback').textContent = `✅ Feedback salvo: acerto ${acerto}s, erro ${erro}s`;
       setTimeout(() => document.getElementById('feedback-feedback').style.display = 'none', 5000);
     }
   });
 
-  // ===== EVENTOS DO SISTEMA DE ESTRELAS =====
+  // ===== SALVAR AÇÕES DE ESTRELAS =====
   document.getElementById('btn-salvar-acoes-estrelas')?.addEventListener('click', async () => {
     const acoes = {};
     const inputs = document.querySelectorAll('#estrelas-acoes-container input[type="number"]');
@@ -1260,30 +1295,6 @@ async function atualizarListaLiberados() {
     container.innerText = liberados.join(', ');
     container.style.color = '#4ade80';
   }
-}
-
-function preencherConfigEstrelasUI() {
-  const container = document.getElementById('estrelas-acoes-container');
-  if (!container) return;
-  const acoes = state.configEstrelas.acoes;
-  const labels = {
-    partida_completa: 'Partida completa',
-    acertos_18_19: '18 ou 19 acertos',
-    acertos_20: 'Perfeição (20 acertos)',
-    subiu_ranking: 'Subiu no ranking',
-    avancou_fase: 'Avançou de fase',
-    recorde_pessoal: 'Recorde pessoal'
-  };
-  let html = '';
-  for (const [key, valor] of Object.entries(acoes)) {
-    html += `
-      <div style="display: flex; align-items: center; gap: 8px; background: var(--bg-card); padding: 6px 12px; border-radius: 8px;">
-        <label style="font-size: 13px; color: var(--texto-secundario); flex: 1;">${labels[key] || key}</label>
-        <input type="number" data-acao="${key}" value="${valor}" min="0" max="50" style="width: 60px; padding: 4px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9; text-align: center;">
-      </div>
-    `;
-  }
-  container.innerHTML = html;
 }
 
 // ============================================================
