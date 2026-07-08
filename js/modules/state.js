@@ -40,8 +40,11 @@ export const state = {
   listenerOnline: null,
   senhaBloqueada: false,
   carregando: true,
-  tempoFeedback: 2,
   historicoPerguntas: [],
+
+  // ===== FEEDBACK VISUAL (separado) =====
+  tempoFeedbackAcerto: 0.5,
+  tempoFeedbackErro: 0.5,
 
   // Cache
   senhaFase1: null,
@@ -66,12 +69,11 @@ export const state = {
   // ===== SISTEMA DE ESTRELAS =====
   estrelas: {
     total: 0,
-    // histórico: { acao, estrelas, timestamp, fase, partidaIndex? }
     historico: [],
     flags: {
-      avancouFase: {}, // { fase: true } – já ganhou por avançar nesta fase?
-      subiuRanking: {}, // { fase: true } – já ganhou por subir nesta fase?
-      recordePessoal: false // se já ganhou o bônus de recorde (uma vez por partida, mas pode repetir ao longo da Copa)
+      avancouFase: {},
+      subiuRanking: {},
+      recordePessoal: false
     }
   },
   configEstrelas: {
@@ -83,6 +85,6 @@ export const state = {
       avancou_fase: 10,
       recorde_pessoal: 4
     },
-    visibilidade: 'todos' // 'todos' ou 'alunos'
+    visibilidade: 'todos'
   }
 };
