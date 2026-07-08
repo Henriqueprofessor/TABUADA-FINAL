@@ -40,6 +40,10 @@ export const state = {
   listenerOnline: null,
   senhaBloqueada: false,
   carregando: true,
+  // NOVO: tempo de feedback visual (segundos)
+  tempoFeedback: 2,
+  // NOVO: histórico de perguntas da partida atual
+  historicoPerguntas: [],
 
   // Cache
   senhaFase1: null,
