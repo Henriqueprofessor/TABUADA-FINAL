@@ -276,7 +276,6 @@ body.em-jogo #tela-aluno { border: none; background: transparent; padding: 0; }
   font-weight: bold;
   text-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
 }
-/* classes antigas mantidas para compatibilidade */
 .fut-vermelho { color: #e74c3c; font-weight: bold; text-shadow: 0 0 8px rgba(231, 76, 60, 0.4); }
 .fut-laranja { color: #e67e22; font-weight: bold; }
 
@@ -313,6 +312,26 @@ body.em-jogo #tela-aluno { border: none; background: transparent; padding: 0; }
     cursor: not-allowed;
     transform: scale(1);
     border-color: transparent;
+}
+
+/* ===== FEEDBACK VISUAL (NOVO) ===== */
+.opcao-vertical.correto {
+  background: #27ae60 !important;
+  border-color: #2ecc71 !important;
+  color: white !important;
+  box-shadow: 0 0 20px rgba(46, 204, 113, 0.6);
+}
+.opcao-vertical.errado {
+  background: #c0392b !important;
+  border-color: #e74c3c !important;
+  color: white !important;
+  box-shadow: 0 0 20px rgba(231, 76, 60, 0.6);
+}
+.opcao-vertical.destaque-correto {
+  background: #27ae60 !important;
+  border-color: #2ecc71 !important;
+  color: white !important;
+  box-shadow: 0 0 20px rgba(46, 204, 113, 0.6);
 }
 
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--bg-toast); padding: 12px 24px; border-radius: 60px; z-index: 3000; font-weight: bold; color: white; }
@@ -1575,4 +1594,34 @@ body.em-jogo #banner-aviso .banner-aviso-icone {
   box-shadow: 0 0 25px rgba(255, 217, 102, 0.7) !important;
   transform: scale(1.06);
   transition: all 0.15s ease;
+}
+
+/* ===== LISTA DE ERROS NO MODAL ===== */
+.lista-erros {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+.lista-erros li {
+  background: var(--bg-card-hover);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+  border-left: 4px solid #e74c3c;
+}
+.lista-erros li .pergunta {
+  font-weight: 600;
+  color: var(--texto-destaque);
+}
+.lista-erros li .resposta-errada {
+  color: #f87171;
+}
+.lista-erros li .resposta-correta {
+  color: #4ade80;
 }
