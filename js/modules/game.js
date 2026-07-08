@@ -1,4 +1,3 @@
-// js/modules/game.js
 import { state } from './state.js';
 import { exibirToast, exibirModalResultados } from './ui.js';
 import { lerDados, atualizarDados, removerDados } from './db.js';
@@ -159,6 +158,7 @@ export async function iniciarPartida() {
     state.partidaFinalizada = false;
     state.jogoAtivo = true;
     state.timerPergunta = null;
+    state.historicoPerguntas = []; // NOVO: reseta histórico
 
     document.body.classList.add('em-jogo');
     document.getElementById('jogo-area').classList.remove('hidden');
@@ -197,6 +197,8 @@ function proximaPergunta() {
         btns[i].innerText = o;
         btns[i].disabled = false;
         btns[i].dataset.correct = (i + 1 === p.posicaoCorreta) ? 'true' : 'false';
+        // Remove classes de feedback da pergunta anterior
+        btns[i].classList.remove('correto', 'errado', 'destaque-correto');
       }
     });
     document.getElementById('pergunta-num').innerText = state.perguntaIdx + 1;
@@ -255,20 +257,62 @@ export async function responder(idx) {
     const tempoGasto = 10 - Math.max(0, state.tempoRestantePergunta);
     state.tempoTotalPartida += tempoGasto;
 
+    const p = state.perguntas[state.perguntaIdx];
+    const correta = p.a * p.b;
+    let acertou = false;
+    let respostaEscolhida = null;
+
+    // Processa a resposta
     if (idx !== -1) {
       const resp = parseInt(btns[idx].innerText);
-      const p = state.perguntas[state.perguntaIdx];
-      const correta = p.a * p.b;
+      respostaEscolhida = resp;
       if (resp === correta) {
+        acertou = true;
         state.acertosPartida++;
         const pontosGanhos = Math.round(100 * (Math.max(0, state.tempoRestantePergunta) / 10));
         state.pontosPartida += pontosGanhos;
         tocarSom('acerto');
       } else {
-        tocarSom('erro');
+        tocarSom('erro'); // agora toca o som engraçado
       }
     } else {
+      // tempo esgotado
       tocarSom('tempo_esgotado');
+      respostaEscolhida = null;
+    }
+
+    // ===== NOVO: ARMAZENA HISTÓRICO =====
+    state.historicoPerguntas.push({
+      pergunta: `${p.a} x ${p.b}`,
+      respostaEscolhida: respostaEscolhida,
+      respostaCorreta: correta,
+      acertou: acertou
+    });
+
+    // ===== NOVO: FEEDBACK VISUAL =====
+    // Destaca a resposta escolhida (se houver) e a resposta correta
+    if (idx !== -1) {
+      const btnEscolhido = btns[idx];
+      if (acertou) {
+        btnEscolhido.classList.add('correto');
+      } else {
+        btnEscolhido.classList.add('errado');
+        // Mostra a correta em verde
+        for (let i = 0; i < btns.length; i++) {
+          if (parseInt(btns[i].innerText) === correta) {
+            btns[i].classList.add('destaque-correto');
+            break;
+          }
+        }
+      }
+    } else {
+      // Caso tempo esgotado, mostra a correta
+      for (let i = 0; i < btns.length; i++) {
+        if (parseInt(btns[i].innerText) === correta) {
+          btns[i].classList.add('destaque-correto');
+          break;
+        }
+      }
     }
 
     document.getElementById('pontuacao-acumulada').innerText = state.pontosPartida;
@@ -277,13 +321,24 @@ export async function responder(idx) {
     // Atualiza a barra de tempo com a nova projeção
     atualizarInfoAluno();
 
-    if (state.perguntaIdx >= 20) {
-      await finalizarPartida();
-    } else {
-      btns.forEach(b => b.disabled = false);
-      await atualizarPontuacaoParcial();
-      setTimeout(proximaPergunta, 200);
-    }
+    // ===== NOVO: ATRASO CONFIGURÁVEL PARA FEEDBACK =====
+    const delay = (state.tempoFeedback || 2) * 1000; // em milissegundos
+    setTimeout(() => {
+      // Remove classes de feedback
+      btns.forEach(b => {
+        b.classList.remove('correto', 'errado', 'destaque-correto');
+        b.disabled = false;
+      });
+
+      if (state.perguntaIdx >= 20) {
+        finalizarPartida();
+      } else {
+        proximaPergunta();
+      }
+    }, delay);
+
+    // Atualiza pontuação parcial (não espera o feedback)
+    await atualizarPontuacaoParcial();
   } catch (error) {
     console.error('Erro ao responder:', error);
     exibirToast('❌ Erro ao processar resposta. Tente novamente.');
@@ -379,7 +434,7 @@ async function finalizarPartida() {
       ultimaPartida = partidas[partidas.length - 2];
     }
 
-    // Dados para o modal
+    // Dados para o modal (inclui histórico)
     const dadosModal = {
       posicao: posicaoAtual > 0 ? posicaoAtual : 0,
       posicaoAnterior: posicaoAnterior,
@@ -392,7 +447,8 @@ async function finalizarPartida() {
       ranking: ranking,
       id: state.alunoId,
       nome: state.alunoNome,
-      turma: state.alunoTurma
+      turma: state.alunoTurma,
+      historico: state.historicoPerguntas // NOVO: passa o histórico
     };
 
     // Exibe o modal
