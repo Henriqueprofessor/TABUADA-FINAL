@@ -498,7 +498,7 @@
                 </div>
             </div>
 
-            <!-- ===== CARD: FEEDBACK VISUAL ===== -->
+            <!-- ===== CARD: FEEDBACK VISUAL (NOVO) ===== -->
             <div id="bloco-feedback" class="config-card" style="border-color: #8b5cf6;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">👀</span>
@@ -510,16 +510,23 @@
                     O jogo avança automaticamente após esse tempo.
                 </p>
                 <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
-                    <label for="input-tempo-feedback" style="color: #94a3b8; font-size: 14px;">Tempo de feedback (segundos):</label>
-                    <input type="number" id="input-tempo-feedback" min="0.5" max="2" step="0.1" value="2" 
-                        style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 8px 12px; border-radius: 8px; width: 100px; text-align: center;">
-                    <button id="btn-salvar-feedback" class="btn-success">💾 Salvar</button>
+                    <div>
+                        <label for="input-tempo-feedback-acerto" style="color: #94a3b8; font-size: 14px; display: block;">✅ Acerto (segundos):</label>
+                        <input type="number" id="input-tempo-feedback-acerto" min="0.1" max="2.0" step="0.1" value="0.5" 
+                            style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 8px 12px; border-radius: 8px; width: 100px; text-align: center;">
+                    </div>
+                    <div>
+                        <label for="input-tempo-feedback-erro" style="color: #94a3b8; font-size: 14px; display: block;">❌ Erro (segundos):</label>
+                        <input type="number" id="input-tempo-feedback-erro" min="0.1" max="2.0" step="0.1" value="0.5" 
+                            style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 8px 12px; border-radius: 8px; width: 100px; text-align: center;">
+                    </div>
+                    <button id="btn-salvar-feedback" class="btn-success" style="padding: 8px 24px;">💾 Salvar</button>
                     <span id="feedback-status" style="color: #4ade80; font-size: 14px;">✅ Ativo</span>
                 </div>
                 <div id="feedback-feedback" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
 
-            <!-- ===== CARD: SISTEMA DE ESTRELAS (NOVO) ===== -->
+            <!-- ===== CARD: SISTEMA DE ESTRELAS ===== -->
             <div id="bloco-estrelas" class="config-card" style="border-color: #facc15;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">⭐</span>
@@ -611,7 +618,7 @@
 
         <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong> <span id="aluno-fase-info" class="fase-info"></span></p>
 
-        <!-- ===== NOVO: EXIBIÇÃO DO NÍVEL DE ESTRELAS ===== -->
+        <!-- ===== EXIBIÇÃO DO NÍVEL DE ESTRELAS (NÃO É UMA COLUNA DE RANKING) ===== -->
         <div id="nivel-estrelas-aluno" class="nivel-estrelas-container">
             <!-- Preenchido via JavaScript -->
         </div>
