@@ -239,66 +239,7 @@ export function atualizarBannerAviso(aviso) {
 }
 
 // ============================================================
-// NÍVEL DE ESTRELAS (UI)
-// ============================================================
-
-export function atualizarNivelEstrelasUI() {
-  const container = document.getElementById('nivel-estrelas-aluno');
-  if (!container) return;
-
-  const total = state.estrelas.total || 0;
-  const nivel = getNivelPorEstrelas(total);
-  const proximo = getProximoNivel(total);
-
-  let html = `
-    <div class="nivel-estrelas-titulo">
-      <span class="icone-nivel">${nivel.icone}</span>
-      <span class="nome-nivel">${nivel.nome}</span>
-      <span style="font-size: 16px; color: #94a3b8; margin-left: auto;">⭐ ${total} estrelas</span>
-    </div>
-  `;
-
-  if (proximo) {
-    const progresso = ((total - nivel.min) / (proximo.nivel.min - nivel.min)) * 100;
-    const pct = Math.min(100, Math.max(0, progresso));
-    html += `
-      <div class="nivel-estrelas-barra">
-        <div class="barra-fundo">
-          <div class="barra-preenchida" style="width: ${pct}%;"></div>
-        </div>
-        <span class="texto-progresso">${Math.round(pct)}%</span>
-      </div>
-      <div class="nivel-estrelas-proxima-meta">
-        🎯 Próximo nível: ${proximo.nivel.icone} ${proximo.nivel.nome} (faltam ${proximo.faltam} estrelas)
-      </div>
-    `;
-    // Dica
-    const dicas = {
-      partida_completa: 'Jogue mais partidas (+1 estrela cada)',
-      acertos_18_19: 'Tente acertar 18 ou 19 perguntas em uma partida (+2)',
-      acertos_20: 'Busque a perfeição: 20 acertos (+5)',
-      subiu_ranking: 'Suba posições no ranking (+3)',
-      avancou_fase: 'Avance de fase (+10)',
-      recorde_pessoal: 'Bata seu próprio recorde (+4)'
-    };
-    // Encontra uma dica relevante baseada nas ações configuradas
-    let dica = 'Continue jogando para acumular estrelas!';
-    for (const [key, valor] of Object.entries(state.configEstrelas.acoes)) {
-      if (valor > 0 && dicas[key]) {
-        dica = dicas[key];
-        break;
-      }
-    }
-    html += `<div class="nivel-estrelas-dica">💡 ${dica}</div>`;
-  } else {
-    html += `<div class="nivel-estrelas-proxima-meta">🏆 Você atingiu o nível máximo! Parabéns!</div>`;
-  }
-
-  container.innerHTML = html;
-}
-
-// ============================================================
-// MODAL DE RESULTADOS PÓS-PARTIDA (MODIFICADO)
+// MODAL DE RESULTADOS PÓS-PARTIDA
 // ============================================================
 
 export function exibirModalResultados(dados) {
@@ -572,4 +513,55 @@ function escapeHtml(str) {
     if (m === '>') return '&gt;';
     return m;
   });
+}
+
+// ============================================================
+// NÍVEL DE ESTRELAS (UI)
+// ============================================================
+
+export function atualizarNivelEstrelasUI() {
+  const container = document.getElementById('nivel-estrelas-aluno');
+  if (!container) return;
+
+  const total = state.estrelas.total || 0;
+  const nivel = getNivelPorEstrelas(total);
+  const proximo = getProximoNivel(total);
+
+  let html = `
+    <div class="nivel-estrelas-titulo">
+      <span class="icone-nivel">${nivel.icone}</span>
+      <span class="nome-nivel">${nivel.nome}</span>
+      <span style="font-size: 16px; color: #94a3b8; margin-left: auto;">⭐ ${total} estrelas</span>
+    </div>
+  `;
+
+  if (proximo) {
+    const progresso = ((total - nivel.min) / (proximo.nivel.min - nivel.min)) * 100;
+    const pct = Math.min(100, Math.max(0, progresso));
+    html += `
+      <div class="nivel-estrelas-barra">
+        <div class="barra-fundo">
+          <div class="barra-preenchida" style="width: ${pct}%;"></div>
+        </div>
+        <span class="texto-progresso">${Math.round(pct)}%</span>
+      </div>
+      <div class="nivel-estrelas-proxima-meta">
+        🎯 Próximo nível: ${proximo.nivel.icone} ${proximo.nivel.nome} (faltam ${proximo.faltam} estrelas)
+      </div>
+    `;
+    const dicas = {
+      partida_completa: 'Jogue mais partidas (+1 estrela cada)',
+      acertos_18_19: 'Tente acertar 18 ou 19 perguntas em uma partida (+2)',
+      acertos_20: 'Busque a perfeição: 20 acertos (+5)',
+      subiu_ranking: 'Suba posições no ranking (+3)',
+      avancou_fase: 'Avance de fase (+10)',
+      recorde_pessoal: 'Bata seu próprio recorde (+4)'
+    };
+    const dica = dicas[Object.keys(state.configEstrelas.acoes).find(key => state.configEstrelas.acoes[key] > 0 && total < 120)] || 'Continue jogando para acumular estrelas!';
+    html += `<div class="nivel-estrelas-dica">💡 ${dica}</div>`;
+  } else {
+    html += `<div class="nivel-estrelas-proxima-meta">🏆 Você atingiu o nível máximo! Parabéns!</div>`;
+  }
+
+  container.innerHTML = html;
 }
