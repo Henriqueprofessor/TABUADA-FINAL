@@ -56,7 +56,9 @@ import {
   setCacheItem,
   getCacheItem,
   salvarCache,
-  getPontuacaoDefault
+  getPontuacaoDefault,
+  carregarTempoFeedback, // NOVO
+  salvarTempoFeedback    // NOVO
 } from './modules/config.js';
 import { verificarVersao, iniciarListenerVersao } from './modules/version.js';
 import { abrirInstalacao } from './modules/install.js';
@@ -310,7 +312,7 @@ function entrarModoAluno(cadastrado = false) {
 }
 
 // ============================================================
-// FUNÇÕES DA TORCIDA (CORRIGIDAS)
+// FUNÇÕES DA TORCIDA
 // ============================================================
 
 let torcidaAba = 'fase';
@@ -336,7 +338,6 @@ function entrarModoTorcida() {
   document.getElementById('btn-torcida-pontos').setAttribute('aria-selected', 'false');
   document.getElementById('torcida-fase-selector').style.display = 'block';
   
-  // CORREÇÃO: Define a fase inicial da torcida para a fase atual
   const faseAtual = state.estadoAtual?.fase || 1;
   faseTorcidaSelecionada = faseAtual;
   
@@ -358,12 +359,9 @@ async function atualizarTorcidaFase() {
   const select = document.getElementById('select-fase-torcida');
   let fase = parseInt(select.value);
   if (isNaN(fase) || fase < 1 || fase > 5) {
-    // Se a fase selecionada for inválida, usa a fase atual
     fase = state.estadoAtual.fase;
     if (select) select.value = fase;
   }
-  
-  // Se a fase selecionada for maior que a fase atual, ajusta para a fase atual (não pode mostrar fases futuras)
   if (fase > state.estadoAtual.fase) {
     fase = state.estadoAtual.fase;
     if (select) select.value = fase;
@@ -517,16 +515,13 @@ function atualizarUI() {
       document.getElementById('competicao-finalizada-torcida').classList.add('hidden');
     }
     
-    // ===== CORREÇÃO DA TORCIDA =====
     const select = document.getElementById('select-fase-torcida');
     if (select && torcidaAba === 'fase') {
       const faseSelecionada = parseInt(select.value);
-      // Se a fase selecionada for inválida ou maior que a fase atual, ajusta para a fase atual
       if (isNaN(faseSelecionada) || faseSelecionada > fase) {
         select.value = fase;
         faseTorcidaSelecionada = fase;
       } else {
-        // Mantém a fase que o usuário escolheu
         faseTorcidaSelecionada = faseSelecionada;
       }
     }
@@ -589,7 +584,6 @@ function onSelectFaseTorcidaChange() {
   if (state.meuTipo !== 'projecao' || torcidaAba !== 'fase') return;
   const fase = parseInt(document.getElementById('select-fase-torcida').value);
   if (!isNaN(fase) && fase >= 1 && fase <= 5) {
-    // Não permite selecionar uma fase futura (maior que a fase atual)
     if (state.estadoAtual && fase > state.estadoAtual.fase) {
       exibirToast('⚠️ Esta fase ainda não aconteceu.', 'aviso');
       document.getElementById('select-fase-torcida').value = state.estadoAtual.fase;
@@ -680,7 +674,6 @@ function configurarEventos() {
     const select = document.getElementById('select-fase-torcida');
     if (select && state.estadoAtual) {
       const faseAtual = state.estadoAtual.fase;
-      // Se a fase selecionada for inválida ou futura, ajusta para a atual
       const faseSelecionada = parseInt(select.value);
       if (isNaN(faseSelecionada) || faseSelecionada > faseAtual) {
         select.value = faseAtual;
@@ -835,6 +828,8 @@ function configurarEventos() {
         renderizarPainelSom();
         atualizarStatusAviso(state.avisoAtual);
         preencherSeletorCores('seletor-cores');
+        // NOVO: carregar tempo feedback no campo
+        document.getElementById('input-tempo-feedback').value = state.tempoFeedback;
       }
     });
   });
@@ -916,10 +911,8 @@ function configurarEventos() {
     }
   });
 
-  // ===== CORREÇÃO DO RESET DA COMPETIÇÃO (PRESERVA PONTUAÇÃO PADRÃO) =====
   document.getElementById('btn-reset-total')?.addEventListener('click', async () => {
     if (confirm('Resetar toda a competição?')) {
-      // Resetar os dados principais
       await setDados('copaV2', { 
         fase:1, 
         status:'aguardando', 
@@ -932,13 +925,11 @@ function configurarEventos() {
       });
       await removerDados('online');
       
-      // ===== RECRIAR CONFIGURAÇÃO DE PONTOS COM VALORES PADRÃO =====
       const pontosPadrao = getPontuacaoDefault();
       await db.ref('copaV2/configuracoes/rankingPontos/tabelaPadrao').set(pontosPadrao);
       await db.ref('copaV2/configuracoes/rankingPontos/tabelaFase5').set(pontosPadrao);
       await db.ref('copaV2/configuracoes/rankingPontos/ativo').set(true);
       
-      // Recarregar a configuração no state
       await carregarConfigRankingPontos();
       
       atualizarUltimaSinc();
@@ -1150,6 +1141,22 @@ function configurarEventos() {
     atualizarListaLiberados();
     atualizarUltimaSinc();
   });
+
+  // ===== NOVO: SALVAR TEMPO DE FEEDBACK =====
+  document.getElementById('btn-salvar-feedback')?.addEventListener('click', async () => {
+    const valor = parseFloat(document.getElementById('input-tempo-feedback').value);
+    if (isNaN(valor) || valor < 0.5 || valor > 2) {
+      exibirToast('❌ O tempo deve estar entre 0.5 e 2 segundos.', 'erro');
+      return;
+    }
+    const sucesso = await salvarTempoFeedback(valor);
+    if (sucesso) {
+      document.getElementById('feedback-feedback').style.display = 'block';
+      document.getElementById('feedback-feedback').className = 'feedback-sucesso';
+      document.getElementById('feedback-feedback').textContent = `✅ Tempo de feedback atualizado para ${valor}s!`;
+      setTimeout(() => document.getElementById('feedback-feedback').style.display = 'none', 5000);
+    }
+  });
 }
 
 // ============================================================
@@ -1288,6 +1295,7 @@ async function init() {
       await carregarRecordeGeral();
       await carregarColunasVisiveis();
       await carregarMinPartidas();
+      await carregarTempoFeedback(); // NOVO
     } catch (e) {
       console.warn('Erro ao carregar configurações:', e);
       exibirToast('⚠️ Algumas configurações podem não estar disponíveis.', 'aviso');
