@@ -1,4 +1,3 @@
-// js/modules/config.js
 import { db } from '../config/firebase.js';
 import { state } from './state.js';
 import { exibirToast } from './ui.js';
@@ -9,6 +8,7 @@ const RECORDE_GERAL_KEY = 'copaV2/configuracoes/recordeGeral';
 const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
 const MIN_PARTIDAS_KEY = 'copaV2/configuracoes/minPartidasPorFase';
 const COLUNAS_KEY = 'copaV2/configuracoes/colunasVisiveis';
+const TEMPO_FEEDBACK_KEY = 'copaV2/configuracoes/tempoFeedback'; // NOVO
 
 // ============================================================
 // CACHE LOCAL
@@ -103,6 +103,11 @@ export function carregarConfiguracoesDoCache() {
       state.prefColunasVisiveis = cache.preferencias.colunasVisiveis || {};
     }
 
+    // NOVO: carregar tempoFeedback do cache
+    if (cache.tempoFeedback !== undefined) {
+      state.tempoFeedback = cache.tempoFeedback;
+    }
+
     state.ultimaSincCache = cache.ultimaSinc || null;
   } catch (e) {
     console.warn('Erro ao carregar configurações do cache:', e);
@@ -175,6 +180,9 @@ export function atualizarCacheComDadosFirebase(estado) {
       torcidaFase: state.prefTorcidaFase || 1,
       colunasVisiveis: state.prefColunasVisiveis || state.colunasVisiveis || {},
     };
+
+    // NOVO: salvar tempoFeedback no cache
+    cache.tempoFeedback = state.tempoFeedback;
 
     cache.ultimaSinc = new Date().toISOString();
     salvarCache(cache);
@@ -400,7 +408,7 @@ export function getPontuacaoDefault() {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DE PONTOS (CORRIGIDA)
+// CONFIGURAÇÃO DE PONTOS
 // ============================================================
 export async function carregarConfigRankingPontos() {
   try {
@@ -445,6 +453,45 @@ export async function salvarConfigRankingPontos(ativo, tabelaPadrao, tabelaFase5
   } catch (e) {
     console.error('Erro ao salvar config de pontos:', e);
     exibirToast('❌ Erro ao salvar configuração de pontos.', 'erro');
+  }
+}
+
+// ============================================================
+// TEMPO DE FEEDBACK VISUAL (NOVO)
+// ============================================================
+export async function carregarTempoFeedback() {
+  try {
+    const snap = await db.ref(TEMPO_FEEDBACK_KEY).once('value');
+    const valor = snap.val();
+    if (valor && typeof valor === 'number' && valor >= 0.5 && valor <= 2) {
+      state.tempoFeedback = valor;
+    } else {
+      state.tempoFeedback = 2;
+      // salva padrão se não existir
+      await db.ref(TEMPO_FEEDBACK_KEY).set(2);
+    }
+    console.log(`⏱️ Tempo de feedback carregado: ${state.tempoFeedback}s`);
+  } catch (e) {
+    state.tempoFeedback = 2;
+    console.warn('Erro ao carregar tempo de feedback, usando padrão:', e);
+  }
+}
+
+export async function salvarTempoFeedback(valor) {
+  try {
+    if (valor < 0.5 || valor > 2) {
+      exibirToast('❌ O tempo deve estar entre 0.5 e 2 segundos.', 'erro');
+      return false;
+    }
+    await db.ref(TEMPO_FEEDBACK_KEY).set(valor);
+    state.tempoFeedback = valor;
+    setCacheItem('tempoFeedback', valor);
+    exibirToast(`✅ Tempo de feedback atualizado para ${valor}s`, 'sucesso');
+    return true;
+  } catch (e) {
+    console.error('Erro ao salvar tempo de feedback:', e);
+    exibirToast('❌ Erro ao salvar tempo de feedback.', 'erro');
+    return false;
   }
 }
 
