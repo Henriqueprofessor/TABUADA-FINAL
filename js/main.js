@@ -18,7 +18,8 @@ import {
   atualizarBannerAviso,
   definirCorPrimaria,
   carregarCorPrimaria,
-  CORES_DISPONIVEIS
+  CORES_DISPONIVEIS,
+  atualizarNivelEstrelasUI
 } from './modules/ui.js';
 import { iniciarPartida } from './modules/game.js';
 import { 
@@ -57,8 +58,10 @@ import {
   getCacheItem,
   salvarCache,
   getPontuacaoDefault,
-  carregarTempoFeedback, // NOVO
-  salvarTempoFeedback    // NOVO
+  carregarTempoFeedback,
+  salvarTempoFeedback,
+  carregarConfigEstrelas,
+  salvarConfigEstrelas
 } from './modules/config.js';
 import { verificarVersao, iniciarListenerVersao } from './modules/version.js';
 import { abrirInstalacao } from './modules/install.js';
@@ -72,12 +75,12 @@ import {
   atualizarStatusAviso
 } from './modules/aviso.js';
 import { initGameLoop } from './modules/gameLoop.js';
+import { carregarEstrelasAluno } from './modules/estrelas.js';
 
 // ============================================================
 // TURMAS PADRÃO
 // ============================================================
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
-const TURMAS_ANTIGAS = ["Turma A", "Turma B", "Turma C"];
 
 // ============================================================
 // TIMER GLOBAL (CONTÍNUO)
@@ -300,6 +303,10 @@ function entrarModoAluno(cadastrado = false) {
     document.getElementById('aluno-turma-display').textContent = state.alunoTurma || '-';
     document.getElementById('aluno-modalidade').textContent = state.estadoAtual?.modalidade || '--';
     document.getElementById('aluno-fase-info').textContent = `Fase ${state.estadoAtual?.fase || 1}/5`;
+    // Carregar estrelas do aluno
+    carregarEstrelasAluno(state.alunoId).then(() => {
+      atualizarNivelEstrelasUI();
+    });
     atualizarInfoAluno();
     if (state.estadoAtual && state.estadoAtual.status === 'em_andamento' && Date.now() < state.estadoAtual.fim) {
       document.getElementById('btn-iniciar-partida').classList.remove('hidden');
@@ -417,7 +424,7 @@ function pararAtualizacaoTorcida() {
 }
 
 // ============================================================
-// DEMAIS FUNÇÕES (POPULAR SELECTS, ATUALIZAR UI, ETC)
+// DEMAIS FUNÇÕES
 // ============================================================
 
 function preencherSeletorCores(containerId) {
@@ -828,8 +835,11 @@ function configurarEventos() {
         renderizarPainelSom();
         atualizarStatusAviso(state.avisoAtual);
         preencherSeletorCores('seletor-cores');
-        // NOVO: carregar tempo feedback no campo
         document.getElementById('input-tempo-feedback').value = state.tempoFeedback;
+        // Preencher configurações de estrelas
+        preencherConfigEstrelasUI();
+        const selectVis = document.getElementById('select-visibilidade-estrelas');
+        if (selectVis) selectVis.value = state.configEstrelas.visibilidade || 'todos';
       }
     });
   });
@@ -1142,7 +1152,6 @@ function configurarEventos() {
     atualizarUltimaSinc();
   });
 
-  // ===== NOVO: SALVAR TEMPO DE FEEDBACK =====
   document.getElementById('btn-salvar-feedback')?.addEventListener('click', async () => {
     const valor = parseFloat(document.getElementById('input-tempo-feedback').value);
     if (isNaN(valor) || valor < 0.5 || valor > 2) {
@@ -1155,6 +1164,55 @@ function configurarEventos() {
       document.getElementById('feedback-feedback').className = 'feedback-sucesso';
       document.getElementById('feedback-feedback').textContent = `✅ Tempo de feedback atualizado para ${valor}s!`;
       setTimeout(() => document.getElementById('feedback-feedback').style.display = 'none', 5000);
+    }
+  });
+
+  // ===== EVENTOS DO SISTEMA DE ESTRELAS =====
+  document.getElementById('btn-salvar-acoes-estrelas')?.addEventListener('click', async () => {
+    const acoes = {};
+    const inputs = document.querySelectorAll('#estrelas-acoes-container input[type="number"]');
+    inputs.forEach(input => {
+      const acao = input.dataset.acao;
+      const valor = parseInt(input.value);
+      if (!isNaN(valor) && valor >= 0) {
+        acoes[acao] = valor;
+      }
+    });
+    const visibilidade = document.getElementById('select-visibilidade-estrelas').value;
+    const ok = await salvarConfigEstrelas(acoes, visibilidade);
+    if (ok) {
+      document.getElementById('feedback-estrelas').style.display = 'block';
+      document.getElementById('feedback-estrelas').className = 'feedback-sucesso';
+      document.getElementById('feedback-estrelas').textContent = '✅ Configuração de estrelas salva!';
+      setTimeout(() => document.getElementById('feedback-estrelas').style.display = 'none', 5000);
+    }
+  });
+
+  document.getElementById('btn-restaurar-acoes-estrelas')?.addEventListener('click', () => {
+    const padrao = {
+      partida_completa: 1,
+      acertos_18_19: 2,
+      acertos_20: 5,
+      subiu_ranking: 3,
+      avancou_fase: 10,
+      recorde_pessoal: 4
+    };
+    const inputs = document.querySelectorAll('#estrelas-acoes-container input[type="number"]');
+    inputs.forEach(input => {
+      const acao = input.dataset.acao;
+      if (padrao[acao] !== undefined) {
+        input.value = padrao[acao];
+      }
+    });
+    exibirToast('🔄 Ações restauradas para o padrão!', 'sucesso');
+  });
+
+  document.getElementById('btn-salvar-visibilidade')?.addEventListener('click', async () => {
+    const visibilidade = document.getElementById('select-visibilidade-estrelas').value;
+    const acoes = state.configEstrelas.acoes;
+    const ok = await salvarConfigEstrelas(acoes, visibilidade);
+    if (ok) {
+      exibirToast(`✅ Visibilidade alterada para: ${visibilidade === 'todos' ? 'Todos (alunos + torcida)' : 'Apenas alunos'}`, 'sucesso');
     }
   });
 }
@@ -1202,6 +1260,30 @@ async function atualizarListaLiberados() {
     container.innerText = liberados.join(', ');
     container.style.color = '#4ade80';
   }
+}
+
+function preencherConfigEstrelasUI() {
+  const container = document.getElementById('estrelas-acoes-container');
+  if (!container) return;
+  const acoes = state.configEstrelas.acoes;
+  const labels = {
+    partida_completa: 'Partida completa',
+    acertos_18_19: '18 ou 19 acertos',
+    acertos_20: 'Perfeição (20 acertos)',
+    subiu_ranking: 'Subiu no ranking',
+    avancou_fase: 'Avançou de fase',
+    recorde_pessoal: 'Recorde pessoal'
+  };
+  let html = '';
+  for (const [key, valor] of Object.entries(acoes)) {
+    html += `
+      <div style="display: flex; align-items: center; gap: 8px; background: var(--bg-card); padding: 6px 12px; border-radius: 8px;">
+        <label style="font-size: 13px; color: var(--texto-secundario); flex: 1;">${labels[key] || key}</label>
+        <input type="number" data-acao="${key}" value="${valor}" min="0" max="50" style="width: 60px; padding: 4px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9; text-align: center;">
+      </div>
+    `;
+  }
+  container.innerHTML = html;
 }
 
 // ============================================================
@@ -1295,7 +1377,8 @@ async function init() {
       await carregarRecordeGeral();
       await carregarColunasVisiveis();
       await carregarMinPartidas();
-      await carregarTempoFeedback(); // NOVO
+      await carregarTempoFeedback();
+      await carregarConfigEstrelas();
     } catch (e) {
       console.warn('Erro ao carregar configurações:', e);
       exibirToast('⚠️ Algumas configurações podem não estar disponíveis.', 'aviso');
