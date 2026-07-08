@@ -311,7 +311,17 @@ export async function responder(idx) {
     state.perguntaIdx++;
     atualizarInfoAluno();
 
-    const delay = (state.tempoFeedback || 2) * 1000;
+    // ===== FEEDBACK SEPARADO =====
+    let delay = 0.5; // fallback
+    if (idx === -1) {
+      // tempo esgotado – consideramos como erro
+      delay = state.tempoFeedbackErro * 1000;
+    } else if (acertou) {
+      delay = state.tempoFeedbackAcerto * 1000;
+    } else {
+      delay = state.tempoFeedbackErro * 1000;
+    }
+
     setTimeout(() => {
       btns.forEach(b => {
         b.classList.remove('correto', 'errado', 'destaque-correto');
@@ -357,7 +367,7 @@ async function atualizarPontuacaoParcial() {
 }
 
 // ============================================================
-// FINALIZAR PARTIDA (COM MODAL DE RESULTADOS DETALHADO)
+// FINALIZAR PARTIDA
 // ============================================================
 
 async function finalizarPartida() {
@@ -408,24 +418,19 @@ async function finalizarPartida() {
       ranking.sort((a, b) => b.pontos - a.pontos);
       const posicaoAtual = ranking.findIndex(p => p.id === state.alunoId) + 1;
 
-      // 1. Partida completa
       await concederEstrelas(state.alunoId, 'partida_completa', state.configEstrelas.acoes.partida_completa, fase, partidas.length - 1);
 
-      // 2. Acertos 18 ou 19
       if (state.acertosPartida === 18 || state.acertosPartida === 19) {
         await concederEstrelas(state.alunoId, 'acertos_18_19', state.configEstrelas.acoes.acertos_18_19, fase, partidas.length - 1);
       }
-      // 3. Acertos 20 (perfeição)
       if (state.acertosPartida === 20) {
         await concederEstrelas(state.alunoId, 'acertos_20', state.configEstrelas.acoes.acertos_20, fase, partidas.length - 1);
       }
 
-      // 4. Subiu no ranking
       if (state.posicaoAntesPartida !== null && posicaoAtual < state.posicaoAntesPartida) {
         await concederEstrelas(state.alunoId, 'subiu_ranking', state.configEstrelas.acoes.subiu_ranking, fase, partidas.length - 1);
       }
 
-      // 5. Recorde pessoal
       let melhorPontuacaoAnterior = 0;
       if (partidas.length > 1) {
         const anteriores = partidas.slice(0, -1);
@@ -434,31 +439,29 @@ async function finalizarPartida() {
       if (state.pontosPartida > melhorPontuacaoAnterior) {
         await concederEstrelas(state.alunoId, 'recorde_pessoal', state.configEstrelas.acoes.recorde_pessoal, fase, partidas.length - 1);
       }
-
     } catch (e) {
       console.warn('Erro ao conceder estrelas:', e);
     }
 
-    const resultadosFase = state.estadoAtual?.resultados?.[fase] || {};
-    let ranking = [];
-    for (const [id, partidas] of Object.entries(resultadosFase)) {
+    const resultadosFaseFinal = state.estadoAtual?.resultados?.[fase] || {};
+    let rankingFinal = [];
+    for (const [id, partidas] of Object.entries(resultadosFaseFinal)) {
       if (partidas && partidas.length > 0) {
         const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
-        ranking.push({ id, pontos: melhor.pontos });
+        rankingFinal.push({ id, pontos: melhor.pontos });
       }
     }
-    ranking.sort((a, b) => b.pontos - a.pontos);
-    const posicaoAtual = ranking.findIndex(p => p.id === state.alunoId) + 1;
+    rankingFinal.sort((a, b) => b.pontos - a.pontos);
+    const posicaoAtualFinal = rankingFinal.findIndex(p => p.id === state.alunoId) + 1;
 
     let posicaoAnterior = state.posicaoAntesPartida || null;
-
     let ultimaPartida = null;
     if (partidas.length > 1) {
       ultimaPartida = partidas[partidas.length - 2];
     }
 
     const dadosModal = {
-      posicao: posicaoAtual > 0 ? posicaoAtual : 0,
+      posicao: posicaoAtualFinal > 0 ? posicaoAtualFinal : 0,
       posicaoAnterior: posicaoAnterior,
       pontos: state.pontosPartida,
       acertos: state.acertosPartida,
@@ -466,7 +469,7 @@ async function finalizarPartida() {
       ultimaPartida: ultimaPartida,
       fase: fase,
       totalPartidas: partidas.length,
-      ranking: ranking,
+      ranking: rankingFinal,
       id: state.alunoId,
       nome: state.alunoNome,
       turma: state.alunoTurma,
