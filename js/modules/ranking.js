@@ -4,7 +4,7 @@ import { lerDados, atualizarDados, removerDados, setDados } from './db.js';
 import { exibirToast, atualizarTimerFase, mostrarTela } from './ui.js';
 import { tocarSom } from './sound.js';
 import { atualizarExibicaoMedalhas, carregarMedalhasLocal } from './medals.js';
-import { getNivelPorEstrelas } from './estrelas.js';
+import { getNivelPorEstrelas } from './estrelas.js'; // apenas para uso interno, se necessário, mas não exibimos
 
 // ============================================================
 // CONSTANTES E FUNÇÕES AUXILIARES
@@ -43,7 +43,7 @@ async function carregarMinPartidas() {
 }
 
 // ============================================================
-// CÁLCULO DE RANKING
+// CÁLCULO DE RANKING (já utiliza state em memória)
 // ============================================================
 
 export function calcularRankingFase(fase) {
@@ -133,7 +133,7 @@ export function calcularRankingFase(fase) {
 }
 
 // ============================================================
-// RENDERIZAR RANKING (OTIMIZADO)
+// RENDERIZAR RANKING (SEM COLUNA DE NÍVEL)
 // ============================================================
 
 export async function renderizarRanking(fase, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -189,22 +189,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
 
   const minConfig = await carregarMinPartidas();
   const minPartidas = minConfig[fase] || 1;
-
-  // ===== CARREGAR NÍVEIS DE ESTRELAS PARA RANKING =====
-  let niveisMap = new Map();
-  if (state.configEstrelas.visibilidade === 'todos' || state.meuTipo === 'aluno') {
-    try {
-      const snap = await db.ref('copaV2/estrelas').once('value');
-      const data = snap.val() || {};
-      for (const [id, dados] of Object.entries(data)) {
-        const total = dados.total || 0;
-        const nivel = getNivelPorEstrelas(total);
-        niveisMap.set(id, { total, icone: nivel.icone, nome: nivel.nome });
-      }
-    } catch (e) {
-      console.warn('Erro ao carregar níveis para o ranking:', e);
-    }
-  }
 
   let listaComInfo = ranking.map(j => {
     const statusInfo = statusMap.get(j.id) || { status: 'aguardando', progresso: 0 };
@@ -270,9 +254,11 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   const vagas = VAGAS_POR_FASE[fase] || 30;
   const maxMelhor = listaComInfo.length > 0 ? listaComInfo[0].melhorPontuacao : 0;
 
+  // Montagem do HTML usando templates
   const table = document.createElement('table');
   table.className = 'ranking-table';
 
+  // Cabeçalho - REMOVIDA COLUNA DE NÍVEL
   const theadTemplate = document.getElementById('template-cabecalho-ranking');
   if (theadTemplate) {
     const theadClone = theadTemplate.content.cloneNode(true);
@@ -294,20 +280,11 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
         lastTh.style.display = 'none';
       }
     }
-    // Adiciona coluna de nível se visível
-    if (state.configEstrelas.visibilidade === 'todos' || state.meuTipo === 'aluno') {
-      const thNivel = document.createElement('th');
-      thNivel.textContent = '⭐ Nível';
-      thNivel.style.textAlign = 'center';
-      // Insere após a coluna Nome (segunda)
-      const row = theadClone.querySelector('tr');
-      row.insertBefore(thNivel, row.children[2]);
-    }
     table.appendChild(theadClone);
   } else {
     const thead = document.createElement('thead');
     const tr = document.createElement('tr');
-    ['Pos','Nome','Nível','Melhor Pontuação','Classificação','Ritmo','Pontuação Atual','Delta Líder','Veloc. Recorde','Progresso','Partidas','Tempo Total','% Tempo','Turma','Projeção'].forEach(t => {
+    ['Pos','Nome','Melhor Pontuação','Classificação','Ritmo','Pontuação Atual','Delta Líder','Veloc. Recorde','Progresso','Partidas','Tempo Total','% Tempo','Turma','Projeção'].forEach(t => {
       const th = document.createElement('th');
       th.textContent = t;
       tr.appendChild(th);
@@ -316,6 +293,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     table.appendChild(thead);
   }
 
+  // Corpo
   const tbody = document.createElement('tbody');
   const linhaTemplate = document.getElementById('template-linha-ranking');
 
@@ -377,19 +355,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     }
     if (jogadorBonusId === j.id && state.bonusVelocidadeConfig?.ativo) {
       nomeCompleto += ' <span class="raio-amarelo">⚡</span>';
-    }
-
-    // Nível do jogador
-    let nivelDisplay = '—';
-    const nivelInfo = niveisMap.get(j.id);
-    if (nivelInfo) {
-      nivelDisplay = `${nivelInfo.icone} ${nivelInfo.nome}`;
-    } else {
-      // Se não encontrou no Firebase, pode tentar carregar do state se for o próprio aluno
-      if (state.alunoId === j.id && state.estrelas.total > 0) {
-        const nivel = getNivelPorEstrelas(state.estrelas.total);
-        nivelDisplay = `${nivel.icone} ${nivel.nome}`;
-      }
     }
 
     let melhorDisplay = j.melhorPontuacao;
@@ -457,44 +422,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       if (tdTurma) tdTurma.textContent = escapeHtml(j.turma);
       if (tdProjecao) tdProjecao.textContent = projecaoHtml;
 
-      // Inserir a coluna de Nível após a coluna Nome (posição 2)
-      const tdNivel = document.createElement('td');
-      tdNivel.textContent = nivelDisplay;
-      tdNivel.style.textAlign = 'center';
-      tdNivel.style.fontWeight = 'bold';
-      // Inserir após o primeiro filho (Pos) e o segundo (Nome) -> posição 2
-      const children = tbody.lastChild ? tbody.lastChild.children : [];
-      if (children.length >= 2) {
-        // Ainda não há, então vamos inserir no clone
-        // Melhor: usar um seletor específico.
-        // Como não temos um placeholder, vamos adicionar no clone manualmente
-        // Mas como o template não tem a coluna, vamos usar um hack: adicionar como novo td
-      }
-
-      // Como o template não tem a coluna de nível, vamos adicioná-la manualmente
-      // Vamos criar uma nova linha com os dados
-      // Mas para simplificar, vamos usar o método alternativo abaixo (fallback)
-      // Vamos ignorar o template para esta coluna e usar fallback
-      // Na verdade, podemos adicionar a coluna no template ou usar fallback completo
-      // Para manter a consistência, vamos usar fallback para todas as linhas
-      // quando a visibilidade estiver ativa.
-      // Mas isso é complexo. Vamos usar o fallback para linhas que precisam de nível.
-      // Vamos manter o template e adicionar a coluna extra via DOM
-      // Vamos pegar a linha criada e inserir a célula de nível após a segunda célula
-      const tr = tbody.lastChild; // a linha recém-adicionada
-      if (tr && tr.tagName === 'TR') {
-        const tdNivel = document.createElement('td');
-        tdNivel.textContent = nivelDisplay;
-        tdNivel.style.textAlign = 'center';
-        tdNivel.style.fontWeight = 'bold';
-        // Inserir após o segundo filho (posição 2)
-        if (tr.children.length >= 2) {
-          tr.insertBefore(tdNivel, tr.children[2]);
-        } else {
-          tr.appendChild(tdNivel);
-        }
-      }
-
       if (!exibirClassificacao && tdClassificacao) tdClassificacao.style.display = 'none';
       if (containerId !== 'ranking-parcial') {
         if (tdTempo) tdTempo.style.display = 'none';
@@ -504,62 +431,29 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
         if (tdProjecao) tdProjecao.style.display = 'none';
       }
 
-      // Se a visibilidade for apenas alunos e o usuário for torcida, esconder a coluna de nível
-      if (state.configEstrelas.visibilidade === 'alunos' && state.meuTipo === 'projecao') {
-        // esconder todas as células de nível
-        // Não temos como identificar facilmente, faremos no final
-      }
-
       tbody.appendChild(clone);
     } else {
-      // Fallback manual
       const tr = document.createElement('tr');
-      let html = `<td class="${classePos}">${posAtual}º</td>
-        <td>${nomeCompleto}</td>`;
-      // Adiciona nível se visível
-      if (state.configEstrelas.visibilidade === 'todos' || state.meuTipo === 'aluno') {
-        html += `<td style="text-align:center; font-weight:bold;">${nivelDisplay}</td>`;
-      }
-      html += `<td>${melhorDisplay}</td>`;
-      if (exibirClassificacao) html += `<td>${colunaClassificacao}</td>`;
-      html += `<td>${futPosHtml}</td>
+      tr.innerHTML = `
+        <td class="${classePos}">${posAtual}º</td>
+        <td>${nomeCompleto}</td>
+        <td>${melhorDisplay}</td>
+        ${exibirClassificacao ? `<td>${colunaClassificacao}</td>` : ''}
+        <td>${futPosHtml}</td>
         <td style="font-weight:normal; font-size:inherit;">${j.pontuacaoAtual !== null ? j.pontuacaoAtual : "–"}</td>
         <td>${deltaText}</td>
         <td>${recordeStr}</td>
         <td>${progressoHtml}</td>
-        <td>${j.totalPartidas}</td>`;
-      if (containerId === 'ranking-parcial') {
-        html += `<td>${tempoTotalStr}</td><td>${percentualTempo}</td>`;
-      }
-      html += `<td>${escapeHtml(j.turma)}</td>`;
-      if (projecaoHtml) html += `<td>${projecaoHtml}</td>`;
-      tr.innerHTML = html;
+        <td>${j.totalPartidas}</td>
+        ${containerId === 'ranking-parcial' ? `<td>${tempoTotalStr}</td><td>${percentualTempo}</td>` : ''}
+        <td>${escapeHtml(j.turma)}</td>
+        ${projecaoHtml ? `<td>${projecaoHtml}</td>` : ''}
+      `;
       tbody.appendChild(tr);
     }
   }
 
   table.appendChild(tbody);
-
-  // Se a visibilidade for apenas alunos e o usuário for torcida, esconder a coluna de nível
-  if (state.configEstrelas.visibilidade === 'alunos' && state.meuTipo === 'projecao') {
-    // Encontrar a coluna de nível (terceira coluna) e esconder
-    const headerCells = table.querySelectorAll('thead tr th');
-    if (headerCells.length > 2) {
-      const nivelHeader = headerCells[2];
-      if (nivelHeader.textContent.includes('Nível') || nivelHeader.textContent.includes('⭐')) {
-        nivelHeader.style.display = 'none';
-      }
-      // Esconder as células correspondentes
-      const rows = table.querySelectorAll('tbody tr');
-      rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length > 2) {
-          const nivelCell = cells[2];
-          if (nivelCell) nivelCell.style.display = 'none';
-        }
-      });
-    }
-  }
 
   const htmlString = table.outerHTML;
   const lastHTML = rankingHtmlCache[containerKey];
@@ -1046,7 +940,21 @@ export async function renderRankingGeral() {
 }
 
 // ============================================================
-// ATUALIZAR INFORMAÇÕES DO ALUNO
+// FUNÇÕES AUXILIARES (getTabelaPontosPorFase, etc.)
+// ============================================================
+
+export function getTabelaPontosPorFase(fase) {
+  if (fase === 5) return state.tabelaPontosFase5;
+  return state.tabelaPontosPadrao;
+}
+
+export function getPontosPorPosicao(posicao, fase) {
+  const tabela = getTabelaPontosPorFase(fase);
+  return tabela[posicao] || 0;
+}
+
+// ============================================================
+// ATUALIZAR INFORMAÇÕES DO ALUNO (sem nível)
 // ============================================================
 
 export async function atualizarInfoAluno() {
@@ -1173,16 +1081,6 @@ export async function atualizarInfoAluno() {
 // FUNÇÕES DE CONTROLE DE FASE
 // ============================================================
 
-export function getTabelaPontosPorFase(fase) {
-  if (fase === 5) return state.tabelaPontosFase5;
-  return state.tabelaPontosPadrao;
-}
-
-export function getPontosPorPosicao(posicao, fase) {
-  const tabela = getTabelaPontosPorFase(fase);
-  return tabela[posicao] || 0;
-}
-
 export async function avancarFase() {
   if (state.timerFase) { clearInterval(state.timerFase); state.timerFase = null; }
   const faseAtual = state.estadoAtual.fase;
@@ -1226,16 +1124,6 @@ export async function avancarFase() {
   await removerDados(`copaV2/resultados_temp/${faseAtual}`);
   state.tempoEsgotadoProcessado = false;
 
-  // Conceder estrelas por avanço de fase
-  try {
-    const { concederEstrelas } = await import('./estrelas.js');
-    for (let id of classificadosIds) {
-      await concederEstrelas(id, 'avancou_fase', state.configEstrelas.acoes.avancou_fase, faseAtual);
-    }
-  } catch (e) {
-    console.warn('Erro ao conceder estrelas por avanço:', e);
-  }
-
   if (faseAtual === 5) {
     exibirToast('🏆 COMPETIÇÃO FINALIZADA!');
     await setDados('copaV2', { ...state.estadoAtual, status: 'finalizado', fim: 0, tempoRestantePausa: null });
@@ -1263,7 +1151,7 @@ export async function resetarFase() {
 }
 
 // ============================================================
-// FUNÇÕES AUXILIARES
+// FUNÇÕES AUXILIARES (lista de alunos, turmas, etc.)
 // ============================================================
 
 export async function renderListaAlunosGerenciar() {
