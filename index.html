@@ -498,7 +498,7 @@
                 </div>
             </div>
 
-            <!-- ===== CARD: FEEDBACK VISUAL (NOVO) ===== -->
+            <!-- ===== CARD: FEEDBACK VISUAL ===== -->
             <div id="bloco-feedback" class="config-card" style="border-color: #8b5cf6;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">👀</span>
@@ -517,6 +517,41 @@
                     <span id="feedback-status" style="color: #4ade80; font-size: 14px;">✅ Ativo</span>
                 </div>
                 <div id="feedback-feedback" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <!-- ===== CARD: SISTEMA DE ESTRELAS (NOVO) ===== -->
+            <div id="bloco-estrelas" class="config-card" style="border-color: #facc15;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">⭐</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Sistema de Estrelas</h4>
+                    <span style="background: #facc15; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Configure quantas estrelas cada ação concede e quem pode ver os níveis.
+                </p>
+
+                <!-- Visibilidade -->
+                <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #0f172a; padding: 12px 20px; border-radius: 12px; border: 1px solid #2d3a4f; margin-bottom: 16px;">
+                    <label style="color: #f1f5f9; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                        <span>👁️ Visibilidade do nível:</span>
+                        <select id="select-visibilidade-estrelas" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 6px 12px; border-radius: 8px;">
+                            <option value="todos">Todos (alunos + torcida)</option>
+                            <option value="alunos">Apenas alunos</option>
+                        </select>
+                    </label>
+                    <button id="btn-salvar-visibilidade" class="btn-success" style="padding: 6px 16px;">💾 Salvar</button>
+                </div>
+
+                <!-- Tabela de Ações -->
+                <div style="background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <h5 style="color: #f1f5f9; margin-bottom: 12px;">⚙️ Estrelas por Ação</h5>
+                    <div id="estrelas-acoes-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                        <!-- Preenchido via JavaScript -->
+                    </div>
+                    <button id="btn-salvar-acoes-estrelas" class="btn-success" style="margin-top: 16px;">💾 Salvar Ações</button>
+                    <button id="btn-restaurar-acoes-estrelas" class="btn-warning" style="margin-top: 8px;">🔄 Restaurar Padrão</button>
+                    <div id="feedback-estrelas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+                </div>
             </div>
 
             <!-- ===== CARD: CORES E TEMAS ===== -->
@@ -575,6 +610,11 @@
         </div>
 
         <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong> <span id="aluno-fase-info" class="fase-info"></span></p>
+
+        <!-- ===== NOVO: EXIBIÇÃO DO NÍVEL DE ESTRELAS ===== -->
+        <div id="nivel-estrelas-aluno" class="nivel-estrelas-container">
+            <!-- Preenchido via JavaScript -->
+        </div>
 
         <div id="aguardando-aluno" style="text-align:center; padding:20px;">
             <div id="msg-status-aluno">Aguardando...</div>
