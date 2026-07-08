@@ -25,11 +25,11 @@ export function getNivelPorEstrelas(total) {
       return nivel;
     }
   }
-  return NIVEL_ESTRELAS[0]; // fallback
+  return NIVEL_ESTRELAS[0];
 }
 
 // ============================================================
-// FUNÇÃO PARA OBTER A PRÓXIMA META (próximo nível)
+// FUNÇÃO PARA OBTER A PRÓXIMA META
 // ============================================================
 export function getProximoNivel(total) {
   for (const nivel of NIVEL_ESTRELAS) {
@@ -37,7 +37,7 @@ export function getProximoNivel(total) {
       return { nivel, faltam: nivel.min - total };
     }
   }
-  return null; // já está no nível máximo
+  return null;
 }
 
 // ============================================================
@@ -47,11 +47,9 @@ export async function concederEstrelas(alunoId, acao, estrelas, fase, partidaInd
   if (!alunoId) return;
   if (estrelas <= 0) return;
 
-  // Carregar dados atuais do aluno
   const ref = `copaV2/estrelas/${alunoId}`;
   let dados = await lerDados(ref) || { total: 0, historico: [] };
 
-  // Verifica se já ganhou estrelas por essa ação (evita duplicidade)
   if (acao === 'avancou_fase') {
     if (dados.flags && dados.flags.avancouFase && dados.flags.avancouFase[fase]) {
       console.log(`⏭️ Aluno ${alunoId} já ganhou estrelas por avançar na fase ${fase}. Ignorando.`);
@@ -71,7 +69,6 @@ export async function concederEstrelas(alunoId, acao, estrelas, fase, partidaInd
     }
   }
 
-  // Adiciona ao histórico
   const entrada = {
     acao,
     estrelas,
@@ -82,7 +79,6 @@ export async function concederEstrelas(alunoId, acao, estrelas, fase, partidaInd
   dados.historico.push(entrada);
   dados.total += estrelas;
 
-  // Atualiza flags
   if (!dados.flags) dados.flags = {};
   if (acao === 'avancou_fase') {
     if (!dados.flags.avancouFase) dados.flags.avancouFase = {};
@@ -96,17 +92,14 @@ export async function concederEstrelas(alunoId, acao, estrelas, fase, partidaInd
     dados.flags.recordePessoal = true;
   }
 
-  // Salva no Firebase
   await setDados(ref, dados);
 
-  // Atualiza o state local (se for o próprio aluno)
   if (state.alunoId === alunoId) {
     state.estrelas.total = dados.total;
     state.estrelas.historico = dados.historico;
     state.estrelas.flags = dados.flags;
   }
 
-  // Exibe toast (apenas para o próprio aluno)
   if (state.alunoId === alunoId) {
     const acaoNome = {
       partida_completa: 'partida completa',
@@ -131,7 +124,6 @@ export async function carregarEstrelasAluno(alunoId) {
     const ref = `copaV2/estrelas/${alunoId}`;
     const dados = await lerDados(ref);
     if (dados) {
-      // Atualiza o state se for o próprio aluno
       if (state.alunoId === alunoId) {
         state.estrelas.total = dados.total || 0;
         state.estrelas.historico = dados.historico || [];
