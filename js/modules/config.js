@@ -8,8 +8,9 @@ const RECORDE_GERAL_KEY = 'copaV2/configuracoes/recordeGeral';
 const VALOR_PARTIDA_KEY = 'copaV2/configuracoes/valorPartida';
 const MIN_PARTIDAS_KEY = 'copaV2/configuracoes/minPartidasPorFase';
 const COLUNAS_KEY = 'copaV2/configuracoes/colunasVisiveis';
-const TEMPO_FEEDBACK_KEY = 'copaV2/configuracoes/tempoFeedback';
-const ESTRELAS_CONFIG_KEY = 'copaV2/configuracoes/estrelas'; // NOVO
+const TEMPO_FEEDBACK_ACERTO_KEY = 'copaV2/configuracoes/tempoFeedbackAcerto';
+const TEMPO_FEEDBACK_ERRO_KEY = 'copaV2/configuracoes/tempoFeedbackErro';
+const ESTRELAS_CONFIG_KEY = 'copaV2/configuracoes/estrelas';
 
 // ============================================================
 // CACHE LOCAL
@@ -104,11 +105,15 @@ export function carregarConfiguracoesDoCache() {
       state.prefColunasVisiveis = cache.preferencias.colunasVisiveis || {};
     }
 
-    if (cache.tempoFeedback !== undefined) {
-      state.tempoFeedback = cache.tempoFeedback;
+    // Feedback visual
+    if (cache.tempoFeedbackAcerto !== undefined) {
+      state.tempoFeedbackAcerto = cache.tempoFeedbackAcerto;
+    }
+    if (cache.tempoFeedbackErro !== undefined) {
+      state.tempoFeedbackErro = cache.tempoFeedbackErro;
     }
 
-    // Carregar config de estrelas do cache
+    // Estrelas
     if (cache.configEstrelas) {
       if (cache.configEstrelas.acoes) {
         state.configEstrelas.acoes = { ...state.configEstrelas.acoes, ...cache.configEstrelas.acoes };
@@ -191,9 +196,11 @@ export function atualizarCacheComDadosFirebase(estado) {
       colunasVisiveis: state.prefColunasVisiveis || state.colunasVisiveis || {},
     };
 
-    cache.tempoFeedback = state.tempoFeedback;
+    // Feedback visual
+    cache.tempoFeedbackAcerto = state.tempoFeedbackAcerto;
+    cache.tempoFeedbackErro = state.tempoFeedbackErro;
 
-    // Salvar config de estrelas no cache
+    // Estrelas
     cache.configEstrelas = {
       acoes: state.configEstrelas.acoes,
       visibilidade: state.configEstrelas.visibilidade
@@ -472,35 +479,55 @@ export async function salvarConfigRankingPontos(ativo, tabelaPadrao, tabelaFase5
 }
 
 // ============================================================
-// TEMPO DE FEEDBACK VISUAL
+// FEEDBACK VISUAL (separado)
 // ============================================================
 export async function carregarTempoFeedback() {
   try {
-    const snap = await db.ref(TEMPO_FEEDBACK_KEY).once('value');
-    const valor = snap.val();
-    if (valor && typeof valor === 'number' && valor >= 0.5 && valor <= 2) {
-      state.tempoFeedback = valor;
+    const snapAcerto = await db.ref(TEMPO_FEEDBACK_ACERTO_KEY).once('value');
+    const snapErro = await db.ref(TEMPO_FEEDBACK_ERRO_KEY).once('value');
+    
+    const valorAcerto = snapAcerto.val();
+    const valorErro = snapErro.val();
+    
+    if (valorAcerto && typeof valorAcerto === 'number' && valorAcerto >= 0.1 && valorAcerto <= 2) {
+      state.tempoFeedbackAcerto = valorAcerto;
     } else {
-      state.tempoFeedback = 2;
-      await db.ref(TEMPO_FEEDBACK_KEY).set(2);
+      state.tempoFeedbackAcerto = 0.5;
+      await db.ref(TEMPO_FEEDBACK_ACERTO_KEY).set(0.5);
     }
-    console.log(`⏱️ Tempo de feedback carregado: ${state.tempoFeedback}s`);
+    
+    if (valorErro && typeof valorErro === 'number' && valorErro >= 0.1 && valorErro <= 2) {
+      state.tempoFeedbackErro = valorErro;
+    } else {
+      state.tempoFeedbackErro = 0.5;
+      await db.ref(TEMPO_FEEDBACK_ERRO_KEY).set(0.5);
+    }
+    
+    console.log(`⏱️ Tempo de feedback: acerto=${state.tempoFeedbackAcerto}s, erro=${state.tempoFeedbackErro}s`);
   } catch (e) {
-    state.tempoFeedback = 2;
+    state.tempoFeedbackAcerto = 0.5;
+    state.tempoFeedbackErro = 0.5;
     console.warn('Erro ao carregar tempo de feedback, usando padrão:', e);
   }
 }
 
-export async function salvarTempoFeedback(valor) {
+export async function salvarTempoFeedback(acerto, erro) {
   try {
-    if (valor < 0.5 || valor > 2) {
-      exibirToast('❌ O tempo deve estar entre 0.5 e 2 segundos.', 'erro');
+    if (acerto < 0.1 || acerto > 2) {
+      exibirToast('❌ Tempo de acerto deve estar entre 0.1 e 2 segundos.', 'erro');
       return false;
     }
-    await db.ref(TEMPO_FEEDBACK_KEY).set(valor);
-    state.tempoFeedback = valor;
-    setCacheItem('tempoFeedback', valor);
-    exibirToast(`✅ Tempo de feedback atualizado para ${valor}s`, 'sucesso');
+    if (erro < 0.1 || erro > 2) {
+      exibirToast('❌ Tempo de erro deve estar entre 0.1 e 2 segundos.', 'erro');
+      return false;
+    }
+    await db.ref(TEMPO_FEEDBACK_ACERTO_KEY).set(acerto);
+    await db.ref(TEMPO_FEEDBACK_ERRO_KEY).set(erro);
+    state.tempoFeedbackAcerto = acerto;
+    state.tempoFeedbackErro = erro;
+    setCacheItem('tempoFeedbackAcerto', acerto);
+    setCacheItem('tempoFeedbackErro', erro);
+    exibirToast(`✅ Feedback salvo: acerto ${acerto}s, erro ${erro}s`, 'sucesso');
     return true;
   } catch (e) {
     console.error('Erro ao salvar tempo de feedback:', e);
@@ -510,7 +537,7 @@ export async function salvarTempoFeedback(valor) {
 }
 
 // ============================================================
-// CONFIGURAÇÃO DE ESTRELAS (NOVO)
+// CONFIGURAÇÃO DE ESTRELAS
 // ============================================================
 export async function carregarConfigEstrelas() {
   try {
@@ -524,13 +551,11 @@ export async function carregarConfigEstrelas() {
         state.configEstrelas.visibilidade = config.visibilidade;
       }
     } else {
-      // Salvar valores padrão no Firebase
       await db.ref(ESTRELAS_CONFIG_KEY).set({
         acoes: state.configEstrelas.acoes,
         visibilidade: state.configEstrelas.visibilidade
       });
     }
-    // Atualizar cache
     setCacheItem('configEstrelas', state.configEstrelas);
     console.log('⭐ Configuração de estrelas carregada:', state.configEstrelas);
   } catch (e) {
