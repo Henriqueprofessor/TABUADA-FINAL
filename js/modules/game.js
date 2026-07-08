@@ -5,6 +5,7 @@ import { tocarSom } from './sound.js';
 import { calcularRankingFase, atualizarInfoAluno } from './ranking.js';
 import { atualizarRecordeGeral } from './config.js';
 import { verificarEConcederMedalhas, atualizarExibicaoMedalhas } from './medals.js';
+import { concederEstrelas } from './estrelas.js';
 
 // ============================================================
 // GERAR PERGUNTAS COM DISTRATORES INTELIGENTES
@@ -158,7 +159,7 @@ export async function iniciarPartida() {
     state.partidaFinalizada = false;
     state.jogoAtivo = true;
     state.timerPergunta = null;
-    state.historicoPerguntas = []; // NOVO: reseta histórico
+    state.historicoPerguntas = [];
 
     document.body.classList.add('em-jogo');
     document.getElementById('jogo-area').classList.remove('hidden');
@@ -180,7 +181,6 @@ export async function iniciarPartida() {
 // ============================================================
 
 function proximaPergunta() {
-  // Atualiza a barra de tempo para a nova pergunta
   atualizarInfoAluno();
 
   if (state.perguntaIdx >= 20) {
@@ -197,7 +197,6 @@ function proximaPergunta() {
         btns[i].innerText = o;
         btns[i].disabled = false;
         btns[i].dataset.correct = (i + 1 === p.posicaoCorreta) ? 'true' : 'false';
-        // Remove classes de feedback da pergunta anterior
         btns[i].classList.remove('correto', 'errado', 'destaque-correto');
       }
     });
@@ -262,7 +261,6 @@ export async function responder(idx) {
     let acertou = false;
     let respostaEscolhida = null;
 
-    // Processa a resposta
     if (idx !== -1) {
       const resp = parseInt(btns[idx].innerText);
       respostaEscolhida = resp;
@@ -273,15 +271,13 @@ export async function responder(idx) {
         state.pontosPartida += pontosGanhos;
         tocarSom('acerto');
       } else {
-        tocarSom('erro'); // agora toca o som engraçado
+        tocarSom('erro');
       }
     } else {
-      // tempo esgotado
       tocarSom('tempo_esgotado');
       respostaEscolhida = null;
     }
 
-    // ===== NOVO: ARMAZENA HISTÓRICO =====
     state.historicoPerguntas.push({
       pergunta: `${p.a} x ${p.b}`,
       respostaEscolhida: respostaEscolhida,
@@ -289,15 +285,12 @@ export async function responder(idx) {
       acertou: acertou
     });
 
-    // ===== NOVO: FEEDBACK VISUAL =====
-    // Destaca a resposta escolhida (se houver) e a resposta correta
     if (idx !== -1) {
       const btnEscolhido = btns[idx];
       if (acertou) {
         btnEscolhido.classList.add('correto');
       } else {
         btnEscolhido.classList.add('errado');
-        // Mostra a correta em verde
         for (let i = 0; i < btns.length; i++) {
           if (parseInt(btns[i].innerText) === correta) {
             btns[i].classList.add('destaque-correto');
@@ -306,7 +299,6 @@ export async function responder(idx) {
         }
       }
     } else {
-      // Caso tempo esgotado, mostra a correta
       for (let i = 0; i < btns.length; i++) {
         if (parseInt(btns[i].innerText) === correta) {
           btns[i].classList.add('destaque-correto');
@@ -317,14 +309,10 @@ export async function responder(idx) {
 
     document.getElementById('pontuacao-acumulada').innerText = state.pontosPartida;
     state.perguntaIdx++;
-
-    // Atualiza a barra de tempo com a nova projeção
     atualizarInfoAluno();
 
-    // ===== NOVO: ATRASO CONFIGURÁVEL PARA FEEDBACK =====
-    const delay = (state.tempoFeedback || 2) * 1000; // em milissegundos
+    const delay = (state.tempoFeedback || 2) * 1000;
     setTimeout(() => {
-      // Remove classes de feedback
       btns.forEach(b => {
         b.classList.remove('correto', 'errado', 'destaque-correto');
         b.disabled = false;
@@ -337,7 +325,6 @@ export async function responder(idx) {
       }
     }, delay);
 
-    // Atualiza pontuação parcial (não espera o feedback)
     await atualizarPontuacaoParcial();
   } catch (error) {
     console.error('Erro ao responder:', error);
@@ -397,7 +384,6 @@ async function finalizarPartida() {
     await atualizarDados(ref, partidas);
     await removerDados(`copaV2/resultados_temp/${fase}/${state.alunoId}`);
 
-    // Atualiza recorde geral se for o caso
     if (state.acertosPartida > 0 && state.tempoTotalPartida > 0) {
       const precisao = (state.acertosPartida / 20) * 100;
       const velocidade = state.tempoTotalPartida / state.acertosPartida;
@@ -405,15 +391,54 @@ async function finalizarPartida() {
       await atualizarRecordeGeral(state.alunoId, velocidade, precisao, fase, partidaIndex);
     }
 
-    // Verifica medalhas
     await verificarEConcederMedalhas();
     atualizarExibicaoMedalhas();
-
-    // Atualiza a bolinha e informações do aluno
     await atualizarInfoAluno();
 
-    // ==== EXIBE O MODAL DE RESULTADOS DETALHADO ====
-    // Calcula posição atual
+    // ===== CONCEDER ESTRELAS =====
+    try {
+      const resultadosFase = state.estadoAtual?.resultados?.[fase] || {};
+      let ranking = [];
+      for (const [id, partidas] of Object.entries(resultadosFase)) {
+        if (partidas && partidas.length > 0) {
+          const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
+          ranking.push({ id, pontos: melhor.pontos });
+        }
+      }
+      ranking.sort((a, b) => b.pontos - a.pontos);
+      const posicaoAtual = ranking.findIndex(p => p.id === state.alunoId) + 1;
+
+      // 1. Partida completa
+      await concederEstrelas(state.alunoId, 'partida_completa', state.configEstrelas.acoes.partida_completa, fase, partidas.length - 1);
+
+      // 2. Acertos 18 ou 19
+      if (state.acertosPartida === 18 || state.acertosPartida === 19) {
+        await concederEstrelas(state.alunoId, 'acertos_18_19', state.configEstrelas.acoes.acertos_18_19, fase, partidas.length - 1);
+      }
+      // 3. Acertos 20 (perfeição)
+      if (state.acertosPartida === 20) {
+        await concederEstrelas(state.alunoId, 'acertos_20', state.configEstrelas.acoes.acertos_20, fase, partidas.length - 1);
+      }
+
+      // 4. Subiu no ranking
+      if (state.posicaoAntesPartida !== null && posicaoAtual < state.posicaoAntesPartida) {
+        await concederEstrelas(state.alunoId, 'subiu_ranking', state.configEstrelas.acoes.subiu_ranking, fase, partidas.length - 1);
+      }
+
+      // 5. Recorde pessoal
+      let melhorPontuacaoAnterior = 0;
+      if (partidas.length > 1) {
+        const anteriores = partidas.slice(0, -1);
+        melhorPontuacaoAnterior = Math.max(...anteriores.map(p => p.pontos || 0));
+      }
+      if (state.pontosPartida > melhorPontuacaoAnterior) {
+        await concederEstrelas(state.alunoId, 'recorde_pessoal', state.configEstrelas.acoes.recorde_pessoal, fase, partidas.length - 1);
+      }
+
+    } catch (e) {
+      console.warn('Erro ao conceder estrelas:', e);
+    }
+
     const resultadosFase = state.estadoAtual?.resultados?.[fase] || {};
     let ranking = [];
     for (const [id, partidas] of Object.entries(resultadosFase)) {
@@ -425,16 +450,13 @@ async function finalizarPartida() {
     ranking.sort((a, b) => b.pontos - a.pontos);
     const posicaoAtual = ranking.findIndex(p => p.id === state.alunoId) + 1;
 
-    // Posição anterior (antes da partida)
     let posicaoAnterior = state.posicaoAntesPartida || null;
 
-    // Busca último registro para evolução
     let ultimaPartida = null;
     if (partidas.length > 1) {
       ultimaPartida = partidas[partidas.length - 2];
     }
 
-    // Dados para o modal (inclui histórico)
     const dadosModal = {
       posicao: posicaoAtual > 0 ? posicaoAtual : 0,
       posicaoAnterior: posicaoAnterior,
@@ -448,13 +470,10 @@ async function finalizarPartida() {
       id: state.alunoId,
       nome: state.alunoNome,
       turma: state.alunoTurma,
-      historico: state.historicoPerguntas // NOVO: passa o histórico
+      historico: state.historicoPerguntas
     };
 
-    // Exibe o modal
     exibirModalResultados(dadosModal);
-
-    // Atualiza gráfico
     desenharGraficoEvolucao();
 
     exibirToast(`✅ Partida finalizada! Pontos: ${state.pontosPartida}`);
