@@ -1,16 +1,15 @@
-// js/modules/ranking.js
 import { db } from '../config/firebase.js';
 import { state } from './state.js';
 import { lerDados, atualizarDados, removerDados, setDados } from './db.js';
 import { exibirToast, atualizarTimerFase, mostrarTela } from './ui.js';
 import { tocarSom } from './sound.js';
 import { atualizarExibicaoMedalhas, carregarMedalhasLocal } from './medals.js';
+import { getNivelPorEstrelas } from './estrelas.js';
 
 // ============================================================
 // CONSTANTES E FUNÇÕES AUXILIARES
 // ============================================================
 
-// Garantir que as constantes estejam disponíveis no state
 if (!state.VAGAS_POR_FASE) {
   state.VAGAS_POR_FASE = { 1: 30, 2: 20, 3: 10, 4: 5, 5: 5 };
 }
@@ -44,7 +43,7 @@ async function carregarMinPartidas() {
 }
 
 // ============================================================
-// CÁLCULO DE RANKING (já utiliza state em memória)
+// CÁLCULO DE RANKING
 // ============================================================
 
 export function calcularRankingFase(fase) {
@@ -134,7 +133,7 @@ export function calcularRankingFase(fase) {
 }
 
 // ============================================================
-// RENDERIZAR RANKING (OTIMIZADO E COM CORREÇÕES)
+// RENDERIZAR RANKING (OTIMIZADO)
 // ============================================================
 
 export async function renderizarRanking(fase, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -191,15 +190,27 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   const minConfig = await carregarMinPartidas();
   const minPartidas = minConfig[fase] || 1;
 
-  // ============================================================
-  // CORREÇÃO: Calcular a pontuação da ÚLTIMA partida finalizada
-  // ============================================================
+  // ===== CARREGAR NÍVEIS DE ESTRELAS PARA RANKING =====
+  let niveisMap = new Map();
+  if (state.configEstrelas.visibilidade === 'todos' || state.meuTipo === 'aluno') {
+    try {
+      const snap = await db.ref('copaV2/estrelas').once('value');
+      const data = snap.val() || {};
+      for (const [id, dados] of Object.entries(data)) {
+        const total = dados.total || 0;
+        const nivel = getNivelPorEstrelas(total);
+        niveisMap.set(id, { total, icone: nivel.icone, nome: nivel.nome });
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar níveis para o ranking:', e);
+    }
+  }
+
   let listaComInfo = ranking.map(j => {
     const statusInfo = statusMap.get(j.id) || { status: 'aguardando', progresso: 0 };
     let progresso = statusInfo.progresso;
     if (statusInfo.status === 'aguardando') progresso = 0;
 
-    // Obter a última partida finalizada (se houver)
     const partidas = state.estadoAtual?.resultados?.[fase]?.[j.id] || [];
     let ultimaPontuacao = null;
     if (partidas.length > 0) {
@@ -207,7 +218,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       ultimaPontuacao = ultima.pontos;
     }
 
-    // Se estiver em jogo, usar pontuação atual do temp; senão, usar última pontuação
     const tempData = snapTemp[j.id];
     let pontuacaoAtual = null;
     if (tempData) {
@@ -215,7 +225,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     } else if (ultimaPontuacao !== null) {
       pontuacaoAtual = ultimaPontuacao;
     } else {
-      pontuacaoAtual = j.melhorPontuacao; // fallback (melhor pontuação se não houver última)
+      pontuacaoAtual = j.melhorPontuacao;
     }
 
     return {
@@ -228,7 +238,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     };
   });
 
-  // ===== HISTÓRICO PARA SETAS (subiu/desceu) =====
   const containerKey = containerId;
   const previousIds = rankingHistory[containerKey] || [];
   const currentIds = listaComInfo.map(j => j.id);
@@ -261,15 +270,9 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   const vagas = VAGAS_POR_FASE[fase] || 30;
   const maxMelhor = listaComInfo.length > 0 ? listaComInfo[0].melhorPontuacao : 0;
 
-  // ============================================================
-  // MEDALHAS REMOVIDAS DO RANKING (conforme solicitado)
-  // ============================================================
-
-  // Montagem do HTML usando templates
   const table = document.createElement('table');
   table.className = 'ranking-table';
 
-  // Cabeçalho
   const theadTemplate = document.getElementById('template-cabecalho-ranking');
   if (theadTemplate) {
     const theadClone = theadTemplate.content.cloneNode(true);
@@ -291,11 +294,20 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
         lastTh.style.display = 'none';
       }
     }
+    // Adiciona coluna de nível se visível
+    if (state.configEstrelas.visibilidade === 'todos' || state.meuTipo === 'aluno') {
+      const thNivel = document.createElement('th');
+      thNivel.textContent = '⭐ Nível';
+      thNivel.style.textAlign = 'center';
+      // Insere após a coluna Nome (segunda)
+      const row = theadClone.querySelector('tr');
+      row.insertBefore(thNivel, row.children[2]);
+    }
     table.appendChild(theadClone);
   } else {
     const thead = document.createElement('thead');
     const tr = document.createElement('tr');
-    ['Pos','Nome','Melhor Pontuação','Classificação','Ritmo','Pontuação Atual','Delta Líder','Veloc. Recorde','Progresso','Partidas','Tempo Total','% Tempo','Turma','Projeção'].forEach(t => {
+    ['Pos','Nome','Nível','Melhor Pontuação','Classificação','Ritmo','Pontuação Atual','Delta Líder','Veloc. Recorde','Progresso','Partidas','Tempo Total','% Tempo','Turma','Projeção'].forEach(t => {
       const th = document.createElement('th');
       th.textContent = t;
       tr.appendChild(th);
@@ -304,7 +316,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     table.appendChild(thead);
   }
 
-  // Corpo
   const tbody = document.createElement('tbody');
   const linhaTemplate = document.getElementById('template-linha-ranking');
 
@@ -327,7 +338,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     else if (j.status === 'finalizado') progressoHtml = `✅ Finalizado`;
     else progressoHtml = `—`;
 
-    // ===== NOVA LÓGICA DE CORES ESTILO F1 =====
     let futPosHtml = "—";
     if (j.status !== 'finalizado' && j.progresso < 20) {
       const posProjetada = posProjetadaMap.get(j.id);
@@ -336,18 +346,13 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       const recordeLider = maxMelhor || 0;
       if (projecao > 0 && j.progresso >= 4) {
         let icone = "", classe = "";
-        // 🟣 Roxo: projeta superar o líder (melhor absoluto)
         if (projecao > recordeLider) {
           icone = "🟣";
           classe = "fut-roxo";
-        }
-        // 🟢 Verde: projeta superar o próprio recorde, mas não o líder
-        else if (projecao > recordePessoal) {
+        } else if (projecao > recordePessoal) {
           icone = "🟢";
           classe = "fut-verde";
-        }
-        // 🟡 Amarelo: projeta abaixo do próprio recorde
-        else {
+        } else {
           icone = "🟡";
           classe = "fut-amarelo";
         }
@@ -367,14 +372,25 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     }
 
     let nomeCompleto = escapeHtml(j.nome);
-    // Mantém apenas os ícones de recorde e bônus (medalhas removidas)
     if (jogadorRecordeId === j.id) {
       nomeCompleto += ' <span class="foguete-vermelho">🚀</span>';
     }
     if (jogadorBonusId === j.id && state.bonusVelocidadeConfig?.ativo) {
       nomeCompleto += ' <span class="raio-amarelo">⚡</span>';
     }
-    // NÃO ADICIONA MEDALHAS DE CONQUISTA AQUI
+
+    // Nível do jogador
+    let nivelDisplay = '—';
+    const nivelInfo = niveisMap.get(j.id);
+    if (nivelInfo) {
+      nivelDisplay = `${nivelInfo.icone} ${nivelInfo.nome}`;
+    } else {
+      // Se não encontrou no Firebase, pode tentar carregar do state se for o próprio aluno
+      if (state.alunoId === j.id && state.estrelas.total > 0) {
+        const nivel = getNivelPorEstrelas(state.estrelas.total);
+        nivelDisplay = `${nivel.icone} ${nivel.nome}`;
+      }
+    }
 
     let melhorDisplay = j.melhorPontuacao;
     if (containerId === 'ranking-parcial' && j.melhorPartidaIndex !== null && j.melhorPartidaIndex !== -1) {
@@ -429,7 +445,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       if (tdRitmo) tdRitmo.innerHTML = futPosHtml;
       if (tdAtual) {
         tdAtual.textContent = j.pontuacaoAtual !== null ? j.pontuacaoAtual : "–";
-        // Garantir que a fonte seja normalizada (remover qualquer estilo inline ou classe extra)
         tdAtual.style.fontWeight = 'normal';
         tdAtual.style.fontSize = 'inherit';
       }
@@ -442,6 +457,44 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
       if (tdTurma) tdTurma.textContent = escapeHtml(j.turma);
       if (tdProjecao) tdProjecao.textContent = projecaoHtml;
 
+      // Inserir a coluna de Nível após a coluna Nome (posição 2)
+      const tdNivel = document.createElement('td');
+      tdNivel.textContent = nivelDisplay;
+      tdNivel.style.textAlign = 'center';
+      tdNivel.style.fontWeight = 'bold';
+      // Inserir após o primeiro filho (Pos) e o segundo (Nome) -> posição 2
+      const children = tbody.lastChild ? tbody.lastChild.children : [];
+      if (children.length >= 2) {
+        // Ainda não há, então vamos inserir no clone
+        // Melhor: usar um seletor específico.
+        // Como não temos um placeholder, vamos adicionar no clone manualmente
+        // Mas como o template não tem a coluna, vamos usar um hack: adicionar como novo td
+      }
+
+      // Como o template não tem a coluna de nível, vamos adicioná-la manualmente
+      // Vamos criar uma nova linha com os dados
+      // Mas para simplificar, vamos usar o método alternativo abaixo (fallback)
+      // Vamos ignorar o template para esta coluna e usar fallback
+      // Na verdade, podemos adicionar a coluna no template ou usar fallback completo
+      // Para manter a consistência, vamos usar fallback para todas as linhas
+      // quando a visibilidade estiver ativa.
+      // Mas isso é complexo. Vamos usar o fallback para linhas que precisam de nível.
+      // Vamos manter o template e adicionar a coluna extra via DOM
+      // Vamos pegar a linha criada e inserir a célula de nível após a segunda célula
+      const tr = tbody.lastChild; // a linha recém-adicionada
+      if (tr && tr.tagName === 'TR') {
+        const tdNivel = document.createElement('td');
+        tdNivel.textContent = nivelDisplay;
+        tdNivel.style.textAlign = 'center';
+        tdNivel.style.fontWeight = 'bold';
+        // Inserir após o segundo filho (posição 2)
+        if (tr.children.length >= 2) {
+          tr.insertBefore(tdNivel, tr.children[2]);
+        } else {
+          tr.appendChild(tdNivel);
+        }
+      }
+
       if (!exibirClassificacao && tdClassificacao) tdClassificacao.style.display = 'none';
       if (containerId !== 'ranking-parcial') {
         if (tdTempo) tdTempo.style.display = 'none';
@@ -451,30 +504,62 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
         if (tdProjecao) tdProjecao.style.display = 'none';
       }
 
+      // Se a visibilidade for apenas alunos e o usuário for torcida, esconder a coluna de nível
+      if (state.configEstrelas.visibilidade === 'alunos' && state.meuTipo === 'projecao') {
+        // esconder todas as células de nível
+        // Não temos como identificar facilmente, faremos no final
+      }
+
       tbody.appendChild(clone);
     } else {
       // Fallback manual
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="${classePos}">${posAtual}º</td>
-        <td>${nomeCompleto}</td>
-        <td>${melhorDisplay}</td>
-        ${exibirClassificacao ? `<td>${colunaClassificacao}</td>` : ''}
-        <td>${futPosHtml}</td>
+      let html = `<td class="${classePos}">${posAtual}º</td>
+        <td>${nomeCompleto}</td>`;
+      // Adiciona nível se visível
+      if (state.configEstrelas.visibilidade === 'todos' || state.meuTipo === 'aluno') {
+        html += `<td style="text-align:center; font-weight:bold;">${nivelDisplay}</td>`;
+      }
+      html += `<td>${melhorDisplay}</td>`;
+      if (exibirClassificacao) html += `<td>${colunaClassificacao}</td>`;
+      html += `<td>${futPosHtml}</td>
         <td style="font-weight:normal; font-size:inherit;">${j.pontuacaoAtual !== null ? j.pontuacaoAtual : "–"}</td>
         <td>${deltaText}</td>
         <td>${recordeStr}</td>
         <td>${progressoHtml}</td>
-        <td>${j.totalPartidas}</td>
-        ${containerId === 'ranking-parcial' ? `<td>${tempoTotalStr}</td><td>${percentualTempo}</td>` : ''}
-        <td>${escapeHtml(j.turma)}</td>
-        ${projecaoHtml ? `<td>${projecaoHtml}</td>` : ''}
-      `;
+        <td>${j.totalPartidas}</td>`;
+      if (containerId === 'ranking-parcial') {
+        html += `<td>${tempoTotalStr}</td><td>${percentualTempo}</td>`;
+      }
+      html += `<td>${escapeHtml(j.turma)}</td>`;
+      if (projecaoHtml) html += `<td>${projecaoHtml}</td>`;
+      tr.innerHTML = html;
       tbody.appendChild(tr);
     }
   }
 
   table.appendChild(tbody);
+
+  // Se a visibilidade for apenas alunos e o usuário for torcida, esconder a coluna de nível
+  if (state.configEstrelas.visibilidade === 'alunos' && state.meuTipo === 'projecao') {
+    // Encontrar a coluna de nível (terceira coluna) e esconder
+    const headerCells = table.querySelectorAll('thead tr th');
+    if (headerCells.length > 2) {
+      const nivelHeader = headerCells[2];
+      if (nivelHeader.textContent.includes('Nível') || nivelHeader.textContent.includes('⭐')) {
+        nivelHeader.style.display = 'none';
+      }
+      // Esconder as células correspondentes
+      const rows = table.querySelectorAll('tbody tr');
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length > 2) {
+          const nivelCell = cells[2];
+          if (nivelCell) nivelCell.style.display = 'none';
+        }
+      });
+    }
+  }
 
   const htmlString = table.outerHTML;
   const lastHTML = rankingHtmlCache[containerKey];
@@ -961,7 +1046,7 @@ export async function renderRankingGeral() {
 }
 
 // ============================================================
-// ATUALIZAR INFORMAÇÕES DO ALUNO (com barra de tempo F1)
+// ATUALIZAR INFORMAÇÕES DO ALUNO
 // ============================================================
 
 export async function atualizarInfoAluno() {
@@ -1025,34 +1110,28 @@ export async function atualizarInfoAluno() {
     }
   }
 
-  // ===== NOVA LÓGICA DE CORES ESTILO F1 (Brilho e Barra) =====
   let cor = 'cinza';
   if (perguntasRespondidas >= 4 && projecao > 0) {
     if (projecao > recordeLider) {
-      cor = 'roxo';      // 🟣 Projeta superar o líder
+      cor = 'roxo';
     } else if (projecao > recordePessoal) {
-      cor = 'verde';     // 🟢 Projeta superar o próprio recorde
+      cor = 'verde';
     } else {
-      cor = 'amarelo';   // 🟡 Projeta abaixo do próprio recorde
+      cor = 'amarelo';
     }
   }
 
-  // Aplica a cor no brilho da pergunta
   const container = document.getElementById('pergunta-container');
   if (container) {
     container.classList.remove('brilho-roxo', 'brilho-verde', 'brilho-amarelo', 'brilho-cinza', 'brilho-branca');
     container.classList.add('brilho-' + cor);
   }
 
-  // ===== ATUALIZA A COR DA BARRA DE TEMPO =====
   const barra = document.getElementById('progresso-tempo');
   if (barra) {
-    // Remove classes antigas de cor
     barra.classList.remove('progresso-tempo-roxo', 'progresso-tempo-verde', 'progresso-tempo-amarelo', 'progresso-tempo-cinza');
-    // Adiciona a classe correspondente
     const corClasse = 'progresso-tempo-' + cor;
     barra.classList.add(corClasse);
-    // Se for cinza, mantém o fundo neutro
     if (cor === 'cinza') {
       barra.style.background = '#94a3b8';
       barra.style.boxShadow = 'none';
@@ -1147,6 +1226,16 @@ export async function avancarFase() {
   await removerDados(`copaV2/resultados_temp/${faseAtual}`);
   state.tempoEsgotadoProcessado = false;
 
+  // Conceder estrelas por avanço de fase
+  try {
+    const { concederEstrelas } = await import('./estrelas.js');
+    for (let id of classificadosIds) {
+      await concederEstrelas(id, 'avancou_fase', state.configEstrelas.acoes.avancou_fase, faseAtual);
+    }
+  } catch (e) {
+    console.warn('Erro ao conceder estrelas por avanço:', e);
+  }
+
   if (faseAtual === 5) {
     exibirToast('🏆 COMPETIÇÃO FINALIZADA!');
     await setDados('copaV2', { ...state.estadoAtual, status: 'finalizado', fim: 0, tempoRestantePausa: null });
@@ -1174,7 +1263,7 @@ export async function resetarFase() {
 }
 
 // ============================================================
-// FUNÇÕES AUXILIARES (lista de alunos, turmas, etc.)
+// FUNÇÕES AUXILIARES
 // ============================================================
 
 export async function renderListaAlunosGerenciar() {
@@ -1453,7 +1542,6 @@ async function processarBonusVelocidade(fase) {
   const ptsAtuais = await lerDados(histRef) || 0;
   await setDados(histRef, ptsAtuais + state.bonusVelocidadeConfig.pontos);
 
-  // Guarda o bônus no state para o modal
   if (!state.bonusVelocidadePorFase) state.bonusVelocidadePorFase = {};
   if (!state.bonusVelocidadePorFase[fase]) state.bonusVelocidadePorFase[fase] = {};
   state.bonusVelocidadePorFase[fase][vencedor.id] = state.bonusVelocidadeConfig.pontos;
