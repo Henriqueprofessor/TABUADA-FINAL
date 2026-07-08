@@ -1,4 +1,3 @@
-// js/modules/ui.js
 import { state } from './state.js';
 
 // ===== CONTROLE DE TELA =====
@@ -239,13 +238,14 @@ export function atualizarBannerAviso(aviso) {
 }
 
 // ============================================================
-// MODAL DE RESULTADOS PÓS-PARTIDA
+// MODAL DE RESULTADOS PÓS-PARTIDA (MODIFICADO)
 // ============================================================
 
 export function exibirModalResultados(dados) {
   const {
     posicao, posicaoAnterior, pontos, acertos, tempoTotal,
-    ultimaPartida, fase, totalPartidas, ranking, id, nome, turma
+    ultimaPartida, fase, totalPartidas, ranking, id, nome, turma,
+    historico // NOVO: array de histórico
   } = dados;
 
   const tempoMedio = acertos > 0 ? tempoTotal / acertos : 0;
@@ -264,7 +264,7 @@ export function exibirModalResultados(dados) {
   if (evolucaoPontos !== null && evolucaoPontos > 0) badges.push('💪 Melhora contínua');
   if (streak >= 10) badges.push(`🔥 Streak de ${streak} acertos!`);
 
-  // Recordes (simplificado, pois não temos histórico no state)
+  // Recordes
   if (tempoMedio > 0) {
     const melhorTempoAnterior = state.melhorTempoMedio || Infinity;
     if (tempoMedio < melhorTempoAnterior) {
@@ -358,6 +358,34 @@ export function exibirModalResultados(dados) {
     projecaoPos = posicao;
   }
 
+  // ===== NOVO: LISTA DE ERROS =====
+  let errosHtml = '';
+  if (historico && historico.length > 0) {
+    const erros = historico.filter(h => !h.acertou);
+    if (erros.length > 0) {
+      errosHtml = `
+        <div class="bloco">
+          <div class="bloco-titulo">❌ Erros na partida (${erros.length})</div>
+          <ul class="lista-erros">
+            ${erros.map(e => `
+              <li>
+                <span class="pergunta">${escapeHtml(e.pergunta)}</span>
+                <span>Escolheu: <span class="resposta-errada">${e.respostaEscolhida !== null ? escapeHtml(e.respostaEscolhida) : '⏱️ tempo'}</span></span>
+                <span>Correto: <span class="resposta-correta">${escapeHtml(e.respostaCorreta)}</span></span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+    } else {
+      errosHtml = `
+        <div class="bloco">
+          <div class="bloco-titulo">✅ Nenhum erro! Parabéns!</div>
+        </div>
+      `;
+    }
+  }
+
   const modalHtml = `
     <div class="modal-resultados" id="modal-pos-jogo">
       <h2 style="margin-top: 0;">🏁 RESULTADO DA PARTIDA</h2>
@@ -436,6 +464,9 @@ export function exibirModalResultados(dados) {
           ` : ''}
         </div>
       </div>
+
+      <!-- ===== NOVO: LISTA DE ERROS ===== -->
+      ${errosHtml}
 
       <div class="frase-encerramento">
         💡 A fase ainda não acabou! Sua próxima tentativa pode te levar ao topo.
