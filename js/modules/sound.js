@@ -1,7 +1,6 @@
-// js/modules/sound.js
 const SONS_CONFIG = {
   acerto: { emoji: '✅', nome: 'Acerto', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3', freq: 800, duration: 0.15 },
-  erro: { emoji: '❌', nome: 'Erro', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3', freq: 300, duration: 0.2 },
+  erro: { emoji: '🤪', nome: 'Erro Engraçado', enabled: true, url: '', freq: 300, duration: 0.4, type: 'wah' }, // MODIFICADO: som engraçado
   tempo_esgotado: { emoji: '⏰', nome: 'Tempo Esgotado', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3', freq: 200, duration: 0.4 },
   inicio_fase: { emoji: '🏁', nome: 'Início da Fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2774/2774-preview.mp3', freq: 523, duration: 0.3 },
   fim_fase: { emoji: '⏹️', nome: 'Fim da Fase', enabled: true, url: 'https://assets.mixkit.co/active_storage/sfx/2773/2773-preview.mp3', freq: 440, duration: 0.5 },
@@ -35,6 +34,32 @@ function getAudioContext() {
   return audioContext;
 }
 
+// Função para tocar som "engraçado" (wah wah)
+function playWahSound(volume = 0.7) {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(400, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(200, ctx.currentTime + 0.3);
+    osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.4);
+
+    gain.gain.setValueAtTime(Math.min(1, volume * 1.2), ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+    if (ctx.state === 'suspended') ctx.resume();
+  } catch (e) {
+    console.debug('🔇 Som wah falhou:', e);
+  }
+}
+
 function playSyntheticSound(freq, duration, volume = 0.7) {
   try {
     const ctx = getAudioContext();
@@ -59,13 +84,12 @@ function playSyntheticSound(freq, duration, volume = 0.7) {
       ctx.resume();
     }
   } catch (e) {
-    // Fallback silencioso
     console.debug('🔇 Som sintético falhou:', e);
   }
 }
 
 // ============================================================
-// CARREGAR PREFERÊNCIAS (com tratamento de erros)
+// CARREGAR PREFERÊNCIAS
 // ============================================================
 
 export function carregarPreferenciasSom() {
@@ -104,6 +128,12 @@ export function tocarSom(key, volumeOverride = null) {
   if (!config || !config.enabled) return;
 
   const volume = volumeOverride !== null ? volumeOverride : volumeGlobal;
+
+  // Se for erro e tiver type 'wah', toca o som engraçado
+  if (key === 'erro' && config.type === 'wah') {
+    playWahSound(volume);
+    return;
+  }
 
   try {
     let audio = audioCache.get(key);
