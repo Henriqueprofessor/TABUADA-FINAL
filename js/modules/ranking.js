@@ -4,7 +4,6 @@ import { lerDados, atualizarDados, removerDados, setDados } from './db.js';
 import { exibirToast, atualizarTimerFase, mostrarTela } from './ui.js';
 import { tocarSom } from './sound.js';
 import { atualizarExibicaoMedalhas, carregarMedalhasLocal } from './medals.js';
-import { getNivelPorEstrelas } from './estrelas.js'; // apenas para uso interno, se necessário, mas não exibimos
 
 // ============================================================
 // CONSTANTES E FUNÇÕES AUXILIARES
@@ -43,7 +42,7 @@ async function carregarMinPartidas() {
 }
 
 // ============================================================
-// CÁLCULO DE RANKING (já utiliza state em memória)
+// CÁLCULO DE RANKING
 // ============================================================
 
 export function calcularRankingFase(fase) {
@@ -133,7 +132,7 @@ export function calcularRankingFase(fase) {
 }
 
 // ============================================================
-// RENDERIZAR RANKING (SEM COLUNA DE NÍVEL)
+// RENDERIZAR RANKING
 // ============================================================
 
 export async function renderizarRanking(fase, containerId, tipo = 'individual', exibirClassificacao = false) {
@@ -258,7 +257,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   const table = document.createElement('table');
   table.className = 'ranking-table';
 
-  // Cabeçalho - REMOVIDA COLUNA DE NÍVEL
+  // Cabeçalho
   const theadTemplate = document.getElementById('template-cabecalho-ranking');
   if (theadTemplate) {
     const theadClone = theadTemplate.content.cloneNode(true);
@@ -940,21 +939,7 @@ export async function renderRankingGeral() {
 }
 
 // ============================================================
-// FUNÇÕES AUXILIARES (getTabelaPontosPorFase, etc.)
-// ============================================================
-
-export function getTabelaPontosPorFase(fase) {
-  if (fase === 5) return state.tabelaPontosFase5;
-  return state.tabelaPontosPadrao;
-}
-
-export function getPontosPorPosicao(posicao, fase) {
-  const tabela = getTabelaPontosPorFase(fase);
-  return tabela[posicao] || 0;
-}
-
-// ============================================================
-// ATUALIZAR INFORMAÇÕES DO ALUNO (sem nível)
+// ATUALIZAR INFORMAÇÕES DO ALUNO
 // ============================================================
 
 export async function atualizarInfoAluno() {
@@ -1081,6 +1066,16 @@ export async function atualizarInfoAluno() {
 // FUNÇÕES DE CONTROLE DE FASE
 // ============================================================
 
+export function getTabelaPontosPorFase(fase) {
+  if (fase === 5) return state.tabelaPontosFase5;
+  return state.tabelaPontosPadrao;
+}
+
+export function getPontosPorPosicao(posicao, fase) {
+  const tabela = getTabelaPontosPorFase(fase);
+  return tabela[posicao] || 0;
+}
+
 export async function avancarFase() {
   if (state.timerFase) { clearInterval(state.timerFase); state.timerFase = null; }
   const faseAtual = state.estadoAtual.fase;
@@ -1151,7 +1146,7 @@ export async function resetarFase() {
 }
 
 // ============================================================
-// FUNÇÕES AUXILIARES (lista de alunos, turmas, etc.)
+// FUNÇÕES AUXILIARES
 // ============================================================
 
 export async function renderListaAlunosGerenciar() {
