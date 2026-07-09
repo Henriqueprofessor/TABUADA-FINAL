@@ -261,14 +261,7 @@ export function atualizarNivelEstrelasUI() {
   container.innerHTML = html;
 }
 
-// ===== FUNÇÃO ESCAPE HTML CORRIGIDA =====
-function escapeHtml(str) {
-  if (str === null || str === undefined) return '';
-  if (typeof str !== 'string') str = String(str);
-  return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[m] || m));
-}
-
-// ===== MODAL DE RESULTADOS (NOVA VERSÃO) =====
+// ===== MODAL DE RESULTADOS =====
 export function exibirModalResultados(dados) {
   const { posicao, posicaoAnterior, pontos, acertos, tempoTotal, ultimaPartida, fase, totalPartidas, ranking, id, nome, turma, historico } = dados;
   const tempoMedio = acertos > 0 ? tempoTotal / acertos : 0;
@@ -312,8 +305,7 @@ export function exibirModalResultados(dados) {
     const jogadorAcima = ranking[minhaPosIndex - 1];
     if (jogadorAcima) {
       const diffPontos = jogadorAcima.pontos - (ranking[minhaPosIndex]?.pontos || pontos);
-      const nomeAcima = escapeHtml(jogadorAcima.nome);
-      proximoColegaHtml = `👤 Você está a ${diffPontos} pontos de ultrapassar ${nomeAcima || 'o colega'}!`;
+      proximoColegaHtml = `👤 Você está a ${diffPontos} pontos de ultrapassar ${escapeHtml(jogadorAcima.nome || 'o colega')}!`;
     }
   }
   let velocidadeVsLider = '';
@@ -379,4 +371,16 @@ export function exibirModalResultados(dados) {
   document.getElementById('btn-jogar-novamente')?.addEventListener('click', () => { document.getElementById('modal-pos-jogo')?.remove(); import('./game.js').then(({ iniciarPartida }) => iniciarPartida()); });
   document.getElementById('btn-ver-ranking')?.addEventListener('click', () => { document.getElementById('modal-pos-jogo')?.remove(); const modalRanking = document.getElementById('modal-ranking-aluno'); if (modalRanking) { modalRanking.style.display = 'flex'; import('./ranking.js').then(({ atualizarRankingAluno }) => atualizarRankingAluno()); } });
   document.getElementById('modal-pos-jogo')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) document.getElementById('modal-pos-jogo')?.remove(); });
+}
+
+// ===== FUNÇÃO ESCAPE HTML CORRIGIDA =====
+function escapeHtml(str) {
+  if (!str) return '';
+  const string = String(str);
+  return string.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
 }
