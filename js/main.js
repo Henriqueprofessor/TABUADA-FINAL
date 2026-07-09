@@ -586,15 +586,26 @@ function atualizarUI() {
       document.getElementById('competicao-finalizada-torcida').classList.add('hidden');
     }
     
+    // ===== CORREÇÃO: ATUALIZAR SELETOR DA TORCIDA =====
     const select = document.getElementById('select-fase-torcida');
     if (select && torcidaAba === 'fase') {
-      const faseSelecionada = parseInt(select.value);
-      if (isNaN(faseSelecionada) || faseSelecionada > fase) {
-        select.value = fase;
-        faseTorcidaSelecionada = fase;
+      const faseAtual = state.estadoAtual.fase;
+      const valorAtual = parseInt(select.value);
+      // Se a fase selecionada for maior que a fase atual, ajusta
+      if (isNaN(valorAtual) || valorAtual > faseAtual) {
+        select.value = faseAtual;
+        faseTorcidaSelecionada = faseAtual;
       } else {
-        faseTorcidaSelecionada = faseSelecionada;
+        // Mantém a fase que o usuário escolheu, mas garante que não seja futura
+        if (valorAtual > faseAtual) {
+          select.value = faseAtual;
+          faseTorcidaSelecionada = faseAtual;
+        } else {
+          faseTorcidaSelecionada = valorAtual;
+        }
       }
+      // Força atualização do ranking da torcida
+      atualizarTorcidaFase();
     }
   }
 }
@@ -1069,10 +1080,17 @@ function configurarEventos() {
     }
   });
 
+  // ===== CORREÇÃO: EVENTO ADICIONAR TEMPO EXTRA =====
   document.getElementById('btn-adicionar-tempo-extra')?.addEventListener('click', async () => {
-    if (state.estadoAtual?.status !== 'em_andamento') { exibirToast('⚠️ Fase não está em andamento.', 'aviso'); return; }
+    if (state.estadoAtual?.status !== 'em_andamento') {
+      exibirToast('⚠️ Fase não está em andamento.', 'aviso');
+      return;
+    }
     const extra = parseInt(document.getElementById('input-tempo-extra').value);
-    if (isNaN(extra) || extra < 1) { exibirToast('❌ Digite um valor válido.', 'erro'); return; }
+    if (isNaN(extra) || extra < 1) {
+      exibirToast('❌ Digite um valor válido.', 'erro');
+      return;
+    }
     const agora = Date.now();
     const novoFim = Math.max(agora + 1000, state.estadoAtual.fim) + extra * 60000;
     await atualizarDados('copaV2/fim', novoFim);
