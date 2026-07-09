@@ -1,4 +1,3 @@
-// js/config/firebase.js
 const firebaseConfig = {
   apiKey: "AIzaSyBkoL3Zn-YkGUy6RAWZYVhWtIbcfL8h-J8",
   authDomain: "final-copa-tabuada.firebaseapp.com",
@@ -16,28 +15,19 @@ const auth = window.firebase.auth();
 auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL);
 
 // ============================================
-// HABILITAR PERSISTÊNCIA OFFLINE (com fallback)
+// HABILITAR PERSISTÊNCIA OFFLINE
 // ============================================
 (function enableOfflinePersistence() {
   try {
-    // Tenta ativar no objeto global primeiro (mais confiável)
     const database = window.firebase.database();
     if (database && typeof database.setPersistenceEnabled === 'function') {
       database.setPersistenceEnabled(true);
-      console.log('💾 Persistência offline ativada!');
+      console.log('💾 Persistência offline ativada com sucesso!');
       return;
     }
-    // Tenta na instância local
-    if (db && typeof db.setPersistenceEnabled === 'function') {
-      db.setPersistenceEnabled(true);
-      console.log('💾 Persistência offline ativada!');
-      return;
-    }
-    // Se chegou aqui, não suportado – apenas log informativo
-    console.info('ℹ️ Persistência offline não disponível – o jogo continua normalmente.');
+    console.warn('⚠️ Persistência offline não disponível – o jogo continua normalmente.');
   } catch (e) {
-    // Erro silencioso – não afeta o jogo
-    console.info('ℹ️ Persistência offline não disponível – o jogo continua normalmente.');
+    console.warn('⚠️ Persistência offline não disponível – o jogo continua normalmente.');
   }
 })();
 
