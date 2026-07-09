@@ -163,20 +163,18 @@ export async function iniciarPartida() {
 
     document.body.classList.add('em-jogo');
 
-    // ===== ELEMENTOS DO JOGO (COM VERIFICAÇÕES) =====
+    // ===== ELEMENTOS DO JOGO COM VERIFICAÇÕES =====
     const jogoArea = document.getElementById('jogo-area');
     const aguardando = document.getElementById('aguardando-aluno');
     const btnRanking = document.getElementById('btn-ranking-aluno');
     const btnRankingPontos = document.getElementById('btn-ranking-pontos-aluno');
+    const principal = document.getElementById('tela-aluno-principal');
+    const detalhes = document.getElementById('tela-aluno-detalhes');
 
     if (jogoArea) jogoArea.classList.remove('hidden');
     if (aguardando) aguardando.classList.add('hidden');
     if (btnRanking) btnRanking.disabled = true;
     if (btnRankingPontos) btnRankingPontos.disabled = true;
-
-    // ===== ESCONDER TELAS DO ALUNO DURANTE O JOGO =====
-    const principal = document.getElementById('tela-aluno-principal');
-    const detalhes = document.getElementById('tela-aluno-detalhes');
     if (principal) principal.style.display = 'none';
     if (detalhes) detalhes.style.display = 'none';
 
@@ -186,7 +184,6 @@ export async function iniciarPartida() {
     exibirToast('❌ Erro ao iniciar partida. Tente novamente.');
     state.jogoAtivo = false;
     document.body.classList.remove('em-jogo');
-    // Reexibir a tela principal
     const principal = document.getElementById('tela-aluno-principal');
     if (principal) principal.style.display = 'block';
   }
@@ -335,7 +332,7 @@ export async function responder(idx) {
     atualizarInfoAluno();
 
     // ===== FEEDBACK SEPARADO =====
-    let delay = 0.5; // fallback
+    let delay = 0.5;
     if (idx === -1) {
       delay = state.tempoFeedbackErro * 1000;
     } else if (acertou) {
@@ -401,15 +398,14 @@ async function finalizarPartida() {
 
   // ===== RE-EXIBIR A TELA PRINCIPAL =====
   const principal = document.getElementById('tela-aluno-principal');
-  if (principal) principal.style.display = 'block';
   const detalhes = document.getElementById('tela-aluno-detalhes');
-  if (detalhes) detalhes.style.display = 'none';
-
   const jogoArea = document.getElementById('jogo-area');
   const aguardando = document.getElementById('aguardando-aluno');
   const btnRanking = document.getElementById('btn-ranking-aluno');
   const btnRankingPontos = document.getElementById('btn-ranking-pontos-aluno');
 
+  if (principal) principal.style.display = 'block';
+  if (detalhes) detalhes.style.display = 'none';
   if (jogoArea) jogoArea.classList.add('hidden');
   if (aguardando) aguardando.classList.remove('hidden');
   if (btnRanking) btnRanking.disabled = false;
