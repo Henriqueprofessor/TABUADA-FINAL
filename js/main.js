@@ -84,7 +84,7 @@ import { carregarEstrelasAluno } from './modules/estrelas.js';
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 
 // ============================================================
-// FUNÇÃO PARA GARANTIR TURMAS PADRÃO
+// FUNÇÃO PARA GARANTIR TURMAS PADRÃO (DEFINIDA ANTES DE USAR)
 // ============================================================
 async function garantirTurmasPadrao() {
   try {
@@ -98,7 +98,6 @@ async function garantirTurmasPadrao() {
     }
   } catch (e) {
     console.warn('Erro ao verificar turmas:', e);
-    // Se der erro, tenta criar as turmas padrão
     try {
       await setDados('copaV2/turmas', TURMAS_PADRAO);
       state.turmasCache = TURMAS_PADRAO;
@@ -507,17 +506,21 @@ function atualizarUltimaSinc() {
 }
 
 function atualizarUI() {
-  if (!state.estadoAtual) return;
+  // ===== PROTEÇÃO CONTRA ESTADO INDEFINIDO =====
+  if (!state.estadoAtual) {
+    console.warn('Estado atual indefinido, ignorando atualização UI');
+    return;
+  }
   
   // Garantir que as propriedades existam
   if (!state.estadoAtual.resultados) state.estadoAtual.resultados = {};
   if (!state.estadoAtual.participantes) state.estadoAtual.participantes = {};
   if (!state.estadoAtual.classificados) state.estadoAtual.classificados = {};
   
-  const fase = state.estadoAtual.fase;
+  const fase = state.estadoAtual.fase || 1;
   document.getElementById('fase-atual-titulo').innerText = `Fase ${fase} de 5`;
   const configs = { "2-5": "Tabuada 2️⃣➡️5️⃣", "6-9": "Tabuada 6️⃣➡️9️⃣", "0-10": "Tabuada 0️⃣➡️🔟" };
-  document.getElementById('modalidade-titulo').innerText = configs[state.estadoAtual.modalidade] || state.estadoAtual.modalidade;
+  document.getElementById('modalidade-titulo').innerText = configs[state.estadoAtual.modalidade] || state.estadoAtual.modalidade || '--';
   
   if (state.estadoAtual.status === 'em_andamento' && state.estadoAtual.fim > 0) {
     const restante = state.estadoAtual.fim - Date.now();
@@ -541,12 +544,12 @@ function atualizarUI() {
   
   if (state.meuTipo === 'professor') {
     document.getElementById('prof-fase-info').innerText = `Fase ${fase}`;
-    document.getElementById('select-modalidade').value = state.estadoAtual.modalidade;
+    document.getElementById('select-modalidade').value = state.estadoAtual.modalidade || '2-5';
     const hasResults = Object.keys(state.estadoAtual.resultados).some(f => Object.keys(state.estadoAtual.resultados[f] || {}).length > 0);
     document.getElementById('select-modalidade').disabled = (fase > 1 || hasResults);
   }
   if (state.meuTipo === 'projecao') {
-    document.getElementById('torcida-modalidade').innerText = configs[state.estadoAtual.modalidade] || state.estadoAtual.modalidade;
+    document.getElementById('torcida-modalidade').innerText = configs[state.estadoAtual.modalidade] || state.estadoAtual.modalidade || '--';
     document.getElementById('torcida-fase-info').innerText = `${fase}/5`;
     if (fase === 5 && state.estadoAtual.status === 'finalizado') {
       document.getElementById('competicao-finalizada-torcida').classList.remove('hidden');
