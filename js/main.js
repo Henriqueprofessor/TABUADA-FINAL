@@ -84,6 +84,31 @@ import { carregarEstrelasAluno } from './modules/estrelas.js';
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 
 // ============================================================
+// FUNÇÃO PARA GARANTIR TURMAS PADRÃO
+// ============================================================
+async function garantirTurmasPadrao() {
+  try {
+    let turmas = await lerDados('copaV2/turmas');
+    if (!turmas || turmas.length === 0) {
+      console.log('📋 Nenhuma turma encontrada. Criando turmas padrão...');
+      await setDados('copaV2/turmas', TURMAS_PADRAO);
+      state.turmasCache = TURMAS_PADRAO;
+    } else {
+      state.turmasCache = turmas;
+    }
+  } catch (e) {
+    console.warn('Erro ao verificar turmas:', e);
+    // Se der erro, tenta criar as turmas padrão
+    try {
+      await setDados('copaV2/turmas', TURMAS_PADRAO);
+      state.turmasCache = TURMAS_PADRAO;
+    } catch (e2) {
+      console.error('Falha ao criar turmas padrão:', e2);
+    }
+  }
+}
+
+// ============================================================
 // TIMER GLOBAL (CONTÍNUO)
 // ============================================================
 let timerGlobalInterval = null;
@@ -483,6 +508,12 @@ function atualizarUltimaSinc() {
 
 function atualizarUI() {
   if (!state.estadoAtual) return;
+  
+  // Garantir que as propriedades existam
+  if (!state.estadoAtual.resultados) state.estadoAtual.resultados = {};
+  if (!state.estadoAtual.participantes) state.estadoAtual.participantes = {};
+  if (!state.estadoAtual.classificados) state.estadoAtual.classificados = {};
+  
   const fase = state.estadoAtual.fase;
   document.getElementById('fase-atual-titulo').innerText = `Fase ${fase} de 5`;
   const configs = { "2-5": "Tabuada 2️⃣➡️5️⃣", "6-9": "Tabuada 6️⃣➡️9️⃣", "0-10": "Tabuada 0️⃣➡️🔟" };
@@ -948,7 +979,7 @@ function configurarEventos() {
     }
   });
 
-  // ===== RESETAR COMPETIÇÃO (MODIFICADO) =====
+  // ===== RESETAR COMPETIÇÃO (CORRIGIDO) =====
   document.getElementById('btn-reset-total')?.addEventListener('click', async () => {
     if (!confirm('⚠️ Resetar toda a competição? Todas as fases, resultados e configurações serão apagados e restaurados para os valores padrão.')) return;
 
@@ -980,11 +1011,24 @@ function configurarEventos() {
       // 3. Resetar todas as configurações para o padrão
       await resetarConfiguracoesPadrao();
 
-      // 4. Atualizar interface
+      // 4. Forçar recarregamento do estado após reset
+      const snap = await db.ref('copaV2').once('value');
+      state.estadoAtual = snap.val() || { 
+        fase: 1, 
+        status: 'aguardando', 
+        tempoFase: 10, 
+        fim: 0, 
+        modalidade: "2-5", 
+        resultados: {}, 
+        participantes: {}, 
+        classificados: {} 
+      };
+
+      // 5. Atualizar interface
       atualizarUI();
       atualizarUltimaSinc();
       
-      // 5. Recarregar configurações no state
+      // 6. Recarregar configurações no state
       await carregarConfigRankingPontos();
       await carregarConfigEstrelas();
       await carregarTempoFeedback();
