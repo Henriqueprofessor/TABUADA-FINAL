@@ -1,4 +1,3 @@
-// js/main.js
 import { db, auth, initConnectionMonitor, onConnectionChange, recriarPresencaOnline } from './config/firebase.js';
 import { state } from './modules/state.js';
 import { loginProfessor, logoutProfessor, getCurrentUser, onAuthStateChanged } from './modules/auth.js';
@@ -388,22 +387,11 @@ function entrarModoTorcida() {
   const torcidaRef = db.ref(`online/${state.torcidaId}`);
   torcidaRef.set({ tipo: 'torcida', timestamp: Date.now() });
   torcidaRef.onDisconnect().remove();
-  
-  try {
-    sessionStorage.setItem('torcidaId', state.torcidaId);
-  } catch (e) {
-    console.warn('sessionStorage não disponível');
-  }
+  sessionStorage.setItem('torcidaId', state.torcidaId);
 
   state.meuTipo = 'projecao';
   mostrarTela('projecao');
   
-  // Esconde botão de pontos se ranking de pontos estiver desativado
-  const btnPontos = document.getElementById('btn-torcida-pontos');
-  if (btnPontos) {
-    btnPontos.style.display = state.rankingPontosAtivo ? 'inline-block' : 'none';
-  }
-
   torcidaAba = 'fase';
   document.getElementById('btn-torcida-fase').classList.add('ativo');
   document.getElementById('btn-torcida-fase').setAttribute('aria-selected', 'true');
@@ -701,7 +689,7 @@ function configurarEventos() {
 
   document.getElementById('btn-verificar-versao')?.addEventListener('click', () => verificarVersao(true));
   document.getElementById('btn-tutorial-inicial')?.addEventListener('click', () => abrirTutorial('aluno'));
-  // REMOVIDO: document.getElementById('btn-tutorial-aluno') não existe
+  document.getElementById('btn-tutorial-aluno')?.addEventListener('click', () => abrirTutorial('aluno'));
   document.getElementById('btn-tutorial-torcida')?.addEventListener('click', () => abrirTutorial('torcida'));
   document.getElementById('btn-fechar-tutorial')?.addEventListener('click', fecharTutorial);
   document.getElementById('btn-instalar-app')?.addEventListener('click', abrirInstalacao);
@@ -797,7 +785,6 @@ function configurarEventos() {
     tocarSom('clique');
   });
 
-  // Botão de pontos – visibilidade já controlada
   document.getElementById('btn-torcida-pontos')?.addEventListener('click', function() {
     torcidaAba = 'pontos';
     document.querySelectorAll('.modo-buttons .btn-modo').forEach(b => {
@@ -1421,18 +1408,6 @@ async function init() {
     initConnectionMonitor();
     initConnectionUI(onConnectionChange);
 
-    // Carrega todas as configurações antes de iniciar o listener do Firebase
-    await Promise.all([
-      carregarValorPartida(),
-      carregarConfigRankingPontos(),
-      carregarConfigBonusVelocidade(),
-      carregarRecordeGeral(),
-      carregarColunasVisiveis(),
-      carregarMinPartidas(),
-      carregarTempoFeedback(),
-      carregarConfigEstrelas()
-    ]);
-
     onConnectionChange(async (online) => {
       if (online) {
         if (!window._wasOnline) {
@@ -1510,6 +1485,27 @@ async function init() {
         window._wasOnline = false;
       }
     });
+
+    try {
+      await carregarValorPartida();
+      await carregarConfigRankingPontos();
+      await carregarConfigBonusVelocidade();
+      await carregarRecordeGeral();
+      await carregarColunasVisiveis();
+      await carregarMinPartidas();
+      await carregarTempoFeedback();
+      await carregarConfigEstrelas();
+    } catch (e) {
+      console.warn('Erro ao carregar configurações:', e);
+      exibirToast('⚠️ Algumas configurações podem não estar disponíveis.', 'aviso');
+    }
+
+    try {
+      state.turmasCache = await lerDados('copaV2/turmas') || TURMAS_PADRAO;
+      await garantirTurmasPadrao();
+    } catch (e) {
+      state.turmasCache = TURMAS_PADRAO;
+    }
 
     inicializarSons();
     setTimeout(() => verificarVersao(false), 2000);
