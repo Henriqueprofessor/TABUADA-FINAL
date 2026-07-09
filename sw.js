@@ -5,31 +5,31 @@
 const CACHE_STATIC_NAME = 'copa-tabuada-v1.3';
 const CACHE_DYNAMIC_NAME = 'copa-tabuada-dynamic-v1.3';
 
+// ===== CAMINHOS RELATIVOS (SEM BARRA INICIAL) =====
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/final.html',
-  '/tutorial-instalacao.html',
-  '/manifest.json',
-  '/css/style.css',
-  '/js/main.js',
-  '/js/config/firebase.js',
-  '/js/modules/auth.js',
-  '/js/modules/aviso.js',
-  '/js/modules/config.js',
-  '/js/modules/db.js',
-  '/js/modules/game.js',
-  '/js/modules/gameLoop.js',
-  '/js/modules/install.js',
-  '/js/modules/medals.js',
-  '/js/modules/ranking.js',
-  '/js/modules/sound.js',
-  '/js/modules/state.js',
-  '/js/modules/tutorial.js',
-  '/js/modules/ui.js',
-  '/js/modules/version.js',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  'index.html',
+  'final.html',
+  'tutorial-instalacao.html',
+  'manifest.json',
+  'css/style.css',
+  'js/main.js',
+  'js/config/firebase.js',
+  'js/modules/auth.js',
+  'js/modules/aviso.js',
+  'js/modules/config.js',
+  'js/modules/db.js',
+  'js/modules/game.js',
+  'js/modules/gameLoop.js',
+  'js/modules/install.js',
+  'js/modules/medals.js',
+  'js/modules/ranking.js',
+  'js/modules/sound.js',
+  'js/modules/state.js',
+  'js/modules/tutorial.js',
+  'js/modules/ui.js',
+  'js/modules/version.js',
+  'icons/icon-192.png',
+  'icons/icon-512.png'
 ];
 
 self.addEventListener('install', event => {
@@ -38,9 +38,13 @@ self.addEventListener('install', event => {
     caches.open(CACHE_STATIC_NAME)
       .then(cache => {
         console.log('[SW] Cacheando assets estáticos');
+        // Usa addAll com os caminhos relativos
         return cache.addAll(STATIC_ASSETS);
       })
       .then(() => self.skipWaiting())
+      .catch(error => {
+        console.error('[SW] Erro ao cachear assets:', error);
+      })
   );
 });
 
@@ -61,6 +65,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
+  // Ignora requisições para Firebase e Google APIs
   if (url.hostname.includes('firebase') || url.hostname.includes('googleapis')) {
     event.respondWith(fetch(event.request));
     return;
@@ -70,6 +75,7 @@ self.addEventListener('fetch', event => {
     caches.match(event.request)
       .then(cachedResponse => {
         if (cachedResponse) {
+          // Atualiza o cache em background (stale-while-revalidate)
           fetch(event.request)
             .then(networkResponse => {
               if (networkResponse && networkResponse.status === 200) {
@@ -91,8 +97,9 @@ self.addEventListener('fetch', event => {
             return networkResponse;
           })
           .catch(() => {
+            // Fallback para HTML quando offline
             if (event.request.headers.get('accept')?.includes('text/html')) {
-              return caches.match('/index.html');
+              return caches.match('index.html');
             }
             return new Response('Recurso indisponível offline', { status: 503 });
           });
