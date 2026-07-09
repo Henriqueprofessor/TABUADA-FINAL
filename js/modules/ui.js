@@ -372,4 +372,15 @@ export function exibirModalResultados(dados) {
   document.getElementById('btn-ver-ranking')?.addEventListener('click', () => { document.getElementById('modal-pos-jogo')?.remove(); const modalRanking = document.getElementById('modal-ranking-aluno'); if (modalRanking) { modalRanking.style.display = 'flex'; import('./ranking.js').then(({ atualizarRankingAluno }) => atualizarRankingAluno()); } });
   document.getElementById('modal-pos-jogo')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) document.getElementById('modal-pos-jogo')?.remove(); });
 }
-function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[m] || m)); }
+
+// ===== FUNÇÃO ESCAPE HTML CORRIGIDA =====
+function escapeHtml(str) {
+  if (!str) return '';
+  const string = String(str);
+  return string.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
