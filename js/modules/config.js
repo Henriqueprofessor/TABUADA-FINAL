@@ -105,7 +105,6 @@ export function carregarConfiguracoesDoCache() {
       state.prefColunasVisiveis = cache.preferencias.colunasVisiveis || {};
     }
 
-    // Feedback visual
     if (cache.tempoFeedbackAcerto !== undefined) {
       state.tempoFeedbackAcerto = cache.tempoFeedbackAcerto;
     }
@@ -113,7 +112,6 @@ export function carregarConfiguracoesDoCache() {
       state.tempoFeedbackErro = cache.tempoFeedbackErro;
     }
 
-    // Estrelas
     if (cache.configEstrelas) {
       if (cache.configEstrelas.acoes) {
         state.configEstrelas.acoes = { ...state.configEstrelas.acoes, ...cache.configEstrelas.acoes };
@@ -196,11 +194,9 @@ export function atualizarCacheComDadosFirebase(estado) {
       colunasVisiveis: state.prefColunasVisiveis || state.colunasVisiveis || {},
     };
 
-    // Feedback visual
     cache.tempoFeedbackAcerto = state.tempoFeedbackAcerto;
     cache.tempoFeedbackErro = state.tempoFeedbackErro;
 
-    // Estrelas
     cache.configEstrelas = {
       acoes: state.configEstrelas.acoes,
       visibilidade: state.configEstrelas.visibilidade
@@ -575,6 +571,100 @@ export async function salvarConfigEstrelas(acoes, visibilidade) {
   } catch (e) {
     console.error('Erro ao salvar configuração de estrelas:', e);
     exibirToast('❌ Erro ao salvar configuração de estrelas.', 'erro');
+    return false;
+  }
+}
+
+// ============================================================
+// RESETAR CONFIGURAÇÕES PARA O PADRÃO (NOVO)
+// ============================================================
+export async function resetarConfiguracoesPadrao() {
+  try {
+    // 1. Feedback Visual (0.2s para acerto, 1.0s para erro)
+    await db.ref(TEMPO_FEEDBACK_ACERTO_KEY).set(0.2);
+    await db.ref(TEMPO_FEEDBACK_ERRO_KEY).set(1.0);
+    state.tempoFeedbackAcerto = 0.2;
+    state.tempoFeedbackErro = 1.0;
+    setCacheItem('tempoFeedbackAcerto', 0.2);
+    setCacheItem('tempoFeedbackErro', 1.0);
+
+    // 2. Turmas padrão
+    const turmasPadrao = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
+    await db.ref('copaV2/turmas').set(turmasPadrao);
+    state.turmasCache = turmasPadrao;
+    setCacheItem('turmas', turmasPadrao);
+
+    // 3. Configuração de Estrelas (padrão)
+    const acoesPadrao = {
+      partida_completa: 1,
+      acertos_18_19: 2,
+      acertos_20: 5,
+      subiu_ranking: 3,
+      avancou_fase: 10,
+      recorde_pessoal: 4
+    };
+    await db.ref(ESTRELAS_CONFIG_KEY).set({
+      acoes: acoesPadrao,
+      visibilidade: 'todos'
+    });
+    state.configEstrelas.acoes = acoesPadrao;
+    state.configEstrelas.visibilidade = 'todos';
+    setCacheItem('configEstrelas', state.configEstrelas);
+
+    // 4. Bônus de Velocidade (padrão)
+    await db.ref(BONUS_VELOCIDADE_KEY).set({
+      ativo: true,
+      pontos: 1,
+      precisaoMinima: 80
+    });
+    state.bonusVelocidadeConfig = { ativo: true, pontos: 1, precisaoMinima: 80 };
+
+    // 5. Ranking de Pontos (padrão)
+    const pontosPadrao = getPontuacaoDefault();
+    await db.ref('copaV2/configuracoes/rankingPontos/tabelaPadrao').set(pontosPadrao);
+    await db.ref('copaV2/configuracoes/rankingPontos/tabelaFase5').set(pontosPadrao);
+    await db.ref('copaV2/configuracoes/rankingPontos/ativo').set(true);
+    state.rankingPontosAtivo = true;
+    state.tabelaPontosPadrao = pontosPadrao;
+    state.tabelaPontosFase5 = pontosPadrao;
+
+    // 6. Intervalos (padrão)
+    await db.ref('copaV2/configuracoes/intervalos/individual').set(4);
+    await db.ref('copaV2/configuracoes/intervalos/equipes').set(60);
+    state.intervaloIndividualSegundos = 4;
+    state.intervaloEquipesSegundos = 60;
+
+    // 7. Colunas visíveis (padrão – todas ativas)
+    const colunasPadrao = {
+      futPos: true,
+      pontuacaoAtual: true,
+      deltaLider: true,
+      velocRecorde: true,
+      progresso: true,
+      partidas: true,
+      tempo: true,
+      mediaTempo: true,
+      turma: true,
+      projecaoPontos: true
+    };
+    await db.ref(COLUNAS_KEY).set(colunasPadrao);
+    state.colunasVisiveis = colunasPadrao;
+    state.prefColunasVisiveis = colunasPadrao;
+    setCacheItem('preferencias.colunasVisiveis', colunasPadrao);
+
+    // 8. Mínimo de partidas por fase (5 para todas)
+    const minPadrao = { 1: 5, 2: 5, 3: 5, 4: 5, 5: 5 };
+    await db.ref(MIN_PARTIDAS_KEY).set(minPadrao);
+    state.minPartidasPorFase = minPadrao;
+
+    // 9. Valor da partida (2000)
+    await db.ref(VALOR_PARTIDA_KEY).set(2000);
+    state.VALOR_PARTIDA = 2000;
+
+    console.log('✅ Configurações resetadas para o padrão!');
+    return true;
+  } catch (e) {
+    console.error('Erro ao resetar configurações:', e);
     return false;
   }
 }
