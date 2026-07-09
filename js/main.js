@@ -61,7 +61,8 @@ import {
   carregarTempoFeedback,
   salvarTempoFeedback,
   carregarConfigEstrelas,
-  salvarConfigEstrelas
+  salvarConfigEstrelas,
+  resetarConfiguracoesPadrao
 } from './modules/config.js';
 import { verificarVersao, iniciarListenerVersao } from './modules/version.js';
 import { abrirInstalacao } from './modules/install.js';
@@ -304,7 +305,6 @@ async function entrarModoAluno(cadastrado = false) {
     document.getElementById('aluno-modalidade').textContent = state.estadoAtual?.modalidade || '--';
     document.getElementById('aluno-fase-info').textContent = `Fase ${state.estadoAtual?.fase || 1}/5`;
     
-    // Carregar estrelas do aluno
     await carregarEstrelasAluno(state.alunoId);
     atualizarNivelEstrelasUI();
     
@@ -863,11 +863,9 @@ function configurarEventos() {
         renderizarPainelSom();
         atualizarStatusAviso(state.avisoAtual);
         preencherSeletorCores('seletor-cores');
-        // Carregar valores de feedback
         document.getElementById('input-tempo-feedback-acerto').value = state.tempoFeedbackAcerto;
         document.getElementById('input-tempo-feedback-erro').value = state.tempoFeedbackErro;
         preencherConfigEstrelasUI();
-        // Carregar visibilidade
         document.getElementById('select-visibilidade-estrelas').value = state.configEstrelas.visibilidade || 'todos';
       }
     });
@@ -950,30 +948,57 @@ function configurarEventos() {
     }
   });
 
+  // ===== RESETAR COMPETIÇÃO (MODIFICADO) =====
   document.getElementById('btn-reset-total')?.addEventListener('click', async () => {
-    if (confirm('Resetar toda a competição?')) {
-      await setDados('copaV2', { 
-        fase:1, 
-        status:'aguardando', 
-        tempoFase:10, 
-        fim:0, 
-        modalidade: state.estadoAtual?.modalidade || "2-5", 
-        resultados:{}, 
-        participantes:{}, 
-        classificados:{} 
+    if (!confirm('⚠️ Resetar toda a competição? Todas as fases, resultados e configurações serão apagados e restaurados para os valores padrão.')) return;
+
+    try {
+      // 1. Resetar dados principais da competição
+      await setDados('copaV2', {
+        fase: 1,
+        status: 'aguardando',
+        tempoFase: 10,
+        fim: 0,
+        modalidade: state.estadoAtual?.modalidade || "2-5",
+        resultados: {},
+        participantes: {},
+        classificados: {}
       });
+
+      // 2. Remover dados online e de estrelas
       await removerDados('online');
-      
-      const pontosPadrao = getPontuacaoDefault();
-      await db.ref('copaV2/configuracoes/rankingPontos/tabelaPadrao').set(pontosPadrao);
-      await db.ref('copaV2/configuracoes/rankingPontos/tabelaFase5').set(pontosPadrao);
-      await db.ref('copaV2/configuracoes/rankingPontos/ativo').set(true);
-      
-      await carregarConfigRankingPontos();
-      
+      await removerDados('copaV2/estrelas');
+      await removerDados('copaV2/pontuacaoHistorico');
+      await removerDados('copaV2/pontuacaoGlobal');
+      await removerDados('copaV2/pontuacaoPosicao');
+      await removerDados('copaV2/pontuacaoRankingFinal');
+      await removerDados('copaV2/configuracoes/bonusVelocidade/vencedores');
+      await removerDados('copaV2/configuracoes/bonusVelocidade/porFase');
+      await removerDados('copaV2/configuracoes/recordeGeral');
+      state.recordeGeral = null;
+
+      // 3. Resetar todas as configurações para o padrão
+      await resetarConfiguracoesPadrao();
+
+      // 4. Atualizar interface
+      atualizarUI();
       atualizarUltimaSinc();
-      exibirToast('✅ Competição resetada com configuração de pontos padrão!', 'sucesso');
-      location.reload();
+      
+      // 5. Recarregar configurações no state
+      await carregarConfigRankingPontos();
+      await carregarConfigEstrelas();
+      await carregarTempoFeedback();
+      await carregarMinPartidas();
+      await carregarValorPartida();
+      await carregarConfigBonusVelocidade();
+
+      exibirToast('✅ Competição resetada com sucesso! Todas as configurações estão no padrão.', 'sucesso');
+      
+      // Recarregar a página para aplicar todas as mudanças
+      setTimeout(() => location.reload(), 2000);
+    } catch (e) {
+      console.error('Erro ao resetar competição:', e);
+      exibirToast('❌ Erro ao resetar competição. Tente novamente.', 'erro');
     }
   });
 
@@ -1181,7 +1206,6 @@ function configurarEventos() {
     atualizarUltimaSinc();
   });
 
-  // ===== SALVAR FEEDBACK =====
   document.getElementById('btn-salvar-feedback')?.addEventListener('click', async () => {
     const acerto = parseFloat(document.getElementById('input-tempo-feedback-acerto').value);
     const erro = parseFloat(document.getElementById('input-tempo-feedback-erro').value);
@@ -1202,7 +1226,6 @@ function configurarEventos() {
     }
   });
 
-  // ===== SALVAR AÇÕES DE ESTRELAS =====
   document.getElementById('btn-salvar-acoes-estrelas')?.addEventListener('click', async () => {
     const acoes = {};
     const inputs = document.querySelectorAll('#estrelas-acoes-container input[type="number"]');
