@@ -1,3 +1,4 @@
+// js/modules/game.js
 import { state } from './state.js';
 import { exibirToast, exibirModalResultados } from './ui.js';
 import { lerDados, atualizarDados, removerDados } from './db.js';
@@ -163,7 +164,6 @@ export async function iniciarPartida() {
 
     document.body.classList.add('em-jogo');
 
-    // ===== ELEMENTOS DO JOGO COM VERIFICAÇÕES =====
     const jogoArea = document.getElementById('jogo-area');
     const aguardando = document.getElementById('aguardando-aluno');
     const btnRanking = document.getElementById('btn-ranking-aluno');
@@ -331,7 +331,6 @@ export async function responder(idx) {
     state.perguntaIdx++;
     atualizarInfoAluno();
 
-    // ===== FEEDBACK SEPARADO =====
     let delay = 0.5;
     if (idx === -1) {
       delay = state.tempoFeedbackErro * 1000;
@@ -396,7 +395,6 @@ async function finalizarPartida() {
 
   document.body.classList.remove('em-jogo');
 
-  // ===== RE-EXIBIR A TELA PRINCIPAL =====
   const principal = document.getElementById('tela-aluno-principal');
   const detalhes = document.getElementById('tela-aluno-detalhes');
   const jogoArea = document.getElementById('jogo-area');
@@ -507,7 +505,10 @@ async function finalizarPartida() {
     };
 
     exibirModalResultados(dadosModal);
-    desenharGraficoEvolucao();
+    // Gráfico com tratamento de erro
+    import('./game.js')
+      .then(({ desenharGraficoEvolucao }) => desenharGraficoEvolucao())
+      .catch(() => console.warn('Falha ao carregar gráfico de evolução'));
 
     exibirToast(`✅ Partida finalizada! Pontos: ${state.pontosPartida}`);
 
