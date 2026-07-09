@@ -304,7 +304,7 @@ function entrarModoProfessor() {
   }
 }
 
-// ===== FUNÇÃO CORRIGIDA DE ENTRADA NO MODO ALUNO =====
+// ===== FUNÇÃO CORRIGIDA =====
 async function entrarModoAluno(cadastrado = false) {
   if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
     exibirToast('⏳ A fase não foi iniciada ou já terminou.', 'aviso');
@@ -325,15 +325,12 @@ async function entrarModoAluno(cadastrado = false) {
   preencherSeletorCores('seletor-cores-aluno');
   
   if (state.alunoId) {
-    // ===== CORREÇÃO: VERIFICAR SE OS ELEMENTOS EXISTEM =====
+    // ===== ELEMENTOS QUE EXISTEM =====
     const nomeDisplay = document.getElementById('aluno-nome-display');
     if (nomeDisplay) nomeDisplay.textContent = state.alunoNome || 'Aluno';
     
     const turmaDisplay = document.getElementById('aluno-turma-display');
     if (turmaDisplay) turmaDisplay.textContent = state.alunoTurma || '-';
-    
-    const modalidadeEl = document.getElementById('aluno-modalidade');
-    if (modalidadeEl) modalidadeEl.textContent = state.estadoAtual?.modalidade || '--';
     
     const faseInfoEl = document.getElementById('aluno-fase-info');
     if (faseInfoEl) faseInfoEl.textContent = `Fase ${state.estadoAtual?.fase || 1}/5`;
@@ -342,20 +339,27 @@ async function entrarModoAluno(cadastrado = false) {
     atualizarNivelEstrelasUI();
     atualizarNivelEstrelasMini();
     
-    // Garantir que a tela principal seja exibida
     mostrarTelaAlunoPrincipal();
-    
     await atualizarInfoAluno();
     
+    // ===== CONTROLE DO BOTÃO JOGAR =====
     const btnIniciar = document.getElementById('btn-iniciar-partida');
     const msgStatus = document.getElementById('msg-status-aluno');
     
-    if (state.estadoAtual && state.estadoAtual.status === 'em_andamento' && Date.now() < state.estadoAtual.fim) {
-      if (btnIniciar) btnIniciar.classList.remove('hidden');
-      if (msgStatus) msgStatus.textContent = 'Pronto para jogar!';
-    } else {
-      if (btnIniciar) btnIniciar.classList.add('hidden');
-      if (msgStatus) msgStatus.textContent = 'Aguardando fase...';
+    const faseEmAndamento = state.estadoAtual && 
+                           state.estadoAtual.status === 'em_andamento' && 
+                           Date.now() < state.estadoAtual.fim;
+    
+    if (btnIniciar) {
+      if (faseEmAndamento) {
+        btnIniciar.classList.remove('hidden');
+      } else {
+        btnIniciar.classList.add('hidden');
+      }
+    }
+    
+    if (msgStatus) {
+      msgStatus.textContent = faseEmAndamento ? 'Pronto para jogar!' : 'Aguardando fase...';
     }
   }
 }
@@ -584,13 +588,8 @@ function atualizarUI() {
     }
   }
   if (state.meuTipo === 'aluno' && state.alunoId) {
-    if (state.estadoAtual.status === 'em_andamento' && Date.now() < state.estadoAtual.fim) {
-      document.getElementById('btn-iniciar-partida').classList.remove('hidden');
-      document.getElementById('msg-status-aluno').textContent = 'Pronto para jogar!';
-    } else {
-      document.getElementById('btn-iniciar-partida').classList.add('hidden');
-      document.getElementById('msg-status-aluno').textContent = 'Aguardando fase...';
-    }
+    // O botão JOGAR é controlado pelo entrarModoAluno e atualizarInfoAluno
+    // Não precisa mexer aqui
   }
 }
 
@@ -1331,10 +1330,9 @@ function configurarEventos() {
 
   document.getElementById('btn-voltar-principal')?.addEventListener('click', () => {
     mostrarTelaAlunoPrincipal();
-    atualizarInfoAluno(); // atualiza dados ao voltar
+    atualizarInfoAluno();
   });
 
-  // ===== ABAS DE DETALHES =====
   document.querySelectorAll('.detalhes-aba').forEach(tab => {
     tab.addEventListener('click', function() {
       document.querySelectorAll('.detalhes-aba').forEach(t => t.classList.remove('ativa'));
@@ -1443,7 +1441,15 @@ async function init() {
           }
         } else if (state.meuTipo === 'aluno') {
           if (!state.jogoAtivo) {
-            atualizarInfoAluno();
+            await atualizarInfoAluno();
+            // Atualizar o estado do botão também
+            const btnIniciar = document.getElementById('btn-iniciar-partida');
+            if (btnIniciar) {
+              const faseEmAndamento = state.estadoAtual && 
+                                     state.estadoAtual.status === 'em_andamento' && 
+                                     Date.now() < state.estadoAtual.fim;
+              btnIniciar.classList.toggle('hidden', !faseEmAndamento);
+            }
             if (document.getElementById('modal-ranking-aluno').style.display === 'flex') {
               atualizarRankingAluno();
             }
