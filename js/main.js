@@ -304,7 +304,6 @@ function entrarModoProfessor() {
   }
 }
 
-// ===== FUNÇÃO CORRIGIDA =====
 async function entrarModoAluno(cadastrado = false) {
   if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
     exibirToast('⏳ A fase não foi iniciada ou já terminou.', 'aviso');
@@ -325,7 +324,7 @@ async function entrarModoAluno(cadastrado = false) {
   preencherSeletorCores('seletor-cores-aluno');
   
   if (state.alunoId) {
-    // ===== ELEMENTOS QUE EXISTEM =====
+    // Atualizar cabeçalho
     const nomeDisplay = document.getElementById('aluno-nome-display');
     if (nomeDisplay) nomeDisplay.textContent = state.alunoNome || 'Aluno';
     
@@ -335,31 +334,49 @@ async function entrarModoAluno(cadastrado = false) {
     const faseInfoEl = document.getElementById('aluno-fase-info');
     if (faseInfoEl) faseInfoEl.textContent = `Fase ${state.estadoAtual?.fase || 1}/5`;
     
+    // Carregar estrelas
     await carregarEstrelasAluno(state.alunoId);
     atualizarNivelEstrelasUI();
     atualizarNivelEstrelasMini();
     
+    // Garantir tela principal
     mostrarTelaAlunoPrincipal();
+    
+    // Atualizar informações (posição, barra, última partida)
     await atualizarInfoAluno();
     
-    // ===== CONTROLE DO BOTÃO JOGAR =====
+    // ===== CONTROLE DO BOTÃO JOGAR - CORRIGIDO =====
     const btnIniciar = document.getElementById('btn-iniciar-partida');
     const msgStatus = document.getElementById('msg-status-aluno');
     
-    const faseEmAndamento = state.estadoAtual && 
-                           state.estadoAtual.status === 'em_andamento' && 
-                           Date.now() < state.estadoAtual.fim;
+    // Verificação mais robusta
+    let faseAtiva = false;
+    if (state.estadoAtual) {
+      if (state.estadoAtual.status === 'em_andamento') {
+        const fim = state.estadoAtual.fim || 0;
+        faseAtiva = Date.now() < fim;
+        console.log(`🕹️ Fase em andamento? ${faseAtiva} (fim: ${new Date(fim).toLocaleTimeString()})`);
+      } else {
+        console.log(`🕹️ Status da fase: ${state.estadoAtual.status}`);
+      }
+    } else {
+      console.warn('⚠️ state.estadoAtual não definido');
+    }
     
     if (btnIniciar) {
-      if (faseEmAndamento) {
+      if (faseAtiva) {
         btnIniciar.classList.remove('hidden');
+        console.log('✅ Botão JOGAR visível');
       } else {
         btnIniciar.classList.add('hidden');
+        console.log('⏸️ Botão JOGAR oculto (fase não ativa)');
       }
+    } else {
+      console.error('❌ Elemento btn-iniciar-partida não encontrado no DOM');
     }
     
     if (msgStatus) {
-      msgStatus.textContent = faseEmAndamento ? 'Pronto para jogar!' : 'Aguardando fase...';
+      msgStatus.textContent = faseAtiva ? 'Pronto para jogar!' : 'Aguardando fase...';
     }
   }
 }
@@ -587,10 +604,7 @@ function atualizarUI() {
       }
     }
   }
-  if (state.meuTipo === 'aluno' && state.alunoId) {
-    // O botão JOGAR é controlado pelo entrarModoAluno e atualizarInfoAluno
-    // Não precisa mexer aqui
-  }
+  // Não mexer no botão JOGAR aqui, pois é controlado pelo entrarModoAluno
 }
 
 function atualizarOnline(snap) {
