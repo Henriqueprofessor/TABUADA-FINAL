@@ -2,8 +2,8 @@
 // SERVICE WORKER – Copa Tabuada CEIB 2026
 // ============================================================
 
-const CACHE_STATIC_NAME = 'copa-tabuada-v1.3';
-const CACHE_DYNAMIC_NAME = 'copa-tabuada-dynamic-v1.3';
+const CACHE_STATIC_NAME = 'copa-tabuada-v1.4';
+const CACHE_DYNAMIC_NAME = 'copa-tabuada-dynamic-v1.4';
 
 // ===== CAMINHOS RELATIVOS (SEM BARRA INICIAL) =====
 const STATIC_ASSETS = [
