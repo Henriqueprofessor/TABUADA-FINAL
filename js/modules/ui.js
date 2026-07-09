@@ -1,5 +1,17 @@
+// js/modules/ui.js
 import { state } from './state.js';
 import { getNivelPorEstrelas, getProximoNivel } from './estrelas.js';
+
+// ===== FUNÇÃO ESCAPE HTML (movida para o topo) =====
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
 
 // ===== CONTROLE DE TELA =====
 export function mostrarTela(tipo) {
@@ -333,8 +345,10 @@ export function exibirModalResultados(dados) {
   let projecaoPos = null;
   if (state.estadoAtual?.status === 'em_andamento' && fase === state.estadoAtual.fase) projecaoPos = posicao;
   let errosHtml = '';
-  if (historico && historico.length > 0) {
-    const erros = historico.filter(h => !h.acertou);
+  // Verifica se historico existe
+  const historicoSeguro = historico || [];
+  if (historicoSeguro.length > 0) {
+    const erros = historicoSeguro.filter(h => !h.acertou);
     if (erros.length > 0) {
       errosHtml = `<div class="bloco"><div class="bloco-titulo">❌ Erros na partida (${erros.length})</div><ul class="lista-erros">${erros.map(e => `<li><span class="pergunta">${escapeHtml(e.pergunta)}</span><span>Escolheu: <span class="resposta-errada">${e.respostaEscolhida !== null ? escapeHtml(e.respostaEscolhida) : '⏱️ tempo'}</span></span><span>Correto: <span class="resposta-correta">${escapeHtml(e.respostaCorreta)}</span></span></li>`).join('')}</ul></div>`;
     } else {
@@ -371,16 +385,4 @@ export function exibirModalResultados(dados) {
   document.getElementById('btn-jogar-novamente')?.addEventListener('click', () => { document.getElementById('modal-pos-jogo')?.remove(); import('./game.js').then(({ iniciarPartida }) => iniciarPartida()); });
   document.getElementById('btn-ver-ranking')?.addEventListener('click', () => { document.getElementById('modal-pos-jogo')?.remove(); const modalRanking = document.getElementById('modal-ranking-aluno'); if (modalRanking) { modalRanking.style.display = 'flex'; import('./ranking.js').then(({ atualizarRankingAluno }) => atualizarRankingAluno()); } });
   document.getElementById('modal-pos-jogo')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) document.getElementById('modal-pos-jogo')?.remove(); });
-}
-
-// ===== FUNÇÃO ESCAPE HTML CORRIGIDA =====
-function escapeHtml(str) {
-  if (!str) return '';
-  const string = String(str);
-  return string.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
 }
