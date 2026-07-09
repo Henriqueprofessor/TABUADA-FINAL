@@ -324,6 +324,7 @@ async function entrarModoAluno(cadastrado = false) {
   preencherSeletorCores('seletor-cores-aluno');
   
   if (state.alunoId) {
+    // Atualizar cabeçalho
     const nomeDisplay = document.getElementById('aluno-nome-display');
     if (nomeDisplay) nomeDisplay.textContent = state.alunoNome || 'Aluno';
     
@@ -333,16 +334,22 @@ async function entrarModoAluno(cadastrado = false) {
     const faseInfoEl = document.getElementById('aluno-fase-info');
     if (faseInfoEl) faseInfoEl.textContent = `Fase ${state.estadoAtual?.fase || 1}/5`;
     
+    // Carregar estrelas
     await carregarEstrelasAluno(state.alunoId);
     atualizarNivelEstrelasUI();
     atualizarNivelEstrelasMini();
     
+    // Garantir tela principal
     mostrarTelaAlunoPrincipal();
+    
+    // Atualizar informações (posição, barra, última partida)
     await atualizarInfoAluno();
     
+    // ===== CONTROLE DO BOTÃO JOGAR - CORRIGIDO =====
     const btnIniciar = document.getElementById('btn-iniciar-partida');
     const msgStatus = document.getElementById('msg-status-aluno');
     
+    // Verificação mais robusta
     let faseAtiva = false;
     if (state.estadoAtual) {
       if (state.estadoAtual.status === 'em_andamento') {
@@ -597,6 +604,7 @@ function atualizarUI() {
       }
     }
   }
+  // Não mexer no botão JOGAR aqui, pois é controlado pelo entrarModoAluno
 }
 
 function atualizarOnline(snap) {
@@ -1448,6 +1456,7 @@ async function init() {
         } else if (state.meuTipo === 'aluno') {
           if (!state.jogoAtivo) {
             await atualizarInfoAluno();
+            // Atualizar o estado do botão também
             const btnIniciar = document.getElementById('btn-iniciar-partida');
             if (btnIniciar) {
               const faseEmAndamento = state.estadoAtual && 
