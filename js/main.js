@@ -818,6 +818,7 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!', 'sucesso');
   });
 
+  // ===== EVENTOS DOS BOTÕES DE RANKING E SAIR DO ALUNO =====
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -827,10 +828,17 @@ function configurarEventos() {
       }
     }, state.intervaloIndividualSegundos * 1000);
   });
+
   document.getElementById('btn-ranking-pontos-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     document.querySelector('.modal-sub-tabs .sub-tab[data-subtab="pontos"]')?.click();
   });
+
+  document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
+    if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
+    location.reload();
+  });
+
   document.getElementById('btn-fechar-modal-ranking')?.addEventListener('click', () => {
     fecharModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -855,10 +863,6 @@ function configurarEventos() {
     const posAtual = ranking.findIndex(p => p.id === state.alunoId) + 1;
     state.posicaoAntesPartida = posAtual > 0 ? posAtual : null;
     await iniciarPartida();
-  });
-  document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
-    if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
-    location.reload();
   });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
