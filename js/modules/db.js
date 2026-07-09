@@ -26,7 +26,7 @@ export function carregarEstado(callback) {
 
 export async function atualizarDados(caminho, dados) {
   try {
-    // Se dados for um valor primitivo (string, number, boolean, null), usa set
+    // Se dados for um valor primitivo (string, number, boolean, null) ou array, usa set
     if (typeof dados !== 'object' || dados === null || Array.isArray(dados)) {
       await db.ref(caminho).set(dados);
     } else {
