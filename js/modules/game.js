@@ -162,10 +162,23 @@ export async function iniciarPartida() {
     state.historicoPerguntas = [];
 
     document.body.classList.add('em-jogo');
-    document.getElementById('jogo-area').classList.remove('hidden');
-    document.getElementById('aguardando-aluno').classList.add('hidden');
-    document.getElementById('btn-ranking-aluno').disabled = true;
-    document.getElementById('btn-ranking-pontos-aluno').disabled = true;
+
+    // ===== ELEMENTOS DO JOGO =====
+    const jogoArea = document.getElementById('jogo-area');
+    const aguardando = document.getElementById('aguardando-aluno');
+    const btnRanking = document.getElementById('btn-ranking-aluno');
+    const btnRankingPontos = document.getElementById('btn-ranking-pontos-aluno');
+
+    if (jogoArea) jogoArea.classList.remove('hidden');
+    if (aguardando) aguardando.classList.add('hidden');
+    if (btnRanking) btnRanking.disabled = true;
+    if (btnRankingPontos) btnRankingPontos.disabled = true;
+
+    // ===== ESCONDER TELAS DO ALUNO DURANTE O JOGO =====
+    const principal = document.getElementById('tela-aluno-principal');
+    const detalhes = document.getElementById('tela-aluno-detalhes');
+    if (principal) principal.style.display = 'none';
+    if (detalhes) detalhes.style.display = 'none';
 
     proximaPergunta();
   } catch (error) {
@@ -173,6 +186,9 @@ export async function iniciarPartida() {
     exibirToast('❌ Erro ao iniciar partida. Tente novamente.');
     state.jogoAtivo = false;
     document.body.classList.remove('em-jogo');
+    // Reexibir a tela principal
+    const principal = document.getElementById('tela-aluno-principal');
+    if (principal) principal.style.display = 'block';
   }
 }
 
@@ -190,7 +206,9 @@ function proximaPergunta() {
 
   try {
     const p = state.perguntas[state.perguntaIdx];
-    document.getElementById('pergunta').innerText = `${p.a} x ${p.b} = ?`;
+    const perguntaEl = document.getElementById('pergunta');
+    if (perguntaEl) perguntaEl.innerText = `${p.a} x ${p.b} = ?`;
+    
     const btns = document.querySelectorAll('.opcao-vertical');
     p.opts.forEach((o, i) => {
       if (btns[i]) {
@@ -200,7 +218,10 @@ function proximaPergunta() {
         btns[i].classList.remove('correto', 'errado', 'destaque-correto');
       }
     });
-    document.getElementById('pergunta-num').innerText = state.perguntaIdx + 1;
+    
+    const perguntaNum = document.getElementById('pergunta-num');
+    if (perguntaNum) perguntaNum.innerText = state.perguntaIdx + 1;
+    
     iniciarTimerPergunta();
   } catch (error) {
     console.error('Erro ao exibir pergunta:', error);
@@ -307,14 +328,15 @@ export async function responder(idx) {
       }
     }
 
-    document.getElementById('pontuacao-acumulada').innerText = state.pontosPartida;
+    const pontuacaoAcumulada = document.getElementById('pontuacao-acumulada');
+    if (pontuacaoAcumulada) pontuacaoAcumulada.innerText = state.pontosPartida;
+    
     state.perguntaIdx++;
     atualizarInfoAluno();
 
     // ===== FEEDBACK SEPARADO =====
     let delay = 0.5; // fallback
     if (idx === -1) {
-      // tempo esgotado – consideramos como erro
       delay = state.tempoFeedbackErro * 1000;
     } else if (acertou) {
       delay = state.tempoFeedbackAcerto * 1000;
@@ -376,10 +398,22 @@ async function finalizarPartida() {
   state.jogoAtivo = false;
 
   document.body.classList.remove('em-jogo');
-  document.getElementById('btn-ranking-aluno').disabled = false;
-  document.getElementById('btn-ranking-pontos-aluno').disabled = false;
-  document.getElementById('jogo-area').classList.add('hidden');
-  document.getElementById('aguardando-aluno').classList.remove('hidden');
+
+  // ===== RE-EXIBIR A TELA PRINCIPAL =====
+  const principal = document.getElementById('tela-aluno-principal');
+  if (principal) principal.style.display = 'block';
+  const detalhes = document.getElementById('tela-aluno-detalhes');
+  if (detalhes) detalhes.style.display = 'none';
+
+  const jogoArea = document.getElementById('jogo-area');
+  const aguardando = document.getElementById('aguardando-aluno');
+  const btnRanking = document.getElementById('btn-ranking-aluno');
+  const btnRankingPontos = document.getElementById('btn-ranking-pontos-aluno');
+
+  if (jogoArea) jogoArea.classList.add('hidden');
+  if (aguardando) aguardando.classList.remove('hidden');
+  if (btnRanking) btnRanking.disabled = false;
+  if (btnRankingPontos) btnRankingPontos.disabled = false;
 
   try {
     const fase = state.estadoAtual.fase;
