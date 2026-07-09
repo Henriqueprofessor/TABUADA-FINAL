@@ -324,7 +324,6 @@ async function entrarModoAluno(cadastrado = false) {
   preencherSeletorCores('seletor-cores-aluno');
   
   if (state.alunoId) {
-    // ===== ATUALIZAR ELEMENTOS DO CABEÇALHO =====
     const nomeDisplay = document.getElementById('aluno-nome-display');
     if (nomeDisplay) nomeDisplay.textContent = state.alunoNome || 'Aluno';
     
@@ -334,18 +333,13 @@ async function entrarModoAluno(cadastrado = false) {
     const faseInfoEl = document.getElementById('aluno-fase-info');
     if (faseInfoEl) faseInfoEl.textContent = `Fase ${state.estadoAtual?.fase || 1}/5`;
     
-    // ===== CARREGAR ESTRELAS =====
     await carregarEstrelasAluno(state.alunoId);
     atualizarNivelEstrelasUI();
     atualizarNivelEstrelasMini();
     
-    // ===== MOSTRAR TELA PRINCIPAL =====
     mostrarTelaAlunoPrincipal();
-    
-    // ===== ATUALIZAR INFORMAÇÕES =====
     await atualizarInfoAluno();
     
-    // ===== CONTROLE DO BOTÃO JOGAR =====
     const btnIniciar = document.getElementById('btn-iniciar-partida');
     const msgStatus = document.getElementById('msg-status-aluno');
     
@@ -603,7 +597,6 @@ function atualizarUI() {
       }
     }
   }
-  // Não mexer no botão JOGAR aqui, pois é controlado pelo entrarModoAluno
 }
 
 function atualizarOnline(snap) {
