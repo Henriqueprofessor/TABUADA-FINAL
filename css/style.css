@@ -341,3 +341,331 @@ body.tema-claro { /* ... já existente ... */ }
   .detalhes-aba-container { gap: 4px; }
   .detalhes-aba { font-size: 12px; padding: 6px 12px; }
 }
+/* ============================================================
+   NOVOS ESTILOS PARA A TELA DO ALUNO (REFORMULADA)
+   ============================================================ */
+
+/* --- Cabeçalho do aluno --- */
+.aluno-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: var(--bg-card-hover);
+  border-radius: 16px;
+  border: 1px solid var(--borda-card);
+}
+.aluno-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.aluno-nome {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--texto-destaque);
+}
+.aluno-turma {
+  font-size: 14px;
+  color: var(--texto-secundario);
+  background: var(--bg-botao-padrao);
+  padding: 2px 10px;
+  border-radius: 30px;
+}
+.aluno-fase {
+  font-size: 14px;
+  color: var(--texto-secundario);
+}
+.aluno-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.nivel-estrelas-mini {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--texto-secundario);
+}
+.nivel-estrelas-mini .icone-nivel {
+  font-size: 20px;
+}
+.nivel-estrelas-mini .nome-nivel {
+  font-weight: 500;
+}
+
+/* --- Card de Posição --- */
+.card-posicao {
+  background: var(--bg-card-hover);
+  border-radius: 20px;
+  padding: 24px 20px;
+  margin: 12px 0;
+  text-align: center;
+  border: 2px solid var(--borda-card);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.posicao-destaque {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.posicao-numero {
+  font-size: 64px;
+  font-weight: 900;
+  color: #ffd966;
+  line-height: 1;
+}
+.posicao-rotulo {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--texto-principal);
+}
+.status-classificacao {
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight: 600;
+}
+.status-texto {
+  display: inline-block;
+  padding: 4px 16px;
+  border-radius: 30px;
+}
+.status-classificado .status-texto {
+  background: #14532d;
+  color: #4ade80;
+}
+.status-nao-classificado .status-texto {
+  background: #7f1d1d;
+  color: #f87171;
+}
+.status-aguardando .status-texto {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+/* --- Barra de progresso da classificação --- */
+.barra-progresso-classificacao {
+  margin-top: 16px;
+}
+.barra-progresso-classificacao .barra-fundo {
+  width: 100%;
+  height: 10px;
+  background: #2c3e50;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.barra-progresso-classificacao .barra-preenchida {
+  height: 100%;
+  background: linear-gradient(90deg, #facc15, #f59e0b);
+  border-radius: 6px;
+  width: 0%;
+  transition: width 0.6s ease;
+}
+.info-progresso {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--texto-secundario);
+  margin-top: 4px;
+}
+.detalhes-classificacao {
+  font-size: 14px;
+  color: var(--texto-secundario);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* --- Card Última Partida --- */
+.card-ultima-partida {
+  background: var(--bg-card-hover);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  border: 1px solid var(--borda-card);
+}
+.ultima-partida-titulo {
+  font-weight: 600;
+  color: var(--texto-secundario);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.ultima-partida-dados {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 18px;
+  font-weight: 600;
+}
+.ultima-pontuacao { color: #ffd966; }
+.ultima-acertos { color: #4ade80; }
+.ultima-tendencia { font-size: 24px; }
+
+/* --- Botões da tela principal --- */
+.btn-jogar {
+  width: 100%;
+  padding: 18px;
+  font-size: 28px;
+  font-weight: 700;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 60px;
+  cursor: pointer;
+  transition: 0.2s;
+  margin: 12px 0;
+  box-shadow: 0 4px 16px rgba(39, 174, 96, 0.4);
+}
+.btn-jogar:hover {
+  transform: scale(1.02);
+  background: #2ecc71;
+}
+.btn-jogar.hidden { display: none; }
+
+.btn-detalhes {
+  width: 100%;
+  padding: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  background: var(--bg-botao-padrao);
+  color: var(--texto-principal);
+  border: 1px solid var(--borda-card);
+  border-radius: 40px;
+  cursor: pointer;
+  transition: 0.2s;
+  margin: 8px 0;
+}
+.btn-detalhes:hover {
+  background: var(--bg-botao-padrao-hover);
+}
+
+/* --- Tela de Detalhes --- */
+.detalhes-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--borda-card);
+}
+.detalhes-header h2 {
+  margin: 0;
+  flex: 1;
+}
+.btn-voltar {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--texto-destaque);
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 30px;
+  transition: 0.2s;
+}
+.btn-voltar:hover {
+  background: var(--bg-botao-padrao-hover);
+}
+
+/* --- Abas de detalhes --- */
+.detalhes-aba-container {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--borda-card);
+  padding-bottom: 8px;
+}
+.detalhes-aba {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 30px;
+  font-weight: 500;
+  color: var(--texto-secundario);
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 14px;
+}
+.detalhes-aba:hover {
+  background: var(--bg-botao-padrao-hover);
+}
+.detalhes-aba.ativa {
+  background: var(--cor-primaria);
+  color: white;
+}
+
+.detalhes-painel {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+.detalhes-painel.ativo {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Painel Desempenho --- */
+.card-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.info-item {
+  background: var(--bg-card-hover);
+  padding: 12px 16px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+}
+.info-item .label {
+  font-size: 12px;
+  color: var(--texto-secundario);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.info-item .valor {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--texto-destaque);
+  margin-top: 2px;
+}
+
+/* --- Histórico --- */
+.historico-lista {
+  max-height: 300px;
+  overflow-y: auto;
+}
+.historico-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--borda-card);
+  font-size: 14px;
+}
+.historico-item .pontos { color: #ffd966; font-weight: 600; }
+.historico-item .acertos { color: #4ade80; }
+.historico-item .tempo { color: var(--texto-secundario); }
+
+/* --- Ajustes responsivos --- */
+@media (max-width: 600px) {
+  .posicao-numero { font-size: 48px; }
+  .posicao-rotulo { font-size: 18px; }
+  .card-info { grid-template-columns: 1fr; }
+  .aluno-header { flex-direction: column; align-items: stretch; }
+  .aluno-header-right { justify-content: space-between; }
+  .detalhes-aba-container { gap: 4px; }
+  .detalhes-aba { font-size: 12px; padding: 6px 12px; }
+}
