@@ -19,7 +19,10 @@ import {
   definirCorPrimaria,
   carregarCorPrimaria,
   CORES_DISPONIVEIS,
-  atualizarNivelEstrelasUI
+  atualizarNivelEstrelasUI,
+  mostrarTelaAlunoPrincipal,
+  mostrarTelaAlunoDetalhes,
+  atualizarNivelEstrelasMini
 } from './modules/ui.js';
 import { iniciarPartida } from './modules/game.js';
 import { 
@@ -83,9 +86,6 @@ import { carregarEstrelasAluno } from './modules/estrelas.js';
 // ============================================================
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 
-// ============================================================
-// FUNÇÃO PARA GARANTIR TURMAS PADRÃO (DEFINIDA ANTES DE USAR)
-// ============================================================
 async function garantirTurmasPadrao() {
   try {
     let turmas = await lerDados('copaV2/turmas');
@@ -108,7 +108,7 @@ async function garantirTurmasPadrao() {
 }
 
 // ============================================================
-// TIMER GLOBAL (CONTÍNUO)
+// TIMER GLOBAL
 // ============================================================
 let timerGlobalInterval = null;
 
@@ -304,6 +304,7 @@ function entrarModoProfessor() {
   }
 }
 
+// ===== FUNÇÃO CORRIGIDA DE ENTRADA NO MODO ALUNO =====
 async function entrarModoAluno(cadastrado = false) {
   if (!state.estadoAtual || state.estadoAtual.status !== 'em_andamento' || Date.now() >= state.estadoAtual.fim) {
     exibirToast('⏳ A fase não foi iniciada ou já terminou.', 'aviso');
@@ -324,21 +325,37 @@ async function entrarModoAluno(cadastrado = false) {
   preencherSeletorCores('seletor-cores-aluno');
   
   if (state.alunoId) {
-    document.getElementById('aluno-nome-display').textContent = state.alunoNome || 'Aluno';
-    document.getElementById('aluno-turma-display').textContent = state.alunoTurma || '-';
-    document.getElementById('aluno-modalidade').textContent = state.estadoAtual?.modalidade || '--';
-    document.getElementById('aluno-fase-info').textContent = `Fase ${state.estadoAtual?.fase || 1}/5`;
+    // ===== CORREÇÃO: VERIFICAR SE OS ELEMENTOS EXISTEM =====
+    const nomeDisplay = document.getElementById('aluno-nome-display');
+    if (nomeDisplay) nomeDisplay.textContent = state.alunoNome || 'Aluno';
+    
+    const turmaDisplay = document.getElementById('aluno-turma-display');
+    if (turmaDisplay) turmaDisplay.textContent = state.alunoTurma || '-';
+    
+    const modalidadeEl = document.getElementById('aluno-modalidade');
+    if (modalidadeEl) modalidadeEl.textContent = state.estadoAtual?.modalidade || '--';
+    
+    const faseInfoEl = document.getElementById('aluno-fase-info');
+    if (faseInfoEl) faseInfoEl.textContent = `Fase ${state.estadoAtual?.fase || 1}/5`;
     
     await carregarEstrelasAluno(state.alunoId);
     atualizarNivelEstrelasUI();
+    atualizarNivelEstrelasMini();
     
-    atualizarInfoAluno();
+    // Garantir que a tela principal seja exibida
+    mostrarTelaAlunoPrincipal();
+    
+    await atualizarInfoAluno();
+    
+    const btnIniciar = document.getElementById('btn-iniciar-partida');
+    const msgStatus = document.getElementById('msg-status-aluno');
+    
     if (state.estadoAtual && state.estadoAtual.status === 'em_andamento' && Date.now() < state.estadoAtual.fim) {
-      document.getElementById('btn-iniciar-partida').classList.remove('hidden');
-      document.getElementById('msg-status-aluno').textContent = 'Pronto para jogar!';
+      if (btnIniciar) btnIniciar.classList.remove('hidden');
+      if (msgStatus) msgStatus.textContent = 'Pronto para jogar!';
     } else {
-      document.getElementById('btn-iniciar-partida').classList.add('hidden');
-      document.getElementById('msg-status-aluno').textContent = 'Aguardando fase...';
+      if (btnIniciar) btnIniciar.classList.add('hidden');
+      if (msgStatus) msgStatus.textContent = 'Aguardando fase...';
     }
   }
 }
@@ -449,7 +466,7 @@ function pararAtualizacaoTorcida() {
 }
 
 // ============================================================
-// DEMAIS FUNÇÕES (POPULAR SELECTS, ATUALIZAR UI, ETC)
+// DEMAIS FUNÇÕES
 // ============================================================
 
 function preencherSeletorCores(containerId) {
@@ -506,13 +523,11 @@ function atualizarUltimaSinc() {
 }
 
 function atualizarUI() {
-  // ===== PROTEÇÃO CONTRA ESTADO INDEFINIDO =====
   if (!state.estadoAtual) {
     console.warn('Estado atual indefinido, ignorando atualização UI');
     return;
   }
   
-  // Garantir que as propriedades existam
   if (!state.estadoAtual.resultados) state.estadoAtual.resultados = {};
   if (!state.estadoAtual.participantes) state.estadoAtual.participantes = {};
   if (!state.estadoAtual.classificados) state.estadoAtual.classificados = {};
@@ -636,9 +651,6 @@ function onSelectFaseTorcidaChange() {
   }
 }
 
-// ============================================================
-// FUNÇÃO PARA PREENCHER CONFIG DE ESTRELAS
-// ============================================================
 function preencherConfigEstrelasUI() {
   const container = document.getElementById('estrelas-acoes-container');
   if (!container) return;
@@ -982,12 +994,10 @@ function configurarEventos() {
     }
   });
 
-  // ===== RESETAR COMPETIÇÃO (CORRIGIDO) =====
   document.getElementById('btn-reset-total')?.addEventListener('click', async () => {
     if (!confirm('⚠️ Resetar toda a competição? Todas as fases, resultados e configurações serão apagados e restaurados para os valores padrão.')) return;
 
     try {
-      // 1. Resetar dados principais da competição
       await setDados('copaV2', {
         fase: 1,
         status: 'aguardando',
@@ -999,7 +1009,6 @@ function configurarEventos() {
         classificados: {}
       });
 
-      // 2. Remover dados online e de estrelas
       await removerDados('online');
       await removerDados('copaV2/estrelas');
       await removerDados('copaV2/pontuacaoHistorico');
@@ -1011,10 +1020,8 @@ function configurarEventos() {
       await removerDados('copaV2/configuracoes/recordeGeral');
       state.recordeGeral = null;
 
-      // 3. Resetar todas as configurações para o padrão
       await resetarConfiguracoesPadrao();
 
-      // 4. Forçar recarregamento do estado após reset
       const snap = await db.ref('copaV2').once('value');
       state.estadoAtual = snap.val() || { 
         fase: 1, 
@@ -1027,11 +1034,9 @@ function configurarEventos() {
         classificados: {} 
       };
 
-      // 5. Atualizar interface
       atualizarUI();
       atualizarUltimaSinc();
       
-      // 6. Recarregar configurações no state
       await carregarConfigRankingPontos();
       await carregarConfigEstrelas();
       await carregarTempoFeedback();
@@ -1040,8 +1045,6 @@ function configurarEventos() {
       await carregarConfigBonusVelocidade();
 
       exibirToast('✅ Competição resetada com sucesso! Todas as configurações estão no padrão.', 'sucesso');
-      
-      // Recarregar a página para aplicar todas as mudanças
       setTimeout(() => location.reload(), 2000);
     } catch (e) {
       console.error('Erro ao resetar competição:', e);
@@ -1319,6 +1322,27 @@ function configurarEventos() {
     if (ok) {
       exibirToast(`✅ Visibilidade alterada para: ${visibilidade === 'todos' ? 'Todos (alunos + torcida)' : 'Apenas alunos'}`, 'sucesso');
     }
+  });
+
+  // ===== NAVEGAÇÃO ENTRE TELAS DO ALUNO =====
+  document.getElementById('btn-ver-detalhes')?.addEventListener('click', () => {
+    mostrarTelaAlunoDetalhes();
+  });
+
+  document.getElementById('btn-voltar-principal')?.addEventListener('click', () => {
+    mostrarTelaAlunoPrincipal();
+    atualizarInfoAluno(); // atualiza dados ao voltar
+  });
+
+  // ===== ABAS DE DETALHES =====
+  document.querySelectorAll('.detalhes-aba').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.detalhes-aba').forEach(t => t.classList.remove('ativa'));
+      this.classList.add('ativa');
+      const aba = this.dataset.aba;
+      document.querySelectorAll('.detalhes-painel').forEach(p => p.classList.remove('ativo'));
+      document.getElementById(`painel-${aba}`)?.classList.add('ativo');
+    });
   });
 }
 
