@@ -324,7 +324,7 @@ async function entrarModoAluno(cadastrado = false) {
   preencherSeletorCores('seletor-cores-aluno');
   
   if (state.alunoId) {
-    // ===== ATUALIZAR CABEÇALHO =====
+    // ===== ATUALIZAR ELEMENTOS DO CABEÇALHO =====
     const nomeDisplay = document.getElementById('aluno-nome-display');
     if (nomeDisplay) nomeDisplay.textContent = state.alunoNome || 'Aluno';
     
