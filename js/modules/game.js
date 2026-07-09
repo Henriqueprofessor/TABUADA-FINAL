@@ -163,7 +163,7 @@ export async function iniciarPartida() {
 
     document.body.classList.add('em-jogo');
 
-    // ===== ELEMENTOS DO JOGO =====
+    // ===== ELEMENTOS DO JOGO (COM VERIFICAÇÕES) =====
     const jogoArea = document.getElementById('jogo-area');
     const aguardando = document.getElementById('aguardando-aluno');
     const btnRanking = document.getElementById('btn-ranking-aluno');
