@@ -1,4 +1,3 @@
-// js/modules/ranking.js
 import { db } from '../config/firebase.js';
 import { state } from './state.js';
 import { lerDados, atualizarDados, removerDados, setDados } from './db.js';
@@ -930,7 +929,7 @@ export async function renderRankingGeral() {
 }
 
 // ============================================================
-// ATUALIZAR INFORMAÇÕES DO ALUNO
+// ATUALIZAR INFORMAÇÕES DO ALUNO (TELA PRINCIPAL + DETALHES)
 // ============================================================
 
 export async function atualizarInfoAluno() {
@@ -1044,10 +1043,8 @@ export async function atualizarInfoAluno() {
   }
 
   atualizarExibicaoMedalhas();
-  // Importação dinâmica com tratamento de erro
-  import('./game.js')
-    .then(({ desenharGraficoEvolucao }) => desenharGraficoEvolucao())
-    .catch(() => console.warn('Falha ao carregar gráfico de evolução'));
+  const { desenharGraficoEvolucao } = await import('./game.js');
+  desenharGraficoEvolucao();
 
   // ===== ATUALIZAR TELA PRINCIPAL DO ALUNO =====
   if (state.meuTipo === 'aluno') {
@@ -1056,9 +1053,11 @@ export async function atualizarInfoAluno() {
     const partidasFeitas = state.estadoAtual?.resultados?.[fase]?.[state.alunoId]?.length || 0;
     const vagas = VAGAS_POR_FASE[fase] || 30;
 
+    // Posição
     const posNum = document.getElementById('posicao-numero-principal');
     if (posNum) posNum.textContent = posicao > 0 ? posicao : '--';
 
+    // Status
     const statusEl = document.getElementById('status-classificacao-principal');
     if (statusEl) {
       const classificado = (posicao > 0 && posicao <= vagas && partidasFeitas >= minPartidas);
@@ -1072,12 +1071,14 @@ export async function atualizarInfoAluno() {
       }
     }
 
+    // Barra de progresso
     const barraProgresso = document.getElementById('barra-classificacao');
     const pct = Math.min(100, (partidasFeitas / (minPartidas || 1)) * 100);
     if (barraProgresso) barraProgresso.style.width = pct + '%';
     document.getElementById('partidas-feitas').textContent = partidasFeitas;
     document.getElementById('partidas-necessarias').textContent = minPartidas;
 
+    // Detalhes da classificação
     const detalhes = document.getElementById('detalhes-classificacao');
     if (detalhes) {
       if (posicao > 0 && posicao <= vagas) {
@@ -1090,6 +1091,7 @@ export async function atualizarInfoAluno() {
       }
     }
 
+    // Última partida
     const partidas = state.estadoAtual?.resultados?.[fase]?.[state.alunoId] || [];
     if (partidas.length > 0) {
       const ultima = partidas[partidas.length - 1];
@@ -1147,12 +1149,7 @@ export function getPontosPorPosicao(posicao, fase) {
   return tabela[posicao] || 0;
 }
 
-// ===== AVANÇAR FASE (com verificação) =====
 export async function avancarFase() {
-  if (!state.estadoAtual) {
-    exibirToast('❌ Dados da competição não carregados.', 'erro');
-    return;
-  }
   if (state.timerFase) { clearInterval(state.timerFase); state.timerFase = null; }
   const faseAtual = state.estadoAtual.fase;
   if (faseAtual > 5) { exibirToast('Competição já finalizada!'); return; }
@@ -1207,12 +1204,7 @@ export async function avancarFase() {
   forcarAlunosParaMenu();
 }
 
-// ===== RESETAR FASE (com verificação) =====
 export async function resetarFase() {
-  if (!state.estadoAtual) {
-    exibirToast('❌ Dados da competição não carregados.', 'erro');
-    return;
-  }
   const faseAtual = state.estadoAtual.fase;
   if (!confirm(`⚠️ Resetar a Fase ${faseAtual}? Todos os resultados, cadastros e classificações desta fase serão apagados.`)) return;
   if (state.timerFase) { clearInterval(state.timerFase); state.timerFase = null; }
@@ -1440,9 +1432,6 @@ async function processarPontuacaoFase(fase) {
 
 async function processarBonusVelocidade(fase) {
   if (!state.bonusVelocidadeConfig?.ativo) return;
-  // Inicializa se necessário
-  if (!state.bonusVelocidadePorFase) state.bonusVelocidadePorFase = {};
-
   const vencedorRef = `copaV2/configuracoes/bonusVelocidade/vencedores/${fase}`;
   const snapVencedor = await lerDados(vencedorRef);
   if (snapVencedor) return;
@@ -1489,13 +1478,8 @@ async function processarBonusVelocidade(fase) {
   candidatos.sort((a, b) => a.velocidade - b.velocidade);
   const vencedor = candidatos[0];
 
-  // Atualiza recorde geral com tratamento de erro
-  try {
-    const { atualizarRecordeGeral } = await import('./config.js');
-    await atualizarRecordeGeral(vencedor.id, vencedor.velocidade, vencedor.precisao, fase, vencedor.partidaIndex);
-  } catch (e) {
-    console.error('Falha ao importar config.js para atualizar recorde:', e);
-  }
+  const { atualizarRecordeGeral } = await import('./config.js');
+  await atualizarRecordeGeral(vencedor.id, vencedor.velocidade, vencedor.precisao, fase, vencedor.partidaIndex);
 
   const bonusPath = `copaV2/configuracoes/bonusVelocidade/porFase/${fase}`;
   const bonusData = await lerDados(bonusPath) || {};
@@ -1514,6 +1498,7 @@ async function processarBonusVelocidade(fase) {
   const ptsAtuais = await lerDados(histRef) || 0;
   await setDados(histRef, ptsAtuais + state.bonusVelocidadeConfig.pontos);
 
+  if (!state.bonusVelocidadePorFase) state.bonusVelocidadePorFase = {};
   if (!state.bonusVelocidadePorFase[fase]) state.bonusVelocidadePorFase[fase] = {};
   state.bonusVelocidadePorFase[fase][vencedor.id] = state.bonusVelocidadeConfig.pontos;
 
