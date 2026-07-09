@@ -586,26 +586,15 @@ function atualizarUI() {
       document.getElementById('competicao-finalizada-torcida').classList.add('hidden');
     }
     
-    // ===== CORREÇÃO: ATUALIZAR SELETOR DA TORCIDA =====
     const select = document.getElementById('select-fase-torcida');
     if (select && torcidaAba === 'fase') {
-      const faseAtual = state.estadoAtual.fase;
-      const valorAtual = parseInt(select.value);
-      // Se a fase selecionada for maior que a fase atual, ajusta
-      if (isNaN(valorAtual) || valorAtual > faseAtual) {
-        select.value = faseAtual;
-        faseTorcidaSelecionada = faseAtual;
+      const faseSelecionada = parseInt(select.value);
+      if (isNaN(faseSelecionada) || faseSelecionada > fase) {
+        select.value = fase;
+        faseTorcidaSelecionada = fase;
       } else {
-        // Mantém a fase que o usuário escolheu, mas garante que não seja futura
-        if (valorAtual > faseAtual) {
-          select.value = faseAtual;
-          faseTorcidaSelecionada = faseAtual;
-        } else {
-          faseTorcidaSelecionada = valorAtual;
-        }
+        faseTorcidaSelecionada = faseSelecionada;
       }
-      // Força atualização do ranking da torcida
-      atualizarTorcidaFase();
     }
   }
 }
@@ -829,7 +818,6 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!', 'sucesso');
   });
 
-  // ===== EVENTOS DOS BOTÕES DE RANKING E SAIR DO ALUNO =====
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -839,17 +827,10 @@ function configurarEventos() {
       }
     }, state.intervaloIndividualSegundos * 1000);
   });
-
   document.getElementById('btn-ranking-pontos-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
     document.querySelector('.modal-sub-tabs .sub-tab[data-subtab="pontos"]')?.click();
   });
-
-  document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
-    if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
-    location.reload();
-  });
-
   document.getElementById('btn-fechar-modal-ranking')?.addEventListener('click', () => {
     fecharModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
@@ -874,6 +855,10 @@ function configurarEventos() {
     const posAtual = ranking.findIndex(p => p.id === state.alunoId) + 1;
     state.posicaoAntesPartida = posAtual > 0 ? posAtual : null;
     await iniciarPartida();
+  });
+  document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
+    if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
+    location.reload();
   });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1080,17 +1065,10 @@ function configurarEventos() {
     }
   });
 
-  // ===== CORREÇÃO: EVENTO ADICIONAR TEMPO EXTRA =====
   document.getElementById('btn-adicionar-tempo-extra')?.addEventListener('click', async () => {
-    if (state.estadoAtual?.status !== 'em_andamento') {
-      exibirToast('⚠️ Fase não está em andamento.', 'aviso');
-      return;
-    }
+    if (state.estadoAtual?.status !== 'em_andamento') { exibirToast('⚠️ Fase não está em andamento.', 'aviso'); return; }
     const extra = parseInt(document.getElementById('input-tempo-extra').value);
-    if (isNaN(extra) || extra < 1) {
-      exibirToast('❌ Digite um valor válido.', 'erro');
-      return;
-    }
+    if (isNaN(extra) || extra < 1) { exibirToast('❌ Digite um valor válido.', 'erro'); return; }
     const agora = Date.now();
     const novoFim = Math.max(agora + 1000, state.estadoAtual.fim) + extra * 60000;
     await atualizarDados('copaV2/fim', novoFim);
