@@ -92,7 +92,9 @@
         </div>
     </div>
 
-    <!-- PAINEL DO PROFESSOR (COMPLETO) -->
+    <!-- ========================================================= -->
+    <!-- PAINEL DO PROFESSOR (COMPLETO)                            -->
+    <!-- ========================================================= -->
     <div id="painel-professor" class="card hidden">
         <div class="header-actions">
             <h2>🔧 Painel do Professor <span id="prof-fase-info" class="fase-info"></span></h2>
@@ -102,6 +104,7 @@
                 <button id="btn-voltar-menu-prof" class="btn-danger">🏠 Voltar ao Menu</button>
             </div>
         </div>
+
         <div class="tab-buttons" role="tablist">
             <div class="tab-btn active" data-tab="controle" role="tab" aria-selected="true" tabindex="0">🎮 Controle</div>
             <div class="tab-btn" data-tab="ranking-geral" role="tab" aria-selected="false" tabindex="-1">🏆 Ranking Geral</div>
@@ -112,6 +115,7 @@
             <div class="tab-btn" data-tab="gerenciar-turmas" role="tab" aria-selected="false" tabindex="-1">🏷️ Gerenciar Turmas</div>
             <div class="tab-btn" data-tab="configuracoes" role="tab" aria-selected="false" tabindex="-1">⚙️ Configurações</div>
         </div>
+
         <!-- ABA CONTROLE -->
         <div id="tab-controle" class="tab-content">
             <div class="flex-grid">
@@ -127,30 +131,30 @@
                         <button id="btn-aplicar-modalidade" class="btn-warning" style="width:100%;">🎯 Aplicar e Reiniciar Copa</button>
                         <hr>
                         <label for="input-tempo-fase">Tempo (minutos):</label>
-                        <input type="number" id="input-tempo-fase" value="10" min="1" style="width:80px; padding:5px; border-radius:5px;">
+                        <input type="number" id="input-tempo-fase" value="10" min="1" style="width: 80px; padding: 5px; border-radius: 5px;">
                         <button id="btn-salvar-tempo" class="btn-warning">💾 Salvar</button>
                         <hr>
                         <button id="btn-iniciar-fase" class="btn-success">▶️ Iniciar Fase</button>
                         <button id="btn-continuar-parar-fase" class="btn-danger">⏹️ Parar Fase</button>
-                        <button id="btn-avancar-fase" class="btn-primary" style="margin-top:10px; width:100%;">➡️ Finalizar Fase e Classificar</button>
-                        <button id="btn-reset-fase" class="btn-warning" style="margin-top:10px; width:100%;">🔄 Resetar Fase (apagar dados atuais)</button>
-                        <button id="btn-reset-total" class="btn-danger" style="margin-top:10px; width:100%;">⚠️ Resetar Competição</button>
+                        <button id="btn-avancar-fase" class="btn-primary" style="margin-top: 10px; width: 100%;">➡️ Finalizar Fase e Classificar</button>
+                        <button id="btn-reset-fase" class="btn-warning" style="margin-top: 10px; width: 100%;">🔄 Resetar Fase (apagar dados atuais)</button>
+                        <button id="btn-reset-total" class="btn-danger" style="margin-top: 10px; width: 100%;">⚠️ Resetar Competição</button>
                         <hr>
-                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                            <label for="input-tempo-extra" style="color:#ffd966;">➕ Adicionar tempo extra (min):</label>
-                            <input type="number" id="input-tempo-extra" value="5" min="1" style="width:80px; padding:5px; border-radius:5px;">
-                            <button id="btn-adicionar-tempo-extra" class="btn-success" style="padding:6px 16px;">Adicionar</button>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <label for="input-tempo-extra" style="color: #ffd966;">➕ Adicionar tempo extra (min):</label>
+                            <input type="number" id="input-tempo-extra" value="5" min="1" style="width: 80px; padding: 5px; border-radius: 5px;">
+                            <button id="btn-adicionar-tempo-extra" class="btn-success" style="padding: 6px 16px;">Adicionar</button>
                         </div>
                     </div>
                 </div>
                 <div>
                     <h3>Usuários Online: <span id="prof-online-count">0</span></h3>
-                    <div id="lista-participantes" style="max-height:300px; overflow-y:auto; background:#000; padding:10px; border-radius:10px;"></div>
+                    <div id="lista-participantes" style="max-height: 300px; overflow-y: auto; background: #000; padding: 10px; border-radius: 10px;"></div>
                 </div>
             </div>
             <div class="controle-atualizacao">
                 <h3>⚙️ Controle de Atualização dos Rankings</h3>
-                <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:15px;">
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
                     <div>
                         <label for="intervalo-individual">📊 Ranking Individual (segundos):</label>
                         <input type="number" id="intervalo-individual" min="1" max="300" value="4" step="1">
@@ -162,116 +166,123 @@
                         <button id="btn-atualizar-intervalo-equipes" class="btn-warning">Aplicar</button>
                     </div>
                 </div>
-                <p style="font-size:12px;">* Os intervalos são salvos no Firebase e aplicados a todos os usuários em tempo real.</p>
+                <p style="font-size: 12px;">* Os intervalos são salvos no Firebase e aplicados a todos os usuários em tempo real.</p>
             </div>
             <div id="competicao-finalizada-prof" class="competicao-finalizada hidden">
                 <h2>🏆 COPA FINALIZADA!</h2>
                 <p>A competição chegou ao fim.</p>
                 <div class="destaque">
                     <p>📊 Consulte o <strong>Ranking de Pontos</strong> (na aba ao lado) para ver a classificação final e o grande campeão.</p>
-                    <p style="font-size:0.9rem; opacity:0.7; margin-top:5px;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
+                    <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 5px;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
                 </div>
             </div>
         </div>
+
         <!-- ABA RANKING GERAL -->
         <div id="tab-ranking-geral" class="tab-content hidden">
             <h3>📊 Classificação Geral - Todos os Participantes</h3>
             <div id="ranking-geral-container" class="status-box">Processando ranking geral...</div>
         </div>
+
         <!-- ABA RANKING POR FASE -->
         <div id="tab-ranking-fase" class="tab-content hidden">
             <h3>Ranking por Fase (Atualização automática)</h3>
             <div class="fase-selector">
                 <label for="select-fase-ranking">Selecione a Fase: </label>
-                <select id="select-fase-ranking" style="padding:8px; border-radius:20px; background:#1f3a4b; color:white;"></select>
+                <select id="select-fase-ranking" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
                 <button id="btn-toggle-auto-ranking" class="btn-secondary">⏸️ Pausar Atualização</button>
             </div>
             <div id="ranking-parcial" class="status-box" aria-live="polite">Aguardando dados...</div>
         </div>
+
         <!-- ABA RANKING POR TURMA -->
         <div id="tab-ranking-turmas" class="tab-content hidden">
             <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
-            <div style="margin-bottom:15px;">
+            <div style="margin-bottom: 15px;">
                 <button id="btn-atualizar-ranking-turmas" class="btn-secondary">🔄 Atualizar</button>
             </div>
             <div id="ranking-turmas-container" class="status-box" aria-live="polite">Carregando...</div>
         </div>
+
         <!-- ABA RANKING DE PONTOS -->
         <div id="tab-ranking-pontos" class="tab-content hidden">
             <h3>🏆 Ranking de Pontos Acumulados</h3>
-            <p style="color:#94a3b8; margin-bottom:15px;">O campeão da Copa será o jogador com o maior total de pontos ao final das 5 fases.</p>
+            <p style="color: #94a3b8; margin-bottom: 15px;">O campeão da Copa será o jogador com o maior total de pontos ao final das 5 fases.</p>
             <div class="toggle-ativo">
                 <label for="toggle-ranking-pontos">📌 Habilitar Ranking de Pontos</label>
                 <input type="checkbox" id="toggle-ranking-pontos" checked>
-                <span id="status-ranking-pontos" style="color:#94a3b8; font-size:14px;">Desativado</span>
+                <span id="status-ranking-pontos" style="color: #94a3b8; font-size: 14px;">Desativado</span>
             </div>
             <div class="config-card">
                 <h4>📋 Configuração da Pontuação</h4>
                 <div class="pontos-config-area">
-                    <label style="color:#f1f5f9;">Fases 1 a 4 (padrão: 1º=40, 2º=39, ..., 40º=1)</label>
+                    <label style="color: #f1f5f9;">Fases 1 a 4 (padrão: 1º=40, 2º=39, ..., 40º=1)</label>
                     <div class="dica-config">Digite no formato <strong>posição: pontos</strong>, separados por vírgula. Ex: 1:40, 2:39, 3:38</div>
                     <textarea id="textarea-pontos-padrao" rows="3"></textarea>
-                    <button id="btn-restaurar-padrao" class="btn-secondary" style="margin-top:6px;">🔄 Restaurar Padrão (40..1)</button>
+                    <button id="btn-restaurar-padrao" class="btn-secondary" style="margin-top: 6px;">🔄 Restaurar Padrão (40..1)</button>
                 </div>
                 <hr>
                 <div class="pontos-config-area">
-                    <label style="color:#f1f5f9;">Fase 5 (pode ser alterada a qualquer momento)</label>
+                    <label style="color: #f1f5f9;">Fase 5 (pode ser alterada a qualquer momento)</label>
                     <div class="dica-config">Digite no formato <strong>posição: pontos</strong>, separados por vírgula.</div>
                     <textarea id="textarea-pontos-fase5" rows="3"></textarea>
-                    <button id="btn-restaurar-padrao-fase5" class="btn-secondary" style="margin-top:6px;">🔄 Restaurar Padrão (40..1)</button>
+                    <button id="btn-restaurar-padrao-fase5" class="btn-secondary" style="margin-top: 6px;">🔄 Restaurar Padrão (40..1)</button>
                 </div>
-                <button id="btn-salvar-pontuacao" class="btn-success" style="margin-top:15px;">💾 Salvar Configuração de Pontos</button>
-                <div id="feedback-pontuacao" style="margin-top:12px; padding:8px 16px; border-radius:8px; font-size:14px; display:none;"></div>
+                <button id="btn-salvar-pontuacao" class="btn-success" style="margin-top: 15px;">💾 Salvar Configuração de Pontos</button>
+                <div id="feedback-pontuacao" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
-            <div class="config-card" style="border-color:#facc15;">
-                <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
-                    <span style="font-size:28px;">⚡</span>
-                    <h4 style="color:#f1f5f9; font-size:18px; margin:0;">Bônus de Velocidade</h4>
-                    <span style="background:#facc15; color:#000; font-size:11px; padding:2px 12px; border-radius:30px; font-weight:600;">NOVO</span>
+            <div class="config-card" style="border-color: #facc15;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">⚡</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Bônus de Velocidade</h4>
+                    <span style="background: #facc15; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
                 </div>
-                <p style="color:#94a3b8; font-size:14px; margin-bottom:16px; line-height:1.6;">
-                    Concede pontos extras ao jogador com a <strong>maior velocidade recorde</strong> da fase, desde que ele atinja a precisão mínima exigida (porcentagem de acertos). O bônus é concedido apenas ao <strong>1º colocado</strong> em velocidade válido.
-                </p>
-                <div style="display:flex; flex-wrap:wrap; gap:20px; align-items:center; background:#0f172a; padding:16px 20px; border-radius:12px; border:1px solid #2d3a4f;">
-                    <label style="color:#f1f5f9; display:flex; align-items:center; gap:8px;">
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">Concede pontos extras ao jogador com a maior velocidade recorde da fase, desde que ele atinja a precisão mínima exigida (porcentagem de acertos). O bônus é concedido apenas ao 1º colocado em velocidade válido.</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <label style="color: #f1f5f9; display: flex; align-items: center; gap: 8px;">
                         <input type="checkbox" id="toggle-bonus-velocidade" checked> Habilitar Bônus
                     </label>
-                    <label style="color:#f1f5f9;">
-                        Pontos: <input type="number" id="input-bonus-velocidade" value="1" min="1" max="100" style="width:70px; padding:5px; border-radius:6px; background:#1e293b; border:1px solid #334155; color:#f1f5f9;">
+                    <label style="color: #f1f5f9;">
+                        Pontos: <input type="number" id="input-bonus-velocidade" value="1" min="1" max="100" style="width: 70px; padding: 5px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9;">
                     </label>
-                    <label style="color:#f1f5f9;">
-                        Precisão Mínima (%): <input type="number" id="input-precisao-bonus" value="80" min="50" max="100" style="width:70px; padding:5px; border-radius:6px; background:#1e293b; border:1px solid #334155; color:#f1f5f9;">
+                    <label style="color: #f1f5f9;">
+                        Precisão Mínima (%): <input type="number" id="input-precisao-bonus" value="80" min="50" max="100" style="width: 70px; padding: 5px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9;">
                     </label>
                 </div>
-                <button id="btn-salvar-bonus-velocidade" class="btn-success" style="margin-top:15px;">💾 Salvar Bônus</button>
-                <div id="feedback-bonus-velocidade" style="margin-top:12px; padding:8px 16px; border-radius:8px; font-size:14px; display:none;"></div>
+                <button id="btn-salvar-bonus-velocidade" class="btn-success" style="margin-top: 15px;">💾 Salvar Bônus</button>
+                <div id="feedback-bonus-velocidade" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
-            <h4 style="margin-top:20px;">📊 Ranking Geral de Pontos</h4>
+            <h4 style="margin-top: 20px;">📊 Ranking Geral de Pontos</h4>
             <div id="ranking-pontos-container" class="status-box" aria-live="polite">Carregando...</div>
-            <p style="font-size:12px; color:#94a3b8; margin-top:8px;">⚡ = Bônus de velocidade na fase | 🚀 = Recorde de velocidade da competição</p>
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">⚡ = Bônus de velocidade na fase | 🚀 = Recorde de velocidade da competição</p>
         </div>
+
         <!-- ABA GERENCIAR ALUNOS -->
         <div id="tab-gerenciar-alunos" class="tab-content hidden">
             <h3>📝 Gerenciar Alunos da Fase Atual</h3>
             <div id="lista-alunos-gerenciavel" class="status-box scroll-list">Carregando...</div>
             <button id="btn-atualizar-lista-alunos" class="btn-secondary">🔄 Recarregar</button>
         </div>
+
         <!-- ABA GERENCIAR TURMAS -->
         <div id="tab-gerenciar-turmas" class="tab-content hidden">
             <h3>🏷️ Gerenciar Turmas Disponíveis</h3>
             <button id="btn-adicionar-turma" class="btn-success">➕ Adicionar Nova Turma</button>
-            <div id="lista-turmas-gerenciavel" class="status-box scroll-list" style="margin-top:15px;">Carregando...</div>
+            <div id="lista-turmas-gerenciavel" class="status-box scroll-list" style="margin-top: 15px;">Carregando...</div>
         </div>
-        <!-- ABA CONFIGURAÇÕES (resumido para caber) -->
+
+        <!-- ABA CONFIGURAÇÕES -->
         <div id="tab-configuracoes" class="tab-content hidden">
             <h3>⚙️ Configurações do Professor</h3>
+
+            <!-- CARD: Controle de Som -->
             <div id="bloco-controle-som" class="config-card">
-                <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
-                    <span style="font-size:28px;">🔊</span>
-                    <h4 style="color:#f1f5f9; font-size:18px; margin:0;">Controle de Sons</h4>
-                    <span style="background:#8b5cf6; color:white; font-size:11px; padding:2px 12px; border-radius:30px; font-weight:600;">NOVO</span>
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">🔊</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Controle de Sons</h4>
+                    <span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
                 </div>
-                <p style="color:#94a3b8; font-size:14px; margin-bottom:16px; line-height:1.6;">Habilite ou desabilite cada som individualmente. Os alunos também ouvem os efeitos durante o jogo. O volume e as preferências são salvos automaticamente no navegador.</p>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">Habilite ou desabilite cada som individualmente. Os alunos também ouvem os efeitos durante o jogo. O volume e as preferências são salvos automaticamente no navegador.</p>
                 <div class="som-controles-gerais">
                     <button id="btn-som-master" class="btn-som-master ativado">🔊 Sons Ativados</button>
                     <div class="controle-vol">
@@ -279,24 +290,201 @@
                         <input type="range" id="volume-global" min="0" max="100" value="70">
                         <span id="volume-label">70%</span>
                     </div>
-                    <button id="btn-testar-todos-sons" class="btn-secondary" style="padding:6px 16px; font-size:13px;">🔊 Testar Todos</button>
+                    <button id="btn-testar-todos-sons" class="btn-secondary" style="padding: 6px 16px; font-size: 13px;">🔊 Testar Todos</button>
                 </div>
                 <div class="som-card">
                     <h4>🎵 Efeitos Sonoros <span class="badge-som">11 sons</span></h4>
                     <div class="som-grid" id="som-grid-container"></div>
                 </div>
             </div>
-            <div id="bloco-valor-partida" class="config-card">...</div>
-            <div id="bloco-min-partidas" class="config-card">...</div>
-            <div id="bloco-visibilidade-colunas" class="config-card">...</div>
-            <div class="config-card senha-card">...</div>
-            <div class="config-card liberar-card">...</div>
-            <div id="bloco-avisos" class="config-card">...</div>
-            <div id="bloco-feedback" class="config-card">...</div>
-            <div id="bloco-estrelas" class="config-card">...</div>
-            <div id="bloco-cores" class="config-card">...</div>
-        </div>
-    </div>
+
+            <!-- CARD: Valor da Partida -->
+            <div id="bloco-valor-partida" class="config-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">💰</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Valor da Partida</h4>
+                    <span style="background: #3b82f6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">Define quantos pontos uma partida completa vale. Este valor é usado para projetar a posição futura dos jogadores no ranking, baseado na sua velocidade média de acertos.</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <label for="input-valor-partida" style="color: #94a3b8; font-weight: 500; font-size: 14px;">Pontos por partida:</label>
+                    <input type="number" id="input-valor-partida" value="2000" min="1" max="10000" step="100" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 16px; border-radius: 10px; font-size: 16px; width: 180px; font-weight: 600;"/>
+                    <button id="btn-atualizar-valor-partida" style="background: #3b82f6; color: white; border: none; padding: 10px 28px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.3s; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'"><span>🔄</span> Atualizar</button>
+                    <span style="color: #64748b; font-size: 13px; display: flex; align-items: center; gap: 4px;">Valor atual: <strong id="valor-partida-atual" style="color: #4ade80; font-size: 15px;">2000</strong> pontos</span>
+                </div>
+                <div id="feedback-valor-partida" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+                <div style="margin-top: 12px; padding: 12px 16px; background: #0f172a; border-radius: 8px; border-left: 3px solid #facc15;">
+                    <p style="color: #94a3b8; font-size: 13px; margin: 0;">💡 <strong>Exemplo:</strong> Com 2000 pontos por partida, um jogador com <strong>1.00s</strong> de média projeta <strong>2000 pts</strong> na próxima partida, enquanto um com <strong>2.00s</strong> projeta <strong>1000 pts</strong>.</p>
+                </div>
+            </div>
+
+            <!-- CARD: Mínimo de Partidas -->
+            <div id="bloco-min-partidas" class="config-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">📋</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Mínimo de Partidas por Fase</h4>
+                    <span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">Defina o número mínimo de partidas que um jogador deve completar em cada fase para ser elegível à classificação. Apenas jogadores que atingirem esse número e estiverem dentro das vagas avançam.</p>
+                <div id="min-partidas-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                <button id="btn-salvar-min-partidas" class="btn-success" style="margin-top: 12px;">💾 Salvar configurações</button>
+                <div id="feedback-min-partidas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <!-- CARD: Visibilidade das Colunas -->
+            <div id="bloco-visibilidade-colunas" class="config-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">👁️</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Visibilidade das Colunas</h4>
+                    <span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">Selecione quais colunas serão exibidas no ranking para alunos e para a torcida. As colunas com * são obrigatórias e sempre visíveis.</p>
+                <div class="colunas-grid" id="colunas-visiveis-container"></div>
+                <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+                    <button id="btn-salvar-colunas" class="btn-success">💾 Salvar configurações</button>
+                    <button id="btn-restaurar-colunas" class="btn-warning">🔄 Restaurar Padrões</button>
+                </div>
+                <div id="feedback-colunas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <!-- CARD: Senha -->
+            <div class="config-card senha-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">🔑</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Senha de Acesso - Fase 1</h4>
+                    <span style="background: #facc15; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">Defina uma senha numérica de 2 dígitos que os alunos deverão digitar para se cadastrar na Fase 1. Após iniciar a fase, a senha fica bloqueada e não pode mais ser alterada.</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <div>
+                        <label for="input-senha-fase1" style="color: #94a3b8; font-size: 14px;">Senha atual:</label>
+                        <input type="number" id="input-senha-fase1" min="10" max="99" value="42" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; font-size: 24px; width: 100px; text-align: center; font-weight: bold;">
+                    </div>
+                    <button id="btn-gerar-senha" class="btn-gerar-senha">🎲 Gerar</button>
+                    <button id="btn-salvar-senha" class="btn-success">💾 Salvar</button>
+                    <label class="toggle-label">
+                        <span>Exigir senha na Fase 1</span>
+                        <input type="checkbox" id="toggle-exigir-senha" checked>
+                    </label>
+                    <span id="status-senha" style="color: #4ade80; font-size: 14px; margin-left: 8px;">✅ Ativa</span>
+                </div>
+                <div id="feedback-senha" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+                <p style="color: #94a3b8; font-size: 12px; margin-top: 12px;">⚠️ A senha só pode ser alterada <strong>antes</strong> de iniciar a Fase 1. Após o início, o campo fica bloqueado.</p>
+            </div>
+
+            <!-- CARD: Liberar Aluno -->
+            <div class="config-card liberar-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">🚪</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Liberar Cadastro Emergencial</h4>
+                    <span style="background: #3b82f6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">Use esta ferramenta para liberar manualmente um aluno classificado que esteja tendo problemas para entrar (ex: perda de deviceId, erro de digitação, bug). A liberação é persistente e válida apenas para a fase atual.</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <input type="text" id="input-liberar-nome" placeholder="Nome do aluno" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; width: 200px;">
+                    <input type="text" id="input-liberar-turma" placeholder="Turma" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; width: 150px;">
+                    <button id="btn-liberar-aluno" class="btn-liberar">🔓 Liberar</button>
+                    <span style="color: #64748b; font-size: 13px;">(para a fase atual)</span>
+                </div>
+                <div id="feedback-liberar" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+                <div style="margin-top: 12px; max-height: 150px; overflow-y: auto; background: #0f172a; border-radius: 8px; padding: 8px;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">📋 Alunos liberados nesta fase:</p>
+                    <div id="lista-liberados" style="color: #4ade80; font-size: 13px; margin-top: 4px;"></div>
+                </div>
+            </div>
+
+            <!-- CARD: Avisos -->
+            <div id="bloco-avisos" class="config-card" style="border-color: #f39c12;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">📢</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Avisos para os Alunos</h4>
+                    <span style="background: #f39c12; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">Publique uma mensagem que aparecerá como um banner na tela de TODOS os alunos em tempo real. O aviso será removido automaticamente após o tempo definido.</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label for="input-aviso-mensagem" style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Mensagem:</label>
+                        <input type="text" id="input-aviso-mensagem" placeholder="Ex: Atenção, última semana!" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 14px; border-radius: 10px; width: 100%;">
+                    </div>
+                    <div style="min-width: 120px;">
+                        <label for="input-aviso-tempo" style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Duração (min):</label>
+                        <input type="number" id="input-aviso-tempo" value="30" min="1" max="1440" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 14px; border-radius: 10px; width: 100%;">
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 18px;">
+                        <button id="btn-publicar-aviso" class="btn-warning" style="padding: 10px 24px;">📢 Publicar</button>
+                        <button id="btn-remover-aviso" class="btn-danger" style="padding: 10px 24px;">❌ Remover</button>
+                    </div>
+                </div>
+                <div id="aviso-status" style="margin-top: 16px;">
+                    <div style="padding: 12px 16px; background: #2c3e50; border-radius: 8px; color: #94a3b8;">📭 Nenhum aviso ativo no momento.</div>
+                </div>
+            </div>
+
+            <!-- CARD: Feedback Visual -->
+            <div id="bloco-feedback" class="config-card" style="border-color: #8b5cf6;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">👀</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Feedback Visual (Erro/Acerto)</h4>
+                    <span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">Define por quanto tempo as cores de acerto (verde) e erro (vermelho) serão exibidas após cada resposta. O jogo avança automaticamente após esse tempo.</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <div>
+                        <label for="input-tempo-feedback-acerto" style="color: #94a3b8; font-size: 14px; display: block;">✅ Acerto (segundos):</label>
+                        <input type="number" id="input-tempo-feedback-acerto" min="0.1" max="2.0" step="0.1" value="0.5" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 8px 12px; border-radius: 8px; width: 100px; text-align: center;">
+                    </div>
+                    <div>
+                        <label for="input-tempo-feedback-erro" style="color: #94a3b8; font-size: 14px; display: block;">❌ Erro (segundos):</label>
+                        <input type="number" id="input-tempo-feedback-erro" min="0.1" max="2.0" step="0.1" value="0.5" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 8px 12px; border-radius: 8px; width: 100px; text-align: center;">
+                    </div>
+                    <button id="btn-salvar-feedback" class="btn-success" style="padding: 8px 24px;">💾 Salvar</button>
+                    <span id="feedback-status" style="color: #4ade80; font-size: 14px;">✅ Ativo</span>
+                </div>
+                <div id="feedback-feedback" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <!-- CARD: Sistema de Estrelas -->
+            <div id="bloco-estrelas" class="config-card" style="border-color: #facc15;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">⭐</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Sistema de Estrelas</h4>
+                    <span style="background: #facc15; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">Configure quantas estrelas cada ação concede e quem pode ver os níveis.</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #0f172a; padding: 12px 20px; border-radius: 12px; border: 1px solid #2d3a4f; margin-bottom: 16px;">
+                    <label style="color: #f1f5f9; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                        <span>👁️ Visibilidade do nível:</span>
+                        <select id="select-visibilidade-estrelas" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 6px 12px; border-radius: 8px;">
+                            <option value="todos">Todos (alunos + torcida)</option>
+                            <option value="alunos">Apenas alunos</option>
+                        </select>
+                    </label>
+                    <button id="btn-salvar-visibilidade" class="btn-success" style="padding: 6px 16px;">💾 Salvar</button>
+                </div>
+                <div style="background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <h5 style="color: #f1f5f9; margin-bottom: 12px;">⚙️ Estrelas por Ação</h5>
+                    <div id="estrelas-acoes-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;"></div>
+                    <button id="btn-salvar-acoes-estrelas" class="btn-success" style="margin-top: 16px;">💾 Salvar Ações</button>
+                    <button id="btn-restaurar-acoes-estrelas" class="btn-warning" style="margin-top: 8px;">🔄 Restaurar Padrão</button>
+                    <div id="feedback-estrelas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+                </div>
+            </div>
+
+            <!-- CARD: Cores e Temas -->
+            <div id="bloco-cores" class="config-card" style="border-color: var(--cor-primaria);">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">🎨</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Temas e Cores</h4>
+                    <span style="background: var(--cor-primaria); color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">Escolha a cor de destaque do jogo. A alteração é apenas no seu dispositivo.</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <div id="seletor-cores" style="display: flex; flex-wrap: wrap; gap: 8px;" role="radiogroup" aria-label="Cores disponíveis"></div>
+                </div>
+            </div>
+
+        </div> <!-- Fim aba configurações -->
+    </div> <!-- Fim painel professor -->
 
     <!-- ========================================================= -->
     <!-- TELA DO ALUNO (REFORMULADA)                               -->
@@ -318,6 +506,13 @@
                         <span class="nome-nivel" id="nome-nivel-mini">Aprendiz</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Botões de Ranking e Sair -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+                <button id="btn-ranking-aluno" class="btn-info" disabled>📊 Ranking Fase</button>
+                <button id="btn-ranking-pontos-aluno" class="btn-info">🏆 Ranking Pontos</button>
+                <button id="btn-sair-aluno" class="btn-danger" style="margin-left: auto;">🚪 Sair</button>
             </div>
 
             <div class="card-posicao">
@@ -359,7 +554,6 @@
                 <h2>📊 Meu Desempenho</h2>
                 <div class="timer-fase-aluno" id="timer-fase-detalhes">⏱️ Tempo: --:--</div>
             </div>
-
             <div class="detalhes-aba-container" role="tablist">
                 <button class="detalhes-aba ativa" data-aba="desempenho" role="tab">📈 Geral</button>
                 <button class="detalhes-aba" data-aba="historico" role="tab">📋 Partidas</button>
@@ -368,7 +562,6 @@
                 <button class="detalhes-aba" data-aba="grafico" role="tab">📈 Evolução</button>
                 <button class="detalhes-aba" data-aba="configuracoes" role="tab">⚙️ Config.</button>
             </div>
-
             <div class="detalhes-conteudo">
                 <div class="detalhes-painel ativo" id="painel-desempenho">
                     <div class="card-info">
