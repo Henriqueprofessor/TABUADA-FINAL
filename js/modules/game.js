@@ -163,7 +163,6 @@ export async function iniciarPartida() {
 
     document.body.classList.add('em-jogo');
 
-    // ===== ELEMENTOS DO JOGO COM VERIFICAÇÕES =====
     const jogoArea = document.getElementById('jogo-area');
     const aguardando = document.getElementById('aguardando-aluno');
     const btnRanking = document.getElementById('btn-ranking-aluno');
@@ -177,6 +176,14 @@ export async function iniciarPartida() {
     if (btnRankingPontos) btnRankingPontos.disabled = true;
     if (principal) principal.style.display = 'none';
     if (detalhes) detalhes.style.display = 'none';
+
+    // Inicializa a barra de tempo com 100%
+    const barra = document.getElementById('progresso-tempo');
+    if (barra) {
+      barra.style.width = '100%';
+      barra.classList.remove('progresso-tempo-roxo', 'progresso-tempo-verde', 'progresso-tempo-amarelo', 'progresso-tempo-cinza');
+      barra.classList.add('progresso-tempo-cinza');
+    }
 
     proximaPergunta();
   } catch (error) {
@@ -205,7 +212,7 @@ function proximaPergunta() {
     const p = state.perguntas[state.perguntaIdx];
     const perguntaEl = document.getElementById('pergunta');
     if (perguntaEl) perguntaEl.innerText = `${p.a} x ${p.b} = ?`;
-    
+
     const btns = document.querySelectorAll('.opcao-vertical');
     p.opts.forEach((o, i) => {
       if (btns[i]) {
@@ -215,10 +222,11 @@ function proximaPergunta() {
         btns[i].classList.remove('correto', 'errado', 'destaque-correto');
       }
     });
-    
+
     const perguntaNum = document.getElementById('pergunta-num');
     if (perguntaNum) perguntaNum.innerText = state.perguntaIdx + 1;
-    
+
+    // Reinicia a barra de tempo com cores dinâmicas (já feito no atualizarInfoAluno)
     iniciarTimerPergunta();
   } catch (error) {
     console.error('Erro ao exibir pergunta:', error);
@@ -303,6 +311,7 @@ export async function responder(idx) {
       acertou: acertou
     });
 
+    // Feedback visual
     if (idx !== -1) {
       const btnEscolhido = btns[idx];
       if (acertou) {
@@ -327,19 +336,15 @@ export async function responder(idx) {
 
     const pontuacaoAcumulada = document.getElementById('pontuacao-acumulada');
     if (pontuacaoAcumulada) pontuacaoAcumulada.innerText = state.pontosPartida;
-    
+
     state.perguntaIdx++;
     atualizarInfoAluno();
 
-    // ===== FEEDBACK SEPARADO =====
+    // Atraso do feedback (configurável)
     let delay = 0.5;
-    if (idx === -1) {
-      delay = state.tempoFeedbackErro * 1000;
-    } else if (acertou) {
-      delay = state.tempoFeedbackAcerto * 1000;
-    } else {
-      delay = state.tempoFeedbackErro * 1000;
-    }
+    if (idx === -1) delay = state.tempoFeedbackErro * 1000;
+    else if (acertou) delay = state.tempoFeedbackAcerto * 1000;
+    else delay = state.tempoFeedbackErro * 1000;
 
     setTimeout(() => {
       btns.forEach(b => {
@@ -396,7 +401,7 @@ async function finalizarPartida() {
 
   document.body.classList.remove('em-jogo');
 
-  // ===== RE-EXIBIR A TELA PRINCIPAL =====
+  // Restaurar a tela principal
   const principal = document.getElementById('tela-aluno-principal');
   const detalhes = document.getElementById('tela-aluno-detalhes');
   const jogoArea = document.getElementById('jogo-area');
@@ -424,6 +429,7 @@ async function finalizarPartida() {
     await atualizarDados(ref, partidas);
     await removerDados(`copaV2/resultados_temp/${fase}/${state.alunoId}`);
 
+    // Atualizar recorde geral
     if (state.acertosPartida > 0 && state.tempoTotalPartida > 0) {
       const precisao = (state.acertosPartida / 20) * 100;
       const velocidade = state.tempoTotalPartida / state.acertosPartida;
@@ -431,11 +437,12 @@ async function finalizarPartida() {
       await atualizarRecordeGeral(state.alunoId, velocidade, precisao, fase, partidaIndex);
     }
 
+    // Medalhas
     await verificarEConcederMedalhas();
     atualizarExibicaoMedalhas();
     await atualizarInfoAluno();
 
-    // ===== CONCEDER ESTRELAS =====
+    // Conceder estrelas
     try {
       const resultadosFase = state.estadoAtual?.resultados?.[fase] || {};
       let ranking = [];
@@ -473,6 +480,7 @@ async function finalizarPartida() {
       console.warn('Erro ao conceder estrelas:', e);
     }
 
+    // Montar ranking para o modal
     const resultadosFaseFinal = state.estadoAtual?.resultados?.[fase] || {};
     let rankingFinal = [];
     for (const [id, partidas] of Object.entries(resultadosFaseFinal)) {
@@ -490,6 +498,7 @@ async function finalizarPartida() {
       ultimaPartida = partidas[partidas.length - 2];
     }
 
+    // ===== DADOS PARA O MODAL (NOVA ESTRUTURA) =====
     const dadosModal = {
       posicao: posicaoAtualFinal > 0 ? posicaoAtualFinal : 0,
       posicaoAnterior: posicaoAnterior,
@@ -506,7 +515,10 @@ async function finalizarPartida() {
       historico: state.historicoPerguntas
     };
 
+    // ===== EXIBE O MODAL COM A NOVA INTERFACE =====
     exibirModalResultados(dadosModal);
+
+    // Gráfico
     desenharGraficoEvolucao();
 
     exibirToast(`✅ Partida finalizada! Pontos: ${state.pontosPartida}`);
