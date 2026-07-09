@@ -268,7 +268,7 @@ function escapeHtml(str) {
   return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[m] || m));
 }
 
-// ===== MODAL DE RESULTADOS =====
+// ===== MODAL DE RESULTADOS (NOVA VERSÃO) =====
 export function exibirModalResultados(dados) {
   const { posicao, posicaoAnterior, pontos, acertos, tempoTotal, ultimaPartida, fase, totalPartidas, ranking, id, nome, turma, historico } = dados;
   const tempoMedio = acertos > 0 ? tempoTotal / acertos : 0;
