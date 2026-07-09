@@ -929,7 +929,7 @@ export async function renderRankingGeral() {
 }
 
 // ============================================================
-// ATUALIZAR INFORMAÇÕES DO ALUNO (TELA PRINCIPAL + DETALHES)
+// ATUALIZAR INFORMAÇÕES DO ALUNO
 // ============================================================
 
 export async function atualizarInfoAluno() {
@@ -1053,11 +1053,9 @@ export async function atualizarInfoAluno() {
     const partidasFeitas = state.estadoAtual?.resultados?.[fase]?.[state.alunoId]?.length || 0;
     const vagas = VAGAS_POR_FASE[fase] || 30;
 
-    // Posição
     const posNum = document.getElementById('posicao-numero-principal');
     if (posNum) posNum.textContent = posicao > 0 ? posicao : '--';
 
-    // Status
     const statusEl = document.getElementById('status-classificacao-principal');
     if (statusEl) {
       const classificado = (posicao > 0 && posicao <= vagas && partidasFeitas >= minPartidas);
@@ -1071,14 +1069,12 @@ export async function atualizarInfoAluno() {
       }
     }
 
-    // Barra de progresso
     const barraProgresso = document.getElementById('barra-classificacao');
     const pct = Math.min(100, (partidasFeitas / (minPartidas || 1)) * 100);
     if (barraProgresso) barraProgresso.style.width = pct + '%';
     document.getElementById('partidas-feitas').textContent = partidasFeitas;
     document.getElementById('partidas-necessarias').textContent = minPartidas;
 
-    // Detalhes da classificação
     const detalhes = document.getElementById('detalhes-classificacao');
     if (detalhes) {
       if (posicao > 0 && posicao <= vagas) {
@@ -1091,7 +1087,6 @@ export async function atualizarInfoAluno() {
       }
     }
 
-    // Última partida
     const partidas = state.estadoAtual?.resultados?.[fase]?.[state.alunoId] || [];
     if (partidas.length > 0) {
       const ultima = partidas[partidas.length - 1];
