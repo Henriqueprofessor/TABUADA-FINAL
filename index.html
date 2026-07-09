@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo - HENRIQUE ANGELO DA SILVA</title>
     
-    <!-- ===== MANIFEST PARA PWA (INSTALAÇÃO) ===== -->
-    <link rel="manifest" href="/manifest.json">
+    <!-- ===== MANIFEST PARA PWA (INSTALAÇÃO) - CORRIGIDO ===== -->
+    <link rel="manifest" href="manifest.json">
     
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -498,7 +498,7 @@
                 </div>
             </div>
 
-            <!-- ===== CARD: FEEDBACK VISUAL (NOVO) ===== -->
+            <!-- ===== CARD: FEEDBACK VISUAL ===== -->
             <div id="bloco-feedback" class="config-card" style="border-color: #8b5cf6;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">👀</span>
@@ -618,7 +618,7 @@
 
         <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong> <span id="aluno-fase-info" class="fase-info"></span></p>
 
-        <!-- ===== EXIBIÇÃO DO NÍVEL DE ESTRELAS (NÃO É UMA COLUNA DE RANKING) ===== -->
+        <!-- ===== EXIBIÇÃO DO NÍVEL DE ESTRELAS ===== -->
         <div id="nivel-estrelas-aluno" class="nivel-estrelas-container">
             <!-- Preenchido via JavaScript -->
         </div>
@@ -849,11 +849,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 
-<!-- ===== REGISTRO DO SERVICE WORKER ===== -->
+<!-- ===== REGISTRO DO SERVICE WORKER - CORRIGIDO ===== -->
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker.register('sw.js')
         .then(reg => {
           console.log('✅ Service Worker registrado!', reg);
           reg.onupdatefound = () => {
