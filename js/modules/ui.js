@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { getNivelPorEstrelas, getProximoNivel } from './estrelas.js';
+import { carregarMedalhasLocal } from './medals.js';
 
 // ===== CONTROLE DE TELA =====
 export function mostrarTela(tipo) {
@@ -141,7 +142,7 @@ export function exibirErroCarregamento() {
   }
 }
 
-// ===== CONTROLE DE TEMA (claro/escuro) =====
+// ===== CONTROLE DE TEMA =====
 const TEMA_KEY = 'copa_theme';
 
 export function aplicarTema() {
@@ -239,14 +240,13 @@ export function atualizarBannerAviso(aviso) {
 }
 
 // ============================================================
-// MODAL DE RESULTADOS PÓS-PARTIDA
+// MODAL DE RESULTADOS PÓS-PARTIDA (COM ABAS)
 // ============================================================
-
 export function exibirModalResultados(dados) {
   const {
     posicao, posicaoAnterior, pontos, acertos, tempoTotal,
     ultimaPartida, fase, totalPartidas, ranking, id, nome, turma,
-    historico
+    historico, estrelasGanhas = {}
   } = dados;
 
   const tempoMedio = acertos > 0 ? tempoTotal / acertos : 0;
@@ -256,27 +256,13 @@ export function exibirModalResultados(dados) {
     evolucaoPontos = pontos - ultimaPartida.pontos;
   }
 
-  const streak = Math.round(precisao / 5);
-
+  // Badges
   const badges = [];
   if (totalPartidas === 1) badges.push('🏅 Primeira partida!');
   if (tempoMedio < 1.5 && acertos > 0) badges.push('⚡ Velocista (média < 1.5s)');
   if (precisao === 100) badges.push('🎯 Precisão Máxima (100%)');
   if (evolucaoPontos !== null && evolucaoPontos > 0) badges.push('💪 Melhora contínua');
-  if (streak >= 10) badges.push(`🔥 Streak de ${streak} acertos!`);
-
-  if (tempoMedio > 0) {
-    const melhorTempoAnterior = state.melhorTempoMedio || Infinity;
-    if (tempoMedio < melhorTempoAnterior) {
-      badges.push(`⚡ Novo recorde de velocidade (${tempoMedio.toFixed(2)}s)!`);
-      state.melhorTempoMedio = tempoMedio;
-    }
-  }
-  const melhorPontuacaoAnterior = state.melhorPontuacao || 0;
-  if (pontos > melhorPontuacaoAnterior) {
-    badges.push(`🎯 Novo recorde de pontuação (${pontos} pts)!`);
-    state.melhorPontuacao = pontos;
-  }
+  if (acertos >= 18) badges.push(`🔥 ${acertos} acertos!`);
 
   let mensagem = '';
   let mensagemEmoji = '';
@@ -353,11 +339,7 @@ export function exibirModalResultados(dados) {
     }
   }
 
-  let projecaoPos = null;
-  if (state.estadoAtual?.status === 'em_andamento' && fase === state.estadoAtual.fase) {
-    projecaoPos = posicao;
-  }
-
+  // Erros
   let errosHtml = '';
   if (historico && historico.length > 0) {
     const erros = historico.filter(h => !h.acertou);
@@ -377,98 +359,130 @@ export function exibirModalResultados(dados) {
         </div>
       `;
     } else {
-      errosHtml = `
-        <div class="bloco">
-          <div class="bloco-titulo">✅ Nenhum erro! Parabéns!</div>
-        </div>
-      `;
+      errosHtml = `<div class="bloco"><div class="bloco-titulo">✅ Nenhum erro! Parabéns!</div></div>`;
     }
   }
 
+  // Estrelas ganhas
+  let estrelasHtml = '';
+  if (estrelasGanhas && Object.keys(estrelasGanhas).length > 0) {
+    const acoesLabels = {
+      partida_completa: 'Partida completa',
+      acertos_18_19: '18 ou 19 acertos',
+      acertos_20: 'Perfeição (20 acertos)',
+      subiu_ranking: 'Subiu no ranking',
+      avancou_fase: 'Avançou de fase',
+      recorde_pessoal: 'Recorde pessoal'
+    };
+    const lista = Object.entries(estrelasGanhas)
+      .filter(([_, qtd]) => qtd > 0)
+      .map(([acao, qtd]) => `${acoesLabels[acao] || acao}: +${qtd} ⭐`);
+    if (lista.length > 0) {
+      estrelasHtml = `<div class="bloco"><div class="bloco-titulo">⭐ Estrelas ganhas nesta partida</div><ul style="list-style:none; padding:0;">${lista.map(item => `<li style="padding:4px 0;">${item}</li>`).join('')}</ul></div>`;
+    }
+  }
+
+  // Medalhas
+  let medalhasHtml = '';
+  const medalhas = carregarMedalhasLocal();
+  if (medalhas.length > 0) {
+    medalhasHtml = `<div class="bloco"><div class="bloco-titulo">🏅 Suas conquistas</div><div style="display:flex; flex-wrap:wrap; gap:8px;">${medalhas.map(m => `<span class="medalha-item"><span class="medalha-icone">${m.icone}</span> ${m.nome}</span>`).join('')}</div></div>`;
+  } else {
+    medalhasHtml = `<div class="bloco"><div class="bloco-titulo">🏅 Conquistas</div><p style="color:#94a3b8;">Nenhuma conquista desbloqueada ainda.</p></div>`;
+  }
+
+  // HTML do modal
   const modalHtml = `
     <div class="modal-resultados" id="modal-pos-jogo">
       <h2 style="margin-top: 0;">🏁 RESULTADO DA PARTIDA</h2>
-      <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 12px; margin: 10px 0;">
-        <div style="font-size: 28px; font-weight: bold; display: flex; align-items: center; gap: 10px;">
-          ${posicao <= 3 ? ['🥇','🥈','🥉'][posicao-1] : '🏆'} ${posicao}º lugar
-          ${posicaoAnterior ? (posicao < posicaoAnterior ? '⬆️' : posicao > posicaoAnterior ? '⬇️' : '➡️') : ''}
+      
+      <div class="resumo-cabecalho">
+        <div class="item">
+          <span class="label">Posição</span>
+          <span class="valor ${posicao === 1 ? 'valor-ouro' : posicao === 2 ? 'valor-prata' : posicao === 3 ? 'valor-bronze' : ''}">${posicao <= 3 ? ['🥇','🥈','🥉'][posicao-1] : '🏆'} ${posicao}º</span>
         </div>
-        <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
-        <div style="font-size: 18px;">✅ ${acertos}/20</div>
-      </div>
-
-      <div class="mensagem-personalizada">
-        <span class="emoji">${mensagemEmoji}</span> ${mensagem}
-        ${bonusMessage ? `<br><span style="font-size: 16px;">${bonusMessage}</span>` : ''}
-      </div>
-
-      <div class="bloco">
-        <div class="bloco-titulo">🎯 METAS E PROXIMIDADE</div>
-        <div class="card-metrica">
-          <span class="label">${statusVaga}</span>
+        <div class="item">
+          <span class="label">Pontos</span>
+          <span class="valor">⭐ ${pontos}</span>
         </div>
-        ${proximoColegaHtml ? `<div class="card-metrica"><span class="label">${proximoColegaHtml}</span></div>` : ''}
-        <div class="card-metrica">
-          <span class="label">📋 Partidas jogadas:</span>
-          <span class="valor">${totalPartidas} / ${minPartidas} ${totalPartidas >= minPartidas ? '✅ Elegível' : '⚠️ Faltam ' + (minPartidas - totalPartidas)}</span>
+        <div class="item">
+          <span class="label">Acertos</span>
+          <span class="valor">✅ ${acertos}/20</span>
         </div>
-        <div class="progresso-mini">
-          <div class="fill" style="width: ${Math.min(100, (totalPartidas/minPartidas)*100)}%;"></div>
+        <div class="item">
+          <span class="label">Tempo médio</span>
+          <span class="valor">⚡ ${tempoMedio > 0 ? tempoMedio.toFixed(2) + 's' : '--'}</span>
         </div>
       </div>
 
-      <div class="bloco">
-        <div class="bloco-titulo">💪 SUPERAÇÃO PESSOAL</div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
-          ${badges.map(b => `<span class="badge-selo ativo">${b}</span>`).join('')}
-        </div>
-        <div class="grid-2col">
-          ${evolucaoPontos !== null ? `
-            <div class="card-metrica">
-              <span class="label">📈 Evolução vs última partida:</span>
-              <span class="valor" style="color: ${evolucaoPontos >= 0 ? '#4ade80' : '#f87171'};">${evolucaoPontos >= 0 ? '+' : ''}${evolucaoPontos} pts</span>
-            </div>
-          ` : ''}
-          ${tempoMedio > 0 ? `
-            <div class="card-metrica">
-              <span class="label">⚡ Tempo médio:</span>
-              <span class="valor">${tempoMedio.toFixed(2)}s</span>
-            </div>
-          ` : ''}
-        </div>
+      <div class="abas-resultado" role="tablist">
+        <button class="aba-btn active" data-aba="resumo" role="tab" aria-selected="true">📋 Resumo</button>
+        <button class="aba-btn" data-aba="analise" role="tab" aria-selected="false">📊 Análise</button>
+        <button class="aba-btn" data-aba="conquistas" role="tab" aria-selected="false">🏅 Conquistas</button>
       </div>
 
-      <div class="bloco">
-        <div class="bloco-titulo">📊 RAIO-X TÁTICO</div>
-        <div class="grid-2col">
+      <div id="aba-resumo" class="aba-conteudo">
+        <div class="mensagem-personalizada">
+          <span class="emoji">${mensagemEmoji}</span> ${mensagem}
+          ${bonusMessage ? `<br><span style="font-size: 16px;">${bonusMessage}</span>` : ''}
+        </div>
+        <div class="bloco">
+          <div class="bloco-titulo">🎯 METAS E PROXIMIDADE</div>
           <div class="card-metrica">
-            <span class="label">🎯 Precisão:</span>
-            <span class="valor">${precisao.toFixed(0)}%</span>
+            <span class="label">${statusVaga}</span>
           </div>
+          ${proximoColegaHtml ? `<div class="card-metrica"><span class="label">${proximoColegaHtml}</span></div>` : ''}
           <div class="card-metrica">
-            <span class="label">⏱️ Tempo total:</span>
-            <span class="valor">${tempoTotal.toFixed(1)}s</span>
+            <span class="label">📋 Partidas jogadas:</span>
+            <span class="valor">${totalPartidas} / ${minPartidas} ${totalPartidas >= minPartidas ? '✅ Elegível' : '⚠️ Faltam ' + (minPartidas - totalPartidas)}</span>
           </div>
-          ${velocidadeVsLider ? `
-            <div class="card-metrica" style="grid-column: 1 / -1;">
-              <span class="label">⚡ Velocidade vs Líder:</span>
-              <span class="valor">${velocidadeVsLider}</span>
-            </div>
-          ` : ''}
-          ${projecaoPos ? `
-            <div class="card-metrica">
-              <span class="label">📈 Projeção de posição:</span>
-              <span class="valor">${projecaoPos}º (ritmo atual)</span>
-            </div>
-          ` : ''}
+          <div class="progresso-mini">
+            <div class="fill" style="width: ${Math.min(100, (totalPartidas/minPartidas)*100)}%;"></div>
+          </div>
         </div>
       </div>
 
-      ${errosHtml}
-
-      <div class="frase-encerramento">
-        💡 A fase ainda não acabou! Sua próxima tentativa pode te levar ao topo.
+      <div id="aba-analise" class="aba-conteudo hidden">
+        <div class="bloco">
+          <div class="bloco-titulo">📊 ESTATÍSTICAS AVANÇADAS</div>
+          <div class="grid-2col">
+            <div class="card-metrica">
+              <span class="label">🎯 Precisão:</span>
+              <span class="valor">${precisao.toFixed(0)}%</span>
+            </div>
+            <div class="card-metrica">
+              <span class="label">⏱️ Tempo total:</span>
+              <span class="valor">${tempoTotal.toFixed(1)}s</span>
+            </div>
+            ${evolucaoPontos !== null ? `
+              <div class="card-metrica">
+                <span class="label">📈 Evolução vs última partida:</span>
+                <span class="valor" style="color: ${evolucaoPontos >= 0 ? '#4ade80' : '#f87171'};">${evolucaoPontos >= 0 ? '+' : ''}${evolucaoPontos} pts</span>
+              </div>
+            ` : ''}
+            ${velocidadeVsLider ? `
+              <div class="card-metrica" style="grid-column: 1 / -1;">
+                <span class="label">⚡ Velocidade vs Líder:</span>
+                <span class="valor">${velocidadeVsLider}</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+        ${errosHtml}
       </div>
+
+      <div id="aba-conquistas" class="aba-conteudo hidden">
+        ${estrelasHtml}
+        ${medalhasHtml}
+        <div class="bloco">
+          <div class="bloco-titulo">🏅 Selos desta partida</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">
+            ${badges.map(b => `<span class="badge-selo ativo">${b}</span>`).join('')}
+            ${badges.length === 0 ? '<span style="color:#94a3b8;">Nenhum selo especial desta vez.</span>' : ''}
+          </div>
+        </div>
+      </div>
+
       <div class="rodape-acoes">
         <button class="btn-success" id="btn-jogar-novamente">🔄 Jogar Novamente</button>
         <button class="btn-info" id="btn-ver-ranking">📊 Ver Ranking</button>
@@ -479,9 +493,21 @@ export function exibirModalResultados(dados) {
 
   const modalExistente = document.getElementById('modal-pos-jogo');
   if (modalExistente) modalExistente.remove();
-
   document.body.insertAdjacentHTML('beforeend', modalHtml);
 
+  // Abas
+  document.querySelectorAll('.aba-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const aba = this.dataset.aba;
+      document.querySelectorAll('.aba-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      document.querySelectorAll('.aba-conteudo').forEach(c => c.classList.add('hidden'));
+      const target = document.getElementById(`aba-${aba}`);
+      if (target) target.classList.remove('hidden');
+    });
+  });
+
+  // Botões
   document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
     document.getElementById('modal-pos-jogo')?.remove();
   });
@@ -505,20 +531,9 @@ export function exibirModalResultados(dados) {
   });
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
-}
-
 // ============================================================
 // NÍVEL DE ESTRELAS (UI)
 // ============================================================
-
 export function atualizarNivelEstrelasUI() {
   const container = document.getElementById('nivel-estrelas-aluno');
   if (!container) return;
@@ -564,4 +579,15 @@ export function atualizarNivelEstrelasUI() {
   }
 
   container.innerHTML = html;
+}
+
+// ===== ESCAPE HTML =====
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
 }
