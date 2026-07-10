@@ -4,17 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo - HENRIQUE ANGELO DA SILVA</title>
-    
-    <!-- ===== MANIFEST (opcional, sem SW) ===== -->
     <link rel="manifest" href="manifest.json">
-    
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ESTILO DO BANNER DE TESTE - REMOVA DEPOIS */
+        #banner-teste {
+            background: #ff0000;
+            color: white;
+            text-align: center;
+            font-size: 32px;
+            font-weight: 900;
+            padding: 20px;
+            border: 8px solid yellow;
+            border-radius: 16px;
+            margin: 16px 0;
+            text-shadow: 4px 4px 0 #00000088;
+            box-shadow: 0 0 40px rgba(255,0,0,0.8);
+            animation: pisca-teste 1.5s infinite alternate;
+        }
+        @keyframes pisca-teste {
+            0% { background: #ff0000; transform: scale(1); }
+            100% { background: #cc0000; transform: scale(1.02); }
+        }
+    </style>
 </head>
 <body>
 
-<!-- ========================================================= -->
-<!-- OVERLAY DE CARREGAMENTO                                   -->
-<!-- ========================================================= -->
+<!-- OVERLAY DE CARREGAMENTO -->
 <div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite">
     <div class="loading-spinner" aria-hidden="true"></div>
     <div class="loading-text">Carregando dados da Copa Tabuada...</div>
@@ -28,9 +44,13 @@
 
 <div class="container">
 
-    <!-- ========================================================= -->
-    <!-- MODAL DE LOGIN DO PROFESSOR                                -->
-    <!-- ========================================================= -->
+    <!-- ===== BANNER DE TESTE (VISÍVEL) ===== -->
+    <div id="banner-teste">
+        🔴 TESTE DE ATUALIZAÇÃO - V2.0 🔴<br>
+        <span style="font-size: 20px;">Se você está vendo este banner, a atualização funcionou!</span>
+    </div>
+
+    <!-- MODAL DE LOGIN PROFESSOR -->
     <div id="modalLoginProfessor" class="modal-login" role="dialog" aria-modal="true" aria-labelledby="login-title">
         <div class="modal-login-content">
             <h2 id="login-title">🔐 Acesso do Professor</h2>
@@ -46,9 +66,7 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- MODAL DE SELEÇÃO DE TURMA (ALUNO)                        -->
-    <!-- ========================================================= -->
+    <!-- MODAL DE SELEÇÃO DE TURMA (ALUNO) -->
     <div id="modalTurma" class="modal-turma" role="dialog" aria-modal="true" aria-labelledby="turma-title" style="display:none;">
         <div class="modal-turma-content">
             <h2 id="turma-title">🏫 Selecione sua Turma</h2>
@@ -66,9 +84,7 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- CABEÇALHO PRINCIPAL                                        -->
-    <!-- ========================================================= -->
+    <!-- CABEÇALHO PRINCIPAL -->
     <div class="card esconder-durante-jogo">
         <div class="header-title">
             <h1>🏆 COPA TABUADA CEIB 2026 <span id="modalidade-titulo" class="modalidade-badge">Carregando...</span></h1>
@@ -104,7 +120,7 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- PAINEL DO PROFESSOR                                       -->
+    <!-- PAINEL DO PROFESSOR (COMPLETO)                            -->
     <!-- ========================================================= -->
     <div id="painel-professor" class="card hidden">
         <div class="header-actions">
@@ -127,7 +143,7 @@
             <div class="tab-btn" data-tab="configuracoes" role="tab" aria-selected="false" tabindex="-1">⚙️ Configurações</div>
         </div>
 
-        <!-- ===== ABA CONTROLE ===== -->
+        <!-- ABA CONTROLE -->
         <div id="tab-controle" class="tab-content">
             <div class="flex-grid">
                 <div>
@@ -189,13 +205,13 @@
             </div>
         </div>
 
-        <!-- ===== ABA RANKING GERAL ===== -->
+        <!-- ABA RANKING GERAL -->
         <div id="tab-ranking-geral" class="tab-content hidden">
             <h3>📊 Classificação Geral - Todos os Participantes</h3>
             <div id="ranking-geral-container" class="status-box">Processando ranking geral...</div>
         </div>
 
-        <!-- ===== ABA RANKING POR FASE ===== -->
+        <!-- ABA RANKING POR FASE -->
         <div id="tab-ranking-fase" class="tab-content hidden">
             <h3>Ranking por Fase (Atualização automática)</h3>
             <div class="fase-selector">
@@ -206,7 +222,7 @@
             <div id="ranking-parcial" class="status-box" aria-live="polite">Aguardando dados...</div>
         </div>
 
-        <!-- ===== ABA RANKING POR TURMA ===== -->
+        <!-- ABA RANKING POR TURMA -->
         <div id="tab-ranking-turmas" class="tab-content hidden">
             <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
             <div style="margin-bottom: 15px;">
@@ -215,7 +231,7 @@
             <div id="ranking-turmas-container" class="status-box" aria-live="polite">Carregando...</div>
         </div>
 
-        <!-- ===== ABA RANKING DE PONTOS ===== -->
+        <!-- ABA RANKING DE PONTOS -->
         <div id="tab-ranking-pontos" class="tab-content hidden">
             <h3>🏆 Ranking de Pontos Acumulados</h3>
             <p style="color: #94a3b8; margin-bottom: 15px;">O campeão da Copa será o jogador com o maior total de pontos ao final das 5 fases.</p>
@@ -279,21 +295,21 @@
             </p>
         </div>
 
-        <!-- ===== ABA GERENCIAR ALUNOS ===== -->
+        <!-- ABA GERENCIAR ALUNOS -->
         <div id="tab-gerenciar-alunos" class="tab-content hidden">
             <h3>📝 Gerenciar Alunos da Fase Atual</h3>
             <div id="lista-alunos-gerenciavel" class="status-box scroll-list">Carregando...</div>
             <button id="btn-atualizar-lista-alunos" class="btn-secondary">🔄 Recarregar</button>
         </div>
 
-        <!-- ===== ABA GERENCIAR TURMAS ===== -->
+        <!-- ABA GERENCIAR TURMAS -->
         <div id="tab-gerenciar-turmas" class="tab-content hidden">
             <h3>🏷️ Gerenciar Turmas Disponíveis</h3>
             <button id="btn-adicionar-turma" class="btn-success">➕ Adicionar Nova Turma</button>
             <div id="lista-turmas-gerenciavel" class="status-box scroll-list" style="margin-top: 15px;">Carregando...</div>
         </div>
 
-        <!-- ===== ABA CONFIGURAÇÕES ===== -->
+        <!-- ABA CONFIGURAÇÕES -->
         <div id="tab-configuracoes" class="tab-content hidden">
             <h3>⚙️ Configurações do Professor</h3>
             
