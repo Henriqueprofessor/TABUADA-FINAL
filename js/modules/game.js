@@ -487,6 +487,39 @@ async function finalizarPartida() {
       console.warn('Erro ao calcular estrelas ganhas:', e);
     }
 
+    // ===== CALCULAR DADOS DE EVOLUÇÃO =====
+    let evolucao = null;
+    if (partidas.length >= 2) {
+      const p1 = partidas[partidas.length - 2];
+      const p2 = partidas[partidas.length - 1];
+      const tempoMedio1 = p1.acertos > 0 ? p1.tempo / p1.acertos : 0;
+      const tempoMedio2 = p2.acertos > 0 ? p2.tempo / p2.acertos : 0;
+      const precisao1 = (p1.acertos / 20) * 100;
+      const precisao2 = (p2.acertos / 20) * 100;
+
+      evolucao = {
+        pontos: { anterior: p1.pontos, atual: p2.pontos, delta: p2.pontos - p1.pontos },
+        acertos: { anterior: p1.acertos, atual: p2.acertos, delta: p2.acertos - p1.acertos },
+        tempoMedio: { anterior: tempoMedio1, atual: tempoMedio2, delta: tempoMedio2 - tempoMedio1 },
+        precisao: { anterior: precisao1, atual: precisao2, delta: precisao2 - precisao1 },
+        recordes: []
+      };
+
+      // Verificar recordes batidos
+      if (p2.pontos > p1.pontos) evolucao.recordes.push('📈 Recorde de pontuação');
+      if (tempoMedio2 < tempoMedio1 && tempoMedio2 > 0) evolucao.recordes.push('⚡ Recorde de velocidade');
+      if (p2.acertos > p1.acertos) evolucao.recordes.push('✅ Recorde de acertos');
+      if (precisao2 > precisao1) evolucao.recordes.push('🎯 Recorde de precisão');
+
+      // Projeção simples
+      const projPontos = Math.round(p2.pontos + (p2.pontos - p1.pontos));
+      const projAcertos = Math.round(p2.acertos + (p2.acertos - p1.acertos));
+      evolucao.projecao = {
+        pontos: Math.max(0, projPontos),
+        acertos: Math.max(0, Math.min(20, projAcertos))
+      };
+    }
+
     const dadosModal = {
       posicao: posicaoAtualFinal > 0 ? posicaoAtualFinal : 0,
       posicaoAnterior: posicaoAnterior,
@@ -501,7 +534,8 @@ async function finalizarPartida() {
       nome: state.alunoNome,
       turma: state.alunoTurma,
       historico: state.historicoPerguntas,
-      estrelasGanhas: estrelasGanhas || {}
+      estrelasGanhas: estrelasGanhas || {},
+      evolucao: evolucao
     };
 
     exibirModalResultados(dadosModal);
@@ -516,7 +550,7 @@ async function finalizarPartida() {
 }
 
 // ============================================================
-// GRÁFICO DE EVOLUÇÃO
+// GRÁFICO DE EVOLUÇÃO (PADRÃO - TELA DO ALUNO)
 // ============================================================
 
 export function desenharGraficoEvolucao() {
@@ -588,4 +622,75 @@ export function desenharGraficoEvolucao() {
   ctx.font = '14px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Evolução da Pontuação por Partida', canvas.width/2, 20);
+}
+
+// ============================================================
+// GRÁFICO DE EVOLUÇÃO (MODAL - PARA EXIBIR NA ABA EVOLUÇÃO)
+// ============================================================
+
+export function desenharGraficoEvolucaoModal(canvas) {
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const width = Math.min(rect.width || 600, 600);
+  const height = 150;
+  canvas.width = width;
+  canvas.height = height;
+  ctx.clearRect(0, 0, width, height);
+
+  const fase = state.estadoAtual?.fase || 1;
+  const resultados = state.estadoAtual?.resultados?.[fase]?.[state.alunoId] || [];
+  if (resultados.length < 2) {
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Dados insuficientes para o gráfico.', width/2, height/2);
+    return;
+  }
+
+  const pontuacoes = resultados.map(p => p.pontos || 0);
+  const maxPontos = Math.max(2000, Math.max(...pontuacoes) + 200);
+  const padding = 30;
+  const graficoWidth = width - padding * 2;
+  const graficoHeight = height - padding * 2;
+
+  ctx.strokeStyle = '#4a5568';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, height - padding);
+  ctx.lineTo(width - padding, height - padding);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = '#ffd966';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < pontuacoes.length; i++) {
+    const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
+    const y = height - padding - (pontuacoes[i] / maxPontos) * graficoHeight;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  for (let i = 0; i < pontuacoes.length; i++) {
+    const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
+    const y = height - padding - (pontuacoes[i] / maxPontos) * graficoHeight;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = '#ffd966';
+    ctx.fill();
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(pontuacoes[i], x, y - 10);
+  }
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  for (let i = 0; i < pontuacoes.length; i++) {
+    const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
+    ctx.fillText(`P${i+1}`, x, height - padding + 16);
+  }
 }
