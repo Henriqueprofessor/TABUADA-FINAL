@@ -1,4 +1,3 @@
-// js/modules/db.js
 import { db } from '../config/firebase.js';
 import { state } from './state.js';
 import { exibirToast } from './ui.js';
@@ -22,16 +21,20 @@ export function carregarEstado(callback) {
 }
 
 // ============================================================
-// ATUALIZAR DADOS (com tratamento de erros silencioso)
+// ATUALIZAR DADOS (CORRIGIDO – usa `set` para arrays)
 // ============================================================
 
 export async function atualizarDados(caminho, dados) {
   try {
-    await db.ref(caminho).update(dados);
+    // Se for um array, use set() para sobrescrever todo o nó (evita warning)
+    if (Array.isArray(dados)) {
+      await db.ref(caminho).set(dados);
+    } else {
+      await db.ref(caminho).update(dados);
+    }
     return true;
   } catch (e) {
     console.warn('⚠️ Erro ao atualizar dados (offline):', caminho, e);
-    // Não exibe toast para não poluir a tela em operações frequentes
     return false;
   }
 }
