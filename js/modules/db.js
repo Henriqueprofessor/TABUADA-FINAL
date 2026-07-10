@@ -1,9 +1,10 @@
+// js/modules/db.js
 import { db } from '../config/firebase.js';
 import { state } from './state.js';
 import { exibirToast } from './ui.js';
 
 // ============================================================
-// CARREGAR ESTADO
+// CARREGAR ESTADO (com tratamento de erros)
 // ============================================================
 
 export function carregarEstado(callback) {
@@ -21,21 +22,16 @@ export function carregarEstado(callback) {
 }
 
 // ============================================================
-// ATUALIZAR DADOS (CORRIGIDO PARA VALORES PRIMITIVOS)
+// ATUALIZAR DADOS (com tratamento de erros silencioso)
 // ============================================================
 
 export async function atualizarDados(caminho, dados) {
   try {
-    // Se dados for um valor primitivo (string, number, boolean, null) ou array, usa set
-    if (typeof dados !== 'object' || dados === null || Array.isArray(dados)) {
-      await db.ref(caminho).set(dados);
-    } else {
-      // Se for objeto, usa update
-      await db.ref(caminho).update(dados);
-    }
+    await db.ref(caminho).update(dados);
     return true;
   } catch (e) {
-    console.warn('⚠️ Erro ao atualizar dados:', caminho, e);
+    console.warn('⚠️ Erro ao atualizar dados (offline):', caminho, e);
+    // Não exibe toast para não poluir a tela em operações frequentes
     return false;
   }
 }
@@ -45,7 +41,7 @@ export async function setDados(caminho, dados) {
     await db.ref(caminho).set(dados);
     return true;
   } catch (e) {
-    console.warn('⚠️ Erro ao definir dados:', caminho, e);
+    console.warn('⚠️ Erro ao definir dados (offline):', caminho, e);
     return false;
   }
 }
@@ -55,7 +51,7 @@ export async function removerDados(caminho) {
     await db.ref(caminho).remove();
     return true;
   } catch (e) {
-    console.warn('⚠️ Erro ao remover dados:', caminho, e);
+    console.warn('⚠️ Erro ao remover dados (offline):', caminho, e);
     return false;
   }
 }
@@ -65,13 +61,13 @@ export async function lerDados(caminho) {
     const snap = await db.ref(caminho).once('value');
     return snap.val();
   } catch (e) {
-    console.warn('⚠️ Erro ao ler dados:', caminho, e);
+    console.warn('⚠️ Erro ao ler dados (offline):', caminho, e);
     return null;
   }
 }
 
 // ============================================================
-// OUVIDOR DE ONLINE
+// OUVIDOR DE ONLINE (com tratamento de erros)
 // ============================================================
 
 export function ouvirOnline(callback) {
