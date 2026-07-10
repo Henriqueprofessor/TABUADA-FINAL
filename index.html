@@ -586,6 +586,19 @@
     <!-- TELA DO ALUNO                                              -->
     <!-- ========================================================= -->
     <div id="tela-aluno" class="card hidden">
+        
+        <!-- ===== INFORMAÇÕES DE IDENTIFICAÇÃO (SEMPRE VISÍVEIS) ===== -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 8px;">
+            <div>
+                <span id="aluno-nome-display" style="font-weight: bold; font-size: 1.2rem;">Aluno</span>
+                <span style="margin-left: 12px;">Turma: <span id="aluno-turma-display">-</span></span>
+                <span style="margin-left: 12px;">Modalidade: <strong id="aluno-modalidade">--</strong></span>
+                <span style="margin-left: 12px;" id="aluno-fase-info" class="fase-info">Fase 1/5</span>
+            </div>
+            <div class="timer-fase-aluno" id="timer-fase-aluno">⏱️ Tempo: --:--</div>
+        </div>
+
+        <!-- ===== ÁREA DE JOGO (SEMPRE VISÍVEL) ===== -->
         <div id="jogo-area" class="hidden jogo-topo">
             <div id="pergunta-container" class="pergunta-container brilho-cinza">
                 <div class="barra-tempo" style="margin-top: 0; margin-bottom: 20px;"><div id="progresso-tempo" class="progresso-tempo" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div></div>
@@ -601,59 +614,65 @@
                 Pergunta: <span id="pergunta-num">1</span> / 20
             </div>
             <div class="jogo-rodape-minimalista">
-                <div class="item-rodape" title="Pontuação">🎯 <span id="pontuacao-acumulada">0</span></div>
-                <div class="item-rodape" title="Posição Atual">🏆 <span id="posicao-numero">--</span>º</div>
-                <div class="item-rodape" title="Velocidade Média">⚡ <span id="velocidade-media">0.00</span>s</div>
+                <div class="item-rodape" title="Pontuação">⭐ <span id="pontuacao-acumulada">0</span> pts</div>
+                <!-- Os itens de posição e velocidade são ocultados durante o jogo via CSS -->
+                <div class="item-rodape esconder-durante-jogo" title="Posição Atual">🏆 <span id="posicao-numero">--</span>º</div>
+                <div class="item-rodape esconder-durante-jogo" title="Velocidade Média">⚡ <span id="velocidade-media">0.00</span>s</div>
             </div>
         </div>
 
-        <div class="header-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
-            <h2 id="aluno-nome-display" style="margin: 0;">Aluno</h2>
-            <div class="timer-fase-aluno" id="timer-fase-aluno">⏱️ Tempo: --:--</div>
-            <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking Fase</button>
-            <button id="btn-ranking-pontos-aluno" class="btn-info" style="margin-left: 5px;">🏆 Ranking Pontos</button>
-            <button id="btn-tutorial-aluno" class="btn-info" style="margin-left: 5px;">📘 Tutorial</button>
-            <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
-        </div>
+        <!-- ===== ELEMENTOS OCULTOS DURANTE O JOGO ===== -->
+        <div class="esconder-durante-jogo">
 
-        <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong> <span id="aluno-fase-info" class="fase-info"></span></p>
-
-        <!-- ===== EXIBIÇÃO DO NÍVEL DE ESTRELAS ===== -->
-        <div id="nivel-estrelas-aluno" class="nivel-estrelas-container">
-            <!-- Preenchido via JavaScript -->
-        </div>
-
-        <div id="aguardando-aluno" style="text-align:center; padding:20px;">
-            <div id="msg-status-aluno">Aguardando...</div>
-            <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
-        </div>
-
-        <!-- ===== SELETOR DE CORES (ALUNO) ===== -->
-        <div style="display: flex; align-items: center; gap: 16px; margin: 10px 0; flex-wrap: wrap; background: var(--bg-card-hover); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--borda-card);">
-            <span style="font-size: 20px;" aria-hidden="true">🎨</span>
-            <span style="color: var(--texto-secundario); font-size: 14px;">Cor de destaque:</span>
-            <div id="seletor-cores-aluno" style="display: flex; flex-wrap: wrap; gap: 6px;" role="radiogroup" aria-label="Seleção de cor"></div>
-        </div>
-
-        <div class="status-box">
-            <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
-            <div id="historico-aluno"></div>
-        </div>
-
-        <!-- Medalhas -->
-        <div class="status-box" style="margin-top: 20px;">
-            <h3>🏅 Minhas Conquistas</h3>
-            <div id="medalhas-container" aria-live="polite">
-                <p style="color: #94a3b8; font-size: 14px;">Nenhuma conquista ainda. Continue jogando!</p>
+            <!-- Cabeçalho com botões (Ranking, Tutorial, Sair) -->
+            <div class="header-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px;">
+                <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking Fase</button>
+                <button id="btn-ranking-pontos-aluno" class="btn-info" style="margin-left: 5px;">🏆 Ranking Pontos</button>
+                <button id="btn-tutorial-aluno" class="btn-info" style="margin-left: 5px;">📘 Tutorial</button>
+                <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
             </div>
-        </div>
 
-        <!-- Gráfico -->
-        <div class="status-box" style="margin-top: 20px;">
-            <h3>📈 Evolução da Pontuação</h3>
-            <canvas id="grafico-evolucao" width="600" height="200" style="width:100%; height:auto; max-width:600px; background: transparent;" aria-label="Gráfico de evolução da pontuação"></canvas>
-        </div>
-    </div>
+            <!-- Nível de Estrelas -->
+            <div id="nivel-estrelas-aluno" class="nivel-estrelas-container">
+                <!-- Preenchido via JavaScript -->
+            </div>
+
+            <!-- Aguardando (mensagem e botão JOGAR) -->
+            <div id="aguardando-aluno" style="text-align:center; padding:20px;">
+                <div id="msg-status-aluno">Aguardando...</div>
+                <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
+            </div>
+
+            <!-- Seletor de Cores -->
+            <div style="display: flex; align-items: center; gap: 16px; margin: 10px 0; flex-wrap: wrap; background: var(--bg-card-hover); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--borda-card);">
+                <span style="font-size: 20px;" aria-hidden="true">🎨</span>
+                <span style="color: var(--texto-secundario); font-size: 14px;">Cor de destaque:</span>
+                <div id="seletor-cores-aluno" style="display: flex; flex-wrap: wrap; gap: 6px;" role="radiogroup" aria-label="Seleção de cor"></div>
+            </div>
+
+            <!-- Melhor Resultado -->
+            <div class="status-box">
+                <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
+                <div id="historico-aluno"></div>
+            </div>
+
+            <!-- Medalhas -->
+            <div class="status-box" style="margin-top: 20px;">
+                <h3>🏅 Minhas Conquistas</h3>
+                <div id="medalhas-container" aria-live="polite">
+                    <p style="color: #94a3b8; font-size: 14px;">Nenhuma conquista ainda. Continue jogando!</p>
+                </div>
+            </div>
+
+            <!-- Gráfico -->
+            <div class="status-box" style="margin-top: 20px;">
+                <h3>📈 Evolução da Pontuação</h3>
+                <canvas id="grafico-evolucao" width="600" height="200" style="width:100%; height:auto; max-width:600px; background: transparent;" aria-label="Gráfico de evolução da pontuação"></canvas>
+            </div>
+
+        </div> <!-- fim .esconder-durante-jogo -->
+
+    </div> <!-- fim #tela-aluno -->
 
     <!-- ========================================================= -->
     <!-- MODAL DE RANKING DO ALUNO                                  -->
@@ -688,7 +707,7 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- TELA DA TORCIDA (MODIFICADA)                               -->
+    <!-- TELA DA TORCIDA                                            -->
     <!-- ========================================================= -->
     <div id="tela-torcida" class="card hidden">
         <div class="header-actions">
@@ -733,7 +752,7 @@
         </div>
     </div>
 
-</div>
+</div> <!-- fim .container -->
 
 <!-- ===== TOAST ===== -->
 <div id="toast" class="toast hidden" role="alert" aria-live="assertive"></div>
