@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo - HENRIQUE ANGELO DA SILVA</title>
     
-    <!-- ===== MANIFEST PARA PWA (INSTALAÇÃO) - CORRIGIDO ===== -->
-    <link rel="manifest" href="manifest.json">
+    <!-- REMOVIDO O LINK PARA MANIFEST -->
+    <!-- <link rel="manifest" href="manifest.json"> -->
     
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -848,35 +848,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-
-<!-- ===== REGISTRO DO SERVICE WORKER - CORRIGIDO ===== -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => {
-          console.log('✅ Service Worker registrado!', reg);
-          reg.onupdatefound = () => {
-            const installingWorker = reg.installing;
-            installingWorker.onstatechange = () => {
-              if (installingWorker.state === 'installed') {
-                if (navigator.serviceWorker.controller) {
-                  console.log('🔄 Nova versão disponível!');
-                  if (confirm('🔄 Uma nova versão do jogo está disponível. Recarregar agora?')) {
-                    installingWorker.postMessage('skipWaiting');
-                    window.location.reload();
-                  }
-                } else {
-                  console.log('📱 App instalado para uso offline.');
-                }
-              }
-            };
-          };
-        })
-        .catch(err => console.error('❌ Falha ao registrar SW:', err));
-    });
-  }
-</script>
 
 <!-- ============================================================ -->
 <!-- SCRIPT PRINCIPAL (MODULAR)                                   -->
