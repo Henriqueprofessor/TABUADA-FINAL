@@ -1,4 +1,3 @@
-// js/modules/game.js
 import { state } from './state.js';
 import { exibirToast, exibirModalResultados } from './ui.js';
 import { lerDados, atualizarDados, removerDados } from './db.js';
@@ -163,20 +162,10 @@ export async function iniciarPartida() {
     state.historicoPerguntas = [];
 
     document.body.classList.add('em-jogo');
-
-    const jogoArea = document.getElementById('jogo-area');
-    const aguardando = document.getElementById('aguardando-aluno');
-    const btnRanking = document.getElementById('btn-ranking-aluno');
-    const btnRankingPontos = document.getElementById('btn-ranking-pontos-aluno');
-    const principal = document.getElementById('tela-aluno-principal');
-    const detalhes = document.getElementById('tela-aluno-detalhes');
-
-    if (jogoArea) jogoArea.classList.remove('hidden');
-    if (aguardando) aguardando.classList.add('hidden');
-    if (btnRanking) btnRanking.disabled = true;
-    if (btnRankingPontos) btnRankingPontos.disabled = true;
-    if (principal) principal.style.display = 'none';
-    if (detalhes) detalhes.style.display = 'none';
+    document.getElementById('jogo-area').classList.remove('hidden');
+    document.getElementById('aguardando-aluno').classList.add('hidden');
+    document.getElementById('btn-ranking-aluno').disabled = true;
+    document.getElementById('btn-ranking-pontos-aluno').disabled = true;
 
     proximaPergunta();
   } catch (error) {
@@ -184,8 +173,6 @@ export async function iniciarPartida() {
     exibirToast('❌ Erro ao iniciar partida. Tente novamente.');
     state.jogoAtivo = false;
     document.body.classList.remove('em-jogo');
-    const principal = document.getElementById('tela-aluno-principal');
-    if (principal) principal.style.display = 'block';
   }
 }
 
@@ -203,9 +190,7 @@ function proximaPergunta() {
 
   try {
     const p = state.perguntas[state.perguntaIdx];
-    const perguntaEl = document.getElementById('pergunta');
-    if (perguntaEl) perguntaEl.innerText = `${p.a} x ${p.b} = ?`;
-    
+    document.getElementById('pergunta').innerText = `${p.a} x ${p.b} = ?`;
     const btns = document.querySelectorAll('.opcao-vertical');
     p.opts.forEach((o, i) => {
       if (btns[i]) {
@@ -215,10 +200,7 @@ function proximaPergunta() {
         btns[i].classList.remove('correto', 'errado', 'destaque-correto');
       }
     });
-    
-    const perguntaNum = document.getElementById('pergunta-num');
-    if (perguntaNum) perguntaNum.innerText = state.perguntaIdx + 1;
-    
+    document.getElementById('pergunta-num').innerText = state.perguntaIdx + 1;
     iniciarTimerPergunta();
   } catch (error) {
     console.error('Erro ao exibir pergunta:', error);
@@ -325,14 +307,14 @@ export async function responder(idx) {
       }
     }
 
-    const pontuacaoAcumulada = document.getElementById('pontuacao-acumulada');
-    if (pontuacaoAcumulada) pontuacaoAcumulada.innerText = state.pontosPartida;
-    
+    document.getElementById('pontuacao-acumulada').innerText = state.pontosPartida;
     state.perguntaIdx++;
     atualizarInfoAluno();
 
-    let delay = 0.5;
+    // ===== FEEDBACK SEPARADO =====
+    let delay = 0.5; // fallback
     if (idx === -1) {
+      // tempo esgotado – consideramos como erro
       delay = state.tempoFeedbackErro * 1000;
     } else if (acertou) {
       delay = state.tempoFeedbackAcerto * 1000;
@@ -394,20 +376,10 @@ async function finalizarPartida() {
   state.jogoAtivo = false;
 
   document.body.classList.remove('em-jogo');
-
-  const principal = document.getElementById('tela-aluno-principal');
-  const detalhes = document.getElementById('tela-aluno-detalhes');
-  const jogoArea = document.getElementById('jogo-area');
-  const aguardando = document.getElementById('aguardando-aluno');
-  const btnRanking = document.getElementById('btn-ranking-aluno');
-  const btnRankingPontos = document.getElementById('btn-ranking-pontos-aluno');
-
-  if (principal) principal.style.display = 'block';
-  if (detalhes) detalhes.style.display = 'none';
-  if (jogoArea) jogoArea.classList.add('hidden');
-  if (aguardando) aguardando.classList.remove('hidden');
-  if (btnRanking) btnRanking.disabled = false;
-  if (btnRankingPontos) btnRankingPontos.disabled = false;
+  document.getElementById('btn-ranking-aluno').disabled = false;
+  document.getElementById('btn-ranking-pontos-aluno').disabled = false;
+  document.getElementById('jogo-area').classList.add('hidden');
+  document.getElementById('aguardando-aluno').classList.remove('hidden');
 
   try {
     const fase = state.estadoAtual.fase;
@@ -505,10 +477,7 @@ async function finalizarPartida() {
     };
 
     exibirModalResultados(dadosModal);
-    // Gráfico com tratamento de erro
-    import('./game.js')
-      .then(({ desenharGraficoEvolucao }) => desenharGraficoEvolucao())
-      .catch(() => console.warn('Falha ao carregar gráfico de evolução'));
+    desenharGraficoEvolucao();
 
     exibirToast(`✅ Partida finalizada! Pontos: ${state.pontosPartida}`);
 
