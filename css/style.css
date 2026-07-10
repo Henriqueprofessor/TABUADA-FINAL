@@ -1695,3 +1695,37 @@ body.em-jogo #banner-aviso .banner-aviso-icone {
     color: #94a3b8;
     margin-top: 4px;
 }
+/* ============================================================
+   TELA DO ALUNO DURANTE O JOGO
+   ============================================================ */
+
+/* Oculta elementos com a classe .esconder-durante-jogo quando o jogo está ativo */
+body.em-jogo .esconder-durante-jogo {
+  display: none !important;
+}
+
+/* Garante que o timer, nome, turma, modalidade e fase fiquem visíveis */
+body.em-jogo #timer-fase-aluno,
+body.em-jogo #aluno-nome-display,
+body.em-jogo #aluno-turma-display,
+body.em-jogo #aluno-modalidade,
+body.em-jogo #aluno-fase-info {
+  display: inline-block !important;
+}
+
+/* Oculta os itens de posição e velocidade no rodapé do jogo */
+body.em-jogo .jogo-rodape-minimalista .item-rodape:not(:first-child) {
+  display: none !important;
+}
+
+/* Ajuste para o cabeçalho de identificação não quebrar em telas pequenas */
+@media (max-width: 600px) {
+  body.em-jogo #tela-aluno > div:first-child {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  body.em-jogo #tela-aluno > div:first-child .timer-fase-aluno {
+    align-self: flex-start;
+  }
+}
