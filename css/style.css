@@ -1843,3 +1843,167 @@ body.em-jogo #banner-aviso .banner-aviso-icone {
 #tela-aluno .medalha-icone {
   font-size: 18px;
 }
+/* ============================================================
+   EVOLUÇÃO - ABA DE COMPARAÇÃO ENTRE PARTIDAS
+   ============================================================ */
+
+.evolucao-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.evolucao-item {
+  background: var(--bg-card-hover);
+  border-radius: 12px;
+  padding: 12px 16px;
+  text-align: center;
+  border: 1px solid var(--borda-card);
+}
+.evolucao-item .rotulo {
+  font-size: 12px;
+  color: var(--texto-secundario);
+  opacity: 0.8;
+}
+.evolucao-item .valor-atual {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--texto-destaque);
+}
+.evolucao-item .variacao {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.evolucao-item .variacao.positiva { color: #4ade80; }
+.evolucao-item .variacao.negativa { color: #f87171; }
+.evolucao-item .variacao.neutra { color: #94a3b8; }
+
+.projecao-box {
+  background: var(--bg-card-hover);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  border-left: 4px solid #facc15;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.projecao-box .projecao-valor {
+  font-size: 28px;
+  font-weight: 800;
+  color: #facc15;
+}
+.projecao-box .projecao-label {
+  font-size: 14px;
+  color: var(--texto-secundario);
+}
+.projecao-box .projecao-detalhe {
+  font-size: 14px;
+  color: var(--texto-secundario);
+}
+
+.recordes-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.recordes-lista .recorde-item {
+  background: var(--bg-botao-padrao);
+  padding: 4px 14px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texto-principal);
+  border: 1px solid var(--borda-card);
+}
+.recordes-lista .recorde-item.novo {
+  border-color: #facc15;
+  background: #facc1522;
+  color: #facc15;
+}
+
+.padroes-erro-container {
+  margin: 12px 0;
+}
+.padrao-erro-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-card-hover);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  border-left: 3px solid #f87171;
+}
+.padrao-erro-item .operacao {
+  font-weight: 600;
+  color: var(--texto-destaque);
+}
+.padrao-erro-item .status {
+  font-size: 13px;
+}
+.padrao-erro-item .status.superado { color: #4ade80; }
+.padrao-erro-item .status.repetido { color: #f87171; }
+.padrao-erro-item .status.novo { color: #fbbf24; }
+
+.recomendacao-box {
+  background: var(--bg-card-hover);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  border-left: 4px solid #3b82f6;
+}
+.recomendacao-box .recomendacao-titulo {
+  font-weight: 700;
+  color: var(--texto-destaque);
+  margin-bottom: 4px;
+}
+.recomendacao-box .recomendacao-texto {
+  color: var(--texto-secundario);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   AJUSTES PARA A TELA PRINCIPAL DO MODAL (RESUMO ENXUTO)
+   ============================================================ */
+.resumo-rapido {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 8px 0 4px 0;
+}
+.resumo-rapido .badge-rapido {
+  background: var(--bg-botao-padrao);
+  padding: 4px 16px;
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texto-principal);
+}
+.resumo-rapido .badge-rapido .destaque {
+  color: var(--texto-destaque);
+  font-weight: 700;
+}
+
+.estrelas-ganhas-rapido {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin: 6px 0;
+}
+.estrelas-ganhas-rapido .estrela-item {
+  background: #facc1522;
+  padding: 2px 14px;
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #facc15;
+  border: 1px solid #facc1544;
+}
