@@ -246,24 +246,13 @@ export function exibirModalResultados(dados) {
   const {
     posicao, posicaoAnterior, pontos, acertos, tempoTotal,
     ultimaPartida, fase, totalPartidas, ranking, id, nome, turma,
-    historico, estrelasGanhas = {}
+    historico, estrelasGanhas = {}, evolucao = null
   } = dados;
 
   const tempoMedio = acertos > 0 ? tempoTotal / acertos : 0;
   const precisao = (acertos / 20) * 100;
-  let evolucaoPontos = null;
-  if (ultimaPartida) {
-    evolucaoPontos = pontos - ultimaPartida.pontos;
-  }
 
-  // Badges
-  const badges = [];
-  if (totalPartidas === 1) badges.push('🏅 Primeira partida!');
-  if (tempoMedio < 1.5 && acertos > 0) badges.push('⚡ Velocista (média < 1.5s)');
-  if (precisao === 100) badges.push('🎯 Precisão Máxima (100%)');
-  if (evolucaoPontos !== null && evolucaoPontos > 0) badges.push('💪 Melhora contínua');
-  if (acertos >= 18) badges.push(`🔥 ${acertos} acertos!`);
-
+  // ====== MENSAGEM MOTIVACIONAL (RESUMO) ======
   let mensagem = '';
   let mensagemEmoji = '';
   if (posicao === 1) {
@@ -275,75 +264,187 @@ export function exibirModalResultados(dados) {
   } else if (posicao <= 10) {
     mensagem = '🔥 Você está no Top 10! Continue pressionando!';
     mensagemEmoji = '💪';
-  } else if (evolucaoPontos !== null && evolucaoPontos > 0) {
-    mensagem = '📈 Você evoluiu! Continue subindo!';
-    mensagemEmoji = '📈';
-  } else if (evolucaoPontos !== null && evolucaoPontos < 0) {
-    mensagem = '😅 Nem sempre é perfeito. A próxima partida será melhor!';
-    mensagemEmoji = '💪';
   } else {
     mensagem = '🔄 Consistência é a chave. Continue firme!';
     mensagemEmoji = '🔄';
   }
 
+  // Se evoluiu, complementa
+  let mensagemEvolucao = '';
+  if (evolucao && evolucao.pontos && evolucao.pontos.delta > 0) {
+    mensagemEvolucao = `📈 Você melhorou ${evolucao.pontos.delta} pontos em relação à última partida!`;
+  } else if (evolucao && evolucao.pontos && evolucao.pontos.delta < 0) {
+    mensagemEvolucao = `😅 Você perdeu ${Math.abs(evolucao.pontos.delta)} pontos. A próxima será melhor!`;
+  }
+
+  // ====== ESTRELAS GANHAS (RESUMO) ======
+  const acoesLabels = {
+    partida_completa: 'Partida completa',
+    acertos_18_19: '18 ou 19 acertos',
+    acertos_20: 'Perfeição (20 acertos)',
+    subiu_ranking: 'Subiu no ranking',
+    avancou_fase: 'Avançou de fase',
+    recorde_pessoal: 'Recorde pessoal'
+  };
+  const estrelasLista = Object.entries(estrelasGanhas)
+    .filter(([_, qtd]) => qtd > 0)
+    .map(([acao, qtd]) => `${acoesLabels[acao] || acao}: +${qtd}⭐`);
+
+  // ====== BADGES RÁPIDOS ======
+  const badges = [];
+  if (tempoMedio < 1.5 && acertos > 0) badges.push('⚡ Velocista');
+  if (precisao === 100) badges.push('🎯 Perfeição');
+  if (acertos >= 18) badges.push(`🔥 ${acertos} acertos`);
+  if (posicao === 1) badges.push('👑 Líder');
+  if (evolucao && evolucao.pontos && evolucao.pontos.delta > 50) badges.push('📈 Evolução forte');
+
+  // ====== DICA RÁPIDA ======
+  let dicaRapida = '';
+  if (historico && historico.length > 0) {
+    const erros = historico.filter(h => !h.acertou);
+    if (erros.length > 0) {
+      // Contar frequência de cada operação errada
+      const freq = {};
+      erros.forEach(e => {
+        const op = e.pergunta || '';
+        if (op) freq[op] = (freq[op] || 0) + 1;
+      });
+      const maisFreq = Object.entries(freq).sort((a,b) => b[1] - a[1])[0];
+      if (maisFreq) {
+        dicaRapida = `💡 Dica: Treine a operação "${maisFreq[0]}" – você errou ${maisFreq[1]} vez(es) nesta partida.`;
+      }
+    }
+  }
+  if (!dicaRapida && acertos < 15) {
+    dicaRapida = '💡 Dica: Respire fundo e leia cada pergunta com calma.';
+  } else if (!dicaRapida) {
+    dicaRapida = '💡 Continue assim! Você está no caminho certo.';
+  }
+
+  // ============================================================
+  // CONTEÚDO DAS ABAS (RESUMO, EVOLUÇÃO, ANÁLISE, CONQUISTAS)
+  // ============================================================
+
+  // ===== ABA RESUMO (ENXUTA) =====
   const vagas = state.VAGAS_POR_FASE?.[fase] || 30;
   const minPartidas = state.minPartidasPorFase?.[fase] || 1;
   const dentroVagas = posicao <= vagas && totalPartidas >= minPartidas;
   let statusVaga = '';
   if (dentroVagas) {
-    statusVaga = `✅ Você está na zona de classificação (Top ${vagas})!`;
+    statusVaga = `✅ Zona de classificação (Top ${vagas})!`;
   } else if (posicao > vagas) {
     const diff = posicao - vagas;
-    statusVaga = `🎯 Faltam ${diff} posição${diff > 1 ? 'es' : ''} para entrar no Top ${vagas}!`;
+    statusVaga = `🎯 Faltam ${diff} para o Top ${vagas}!`;
   } else {
-    statusVaga = `📋 Você precisa de mais ${minPartidas - totalPartidas} partida${minPartidas - totalPartidas > 1 ? 's' : ''} para ser elegível.`;
+    statusVaga = `📋 Faltam ${minPartidas - totalPartidas} partida(s) para ser elegível.`;
   }
 
-  let proximoColegaHtml = '';
-  const minhaPosIndex = ranking.findIndex(p => p.id === id);
-  if (minhaPosIndex > 0 && minhaPosIndex < ranking.length) {
-    const jogadorAcima = ranking[minhaPosIndex - 1];
-    if (jogadorAcima) {
-      const diffPontos = jogadorAcima.pontos - (ranking[minhaPosIndex]?.pontos || pontos);
-      proximoColegaHtml = `👤 Você está a ${diffPontos} pontos de ultrapassar ${escapeHtml(jogadorAcima.nome || 'o colega')}!`;
+  const resumoHtml = `
+    <div class="mensagem-personalizada" style="margin-bottom: 8px;">
+      <span class="emoji">${mensagemEmoji}</span> ${mensagem}
+      ${mensagemEvolucao ? `<br><span style="font-size: 16px;">${mensagemEvolucao}</span>` : ''}
+    </div>
+    <div class="resumo-rapido">
+      <span class="badge-rapido">🏆 <span class="destaque">${posicao}º</span> lugar</span>
+      <span class="badge-rapido">⭐ <span class="destaque">${pontos}</span> pts</span>
+      <span class="badge-rapido">✅ <span class="destaque">${acertos}/20</span></span>
+      <span class="badge-rapido">⚡ <span class="destaque">${tempoMedio > 0 ? tempoMedio.toFixed(2) + 's' : '--'}</span></span>
+      ${badges.map(b => `<span class="badge-rapido" style="background: #3b82f622; border:1px solid #3b82f644;">${b}</span>`).join('')}
+    </div>
+    ${estrelasLista.length > 0 ? `<div class="estrelas-ganhas-rapido">${estrelasLista.map(s => `<span class="estrela-item">⭐ ${s}</span>`).join('')}</div>` : ''}
+    <div style="margin: 8px 0;">
+      <span style="color: var(--texto-secundario); font-size: 14px;">${statusVaga}</span>
+    </div>
+    <div style="margin: 6px 0; padding: 8px 12px; background: var(--bg-card-hover); border-radius: 8px; border-left: 3px solid #3b82f6;">
+      <span style="font-size: 14px; color: var(--texto-secundario);">${dicaRapida}</span>
+    </div>
+  `;
+
+  // ===== ABA EVOLUÇÃO =====
+  let evolucaoHtml = '';
+  if (evolucao && totalPartidas >= 2) {
+    const p = evolucao;
+    const variacaoClasse = (delta) => delta > 0 ? 'positiva' : delta < 0 ? 'negativa' : 'neutra';
+    const variacaoSinal = (delta) => delta > 0 ? '+' : '';
+    const evolGrid = `
+      <div class="evolucao-grid">
+        <div class="evolucao-item">
+          <div class="rotulo">📊 Pontos</div>
+          <div class="valor-atual">${p.pontos.atual}</div>
+          <div class="variacao ${variacaoClasse(p.pontos.delta)}">${variacaoSinal(p.pontos.delta)}${p.pontos.delta}</div>
+        </div>
+        <div class="evolucao-item">
+          <div class="rotulo">✅ Acertos</div>
+          <div class="valor-atual">${p.acertos.atual}</div>
+          <div class="variacao ${variacaoClasse(p.acertos.delta)}">${variacaoSinal(p.acertos.delta)}${p.acertos.delta}</div>
+        </div>
+        <div class="evolucao-item">
+          <div class="rotulo">⚡ Tempo médio</div>
+          <div class="valor-atual">${p.tempoMedio.atual.toFixed(2)}s</div>
+          <div class="variacao ${p.tempoMedio.delta < 0 ? 'positiva' : 'negativa'}">${p.tempoMedio.delta < 0 ? '−' : '+'}${Math.abs(p.tempoMedio.delta).toFixed(2)}s</div>
+        </div>
+        <div class="evolucao-item">
+          <div class="rotulo">🎯 Precisão</div>
+          <div class="valor-atual">${p.precisao.atual}%</div>
+          <div class="variacao ${variacaoClasse(p.precisao.delta)}">${variacaoSinal(p.precisao.delta)}${p.precisao.delta}%</div>
+        </div>
+      </div>
+    `;
+
+    // Projeção
+    let projecaoHtml = '';
+    if (evolucao.projecao) {
+      projecaoHtml = `
+        <div class="projecao-box">
+          <div>
+            <div class="projecao-label">🔮 Projeção para a próxima partida</div>
+            <div class="projecao-valor">~${Math.round(evolucao.projecao.pontos)} pts</div>
+            <div class="projecao-detalhe">${evolucao.projecao.acertos} acertos estimados</div>
+          </div>
+          <div style="font-size: 14px; color: var(--texto-secundario);">
+            ${evolucao.projecao.acertos >= 20 ? '🎯 Busque a perfeição!' : '💪 Continue evoluindo!'}
+          </div>
+        </div>
+      `;
     }
-  }
 
-  let velocidadeVsLider = '';
-  if (ranking.length > 0 && ranking[0].id !== id) {
-    const liderId = ranking[0].id;
-    const liderResultados = state.estadoAtual?.resultados?.[fase]?.[liderId] || [];
-    if (liderResultados.length > 0) {
-      const melhorLider = liderResultados.sort((a,b) => b.pontos - a.pontos)[0];
-      if (melhorLider && melhorLider.acertos > 0) {
-        const velLider = melhorLider.tempo / melhorLider.acertos;
-        if (tempoMedio > 0 && velLider > 0) {
-          const diff = tempoMedio - velLider;
-          if (diff < -0.01) {
-            velocidadeVsLider = `⚡ Você foi mais rápido que o líder nesta partida (${Math.abs(diff).toFixed(2)}s de vantagem)!`;
-          } else if (diff > 0.01) {
-            velocidadeVsLider = `⏱️ O líder ainda é mais rápido. Você está a ${diff.toFixed(2)}s do recorde dele.`;
-          } else {
-            velocidadeVsLider = `🤝 Você igualou a velocidade do líder!`;
-          }
-        }
-      }
+    // Recordes batidos
+    let recordesHtml = '';
+    if (evolucao.recordes && evolucao.recordes.length > 0) {
+      recordesHtml = `
+        <div class="recordes-lista">
+          ${evolucao.recordes.map(r => `<span class="recorde-item novo">${r}</span>`).join('')}
+        </div>
+      `;
     }
+
+    evolucaoHtml = `
+      <h4 style="margin: 0 0 8px 0;">📈 Evolução (Partida ${totalPartidas-1} → Partida ${totalPartidas})</h4>
+      ${evolGrid}
+      ${recordesHtml}
+      ${projecaoHtml}
+      <div style="margin-top: 8px; font-size: 13px; color: var(--texto-secundario);">
+        <canvas id="grafico-evolucao-modal" width="600" height="150" style="width:100%; height:auto; max-width:600px; background: transparent;"></canvas>
+      </div>
+    `;
+  } else {
+    evolucaoHtml = `
+      <div style="text-align:center; padding:20px; color: var(--texto-secundario);">
+        <p>📊 Jogue mais partidas para ver sua evolução!</p>
+        <p style="font-size: 14px;">Acompanhe seu progresso comparando partidas.</p>
+      </div>
+    `;
   }
 
-  let bonusMessage = '';
-  if (state.bonusVelocidadeConfig?.ativo) {
-    const bonus = state.bonusVelocidadePorFase?.[fase]?.[id] || 0;
-    if (bonus > 0) {
-      bonusMessage = `⚡ Você ganhou +${bonus} pontos de bônus por velocidade!`;
-    }
-  }
-
-  // Erros
+  // ===== ABA ANÁLISE =====
   let errosHtml = '';
+  let padroesHtml = '';
+  let recomendacoesHtml = '';
+
   if (historico && historico.length > 0) {
     const erros = historico.filter(h => !h.acertou);
     if (erros.length > 0) {
+      // Lista de erros
       errosHtml = `
         <div class="bloco">
           <div class="bloco-titulo">❌ Erros na partida (${erros.length})</div>
@@ -358,45 +459,104 @@ export function exibirModalResultados(dados) {
           </ul>
         </div>
       `;
+
+      // Padrões de erro (frequência por operação)
+      const freq = {};
+      erros.forEach(e => {
+        const op = e.pergunta || '';
+        if (op) freq[op] = (freq[op] || 0) + 1;
+      });
+      const freqSorted = Object.entries(freq).sort((a,b) => b[1] - a[1]);
+      if (freqSorted.length > 0) {
+        padroesHtml = `
+          <div class="bloco">
+            <div class="bloco-titulo">🧩 Padrões de erro</div>
+            <div class="padroes-erro-container">
+              ${freqSorted.map(([op, count]) => `
+                <div class="padrao-erro-item">
+                  <span class="operacao">${escapeHtml(op)}</span>
+                  <span class="status repetido">Errou ${count} vez(es)</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // Recomendações
+      const opsMaisErradas = freqSorted.slice(0, 2).map(([op]) => op);
+      if (opsMaisErradas.length > 0) {
+        recomendacoesHtml = `
+          <div class="bloco">
+            <div class="bloco-titulo">💡 Recomendações</div>
+            <div class="recomendacao-box">
+              <div class="recomendacao-titulo">🎯 Foco nas operações que você errou</div>
+              <div class="recomendacao-texto">
+                Você errou ${opsMaisErradas.join(' e ')}. Que tal treinar essas tabuadas com flashcards ou jogos?
+                ${precisao < 70 ? 'Tente responder com mais calma e revisar as contas antes de confirmar.' : ''}
+                ${tempoMedio > 2.5 ? 'Tente responder mais rápido – confie na sua intuição!' : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }
     } else {
       errosHtml = `<div class="bloco"><div class="bloco-titulo">✅ Nenhum erro! Parabéns!</div></div>`;
     }
   }
 
-  // Estrelas ganhas
-  let estrelasHtml = '';
-  if (estrelasGanhas && Object.keys(estrelasGanhas).length > 0) {
-    const acoesLabels = {
-      partida_completa: 'Partida completa',
-      acertos_18_19: '18 ou 19 acertos',
-      acertos_20: 'Perfeição (20 acertos)',
-      subiu_ranking: 'Subiu no ranking',
-      avancou_fase: 'Avançou de fase',
-      recorde_pessoal: 'Recorde pessoal'
-    };
-    const lista = Object.entries(estrelasGanhas)
-      .filter(([_, qtd]) => qtd > 0)
-      .map(([acao, qtd]) => `${acoesLabels[acao] || acao}: +${qtd} ⭐`);
-    if (lista.length > 0) {
-      estrelasHtml = `<div class="bloco"><div class="bloco-titulo">⭐ Estrelas ganhas nesta partida</div><ul style="list-style:none; padding:0;">${lista.map(item => `<li style="padding:4px 0;">${item}</li>`).join('')}</ul></div>`;
-    }
+  // ===== ABA CONQUISTAS =====
+  let estrelasDetalheHtml = '';
+  if (estrelasLista.length > 0) {
+    estrelasDetalheHtml = `
+      <div class="bloco">
+        <div class="bloco-titulo">⭐ Estrelas ganhas nesta partida</div>
+        <ul style="list-style:none; padding:0;">
+          ${estrelasLista.map(item => `<li style="padding:4px 0;">${item}</li>`).join('')}
+        </ul>
+      </div>
+    `;
   }
 
-  // Medalhas
   let medalhasHtml = '';
   const medalhas = carregarMedalhasLocal();
   if (medalhas.length > 0) {
-    medalhasHtml = `<div class="bloco"><div class="bloco-titulo">🏅 Suas conquistas</div><div style="display:flex; flex-wrap:wrap; gap:8px;">${medalhas.map(m => `<span class="medalha-item"><span class="medalha-icone">${m.icone}</span> ${m.nome}</span>`).join('')}</div></div>`;
+    medalhasHtml = `
+      <div class="bloco">
+        <div class="bloco-titulo">🏅 Suas conquistas</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          ${medalhas.map(m => `<span class="medalha-item"><span class="medalha-icone">${m.icone}</span> ${m.nome}</span>`).join('')}
+        </div>
+      </div>
+    `;
   } else {
-    medalhasHtml = `<div class="bloco"><div class="bloco-titulo">🏅 Conquistas</div><p style="color:#94a3b8;">Nenhuma conquista desbloqueada ainda.</p></div>`;
+    medalhasHtml = `
+      <div class="bloco">
+        <div class="bloco-titulo">🏅 Conquistas</div>
+        <p style="color:#94a3b8;">Nenhuma conquista desbloqueada ainda.</p>
+      </div>
+    `;
   }
 
-  // HTML do modal
+  // Selos (badges)
+  const selosHtml = badges.length > 0 ? `
+    <div class="bloco">
+      <div class="bloco-titulo">🏅 Selos desta partida</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">
+        ${badges.map(b => `<span class="badge-selo ativo">${b}</span>`).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // ============================================================
+  // HTML DO MODAL COMPLETO
+  // ============================================================
   const modalHtml = `
     <div class="modal-resultados" id="modal-pos-jogo">
       <h2 style="margin-top: 0;">🏁 RESULTADO DA PARTIDA</h2>
-      
-      <div class="resumo-cabecalho">
+
+      <!-- Cabeçalho resumido (sempre visível) -->
+      <div class="resumo-cabecalho" style="margin-bottom: 12px;">
         <div class="item">
           <span class="label">Posição</span>
           <span class="valor ${posicao === 1 ? 'valor-ouro' : posicao === 2 ? 'valor-prata' : posicao === 3 ? 'valor-bronze' : ''}">${posicao <= 3 ? ['🥇','🥈','🥉'][posicao-1] : '🏆'} ${posicao}º</span>
@@ -415,74 +575,29 @@ export function exibirModalResultados(dados) {
         </div>
       </div>
 
+      <!-- Abas -->
       <div class="abas-resultado" role="tablist">
         <button class="aba-btn active" data-aba="resumo" role="tab" aria-selected="true">📋 Resumo</button>
-        <button class="aba-btn" data-aba="analise" role="tab" aria-selected="false">📊 Análise</button>
+        <button class="aba-btn" data-aba="evolucao" role="tab" aria-selected="false">📈 Evolução</button>
+        <button class="aba-btn" data-aba="analise" role="tab" aria-selected="false">🔍 Análise</button>
         <button class="aba-btn" data-aba="conquistas" role="tab" aria-selected="false">🏅 Conquistas</button>
       </div>
 
-      <div id="aba-resumo" class="aba-conteudo">
-        <div class="mensagem-personalizada">
-          <span class="emoji">${mensagemEmoji}</span> ${mensagem}
-          ${bonusMessage ? `<br><span style="font-size: 16px;">${bonusMessage}</span>` : ''}
-        </div>
-        <div class="bloco">
-          <div class="bloco-titulo">🎯 METAS E PROXIMIDADE</div>
-          <div class="card-metrica">
-            <span class="label">${statusVaga}</span>
-          </div>
-          ${proximoColegaHtml ? `<div class="card-metrica"><span class="label">${proximoColegaHtml}</span></div>` : ''}
-          <div class="card-metrica">
-            <span class="label">📋 Partidas jogadas:</span>
-            <span class="valor">${totalPartidas} / ${minPartidas} ${totalPartidas >= minPartidas ? '✅ Elegível' : '⚠️ Faltam ' + (minPartidas - totalPartidas)}</span>
-          </div>
-          <div class="progresso-mini">
-            <div class="fill" style="width: ${Math.min(100, (totalPartidas/minPartidas)*100)}%;"></div>
-          </div>
-        </div>
-      </div>
-
+      <!-- Conteúdo das abas -->
+      <div id="aba-resumo" class="aba-conteudo">${resumoHtml}</div>
+      <div id="aba-evolucao" class="aba-conteudo hidden">${evolucaoHtml}</div>
       <div id="aba-analise" class="aba-conteudo hidden">
-        <div class="bloco">
-          <div class="bloco-titulo">📊 ESTATÍSTICAS AVANÇADAS</div>
-          <div class="grid-2col">
-            <div class="card-metrica">
-              <span class="label">🎯 Precisão:</span>
-              <span class="valor">${precisao.toFixed(0)}%</span>
-            </div>
-            <div class="card-metrica">
-              <span class="label">⏱️ Tempo total:</span>
-              <span class="valor">${tempoTotal.toFixed(1)}s</span>
-            </div>
-            ${evolucaoPontos !== null ? `
-              <div class="card-metrica">
-                <span class="label">📈 Evolução vs última partida:</span>
-                <span class="valor" style="color: ${evolucaoPontos >= 0 ? '#4ade80' : '#f87171'};">${evolucaoPontos >= 0 ? '+' : ''}${evolucaoPontos} pts</span>
-              </div>
-            ` : ''}
-            ${velocidadeVsLider ? `
-              <div class="card-metrica" style="grid-column: 1 / -1;">
-                <span class="label">⚡ Velocidade vs Líder:</span>
-                <span class="valor">${velocidadeVsLider}</span>
-              </div>
-            ` : ''}
-          </div>
-        </div>
         ${errosHtml}
+        ${padroesHtml}
+        ${recomendacoesHtml}
       </div>
-
       <div id="aba-conquistas" class="aba-conteudo hidden">
-        ${estrelasHtml}
+        ${estrelasDetalheHtml}
         ${medalhasHtml}
-        <div class="bloco">
-          <div class="bloco-titulo">🏅 Selos desta partida</div>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">
-            ${badges.map(b => `<span class="badge-selo ativo">${b}</span>`).join('')}
-            ${badges.length === 0 ? '<span style="color:#94a3b8;">Nenhum selo especial desta vez.</span>' : ''}
-          </div>
-        </div>
+        ${selosHtml}
       </div>
 
+      <!-- Rodapé com botões -->
       <div class="rodape-acoes">
         <button class="btn-success" id="btn-jogar-novamente">🔄 Jogar Novamente</button>
         <button class="btn-info" id="btn-ver-ranking">📊 Ver Ranking</button>
@@ -491,11 +606,12 @@ export function exibirModalResultados(dados) {
     </div>
   `;
 
+  // Inserir no DOM
   const modalExistente = document.getElementById('modal-pos-jogo');
   if (modalExistente) modalExistente.remove();
   document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-  // Abas
+  // ===== EVENTOS DAS ABAS =====
   document.querySelectorAll('.aba-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       const aba = this.dataset.aba;
@@ -504,10 +620,22 @@ export function exibirModalResultados(dados) {
       document.querySelectorAll('.aba-conteudo').forEach(c => c.classList.add('hidden'));
       const target = document.getElementById(`aba-${aba}`);
       if (target) target.classList.remove('hidden');
+
+      // Se a aba for "evolucao", desenhar o gráfico no canvas do modal
+      if (aba === 'evolucao') {
+        setTimeout(() => {
+          const canvas = document.getElementById('grafico-evolucao-modal');
+          if (canvas) {
+            import('./game.js').then(({ desenharGraficoEvolucaoModal }) => {
+              desenharGraficoEvolucaoModal(canvas);
+            });
+          }
+        }, 100);
+      }
     });
   });
 
-  // Botões
+  // ===== BOTÕES =====
   document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
     document.getElementById('modal-pos-jogo')?.remove();
   });
