@@ -351,7 +351,7 @@ export function exibirModalResultados(dados) {
             ${erros.map(e => `
               <li>
                 <span class="pergunta">${escapeHtml(e.pergunta)}</span>
-                <span>Escolheu: <span class="resposta-errada">${e.respostaEscolhida !== null ? escapeHtml(e.respostaEscolhida) : '⏱️ tempo'}</span></span>
+                <span>Escolheu: <span class="resposta-errada">${escapeHtml(e.respostaEscolhida)}</span></span>
                 <span>Correto: <span class="resposta-correta">${escapeHtml(e.respostaCorreta)}</span></span>
               </li>
             `).join('')}
@@ -581,10 +581,11 @@ export function atualizarNivelEstrelasUI() {
   container.innerHTML = html;
 }
 
-// ===== ESCAPE HTML =====
+// ===== ESCAPE HTML (CORRIGIDO) =====
 function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, function(m) {
+  if (str === null || str === undefined) return '';
+  const s = String(str);
+  return s.replace(/[&<>]/g, function(m) {
     if (m === '&') return '&amp;';
     if (m === '<') return '&lt;';
     if (m === '>') return '&gt;';
