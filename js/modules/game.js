@@ -314,7 +314,6 @@ export async function responder(idx) {
     // ===== FEEDBACK SEPARADO =====
     let delay = 0.5; // fallback
     if (idx === -1) {
-      // tempo esgotado – consideramos como erro
       delay = state.tempoFeedbackErro * 1000;
     } else if (acertou) {
       delay = state.tempoFeedbackAcerto * 1000;
@@ -460,6 +459,34 @@ async function finalizarPartida() {
       ultimaPartida = partidas[partidas.length - 2];
     }
 
+    // ===== COLETAR ESTRELAS GANHAS PARA EXIBIR NO MODAL =====
+    let estrelasGanhas = {};
+    try {
+      const acoes = state.configEstrelas.acoes;
+      if (state.perguntaIdx >= 20) {
+        estrelasGanhas.partida_completa = acoes.partida_completa || 1;
+      }
+      if (state.acertosPartida === 18 || state.acertosPartida === 19) {
+        estrelasGanhas.acertos_18_19 = acoes.acertos_18_19 || 2;
+      }
+      if (state.acertosPartida === 20) {
+        estrelasGanhas.acertos_20 = acoes.acertos_20 || 5;
+      }
+      if (state.posicaoAntesPartida !== null && posicaoAtualFinal < state.posicaoAntesPartida) {
+        estrelasGanhas.subiu_ranking = acoes.subiu_ranking || 3;
+      }
+      let melhorPontuacaoAnterior2 = 0;
+      if (partidas.length > 1) {
+        const anteriores = partidas.slice(0, -1);
+        melhorPontuacaoAnterior2 = Math.max(...anteriores.map(p => p.pontos || 0));
+      }
+      if (state.pontosPartida > melhorPontuacaoAnterior2) {
+        estrelasGanhas.recorde_pessoal = acoes.recorde_pessoal || 4;
+      }
+    } catch (e) {
+      console.warn('Erro ao calcular estrelas ganhas:', e);
+    }
+
     const dadosModal = {
       posicao: posicaoAtualFinal > 0 ? posicaoAtualFinal : 0,
       posicaoAnterior: posicaoAnterior,
@@ -473,7 +500,8 @@ async function finalizarPartida() {
       id: state.alunoId,
       nome: state.alunoNome,
       turma: state.alunoTurma,
-      historico: state.historicoPerguntas
+      historico: state.historicoPerguntas,
+      estrelasGanhas: estrelasGanhas // <-- adicionado
     };
 
     exibirModalResultados(dadosModal);
