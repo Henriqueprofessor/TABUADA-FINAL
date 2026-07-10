@@ -501,7 +501,7 @@ async function finalizarPartida() {
       nome: state.alunoNome,
       turma: state.alunoTurma,
       historico: state.historicoPerguntas,
-      estrelasGanhas: estrelasGanhas // <-- adicionado
+      estrelasGanhas: estrelasGanhas
     };
 
     exibirModalResultados(dadosModal);
