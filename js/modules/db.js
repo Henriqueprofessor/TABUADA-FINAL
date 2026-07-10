@@ -9,7 +9,16 @@ import { exibirToast } from './ui.js';
 export function carregarEstado(callback) {
   try {
     return db.ref('copaV2').on('value', snap => {
-      state.estadoAtual = snap.val() || { fase: 1, status: 'aguardando', tempoFase: 10, fim: 0, modalidade: "2-5", classificados: {}, resultados: {}, participantes: {} };
+      state.estadoAtual = snap.val() || { 
+        fase: 1, 
+        status: 'aguardando', 
+        tempoFase: 10, 
+        fim: 0, 
+        modalidade: "2-5", 
+        classificados: {}, 
+        resultados: {}, 
+        participantes: {} 
+      };
       if (callback) callback(state.estadoAtual);
     });
   } catch (error) {
@@ -21,17 +30,23 @@ export function carregarEstado(callback) {
 }
 
 // ============================================================
-// ATUALIZAR DADOS (CORRIGIDO – usa `set` para arrays)
+// ATUALIZAR DADOS (CORRIGIDO – usa `set` para arrays e primitivos)
 // ============================================================
 
 export async function atualizarDados(caminho, dados) {
   try {
-    // Se for um array, use set() para sobrescrever todo o nó (evita warning)
+    // Se for array, usar set para sobrescrever
     if (Array.isArray(dados)) {
       await db.ref(caminho).set(dados);
-    } else {
-      await db.ref(caminho).update(dados);
+      return true;
     }
+    // Se for um valor primitivo (número, string, booleano, null, undefined), usar set
+    if (typeof dados !== 'object' || dados === null) {
+      await db.ref(caminho).set(dados);
+      return true;
+    }
+    // Caso contrário (objeto), usar update para atualização parcial
+    await db.ref(caminho).update(dados);
     return true;
   } catch (e) {
     console.warn('⚠️ Erro ao atualizar dados (offline):', caminho, e);
