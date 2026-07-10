@@ -1,3 +1,4 @@
+// js/modules/ui.js
 import { state } from './state.js';
 import { getNivelPorEstrelas, getProximoNivel } from './estrelas.js';
 
@@ -239,7 +240,7 @@ export function atualizarBannerAviso(aviso) {
 }
 
 // ============================================================
-// MODAL DE RESULTADOS PÓS-PARTIDA
+// MODAL DE RESULTADOS PÓS-PARTIDA (COM ABAS)
 // ============================================================
 
 export function exibirModalResultados(dados) {
@@ -258,6 +259,7 @@ export function exibirModalResultados(dados) {
 
   const streak = Math.round(precisao / 5);
 
+  // ===== BADGES =====
   const badges = [];
   if (totalPartidas === 1) badges.push('🏅 Primeira partida!');
   if (tempoMedio < 1.5 && acertos > 0) badges.push('⚡ Velocista (média < 1.5s)');
@@ -278,6 +280,7 @@ export function exibirModalResultados(dados) {
     state.melhorPontuacao = pontos;
   }
 
+  // ===== MENSAGEM PERSONALIZADA =====
   let mensagem = '';
   let mensagemEmoji = '';
   if (posicao === 1) {
@@ -300,6 +303,7 @@ export function exibirModalResultados(dados) {
     mensagemEmoji = '🔄';
   }
 
+  // ===== STATUS DE CLASSIFICAÇÃO =====
   const vagas = state.VAGAS_POR_FASE?.[fase] || 30;
   const minPartidas = state.minPartidasPorFase?.[fase] || 1;
   const dentroVagas = posicao <= vagas && totalPartidas >= minPartidas;
@@ -313,6 +317,7 @@ export function exibirModalResultados(dados) {
     statusVaga = `📋 Você precisa de mais ${minPartidas - totalPartidas} partida${minPartidas - totalPartidas > 1 ? 's' : ''} para ser elegível.`;
   }
 
+  // ===== PRÓXIMO COLEGA =====
   let proximoColegaHtml = '';
   const minhaPosIndex = ranking.findIndex(p => p.id === id);
   if (minhaPosIndex > 0 && minhaPosIndex < ranking.length) {
@@ -323,6 +328,7 @@ export function exibirModalResultados(dados) {
     }
   }
 
+  // ===== COMPARAÇÃO COM LÍDER (VELOCIDADE) =====
   let velocidadeVsLider = '';
   if (ranking.length > 0 && ranking[0].id !== id) {
     const liderId = ranking[0].id;
@@ -345,6 +351,7 @@ export function exibirModalResultados(dados) {
     }
   }
 
+  // ===== BÔNUS DE VELOCIDADE =====
   let bonusMessage = '';
   if (state.bonusVelocidadeConfig?.ativo) {
     const bonus = state.bonusVelocidadePorFase?.[fase]?.[id] || 0;
@@ -353,11 +360,13 @@ export function exibirModalResultados(dados) {
     }
   }
 
+  // ===== PROJEÇÃO =====
   let projecaoPos = null;
   if (state.estadoAtual?.status === 'em_andamento' && fase === state.estadoAtual.fase) {
     projecaoPos = posicao;
   }
 
+  // ===== HISTÓRICO DE ERROS =====
   let errosHtml = '';
   if (historico && historico.length > 0) {
     const erros = historico.filter(h => !h.acertou);
@@ -385,112 +394,252 @@ export function exibirModalResultados(dados) {
     }
   }
 
+  // ===== ESTRELAS GANHAS NESTA PARTIDA =====
+  // Calcula quantas estrelas foram concedidas nesta partida (baseado no histórico do aluno)
+  let estrelasGanhas = 0;
+  let estrelasDetalhe = '';
+  if (state.alunoId && state.estrelas && state.estrelas.historico) {
+    // Pega as estrelas concedidas após esta partida (assumindo que a última entrada é a mais recente)
+    const historicoEstrelas = state.estrelas.historico;
+    // Filtra as entradas que são da mesma fase e partida (se tiver partidaIndex)
+    // Como não temos partidaIndex no modal, pegamos as últimas que foram adicionadas
+    // A lógica: se a partida foi finalizada, as estrelas já foram concedidas em game.js
+    // Podemos contar as estrelas das últimas ações que ocorreram após o início da partida
+    // Mas é mais simples: exibir o total de estrelas e um resumo das ações que geraram estrelas.
+    // Vamos buscar as últimas entradas (até 5) que sejam da mesma fase.
+    const ultimas = historicoEstrelas.filter(h => h.fase === fase).slice(-5);
+    if (ultimas.length > 0) {
+      estrelasGanhas = ultimas.reduce((acc, h) => acc + (h.estrelas || 0), 0);
+      // Monta um detalhe com as ações
+      const acoes = ultimas.map(h => {
+        const nomeAcao = {
+          partida_completa: 'Partida completa',
+          acertos_18_19: '18/19 acertos',
+          acertos_20: 'Perfeição (20)',
+          subiu_ranking: 'Subiu ranking',
+          avancou_fase: 'Avançou fase',
+          recorde_pessoal: 'Recorde pessoal'
+        }[h.acao] || h.acao;
+        return `${nomeAcao} (+${h.estrelas})`;
+      }).join(', ');
+      if (acoes) estrelasDetalhe = `⭐ ${estrelasGanhas} estrelas: ${acoes}`;
+    }
+  }
+
+  // ===== CONSTRUÇÃO DO MODAL COM ABAS =====
   const modalHtml = `
     <div class="modal-resultados" id="modal-pos-jogo">
-      <h2 style="margin-top: 0;">🏁 RESULTADO DA PARTIDA</h2>
-      <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 12px; margin: 10px 0;">
-        <div style="font-size: 28px; font-weight: bold; display: flex; align-items: center; gap: 10px;">
-          ${posicao <= 3 ? ['🥇','🥈','🥉'][posicao-1] : '🏆'} ${posicao}º lugar
-          ${posicaoAnterior ? (posicao < posicaoAnterior ? '⬆️' : posicao > posicaoAnterior ? '⬇️' : '➡️') : ''}
-        </div>
-        <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
-        <div style="font-size: 18px;">✅ ${acertos}/20</div>
+      <!-- Cabeçalho com timer (opcional) -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--borda-card);">
+        <span style="font-size:14px; color:var(--texto-secundario);">⏱️ Tempo restante: <span id="modal-timer" style="color:#ffd966; font-weight:bold;">${document.getElementById('timer-fase-aluno')?.innerText || '--:--'}</span></span>
+        <button id="btn-fechar-modal" style="background:transparent; border:none; color:var(--texto-secundario); font-size:24px; cursor:pointer;">✕</button>
       </div>
 
-      <div class="mensagem-personalizada">
-        <span class="emoji">${mensagemEmoji}</span> ${mensagem}
-        ${bonusMessage ? `<br><span style="font-size: 16px;">${bonusMessage}</span>` : ''}
+      <!-- Abas -->
+      <div style="display:flex; gap:10px; margin-bottom:15px; border-bottom:2px solid var(--borda-card); padding-bottom:8px;">
+        <button class="tab-btn-modal ativo" data-tab="resultado" style="background:transparent; border:none; padding:6px 16px; font-weight:600; cursor:pointer; color:var(--texto-secundario); border-radius:20px; transition:0.2s;">🏁 Resultado</button>
+        <button class="tab-btn-modal" data-tab="analise" style="background:transparent; border:none; padding:6px 16px; font-weight:600; cursor:pointer; color:var(--texto-secundario); border-radius:20px; transition:0.2s;">📊 Análise</button>
       </div>
 
-      <div class="bloco">
-        <div class="bloco-titulo">🎯 METAS E PROXIMIDADE</div>
-        <div class="card-metrica">
-          <span class="label">${statusVaga}</span>
-        </div>
-        ${proximoColegaHtml ? `<div class="card-metrica"><span class="label">${proximoColegaHtml}</span></div>` : ''}
-        <div class="card-metrica">
-          <span class="label">📋 Partidas jogadas:</span>
-          <span class="valor">${totalPartidas} / ${minPartidas} ${totalPartidas >= minPartidas ? '✅ Elegível' : '⚠️ Faltam ' + (minPartidas - totalPartidas)}</span>
-        </div>
-        <div class="progresso-mini">
-          <div class="fill" style="width: ${Math.min(100, (totalPartidas/minPartidas)*100)}%;"></div>
-        </div>
-      </div>
-
-      <div class="bloco">
-        <div class="bloco-titulo">💪 SUPERAÇÃO PESSOAL</div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
-          ${badges.map(b => `<span class="badge-selo ativo">${b}</span>`).join('')}
-        </div>
-        <div class="grid-2col">
-          ${evolucaoPontos !== null ? `
-            <div class="card-metrica">
-              <span class="label">📈 Evolução vs última partida:</span>
-              <span class="valor" style="color: ${evolucaoPontos >= 0 ? '#4ade80' : '#f87171'};">${evolucaoPontos >= 0 ? '+' : ''}${evolucaoPontos} pts</span>
-            </div>
-          ` : ''}
-          ${tempoMedio > 0 ? `
-            <div class="card-metrica">
-              <span class="label">⚡ Tempo médio:</span>
-              <span class="valor">${tempoMedio.toFixed(2)}s</span>
-            </div>
-          ` : ''}
-        </div>
-      </div>
-
-      <div class="bloco">
-        <div class="bloco-titulo">📊 RAIO-X TÁTICO</div>
-        <div class="grid-2col">
-          <div class="card-metrica">
-            <span class="label">🎯 Precisão:</span>
-            <span class="valor">${precisao.toFixed(0)}%</span>
+      <!-- ===== ABA RESULTADO ===== -->
+      <div id="tab-resultado" class="tab-conteudo">
+        <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 12px; margin: 10px 0;">
+          <div style="font-size: 28px; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+            ${posicao <= 3 ? ['🥇','🥈','🥉'][posicao-1] : '🏆'} ${posicao}º lugar
+            ${posicaoAnterior ? (posicao < posicaoAnterior ? '⬆️' : posicao > posicaoAnterior ? '⬇️' : '➡️') : ''}
           </div>
+          <div style="font-size: 24px; font-weight: bold;">⭐ ${pontos} pts</div>
+          <div style="font-size: 18px;">✅ ${acertos}/20</div>
+        </div>
+
+        <div class="mensagem-personalizada">
+          <span class="emoji">${mensagemEmoji}</span> ${mensagem}
+          ${bonusMessage ? `<br><span style="font-size: 16px;">${bonusMessage}</span>` : ''}
+        </div>
+
+        <div class="bloco">
+          <div class="bloco-titulo">🎯 METAS E PROXIMIDADE</div>
           <div class="card-metrica">
-            <span class="label">⏱️ Tempo total:</span>
-            <span class="valor">${tempoTotal.toFixed(1)}s</span>
+            <span class="label">${statusVaga}</span>
           </div>
-          ${velocidadeVsLider ? `
-            <div class="card-metrica" style="grid-column: 1 / -1;">
-              <span class="label">⚡ Velocidade vs Líder:</span>
-              <span class="valor">${velocidadeVsLider}</span>
-            </div>
-          ` : ''}
-          ${projecaoPos ? `
-            <div class="card-metrica">
-              <span class="label">📈 Projeção de posição:</span>
-              <span class="valor">${projecaoPos}º (ritmo atual)</span>
-            </div>
-          ` : ''}
+          ${proximoColegaHtml ? `<div class="card-metrica"><span class="label">${proximoColegaHtml}</span></div>` : ''}
+          <div class="card-metrica">
+            <span class="label">📋 Partidas jogadas:</span>
+            <span class="valor">${totalPartidas} / ${minPartidas} ${totalPartidas >= minPartidas ? '✅ Elegível' : '⚠️ Faltam ' + (minPartidas - totalPartidas)}</span>
+          </div>
+          <div class="progresso-mini">
+            <div class="fill" style="width: ${Math.min(100, (totalPartidas/minPartidas)*100)}%;"></div>
+          </div>
+        </div>
+
+        <div class="bloco">
+          <div class="bloco-titulo">💪 SUPERAÇÃO PESSOAL</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+            ${badges.map(b => `<span class="badge-selo ativo">${b}</span>`).join('')}
+          </div>
+          <div class="grid-2col">
+            ${evolucaoPontos !== null ? `
+              <div class="card-metrica">
+                <span class="label">📈 Evolução vs última partida:</span>
+                <span class="valor" style="color: ${evolucaoPontos >= 0 ? '#4ade80' : '#f87171'};">${evolucaoPontos >= 0 ? '+' : ''}${evolucaoPontos} pts</span>
+              </div>
+            ` : ''}
+            ${tempoMedio > 0 ? `
+              <div class="card-metrica">
+                <span class="label">⚡ Tempo médio:</span>
+                <span class="valor">${tempoMedio.toFixed(2)}s</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+        <!-- Estrelas ganhas na partida -->
+        ${estrelasDetalhe ? `
+          <div class="bloco" style="background: rgba(250,204,21,0.08); border-radius:12px; padding:8px 12px; margin-top:8px;">
+            <div class="bloco-titulo">⭐ Estrelas nesta partida</div>
+            <div style="font-size:16px; color:#facc15;">${estrelasDetalhe}</div>
+          </div>
+        ` : ''}
+
+        <div class="rodape-acoes" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:20px;">
+          <button class="btn-success" id="btn-jogar-novamente">🔄 Jogar Novamente</button>
+          <button class="btn-info" id="btn-ver-ranking">📊 Ver Ranking</button>
+          <button class="btn-secondary" id="btn-ver-analise">📈 Ver Análise</button>
         </div>
       </div>
 
-      ${errosHtml}
+      <!-- ===== ABA ANÁLISE ===== -->
+      <div id="tab-analise" class="tab-conteudo hidden" style="display:none;">
+        <div class="bloco">
+          <div class="bloco-titulo">📊 RAIO-X TÁTICO</div>
+          <div class="grid-2col">
+            <div class="card-metrica">
+              <span class="label">🎯 Precisão:</span>
+              <span class="valor">${precisao.toFixed(0)}%</span>
+            </div>
+            <div class="card-metrica">
+              <span class="label">⏱️ Tempo total:</span>
+              <span class="valor">${tempoTotal.toFixed(1)}s</span>
+            </div>
+            ${velocidadeVsLider ? `
+              <div class="card-metrica" style="grid-column: 1 / -1;">
+                <span class="label">⚡ Velocidade vs Líder:</span>
+                <span class="valor">${velocidadeVsLider}</span>
+              </div>
+            ` : ''}
+            ${projecaoPos ? `
+              <div class="card-metrica">
+                <span class="label">📈 Projeção de posição:</span>
+                <span class="valor">${projecaoPos}º (ritmo atual)</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
 
-      <div class="frase-encerramento">
-        💡 A fase ainda não acabou! Sua próxima tentativa pode te levar ao topo.
-      </div>
-      <div class="rodape-acoes">
-        <button class="btn-success" id="btn-jogar-novamente">🔄 Jogar Novamente</button>
-        <button class="btn-info" id="btn-ver-ranking">📊 Ver Ranking</button>
-        <button class="btn-secondary" id="btn-fechar-modal">🔙 Fechar</button>
+        ${errosHtml}
+
+        <!-- Conquistas (medalhas) -->
+        <div class="bloco">
+          <div class="bloco-titulo">🏅 Minhas Conquistas</div>
+          <div id="modal-medalhas-container" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;">
+            <!-- Preenchido via JavaScript logo abaixo -->
+          </div>
+        </div>
+
+        <div style="margin-top:16px; text-align:center;">
+          <button class="btn-secondary" id="btn-voltar-resultado">🔙 Voltar ao Resultado</button>
+        </div>
       </div>
     </div>
   `;
 
+  // Remove modal existente e insere o novo
   const modalExistente = document.getElementById('modal-pos-jogo');
   if (modalExistente) modalExistente.remove();
 
   document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-  document.getElementById('btn-fechar-modal')?.addEventListener('click', () => {
-    document.getElementById('modal-pos-jogo')?.remove();
+  // ===== REFERÊNCIAS =====
+  const modal = document.getElementById('modal-pos-jogo');
+  const tabResultado = document.getElementById('tab-resultado');
+  const tabAnalise = document.getElementById('tab-analise');
+  const btnVerAnalise = document.getElementById('btn-ver-analise');
+  const btnVoltarResultado = document.getElementById('btn-voltar-resultado');
+
+  // ===== FUNÇÃO PARA ALTERNAR ABAS =====
+  function alternarAba(aba) {
+    const botoes = document.querySelectorAll('.tab-btn-modal');
+    botoes.forEach(btn => {
+      btn.classList.toggle('ativo', btn.dataset.tab === aba);
+      btn.style.background = btn.classList.contains('ativo') ? 'var(--cor-primaria)' : 'transparent';
+      btn.style.color = btn.classList.contains('ativo') ? 'white' : 'var(--texto-secundario)';
+    });
+
+    if (aba === 'resultado') {
+      tabResultado.style.display = 'block';
+      tabAnalise.style.display = 'none';
+    } else {
+      tabResultado.style.display = 'none';
+      tabAnalise.style.display = 'block';
+      // Preencher medalhas na aba análise
+      preencherMedalhasModal();
+    }
+  }
+
+  // ===== PREENCHER MEDALHAS NO MODAL =====
+  function preencherMedalhasModal() {
+    const container = document.getElementById('modal-medalhas-container');
+    if (!container) return;
+    // Usa as medalhas já carregadas em state ou localStorage
+    let medalhas = [];
+    try {
+      const raw = localStorage.getItem('copa_medals');
+      if (raw) medalhas = JSON.parse(raw);
+    } catch (e) {}
+    if (medalhas.length === 0) {
+      container.innerHTML = '<span style="color:#94a3b8; font-size:14px;">Nenhuma conquista ainda.</span>';
+      return;
+    }
+    container.innerHTML = medalhas.map(m => `
+      <span class="badge-selo ativo" style="font-size:14px;">${m.icone} ${m.nome}</span>
+    `).join('');
+  }
+
+  // ===== EVENTOS =====
+  // Fechar modal
+  document.getElementById('btn-fechar-modal').addEventListener('click', () => {
+    modal.remove();
   });
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  // Abas
+  document.querySelectorAll('.tab-btn-modal').forEach(btn => {
+    btn.addEventListener('click', () => {
+      alternarAba(btn.dataset.tab);
+    });
+  });
+
+  // Botão "Ver Análise" na aba resultado
+  if (btnVerAnalise) {
+    btnVerAnalise.addEventListener('click', () => alternarAba('analise'));
+  }
+
+  // Botão "Voltar ao Resultado"
+  if (btnVoltarResultado) {
+    btnVoltarResultado.addEventListener('click', () => alternarAba('resultado'));
+  }
+
+  // Jogar Novamente
   document.getElementById('btn-jogar-novamente')?.addEventListener('click', () => {
-    document.getElementById('modal-pos-jogo')?.remove();
+    modal.remove();
     import('./game.js').then(({ iniciarPartida }) => iniciarPartida());
   });
+
+  // Ver Ranking
   document.getElementById('btn-ver-ranking')?.addEventListener('click', () => {
-    document.getElementById('modal-pos-jogo')?.remove();
+    modal.remove();
     const modalRanking = document.getElementById('modal-ranking-aluno');
     if (modalRanking) {
       modalRanking.style.display = 'flex';
@@ -498,13 +647,13 @@ export function exibirModalResultados(dados) {
     }
   });
 
-  document.getElementById('modal-pos-jogo')?.addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) {
-      document.getElementById('modal-pos-jogo')?.remove();
-    }
-  });
+  // Inicializa com a aba resultado ativa
+  alternarAba('resultado');
+
+  // Se houver estrelas detalhadas, já está visível.
 }
 
+// ===== FUNÇÕES AUXILIARES =====
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/[&<>]/g, function(m) {
@@ -515,10 +664,7 @@ function escapeHtml(str) {
   });
 }
 
-// ============================================================
-// NÍVEL DE ESTRELAS (UI)
-// ============================================================
-
+// ===== NÍVEL DE ESTRELAS (UI) =====
 export function atualizarNivelEstrelasUI() {
   const container = document.getElementById('nivel-estrelas-aluno');
   if (!container) return;
