@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo - HENRIQUE ANGELO DA SILVA</title>
     
-    <!-- REMOVIDO O LINK PARA MANIFEST -->
-    <!-- <link rel="manifest" href="manifest.json"> -->
+    <!-- ===== MANIFEST (opcional, sem SW) ===== -->
+    <link rel="manifest" href="manifest.json">
     
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -127,9 +127,7 @@
             <div class="tab-btn" data-tab="configuracoes" role="tab" aria-selected="false" tabindex="-1">⚙️ Configurações</div>
         </div>
 
-        <!-- ========================================================= -->
-        <!-- ABA CONTROLE                                              -->
-        <!-- ========================================================= -->
+        <!-- ===== ABA CONTROLE ===== -->
         <div id="tab-controle" class="tab-content">
             <div class="flex-grid">
                 <div>
@@ -191,17 +189,13 @@
             </div>
         </div>
 
-        <!-- ========================================================= -->
-        <!-- ABA RANKING GERAL                                          -->
-        <!-- ========================================================= -->
+        <!-- ===== ABA RANKING GERAL ===== -->
         <div id="tab-ranking-geral" class="tab-content hidden">
             <h3>📊 Classificação Geral - Todos os Participantes</h3>
             <div id="ranking-geral-container" class="status-box">Processando ranking geral...</div>
         </div>
 
-        <!-- ========================================================= -->
-        <!-- ABA RANKING POR FASE                                       -->
-        <!-- ========================================================= -->
+        <!-- ===== ABA RANKING POR FASE ===== -->
         <div id="tab-ranking-fase" class="tab-content hidden">
             <h3>Ranking por Fase (Atualização automática)</h3>
             <div class="fase-selector">
@@ -212,9 +206,7 @@
             <div id="ranking-parcial" class="status-box" aria-live="polite">Aguardando dados...</div>
         </div>
 
-        <!-- ========================================================= -->
-        <!-- ABA RANKING POR TURMA                                      -->
-        <!-- ========================================================= -->
+        <!-- ===== ABA RANKING POR TURMA ===== -->
         <div id="tab-ranking-turmas" class="tab-content hidden">
             <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
             <div style="margin-bottom: 15px;">
@@ -223,9 +215,7 @@
             <div id="ranking-turmas-container" class="status-box" aria-live="polite">Carregando...</div>
         </div>
 
-        <!-- ========================================================= -->
-        <!-- ABA RANKING DE PONTOS                                      -->
-        <!-- ========================================================= -->
+        <!-- ===== ABA RANKING DE PONTOS ===== -->
         <div id="tab-ranking-pontos" class="tab-content hidden">
             <h3>🏆 Ranking de Pontos Acumulados</h3>
             <p style="color: #94a3b8; margin-bottom: 15px;">O campeão da Copa será o jogador com o maior total de pontos ao final das 5 fases.</p>
@@ -289,27 +279,21 @@
             </p>
         </div>
 
-        <!-- ========================================================= -->
-        <!-- ABA GERENCIAR ALUNOS                                       -->
-        <!-- ========================================================= -->
+        <!-- ===== ABA GERENCIAR ALUNOS ===== -->
         <div id="tab-gerenciar-alunos" class="tab-content hidden">
             <h3>📝 Gerenciar Alunos da Fase Atual</h3>
             <div id="lista-alunos-gerenciavel" class="status-box scroll-list">Carregando...</div>
             <button id="btn-atualizar-lista-alunos" class="btn-secondary">🔄 Recarregar</button>
         </div>
 
-        <!-- ========================================================= -->
-        <!-- ABA GERENCIAR TURMAS                                       -->
-        <!-- ========================================================= -->
+        <!-- ===== ABA GERENCIAR TURMAS ===== -->
         <div id="tab-gerenciar-turmas" class="tab-content hidden">
             <h3>🏷️ Gerenciar Turmas Disponíveis</h3>
             <button id="btn-adicionar-turma" class="btn-success">➕ Adicionar Nova Turma</button>
             <div id="lista-turmas-gerenciavel" class="status-box scroll-list" style="margin-top: 15px;">Carregando...</div>
         </div>
 
-        <!-- ========================================================= -->
-        <!-- ABA CONFIGURAÇÕES                                          -->
-        <!-- ========================================================= -->
+        <!-- ===== ABA CONFIGURAÇÕES ===== -->
         <div id="tab-configuracoes" class="tab-content hidden">
             <h3>⚙️ Configurações do Professor</h3>
             
@@ -498,7 +482,7 @@
                 </div>
             </div>
 
-            <!-- ===== CARD: FEEDBACK VISUAL ===== -->
+            <!-- CARD: Feedback Visual -->
             <div id="bloco-feedback" class="config-card" style="border-color: #8b5cf6;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">👀</span>
@@ -526,7 +510,7 @@
                 <div id="feedback-feedback" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
             </div>
 
-            <!-- ===== CARD: SISTEMA DE ESTRELAS ===== -->
+            <!-- CARD: Sistema de Estrelas -->
             <div id="bloco-estrelas" class="config-card" style="border-color: #facc15;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">⭐</span>
@@ -561,7 +545,7 @@
                 </div>
             </div>
 
-            <!-- ===== CARD: CORES E TEMAS ===== -->
+            <!-- CARD: Cores e Temas -->
             <div id="bloco-cores" class="config-card" style="border-color: var(--cor-primaria);">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <span style="font-size: 28px;">🎨</span>
@@ -583,9 +567,10 @@
     <!-- Fim do painel do professor -->
 
     <!-- ========================================================= -->
-    <!-- TELA DO ALUNO                                              -->
+    <!-- TELA DO ALUNO (REFORMULADA)                               -->
     <!-- ========================================================= -->
     <div id="tela-aluno" class="card hidden">
+        <!-- Área de jogo (escondida até iniciar) -->
         <div id="jogo-area" class="hidden jogo-topo">
             <div id="pergunta-container" class="pergunta-container brilho-cinza">
                 <div class="barra-tempo" style="margin-top: 0; margin-bottom: 20px;"><div id="progresso-tempo" class="progresso-tempo" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div></div>
@@ -607,56 +592,74 @@
             </div>
         </div>
 
+        <!-- Cabeçalho do aluno (sempre visível) -->
         <div class="header-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
             <h2 id="aluno-nome-display" style="margin: 0;">Aluno</h2>
+            <span style="color: var(--texto-secundario);">Turma: <strong id="aluno-turma-display">-</strong></span>
             <div class="timer-fase-aluno" id="timer-fase-aluno">⏱️ Tempo: --:--</div>
-            <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking Fase</button>
-            <button id="btn-ranking-pontos-aluno" class="btn-info" style="margin-left: 5px;">🏆 Ranking Pontos</button>
-            <button id="btn-tutorial-aluno" class="btn-info" style="margin-left: 5px;">📘 Tutorial</button>
+            <span class="fase-info" id="aluno-fase-info">Fase 1/5</span>
+            <span id="aluno-modalidade" style="background: #2c5a6e; padding: 2px 12px; border-radius: 20px; font-size: 13px;">2-5</span>
+            <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking</button>
+            <button id="btn-tutorial-aluno" class="btn-info">📘 Tutorial</button>
             <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
         </div>
 
-        <p>Turma: <span id="aluno-turma-display">-</span> | Modalidade: <strong id="aluno-modalidade">--</strong> <span id="aluno-fase-info" class="fase-info"></span></p>
-
-        <!-- ===== EXIBIÇÃO DO NÍVEL DE ESTRELAS ===== -->
+        <!-- Nível de Estrelas (patente) - sempre visível -->
         <div id="nivel-estrelas-aluno" class="nivel-estrelas-container">
             <!-- Preenchido via JavaScript -->
         </div>
 
-        <div id="aguardando-aluno" style="text-align:center; padding:20px;">
-            <div id="msg-status-aluno">Aguardando...</div>
-            <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 20px 40px;">🎮 JOGAR</button>
+        <!-- Área de ação (JOGAR ou aguardando) -->
+        <div id="aguardando-aluno" style="text-align:center; padding:10px 0;">
+            <div id="msg-status-aluno" style="margin-bottom: 10px; font-size: 18px;">Aguardando...</div>
+            <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 16px 40px;">🎮 JOGAR</button>
         </div>
 
-        <!-- ===== SELETOR DE CORES (ALUNO) ===== -->
-        <div style="display: flex; align-items: center; gap: 16px; margin: 10px 0; flex-wrap: wrap; background: var(--bg-card-hover); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--borda-card);">
-            <span style="font-size: 20px;" aria-hidden="true">🎨</span>
-            <span style="color: var(--texto-secundario); font-size: 14px;">Cor de destaque:</span>
-            <div id="seletor-cores-aluno" style="display: flex; flex-wrap: wrap; gap: 6px;" role="radiogroup" aria-label="Seleção de cor"></div>
+        <!-- Estatísticas rápidas -->
+        <div style="display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; background: var(--bg-card-hover); padding: 12px; border-radius: 16px; margin: 10px 0;">
+            <div><strong>Melhor pontuação:</strong> <span id="aluno-melhor-score">0</span></div>
+            <div><strong>Partidas:</strong> <span id="aluno-total-partidas">0</span></div>
+            <div><strong>Melhor velocidade:</strong> <span id="aluno-melhor-velocidade">--</span></div>
         </div>
 
-        <div class="status-box">
-            <h3>Seu Melhor Resultado: <span id="aluno-melhor-score">0</span></h3>
-            <div id="historico-aluno"></div>
-        </div>
-
-        <!-- Medalhas -->
-        <div class="status-box" style="margin-top: 20px;">
-            <h3>🏅 Minhas Conquistas</h3>
-            <div id="medalhas-container" aria-live="polite">
-                <p style="color: #94a3b8; font-size: 14px;">Nenhuma conquista ainda. Continue jogando!</p>
+        <!-- Medalhas (horizontal) -->
+        <div class="status-box" style="margin-top: 10px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <h3 style="margin: 0;">🏅 Conquistas</h3>
+                <button id="btn-ver-medalhas" class="btn-secondary" style="padding: 4px 12px;">Ver todas</button>
+            </div>
+            <div id="medalhas-container" aria-live="polite" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">
+                <p style="color: #94a3b8; font-size: 14px; margin: 0;">Nenhuma conquista ainda.</p>
             </div>
         </div>
 
-        <!-- Gráfico -->
-        <div class="status-box" style="margin-top: 20px;">
-            <h3>📈 Evolução da Pontuação</h3>
-            <canvas id="grafico-evolucao" width="600" height="200" style="width:100%; height:auto; max-width:600px; background: transparent;" aria-label="Gráfico de evolução da pontuação"></canvas>
+        <!-- Botões extras -->
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 12px; flex-wrap: wrap;">
+            <button id="btn-ranking-pontos-aluno" class="btn-info">🏆 Ranking Pontos</button>
+            <button id="btn-historico-aluno" class="btn-secondary">📜 Histórico</button>
+            <button id="btn-grafico-aluno" class="btn-secondary">📈 Evolução</button>
+        </div>
+
+        <!-- Seções ocultas (Histórico, Gráfico) que podem ser alternadas -->
+        <div id="historico-aluno-container" class="status-box hidden" style="margin-top: 10px;">
+            <h4>📜 Histórico de Partidas (Fase atual)</h4>
+            <div id="historico-aluno-lista"></div>
+        </div>
+        <div id="grafico-aluno-container" class="status-box hidden" style="margin-top: 10px;">
+            <h4>📈 Evolução da Pontuação</h4>
+            <canvas id="grafico-evolucao" width="600" height="200" style="width:100%; height:auto; max-width:600px; background: transparent;"></canvas>
         </div>
     </div>
 
     <!-- ========================================================= -->
-    <!-- MODAL DE RANKING DO ALUNO                                  -->
+    <!-- MODAL DE RESULTADO PÓS-JOGO (gerado por JS)               -->
+    <!-- ========================================================= -->
+    <div id="modal-pos-jogo" class="modal-resultados" style="display:none;" role="dialog" aria-modal="true">
+        <!-- O conteúdo é gerado dinamicamente por JavaScript -->
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODAL DE RANKING DO ALUNO                                 -->
     <!-- ========================================================= -->
     <div id="modal-ranking-aluno" class="modal-ranking" role="dialog" aria-modal="true" aria-labelledby="ranking-aluno-title">
         <div class="modal-ranking-content">
@@ -674,7 +677,7 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- MODAL DE TUTORIAL                                          -->
+    <!-- MODAL DE TUTORIAL                                         -->
     <!-- ========================================================= -->
     <div id="modal-tutorial" class="modal-ranking" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="tutorial-titulo">
         <div class="modal-ranking-content" style="max-width: 800px;">
@@ -688,7 +691,7 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- TELA DA TORCIDA (MODIFICADA)                               -->
+    <!-- TELA DA TORCIDA                                           -->
     <!-- ========================================================= -->
     <div id="tela-torcida" class="card hidden">
         <div class="header-actions">
@@ -699,30 +702,21 @@
                 <button id="btn-sair-torcida" class="btn-danger">🏠 Voltar</button>
             </div>
         </div>
-
-        <!-- Abas principais da torcida -->
         <div class="modo-buttons" role="tablist">
             <button id="btn-torcida-fase" class="btn-modo ativo" role="tab" aria-selected="true">📊 Ranking Fases</button>
             <button id="btn-torcida-equipes" class="btn-modo" role="tab" aria-selected="false">👥 Ranking por Equipes</button>
             <button id="btn-torcida-pontos" class="btn-modo" role="tab" aria-selected="false">🏆 Ranking de Pontos</button>
         </div>
-
-        <!-- Seletor de fase (visível apenas na aba "Ranking Fases") -->
         <div class="fase-selector" id="torcida-fase-selector">
             <label for="select-fase-torcida">Selecione a Fase: </label>
             <select id="select-fase-torcida" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
             <span style="margin-left: 15px; font-size: 14px; color: #ffd966;" id="fase-torcida-info"></span>
         </div>
-
         <div style="margin: 15px 0;">
             <p>Modalidade: <strong id="torcida-modalidade">--</strong> | <span id="torcida-fase-info" class="fase-info"></span> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;">--:--</strong></p>
             <p><small>Atualização a cada <span id="torcida-individual-intervalo">4</span>s | Última atualização: <span id="torcida-last-update">--</span></small></p>
         </div>
-
-        <!-- Container do ranking -->
         <div id="ranking-torcida-container" class="status-box" aria-live="polite">Carregando ranking ao vivo...</div>
-
-        <!-- Mensagem de competição finalizada -->
         <div id="competicao-finalizada-torcida" class="competicao-finalizada hidden">
             <h2>🏆 COPA FINALIZADA!</h2>
             <p>A competição chegou ao fim.</p>
@@ -743,11 +737,7 @@
     🏆 Copa Tabuada CEIB 2026 - Desenvolvido por <strong style="color: #ffd966;">HENRIQUE ANGELO DA SILVA</strong>
 </div>
 
-<!-- ========================================================= -->
-<!-- TEMPLATES PARA REFATORAÇÃO HTML (Item 10)                 -->
-<!-- ========================================================= -->
-
-<!-- Template: Linha do Ranking Individual -->
+<!-- ===== TEMPLATES ===== -->
 <template id="template-linha-ranking">
   <tr>
     <td class="posicao"></td>
@@ -766,8 +756,6 @@
     <td class="projecao"></td>
   </tr>
 </template>
-
-<!-- Template: Cabeçalho do Ranking Individual -->
 <template id="template-cabecalho-ranking">
   <thead>
     <tr>
@@ -788,8 +776,6 @@
     </tr>
   </thead>
 </template>
-
-<!-- Template: Linha do Ranking de Pontos -->
 <template id="template-linha-pontos">
   <tr>
     <td class="posicao-pontos"></td>
@@ -802,8 +788,6 @@
     <td class="fase1"></td>
   </tr>
 </template>
-
-<!-- Template: Modal de Finalização -->
 <template id="template-modal-finalizacao">
   <div class="modal-resultados" id="modal-finalizacao">
     <h2>🏆 COPA FINALIZADA!</h2>
@@ -816,21 +800,15 @@
     <button class="fechar" id="btn-fechar-finalizacao">Voltar ao Menu</button>
   </div>
 </template>
-
-<!-- Template: Medalhas do Aluno (vazio) -->
 <template id="template-medalhas-vazio">
   <p style="color: #94a3b8; font-size: 14px;">Nenhuma conquista ainda. Continue jogando!</p>
 </template>
-
-<!-- Template: Medalha Individual -->
 <template id="template-medalha-item">
   <div class="medalha-item" title="">
     <span class="medalha-icone"></span>
     <span class="medalha-nome"></span>
   </div>
 </template>
-
-<!-- Template: Linha do Ranking por Turmas -->
 <template id="template-linha-turmas">
   <tr>
     <td class="pos-turma"></td>
@@ -842,16 +820,25 @@
   </tr>
 </template>
 
-<!-- ============================================================ -->
-<!-- FIREBASE                                                     -->
-<!-- ============================================================ -->
+<!-- ===== FIREBASE ===== -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 
-<!-- ============================================================ -->
-<!-- SCRIPT PRINCIPAL (MODULAR)                                   -->
-<!-- ============================================================ -->
+<!-- ===== REMOVER SERVICE WORKER ANTIGO ===== -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for (let reg of registrations) {
+        reg.unregister().then(function(success) {
+          if (success) console.log('Service Worker desregistrado.');
+        });
+      }
+    });
+  }
+</script>
+
+<!-- ===== SCRIPT PRINCIPAL ===== -->
 <script type="module" src="js/main.js"></script>
 
 </body>
