@@ -1695,3 +1695,77 @@ body.em-jogo #banner-aviso .banner-aviso-icone {
     color: #94a3b8;
     margin-top: 4px;
 }
+/* ===== ABAS NO MODAL DE RESULTADO ===== */
+.abas-resultado {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 12px 0;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.aba-btn {
+  background: var(--bg-botao-padrao);
+  border: none;
+  padding: 6px 18px;
+  border-radius: 30px;
+  color: var(--texto-principal);
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+.aba-btn.active {
+  background: var(--cor-primaria);
+  color: white;
+}
+.aba-conteudo {
+  padding: 8px 0;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.aba-conteudo.hidden {
+  display: none;
+}
+
+/* ===== RESUMO DO CABEÇALHO DO MODAL ===== */
+.resumo-cabecalho {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+  text-align: center;
+  background: var(--bg-card-hover);
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+}
+.resumo-cabecalho .item {
+  font-size: 18px;
+}
+.resumo-cabecalho .item .label {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+}
+.resumo-cabecalho .item .valor {
+  font-weight: 700;
+  font-size: 24px;
+}
+.valor-ouro { color: #ffd700; }
+.valor-prata { color: #c0c0c0; }
+.valor-bronze { color: #cd7f32; }
+.valor-verde { color: #4ade80; }
+
+/* ===== TELA DO ALUNO ===== */
+#tela-aluno .nivel-estrelas-container {
+  margin: 8px 0 12px 0;
+  padding: 12px 16px;
+}
+#tela-aluno .status-box {
+  padding: 12px;
+}
+#tela-aluno .medalha-item {
+  font-size: 13px;
+  padding: 4px 12px 4px 8px;
+}
+#tela-aluno .medalha-icone {
+  font-size: 18px;
+}
