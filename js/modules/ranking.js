@@ -253,9 +253,11 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   const vagas = VAGAS_POR_FASE[fase] || 30;
   const maxMelhor = listaComInfo.length > 0 ? listaComInfo[0].melhorPontuacao : 0;
 
+  // Montagem do HTML usando templates
   const table = document.createElement('table');
   table.className = 'ranking-table';
 
+  // Cabeçalho
   const theadTemplate = document.getElementById('template-cabecalho-ranking');
   if (theadTemplate) {
     const theadClone = theadTemplate.content.cloneNode(true);
@@ -290,6 +292,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     table.appendChild(thead);
   }
 
+  // Corpo
   const tbody = document.createElement('tbody');
   const linhaTemplate = document.getElementById('template-linha-ranking');
 
@@ -450,6 +453,13 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   }
 
   table.appendChild(tbody);
+
+  const htmlString = table.outerHTML;
+  const lastHTML = rankingHtmlCache[containerKey];
+  if (lastHTML === htmlString) {
+    return;
+  }
+  rankingHtmlCache[containerKey] = htmlString;
   container.innerHTML = '';
   container.appendChild(table);
 }
@@ -929,7 +939,7 @@ export async function renderRankingGeral() {
 }
 
 // ============================================================
-// ATUALIZAR INFORMAÇÕES DO ALUNO (TELA PRINCIPAL + DETALHES)
+// ATUALIZAR INFORMAÇÕES DO ALUNO
 // ============================================================
 
 export async function atualizarInfoAluno() {
@@ -995,9 +1005,13 @@ export async function atualizarInfoAluno() {
 
   let cor = 'cinza';
   if (perguntasRespondidas >= 4 && projecao > 0) {
-    if (projecao > recordeLider) cor = 'roxo';
-    else if (projecao > recordePessoal) cor = 'verde';
-    else cor = 'amarelo';
+    if (projecao > recordeLider) {
+      cor = 'roxo';
+    } else if (projecao > recordePessoal) {
+      cor = 'verde';
+    } else {
+      cor = 'amarelo';
+    }
   }
 
   const container = document.getElementById('pergunta-container');
@@ -1043,96 +1057,9 @@ export async function atualizarInfoAluno() {
   }
 
   atualizarExibicaoMedalhas();
+
   const { desenharGraficoEvolucao } = await import('./game.js');
   desenharGraficoEvolucao();
-
-  // ===== ATUALIZAR TELA PRINCIPAL DO ALUNO =====
-  if (state.meuTipo === 'aluno') {
-    const minConfig = await carregarMinPartidas();
-    const minPartidas = minConfig[fase] || 1;
-    const partidasFeitas = state.estadoAtual?.resultados?.[fase]?.[state.alunoId]?.length || 0;
-    const vagas = VAGAS_POR_FASE[fase] || 30;
-
-    // Posição
-    const posNum = document.getElementById('posicao-numero-principal');
-    if (posNum) posNum.textContent = posicao > 0 ? posicao : '--';
-
-    // Status
-    const statusEl = document.getElementById('status-classificacao-principal');
-    if (statusEl) {
-      const classificado = (posicao > 0 && posicao <= vagas && partidasFeitas >= minPartidas);
-      statusEl.className = 'status-classificacao ' + (classificado ? 'status-classificado' : (partidasFeitas === 0 ? 'status-aguardando' : 'status-nao-classificado'));
-      const statusText = statusEl.querySelector('.status-texto');
-      if (statusText) {
-        if (classificado) statusText.textContent = '✅ Classificado!';
-        else if (partidasFeitas === 0) statusText.textContent = '⏳ Aguardando...';
-        else if (posicao > 0 && posicao <= vagas) statusText.textContent = '📊 Elegível';
-        else statusText.textContent = '🎯 Ainda não classificado';
-      }
-    }
-
-    // Barra de progresso
-    const barraProgresso = document.getElementById('barra-classificacao');
-    const pct = Math.min(100, (partidasFeitas / (minPartidas || 1)) * 100);
-    if (barraProgresso) barraProgresso.style.width = pct + '%';
-    document.getElementById('partidas-feitas').textContent = partidasFeitas;
-    document.getElementById('partidas-necessarias').textContent = minPartidas;
-
-    // Detalhes da classificação
-    const detalhes = document.getElementById('detalhes-classificacao');
-    if (detalhes) {
-      if (posicao > 0 && posicao <= vagas) {
-        detalhes.textContent = `✅ Você está no Top ${vagas}!`;
-      } else if (posicao > vagas) {
-        const diff = posicao - vagas;
-        detalhes.textContent = `🎯 Faltam ${diff} posição${diff > 1 ? 'es' : ''} para o Top ${vagas}`;
-      } else {
-        detalhes.textContent = '📊 Jogue partidas para entrar no ranking';
-      }
-    }
-
-    // Última partida
-    const partidas = state.estadoAtual?.resultados?.[fase]?.[state.alunoId] || [];
-    if (partidas.length > 0) {
-      const ultima = partidas[partidas.length - 1];
-      document.getElementById('ultima-pontuacao').textContent = ultima.pontos || 0;
-      document.getElementById('ultima-acertos').textContent = ultima.acertos || 0;
-      const tendencia = document.getElementById('ultima-tendencia');
-      if (partidas.length > 1) {
-        const anterior = partidas[partidas.length - 2];
-        if (ultima.pontos > anterior.pontos) tendencia.textContent = '📈';
-        else if (ultima.pontos < anterior.pontos) tendencia.textContent = '📉';
-        else tendencia.textContent = '➡️';
-      } else {
-        tendencia.textContent = '⭐';
-      }
-    } else {
-      document.getElementById('ultima-pontuacao').textContent = '0';
-      document.getElementById('ultima-acertos').textContent = '0';
-      document.getElementById('ultima-tendencia').textContent = '➡️';
-    }
-
-    // ABA DESEMPENHO (detalhes)
-    const melhores = partidas.sort((a, b) => b.pontos - a.pontos);
-    const melhorPont = melhores.length > 0 ? melhores[0].pontos : 0;
-    const totalPartidas = partidas.length;
-    const totalAcertos = partidas.reduce((acc, p) => acc + (p.acertos || 0), 0);
-    const mediaAcertos = totalPartidas > 0 ? ((totalAcertos / (totalPartidas * 20)) * 100).toFixed(0) : 0;
-    let melhorVel = Infinity;
-    for (const p of partidas) {
-      if (p.acertos > 0 && p.tempo > 0) {
-        const v = p.tempo / p.acertos;
-        if (v < melhorVel) melhorVel = v;
-      }
-    }
-    document.getElementById('melhor-pontuacao').textContent = melhorPont;
-    document.getElementById('total-partidas').textContent = totalPartidas;
-    document.getElementById('media-acertos').textContent = mediaAcertos + '%';
-    document.getElementById('melhor-velocidade').textContent = melhorVel !== Infinity ? melhorVel.toFixed(2) + 's' : '--';
-    document.getElementById('posicao-detalhes').textContent = posicao > 0 ? posicao + 'º' : '--';
-    const classificadoDet = (posicao > 0 && posicao <= vagas && partidasFeitas >= minPartidas);
-    document.getElementById('status-detalhes').textContent = classificadoDet ? '✅ Classificado' : (partidasFeitas === 0 ? '⏳ Aguardando' : '🎯 Não classificado');
-  }
 }
 
 // ============================================================
