@@ -2,8 +2,8 @@
 // SERVICE WORKER – Copa Tabuada CEIB 2026
 // ============================================================
 
-const CACHE_STATIC_NAME = 'copa-tabuada-v1.8';
-const CACHE_DYNAMIC_NAME = 'copa-tabuada-dynamic-v1.8';
+const CACHE_STATIC_NAME = 'copa-tabuada-v1.3';
+const CACHE_DYNAMIC_NAME = 'copa-tabuada-dynamic-v1.3';
 
 // ===== CAMINHOS RELATIVOS (SEM BARRA INICIAL) =====
 const STATIC_ASSETS = [
@@ -38,6 +38,7 @@ self.addEventListener('install', event => {
     caches.open(CACHE_STATIC_NAME)
       .then(cache => {
         console.log('[SW] Cacheando assets estáticos');
+        // Usa addAll com os caminhos relativos
         return cache.addAll(STATIC_ASSETS);
       })
       .then(() => self.skipWaiting())
@@ -64,14 +65,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // ===== IGNORA REQUISIÇÕES DE EXTENSÕES E ESQUEMAS NÃO SUPORTADOS =====
-  const scheme = url.protocol;
-  if (scheme === 'chrome-extension:' || scheme === 'moz-extension:' || scheme === 'ms-browser-extension:' || scheme === 'chrome-devtools:') {
-    // Não faz nada com essas requisições – deixa o navegador lidar normalmente
-    return;
-  }
-
-  // Ignora requisições para Firebase e Google APIs (não devem ser cacheadas)
+  // Ignora requisições para Firebase e Google APIs
   if (url.hostname.includes('firebase') || url.hostname.includes('googleapis')) {
     event.respondWith(fetch(event.request));
     return;
