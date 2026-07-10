@@ -142,7 +142,7 @@ export function exibirErroCarregamento() {
   }
 }
 
-// ===== CONTROLE DE TEMA (claro/escuro) =====
+// ===== CONTROLE DE TEMA =====
 const TEMA_KEY = 'copa_theme';
 
 export function aplicarTema() {
@@ -395,22 +395,12 @@ export function exibirModalResultados(dados) {
   }
 
   // ===== ESTRELAS GANHAS NESTA PARTIDA =====
-  // Calcula quantas estrelas foram concedidas nesta partida (baseado no histórico do aluno)
   let estrelasGanhas = 0;
   let estrelasDetalhe = '';
   if (state.alunoId && state.estrelas && state.estrelas.historico) {
-    // Pega as estrelas concedidas após esta partida (assumindo que a última entrada é a mais recente)
-    const historicoEstrelas = state.estrelas.historico;
-    // Filtra as entradas que são da mesma fase e partida (se tiver partidaIndex)
-    // Como não temos partidaIndex no modal, pegamos as últimas que foram adicionadas
-    // A lógica: se a partida foi finalizada, as estrelas já foram concedidas em game.js
-    // Podemos contar as estrelas das últimas ações que ocorreram após o início da partida
-    // Mas é mais simples: exibir o total de estrelas e um resumo das ações que geraram estrelas.
-    // Vamos buscar as últimas entradas (até 5) que sejam da mesma fase.
-    const ultimas = historicoEstrelas.filter(h => h.fase === fase).slice(-5);
+    const ultimas = state.estrelas.historico.filter(h => h.fase === fase).slice(-5);
     if (ultimas.length > 0) {
       estrelasGanhas = ultimas.reduce((acc, h) => acc + (h.estrelas || 0), 0);
-      // Monta um detalhe com as ações
       const acoes = ultimas.map(h => {
         const nomeAcao = {
           partida_completa: 'Partida completa',
@@ -590,7 +580,6 @@ export function exibirModalResultados(dados) {
   function preencherMedalhasModal() {
     const container = document.getElementById('modal-medalhas-container');
     if (!container) return;
-    // Usa as medalhas já carregadas em state ou localStorage
     let medalhas = [];
     try {
       const raw = localStorage.getItem('copa_medals');
@@ -649,13 +638,12 @@ export function exibirModalResultados(dados) {
 
   // Inicializa com a aba resultado ativa
   alternarAba('resultado');
-
-  // Se houver estrelas detalhadas, já está visível.
 }
 
-// ===== FUNÇÕES AUXILIARES =====
+// ===== FUNÇÃO ESCAPE HTML CORRIGIDA =====
 function escapeHtml(str) {
-  if (!str) return '';
+  if (str == null) return '';
+  str = String(str);
   return str.replace(/[&<>]/g, function(m) {
     if (m === '&') return '&amp;';
     if (m === '<') return '&lt;';
