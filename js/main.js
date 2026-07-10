@@ -84,7 +84,7 @@ import { carregarEstrelasAluno } from './modules/estrelas.js';
 const TURMAS_PADRAO = ["901", "1001", "1002", "1003", "1004", "2001", "2002", "2003", "3001", "3002"];
 
 // ============================================================
-// FUNÇÃO PARA GARANTIR TURMAS PADRÃO (DEFINIDA ANTES DE USAR)
+// FUNÇÃO PARA GARANTIR TURMAS PADRÃO
 // ============================================================
 async function garantirTurmasPadrao() {
   try {
@@ -108,7 +108,7 @@ async function garantirTurmasPadrao() {
 }
 
 // ============================================================
-// TIMER GLOBAL (CONTÍNUO)
+// TIMER GLOBAL
 // ============================================================
 let timerGlobalInterval = null;
 
@@ -144,7 +144,6 @@ function pararTimerGlobal() {
 // ============================================================
 // FUNÇÕES DE CADASTRO DO ALUNO
 // ============================================================
-
 async function abrirModalTurma() {
   const modal = document.getElementById('modalTurma');
   if (!modal) return;
@@ -267,7 +266,6 @@ async function confirmarCadastroAluno() {
 // ============================================================
 // FUNÇÕES DE ENTRADA EM MODOS
 // ============================================================
-
 function entrarModoProfessor() {
   state.meuTipo = 'professor';
   mostrarTela('professor');
@@ -346,7 +344,6 @@ async function entrarModoAluno(cadastrado = false) {
 // ============================================================
 // FUNÇÕES DA TORCIDA
 // ============================================================
-
 let torcidaAba = 'fase';
 let intervaloTorcida = null;
 let faseTorcidaSelecionada = 1;
@@ -451,7 +448,6 @@ function pararAtualizacaoTorcida() {
 // ============================================================
 // DEMAIS FUNÇÕES (POPULAR SELECTS, ATUALIZAR UI, ETC)
 // ============================================================
-
 function preencherSeletorCores(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -506,13 +502,11 @@ function atualizarUltimaSinc() {
 }
 
 function atualizarUI() {
-  // ===== PROTEÇÃO CONTRA ESTADO INDEFINIDO =====
   if (!state.estadoAtual) {
     console.warn('Estado atual indefinido, ignorando atualização UI');
     return;
   }
   
-  // Garantir que as propriedades existam
   if (!state.estadoAtual.resultados) state.estadoAtual.resultados = {};
   if (!state.estadoAtual.participantes) state.estadoAtual.participantes = {};
   if (!state.estadoAtual.classificados) state.estadoAtual.classificados = {};
@@ -666,7 +660,6 @@ function preencherConfigEstrelasUI() {
 // ============================================================
 // CONFIGURAÇÃO DE EVENTOS
 // ============================================================
-
 function configurarEventos() {
   document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
 
@@ -982,12 +975,10 @@ function configurarEventos() {
     }
   });
 
-  // ===== RESETAR COMPETIÇÃO (CORRIGIDO) =====
   document.getElementById('btn-reset-total')?.addEventListener('click', async () => {
     if (!confirm('⚠️ Resetar toda a competição? Todas as fases, resultados e configurações serão apagados e restaurados para os valores padrão.')) return;
 
     try {
-      // 1. Resetar dados principais da competição
       await setDados('copaV2', {
         fase: 1,
         status: 'aguardando',
@@ -999,7 +990,6 @@ function configurarEventos() {
         classificados: {}
       });
 
-      // 2. Remover dados online e de estrelas
       await removerDados('online');
       await removerDados('copaV2/estrelas');
       await removerDados('copaV2/pontuacaoHistorico');
@@ -1011,10 +1001,8 @@ function configurarEventos() {
       await removerDados('copaV2/configuracoes/recordeGeral');
       state.recordeGeral = null;
 
-      // 3. Resetar todas as configurações para o padrão
       await resetarConfiguracoesPadrao();
 
-      // 4. Forçar recarregamento do estado após reset
       const snap = await db.ref('copaV2').once('value');
       state.estadoAtual = snap.val() || { 
         fase: 1, 
@@ -1027,11 +1015,9 @@ function configurarEventos() {
         classificados: {} 
       };
 
-      // 5. Atualizar interface
       atualizarUI();
       atualizarUltimaSinc();
       
-      // 6. Recarregar configurações no state
       await carregarConfigRankingPontos();
       await carregarConfigEstrelas();
       await carregarTempoFeedback();
@@ -1039,9 +1025,7 @@ function configurarEventos() {
       await carregarValorPartida();
       await carregarConfigBonusVelocidade();
 
-      exibirToast('✅ Competição resetada com sucesso! Todas as configurações estão no padrão.', 'sucesso');
-      
-      // Recarregar a página para aplicar todas as mudanças
+      exibirToast('✅ Competição resetada com sucesso!', 'sucesso');
       setTimeout(() => location.reload(), 2000);
     } catch (e) {
       console.error('Erro ao resetar competição:', e);
@@ -1325,7 +1309,6 @@ function configurarEventos() {
 // ============================================================
 // FUNÇÕES AUXILIARES
 // ============================================================
-
 function parsePontuacaoText(text) {
   const obj = {};
   const pairs = text.split(',').map(s => s.trim());
@@ -1370,7 +1353,6 @@ async function atualizarListaLiberados() {
 // ============================================================
 // INIT
 // ============================================================
-
 async function init() {
   try {
     aplicarTema();
