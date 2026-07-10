@@ -615,7 +615,6 @@
             </div>
             <div class="jogo-rodape-minimalista">
                 <div class="item-rodape" title="Pontuação">⭐ <span id="pontuacao-acumulada">0</span> pts</div>
-                <!-- Os itens de posição e velocidade são ocultados durante o jogo via CSS -->
                 <div class="item-rodape esconder-durante-jogo" title="Posição Atual">🏆 <span id="posicao-numero">--</span>º</div>
                 <div class="item-rodape esconder-durante-jogo" title="Velocidade Média">⚡ <span id="velocidade-media">0.00</span>s</div>
             </div>
@@ -719,14 +718,12 @@
             </div>
         </div>
 
-        <!-- Abas principais da torcida -->
         <div class="modo-buttons" role="tablist">
             <button id="btn-torcida-fase" class="btn-modo ativo" role="tab" aria-selected="true">📊 Ranking Fases</button>
             <button id="btn-torcida-equipes" class="btn-modo" role="tab" aria-selected="false">👥 Ranking por Equipes</button>
             <button id="btn-torcida-pontos" class="btn-modo" role="tab" aria-selected="false">🏆 Ranking de Pontos</button>
         </div>
 
-        <!-- Seletor de fase (visível apenas na aba "Ranking Fases") -->
         <div class="fase-selector" id="torcida-fase-selector">
             <label for="select-fase-torcida">Selecione a Fase: </label>
             <select id="select-fase-torcida" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
@@ -738,10 +735,8 @@
             <p><small>Atualização a cada <span id="torcida-individual-intervalo">4</span>s | Última atualização: <span id="torcida-last-update">--</span></small></p>
         </div>
 
-        <!-- Container do ranking -->
         <div id="ranking-torcida-container" class="status-box" aria-live="polite">Carregando ranking ao vivo...</div>
 
-        <!-- Mensagem de competição finalizada -->
         <div id="competicao-finalizada-torcida" class="competicao-finalizada hidden">
             <h2>🏆 COPA FINALIZADA!</h2>
             <p>A competição chegou ao fim.</p>
@@ -752,7 +747,7 @@
         </div>
     </div>
 
-</div> <!-- fim .container -->
+</div>
 
 <!-- ===== TOAST ===== -->
 <div id="toast" class="toast hidden" role="alert" aria-live="assertive"></div>
@@ -766,7 +761,6 @@
 <!-- TEMPLATES PARA REFATORAÇÃO HTML (Item 10)                 -->
 <!-- ========================================================= -->
 
-<!-- Template: Linha do Ranking Individual -->
 <template id="template-linha-ranking">
   <tr>
     <td class="posicao"></td>
@@ -786,7 +780,6 @@
   </tr>
 </template>
 
-<!-- Template: Cabeçalho do Ranking Individual -->
 <template id="template-cabecalho-ranking">
   <thead>
     <tr>
@@ -808,7 +801,6 @@
   </thead>
 </template>
 
-<!-- Template: Linha do Ranking de Pontos -->
 <template id="template-linha-pontos">
   <tr>
     <td class="posicao-pontos"></td>
@@ -822,7 +814,6 @@
   </tr>
 </template>
 
-<!-- Template: Modal de Finalização -->
 <template id="template-modal-finalizacao">
   <div class="modal-resultados" id="modal-finalizacao">
     <h2>🏆 COPA FINALIZADA!</h2>
@@ -836,12 +827,10 @@
   </div>
 </template>
 
-<!-- Template: Medalhas do Aluno (vazio) -->
 <template id="template-medalhas-vazio">
   <p style="color: #94a3b8; font-size: 14px;">Nenhuma conquista ainda. Continue jogando!</p>
 </template>
 
-<!-- Template: Medalha Individual -->
 <template id="template-medalha-item">
   <div class="medalha-item" title="">
     <span class="medalha-icone"></span>
@@ -849,7 +838,6 @@
   </div>
 </template>
 
-<!-- Template: Linha do Ranking por Turmas -->
 <template id="template-linha-turmas">
   <tr>
     <td class="pos-turma"></td>
