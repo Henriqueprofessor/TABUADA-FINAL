@@ -687,14 +687,20 @@ function configurarEventos() {
     }
   });
   document.getElementById('btnCancelarLogin')?.addEventListener('click', () => fecharModal('modalLoginProfessor'));
+  
+  // ===== ALTERADO: Logout do Professor agora volta para o Lobby =====
   document.getElementById('btn-logout-professor')?.addEventListener('click', async () => {
     if (confirm('Deseja realmente sair?')) {
       await logoutProfessor();
       exibirToast('👋 Até logo, Professor!', 'sucesso');
-      location.reload();
+      window.location.href = 'index.html';
     }
   });
-  document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => location.reload());
+  
+  // ===== ALTERADO: Voltar ao Menu do Professor agora volta para o Lobby =====
+  document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
 
   document.getElementById('btn-aluno')?.addEventListener('click', () => {
     const deviceId = state.alunoDeviceId || getCacheItem('aluno.deviceId');
@@ -774,14 +780,16 @@ function configurarEventos() {
     tocarSom('clique');
   });
 
+  // ===== ALTERADO: Sair da Torcida agora volta para o Lobby =====
   document.getElementById('btn-sair-torcida')?.addEventListener('click', () => {
     if (state.torcidaId) {
       db.ref(`online/${state.torcidaId}`).remove();
       sessionStorage.removeItem('torcidaId');
     }
     pararAtualizacaoTorcida();
-    location.reload();
+    window.location.href = 'index.html';
   });
+  
   document.getElementById('btn-sync-torcida')?.addEventListener('click', () => {
     if (torcidaAba === 'fase') {
       atualizarTorcidaFase();
@@ -811,10 +819,12 @@ function configurarEventos() {
     fecharModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
   });
+  
+  // ===== ALTERADO: Sair do Modal de Ranking agora volta para o Lobby =====
   document.getElementById('btn-sair-modal-ranking')?.addEventListener('click', () => {
     fecharModal('modal-ranking-aluno');
     if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
-    location.reload();
+    window.location.href = 'index.html';
   });
 
   document.getElementById('btn-iniciar-partida')?.addEventListener('click', async () => {
@@ -832,9 +842,11 @@ function configurarEventos() {
     state.posicaoAntesPartida = posAtual > 0 ? posAtual : null;
     await iniciarPartida();
   });
+  
+  // ===== ALTERADO: Sair do Aluno agora volta para o Lobby =====
   document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
     if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
-    location.reload();
+    window.location.href = 'index.html';
   });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1026,7 +1038,7 @@ function configurarEventos() {
       await carregarConfigBonusVelocidade();
 
       exibirToast('✅ Competição resetada com sucesso!', 'sucesso');
-      setTimeout(() => location.reload(), 2000);
+      setTimeout(() => window.location.href = 'index.html', 2000);
     } catch (e) {
       console.error('Erro ao resetar competição:', e);
       exibirToast('❌ Erro ao resetar competição. Tente novamente.', 'erro');
@@ -1558,7 +1570,7 @@ async function init() {
         console.log('Usuário logado:', user.email);
       } else {
         if (state.meuTipo === 'professor') {
-          location.reload();
+          window.location.href = 'index.html';
         }
       }
     });
