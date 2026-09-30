@@ -662,28 +662,25 @@ function preencherConfigEstrelasUI() {
 // ============================================================
 function configurarEventos() {
   // ============================================================
-  // EASTER EGG: 7 cliques rápidos no logo para acessar o Professor
-  // Intervalo máximo de 1 segundo entre cliques
+  // EASTER EGG: 7 toques rápidos na VERSÃO para acessar o Professor
+  // Intervalo máximo de 1 segundo entre toques
   // ============================================================
-  const TOTAL_CLIQUES_LOGO = 7;
+  const TOTAL_CLIQUES_GATILHO = 7;
   const INTERVALO_MAXIMO_MS = 1000;
   
-  let contadorCliquesLogo = 0;
-  let timerCliquesLogo = null;
-  const logoEl = document.getElementById('logo-clicavel');
+  let contadorCliquesGatilho = 0;
+  let timerCliquesGatilho = null;
+  const gatilhoEl = document.getElementById('version-clicavel');
   
-  if (logoEl) {
-    logoEl.addEventListener('click', () => {
-      contadorCliquesLogo++;
+  if (gatilhoEl) {
+    gatilhoEl.addEventListener('click', () => {
+      contadorCliquesGatilho++;
       
-      // Cancela o timer anterior (reset do intervalo)
-      if (timerCliquesLogo) clearTimeout(timerCliquesLogo);
+      if (timerCliquesGatilho) clearTimeout(timerCliquesGatilho);
       
-      if (contadorCliquesLogo >= TOTAL_CLIQUES_LOGO) {
-        // Reset do contador
-        contadorCliquesLogo = 0;
+      if (contadorCliquesGatilho >= TOTAL_CLIQUES_GATILHO) {
+        contadorCliquesGatilho = 0;
         
-        // Se já estiver logado como professor, entra direto
         const user = getCurrentUser();
         if (user) {
           entrarModoProfessor();
@@ -691,9 +688,8 @@ function configurarEventos() {
           abrirModal('modalLoginProfessor');
         }
       } else {
-        // Reseta o contador se passar 1 segundo sem novo clique
-        timerCliquesLogo = setTimeout(() => {
-          contadorCliquesLogo = 0;
+        timerCliquesGatilho = setTimeout(() => {
+          contadorCliquesGatilho = 0;
         }, INTERVALO_MAXIMO_MS);
       }
     });
