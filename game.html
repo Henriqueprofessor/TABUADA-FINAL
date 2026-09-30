@@ -6,6 +6,17 @@
     <title>Copa Tabuada CEIB 2026 - Jogo</title>
     <!-- MANIFEST REMOVIDO PARA EVITAR 404 -->
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ===== ANIMAÇÃO DA LOGO (FLUTUAÇÃO) ===== */
+        @keyframes logo-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .logo-animada {
+            animation: logo-float 4s ease-in-out infinite;
+            will-change: transform;
+        }
+    </style>
 </head>
 <body>
 
@@ -57,11 +68,11 @@
         </div>
     </div>
 
-    <!-- CABEÇALHO PRINCIPAL (COM LOGO GRANDE) -->
+    <!-- CABEÇALHO PRINCIPAL (COM LOGO ANIMADA) -->
     <div class="card esconder-durante-jogo">
-        <!-- Logo grande centralizada - ID para o easter egg do professor -->
+        <!-- Logo grande centralizada (animada, apenas decorativa) -->
         <div style="text-align: center; margin-bottom: 20px;">
-            <img id="logo-clicavel" src="icons/logo-copa.png" alt="Copa Tabuada CEIB 2026" style="max-width: 90%; width: 550px; height: auto; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.4)); cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;">
+            <img class="logo-animada" src="icons/logo-copa.png" alt="Copa Tabuada CEIB 2026" style="max-width: 90%; width: 550px; height: auto; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.4)); user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;">
         </div>
 
         <!-- Linha com Menu Principal + Modalidade + Versão -->
@@ -70,7 +81,8 @@
                 <a href="index.html" class="btn-secondary" style="text-decoration: none; padding: 8px 16px; border-radius: 30px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;">🏠 Menu Principal</a>
                 <span class="modalidade-badge" id="modalidade-titulo" style="margin-left: 0;">Carregando...</span>
             </div>
-            <span class="version-display" id="version-display" style="font-size: 12px; margin: 0; padding: 4px 12px;">
+            <!-- O elemento abaixo é o gatilho do professor: 7 toques rápidos -->
+            <span id="version-clicavel" class="version-display" style="font-size: 12px; margin: 0; padding: 4px 12px; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;">
                 Versão: <span id="version-number">--</span>
             </span>
         </div>
@@ -90,7 +102,7 @@
             <div id="online-stats" class="online-badge hidden">Online: <span id="jogadores-online">0</span></div>
         </div>
 
-        <!-- Menu de Modos de Jogo (Professor removido - acessível via 7 cliques no logo) -->
+        <!-- Menu de Modos de Jogo (Professor removido - acessível via 7 cliques na versão) -->
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0;">
             <button id="btn-aluno">🎮 Aluno</button>
             <button id="btn-projecao">📺 Torcida</button>
