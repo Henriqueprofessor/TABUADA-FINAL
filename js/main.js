@@ -661,6 +661,44 @@ function preencherConfigEstrelasUI() {
 // CONFIGURAÇÃO DE EVENTOS
 // ============================================================
 function configurarEventos() {
+  // ============================================================
+  // EASTER EGG: 7 cliques rápidos no logo para acessar o Professor
+  // Intervalo máximo de 1 segundo entre cliques
+  // ============================================================
+  const TOTAL_CLIQUES_LOGO = 7;
+  const INTERVALO_MAXIMO_MS = 1000;
+  
+  let contadorCliquesLogo = 0;
+  let timerCliquesLogo = null;
+  const logoEl = document.getElementById('logo-clicavel');
+  
+  if (logoEl) {
+    logoEl.addEventListener('click', () => {
+      contadorCliquesLogo++;
+      
+      // Cancela o timer anterior (reset do intervalo)
+      if (timerCliquesLogo) clearTimeout(timerCliquesLogo);
+      
+      if (contadorCliquesLogo >= TOTAL_CLIQUES_LOGO) {
+        // Reset do contador
+        contadorCliquesLogo = 0;
+        
+        // Se já estiver logado como professor, entra direto
+        const user = getCurrentUser();
+        if (user) {
+          entrarModoProfessor();
+        } else {
+          abrirModal('modalLoginProfessor');
+        }
+      } else {
+        // Reseta o contador se passar 1 segundo sem novo clique
+        timerCliquesLogo = setTimeout(() => {
+          contadorCliquesLogo = 0;
+        }, INTERVALO_MAXIMO_MS);
+      }
+    });
+  }
+
   document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
 
   document.getElementById('btn-verificar-versao')?.addEventListener('click', () => verificarVersao(true));
@@ -688,7 +726,7 @@ function configurarEventos() {
   });
   document.getElementById('btnCancelarLogin')?.addEventListener('click', () => fecharModal('modalLoginProfessor'));
   
-  // ===== ALTERADO: Logout do Professor agora volta para o Lobby =====
+  // Logout do Professor agora volta para o Lobby
   document.getElementById('btn-logout-professor')?.addEventListener('click', async () => {
     if (confirm('Deseja realmente sair?')) {
       await logoutProfessor();
@@ -697,7 +735,7 @@ function configurarEventos() {
     }
   });
   
-  // ===== ALTERADO: Voltar ao Menu do Professor agora volta para o Lobby =====
+  // Voltar ao Menu do Professor agora volta para o Lobby
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => {
     window.location.href = 'index.html';
   });
@@ -780,7 +818,7 @@ function configurarEventos() {
     tocarSom('clique');
   });
 
-  // ===== ALTERADO: Sair da Torcida agora volta para o Lobby =====
+  // Sair da Torcida agora volta para o Lobby
   document.getElementById('btn-sair-torcida')?.addEventListener('click', () => {
     if (state.torcidaId) {
       db.ref(`online/${state.torcidaId}`).remove();
@@ -820,7 +858,7 @@ function configurarEventos() {
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
   });
   
-  // ===== ALTERADO: Sair do Modal de Ranking agora volta para o Lobby =====
+  // Sair do Modal de Ranking agora volta para o Lobby
   document.getElementById('btn-sair-modal-ranking')?.addEventListener('click', () => {
     fecharModal('modal-ranking-aluno');
     if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
@@ -843,7 +881,7 @@ function configurarEventos() {
     await iniciarPartida();
   });
   
-  // ===== ALTERADO: Sair do Aluno agora volta para o Lobby =====
+  // Sair do Aluno agora volta para o Lobby
   document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
     if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
     window.location.href = 'index.html';
