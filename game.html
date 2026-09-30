@@ -59,9 +59,9 @@
 
     <!-- CABEÇALHO PRINCIPAL (COM LOGO GRANDE) -->
     <div class="card esconder-durante-jogo">
-        <!-- Logo grande centralizada (mesmo tamanho da tela principal) -->
+        <!-- Logo grande centralizada - ID para o easter egg do professor -->
         <div style="text-align: center; margin-bottom: 20px;">
-            <img src="icons/logo-copa.png" alt="Copa Tabuada CEIB 2026" style="max-width: 90%; width: 550px; height: auto; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.4));">
+            <img id="logo-clicavel" src="icons/logo-copa.png" alt="Copa Tabuada CEIB 2026" style="max-width: 90%; width: 550px; height: auto; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.4)); cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;">
         </div>
 
         <!-- Linha com Menu Principal + Modalidade + Versão -->
@@ -90,7 +90,7 @@
             <div id="online-stats" class="online-badge hidden">Online: <span id="jogadores-online">0</span></div>
         </div>
 
-        <!-- Menu de Modos de Jogo (Professor removido) -->
+        <!-- Menu de Modos de Jogo (Professor removido - acessível via 7 cliques no logo) -->
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0;">
             <button id="btn-aluno">🎮 Aluno</button>
             <button id="btn-projecao">📺 Torcida</button>
