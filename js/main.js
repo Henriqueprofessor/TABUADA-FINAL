@@ -663,36 +663,50 @@ function preencherConfigEstrelasUI() {
 function configurarEventos() {
   // ============================================================
   // EASTER EGG: 7 toques rápidos na VERSÃO para acessar o Professor
-  // Intervalo máximo de 1 segundo entre toques
+  // Suporta clique (desktop) e toque (mobile)
+  // Intervalo máximo de 1.5 segundos entre toques
   // ============================================================
   const TOTAL_CLIQUES_GATILHO = 7;
-  const INTERVALO_MAXIMO_MS = 1000;
+  const INTERVALO_MAXIMO_MS = 1500;
   
   let contadorCliquesGatilho = 0;
   let timerCliquesGatilho = null;
   const gatilhoEl = document.getElementById('version-clicavel');
   
-  if (gatilhoEl) {
-    gatilhoEl.addEventListener('click', () => {
-      contadorCliquesGatilho++;
+  function registrarToqueGatilho() {
+    contadorCliquesGatilho++;
+    console.log(`🔑 Toque ${contadorCliquesGatilho}/${TOTAL_CLIQUES_GATILHO} no gatilho do professor`);
+    
+    if (timerCliquesGatilho) clearTimeout(timerCliquesGatilho);
+    
+    if (contadorCliquesGatilho >= TOTAL_CLIQUES_GATILHO) {
+      contadorCliquesGatilho = 0;
+      console.log('✅ Easter egg ativado! Abrindo menu do professor...');
       
-      if (timerCliquesGatilho) clearTimeout(timerCliquesGatilho);
-      
-      if (contadorCliquesGatilho >= TOTAL_CLIQUES_GATILHO) {
-        contadorCliquesGatilho = 0;
-        
-        const user = getCurrentUser();
-        if (user) {
-          entrarModoProfessor();
-        } else {
-          abrirModal('modalLoginProfessor');
-        }
+      const user = getCurrentUser();
+      if (user) {
+        entrarModoProfessor();
       } else {
-        timerCliquesGatilho = setTimeout(() => {
-          contadorCliquesGatilho = 0;
-        }, INTERVALO_MAXIMO_MS);
+        abrirModal('modalLoginProfessor');
       }
-    });
+    } else {
+      timerCliquesGatilho = setTimeout(() => {
+        contadorCliquesGatilho = 0;
+      }, INTERVALO_MAXIMO_MS);
+    }
+  }
+  
+  if (gatilhoEl) {
+    // Desktop: click
+    gatilhoEl.addEventListener('click', registrarToqueGatilho);
+    // Mobile: touchstart (mais responsivo e não sofre delay)
+    gatilhoEl.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // Evita double-tap zoom
+      registrarToqueGatilho();
+    }, { passive: false });
+    console.log('🔑 Gatilho do professor (versão) configurado. 7 toques = acesso.');
+  } else {
+    console.warn('⚠️ Elemento #version-clicavel não encontrado no DOM.');
   }
 
   document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
