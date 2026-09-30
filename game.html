@@ -97,12 +97,12 @@
     <!-- PAINEL DO PROFESSOR (COMPLETO)                            -->
     <!-- ========================================================= -->
     <div id="painel-professor" class="card hidden">
-        <div class="header-actions">
+        <div class="header-actions" style="flex-wrap: wrap; gap: 10px;">
             <h2>🔧 Painel do Professor <span id="prof-fase-info" class="fase-info"></span></h2>
-            <div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <a href="index.html" class="btn-secondary" style="text-decoration:none; padding: 10px 20px; border-radius: 40px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;">🏠 Menu Principal</a>
                 <button id="btn-sync-prof" class="btn-warning">🔄 Sincronizar</button>
                 <button id="btn-logout-professor" class="btn-danger">🚪 Sair</button>
-                <button id="btn-voltar-menu-prof" class="btn-danger">🏠 Voltar ao Menu</button>
             </div>
         </div>
 
@@ -591,7 +591,8 @@
             <span id="aluno-modalidade" style="background: #2c5a6e; padding: 2px 12px; border-radius: 20px; font-size: 13px;">2-5</span>
             <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking</button>
             <button id="btn-tutorial-aluno" class="btn-info">📘 Tutorial</button>
-            <button id="btn-sair-aluno" class="btn-danger">🏠 Sair</button>
+            <a href="index.html" class="btn-secondary" style="text-decoration:none; padding: 10px 20px; border-radius: 40px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;">🏠 Menu Principal</a>
+            <button id="btn-sair-aluno" class="btn-danger">🚪 Sair</button>
         </div>
 
         <!-- Nível de Estrelas (patente) - sempre visível -->
@@ -684,12 +685,13 @@
     <!-- TELA DA TORCIDA                                           -->
     <!-- ========================================================= -->
     <div id="tela-torcida" class="card hidden">
-        <div class="header-actions">
+        <div class="header-actions" style="flex-wrap: wrap; gap: 10px;">
             <h2>📺 RANKING EM TEMPO REAL <span class="live-badge">AO VIVO</span></h2>
-            <div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <a href="index.html" class="btn-secondary" style="text-decoration:none; padding: 10px 20px; border-radius: 40px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;">🏠 Menu Principal</a>
                 <button id="btn-sync-torcida" class="btn-warning">🔄 Sincronizar</button>
                 <button id="btn-tutorial-torcida" class="btn-info">📘 Tutorial</button>
-                <button id="btn-sair-torcida" class="btn-danger">🏠 Voltar</button>
+                <button id="btn-sair-torcida" class="btn-danger">🚪 Sair</button>
             </div>
         </div>
         <div class="modo-buttons" role="tablist">
