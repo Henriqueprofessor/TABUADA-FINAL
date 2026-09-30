@@ -1,1 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copa Tabuada CEIB 2026 - Início</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Estilos específicos para a Tela Principal (Lobby) */
+        .lobby-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+            background: var(--bg-principal);
+            transition: background 0.3s ease;
+        }
+        .lobby-logo {
+            max-width: 90%;
+            width: 550px;
+            margin-bottom: 30px;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
+            animation: float 4s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .lobby-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 320px;
+        }
+        .btn-lobby {
+            padding: 18px;
+            font-size: 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: bold;
+            border: none;
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+        }
+        .btn-lobby.btn-primary {
+            background: #27ae60;
+            color: white;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
+        }
+        .btn-lobby.btn-primary:hover {
+            transform: scale(1.05);
+            background: #2ecc71;
+        }
+        .btn-lobby.btn-secondary {
+            background: var(--bg-card);
+            color: var(--texto-principal);
+            border: 1px solid var(--borda-card);
+        }
+        .btn-lobby.btn-secondary:hover {
+            background: var(--bg-botao-padrao);
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="tema-escuro">
 
+    <div class="lobby-container">
+        <!-- Logo da Copa -->
+        <img src="icons/logo-copa.png" alt="Copa Tabuada CEIB 2026" class="lobby-logo">
+        
+        <!-- Menu de Ações -->
+        <div class="lobby-actions">
+            <!-- Botão Principal para a Tela Secundária -->
+            <a href="game.html" class="btn-lobby btn-primary">
+                🎮 Participar da Final
+            </a>
+            
+            <!-- Botões Secundários (Menos poluídos) -->
+            <a href="tutorial-instalacao.html" class="btn-lobby btn-secondary">
+                📱 Instalar App
+            </a>
+            <button class="btn-lobby btn-secondary" onclick="abrirTutorial()">
+                📘 Como Jogar
+            </button>
+            <button class="btn-lobby btn-secondary" onclick="alternarTema()">
+                🌓 Alternar Tema
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts Básicos para Tema e Tutorial -->
+    <script>
+        // Função básica para alternar tema
+        function alternarTema() {
+            const atual = document.body.className;
+            const novoTema = atual === 'tema-escuro' ? 'tema-claro' : 'tema-escuro';
+            document.body.className = novoTema;
+            localStorage.setItem('copa_theme', novoTema);
+        }
+        
+        // Carregar tema salvo
+        const temaSalvo = localStorage.getItem('copa_theme') || 'tema-escuro';
+        document.body.className = temaSalvo;
+
+        // Placeholder para o tutorial
+        function abrirTutorial() {
+            alert("Aqui você pode abrir o tutorial ou redirecionar para a página de tutorial.");
+        }
+    </script>
+</body>
+</html>
