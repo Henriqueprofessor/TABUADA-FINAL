@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Copa Tabuada CEIB 2026 - Ranking Ao Vivo - HENRIQUE ANGELO DA SILVA</title>
+    <title>Copa Tabuada CEIB 2026 - Jogo</title>
     <!-- MANIFEST REMOVIDO PARA EVITAR 404 -->
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -57,16 +57,18 @@
         </div>
     </div>
 
-    <!-- CABEÇALHO PRINCIPAL -->
+    <!-- CABEÇALHO PRINCIPAL (LIMPO) -->
     <div class="card esconder-durante-jogo">
-        <div class="header-title">
-            <h1>🏆 COPA TABUADA CEIB 2026 <span id="modalidade-titulo" class="modalidade-badge">Carregando...</span></h1>
-            <a href="https://henriqueprofessor.github.io/Tabuada/" target="_blank" class="link-classificatoria" rel="noopener noreferrer">🔗 Fase Classificatória</a>
-            <span class="version-display" id="version-display">
-                📌 Versão: <span class="version-number" id="version-number">--</span>
-                <span class="version-check" id="version-check-icon" title="Verificar atualizações" role="button" tabindex="0">🔄</span>
+        <div class="header-title" style="justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <a href="index.html" class="btn-secondary" style="text-decoration: none; padding: 8px 16px; border-radius: 30px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;">🏠 Menu Principal</a>
+                <span class="modalidade-badge" id="modalidade-titulo" style="margin-left: 0;">Carregando...</span>
+            </div>
+            <span class="version-display" id="version-display" style="font-size: 12px; margin: 0; padding: 4px 12px;">
+                Versão: <span id="version-number">--</span>
             </span>
         </div>
+        
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
             <div>
                 <p>Fase atual: <strong id="fase-atual-titulo">--</strong> <span id="fase-progresso" class="fase-info"></span></p>
@@ -77,17 +79,16 @@
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px;">
                     <button id="btn-sincronizar-global" class="btn-warning">🔄 Sincronizar</button>
-                    <button id="btn-verificar-versao" class="btn-verificar-versao">🔍 Verificar Versão</button>
                 </div>
             </div>
             <div id="online-stats" class="online-badge hidden">Online: <span id="jogadores-online">0</span></div>
         </div>
+        
+        <!-- Menu de Modos de Jogo -->
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0;">
             <button id="btn-professor" class="btn-primary">👨‍🏫 Professor</button>
             <button id="btn-aluno">🎮 Aluno</button>
             <button id="btn-projecao">📺 Torcida</button>
-            <button id="btn-tutorial-inicial" class="btn-info">📘 Tutorial</button>
-            <button id="btn-instalar-app" style="background: #9b59b6; color: white; border: none; border-radius: 40px; padding: 10px 20px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 4px;">📱 Instalar App</button>
             <button id="btn-tema" class="btn-tema" title="Alternar tema" aria-label="Alternar tema">🌓</button>
         </div>
     </div>
