@@ -734,6 +734,7 @@ function configurarEventos() {
   });
   document.getElementById('btnCancelarLogin')?.addEventListener('click', () => fecharModal('modalLoginProfessor'));
   
+  // Logout do Professor agora volta para o Lobby
   document.getElementById('btn-logout-professor')?.addEventListener('click', async () => {
     if (confirm('Deseja realmente sair?')) {
       await logoutProfessor();
@@ -742,6 +743,7 @@ function configurarEventos() {
     }
   });
   
+  // Voltar ao Menu do Professor agora volta para o Lobby
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => {
     window.location.href = 'index.html';
   });
@@ -824,9 +826,7 @@ function configurarEventos() {
     tocarSom('clique');
   });
 
-  // ============================================================
-  // SAIR DA TORCIDA → volta para o game.html (tela de escolha de modo)
-  // ============================================================
+  // Sair da Torcida → volta para o game.html (tela de escolha de modo)
   document.getElementById('btn-sair-torcida')?.addEventListener('click', () => {
     if (state.torcidaId) {
       db.ref(`online/${state.torcidaId}`).remove();
@@ -866,6 +866,7 @@ function configurarEventos() {
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
   });
   
+  // Sair do Modal de Ranking → volta para game.html
   document.getElementById('btn-sair-modal-ranking')?.addEventListener('click', () => {
     fecharModal('modal-ranking-aluno');
     if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
@@ -888,12 +889,45 @@ function configurarEventos() {
     await iniciarPartida();
   });
   
-  // ============================================================
-  // SAIR DO ALUNO → volta para o game.html (tela de escolha de modo)
-  // ============================================================
+  // Sair do Aluno → volta para game.html
   document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
     if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
     window.location.href = 'game.html';
+  });
+
+  // ============================================================
+  // MODAL DE MEDALHAS (Ver todas)
+  // ============================================================
+  document.getElementById('btn-ver-medalhas')?.addEventListener('click', () => {
+    import('./modules/medals.js').then(({ abrirModalMedalhas }) => {
+      abrirModalMedalhas();
+    });
+  });
+  
+  document.getElementById('btn-fechar-medalhas')?.addEventListener('click', () => {
+    import('./modules/medals.js').then(({ fecharModalMedalhas }) => {
+      fecharModalMedalhas();
+    });
+  });
+  
+  // Fechar modais com ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      import('./modules/medals.js').then(({ fecharModalMedalhas }) => {
+        fecharModalMedalhas();
+      });
+      fecharModal('modal-ranking-aluno');
+      fecharModal('modal-tutorial');
+    }
+  });
+  
+  // Fechar modal de medalhas ao clicar fora
+  document.getElementById('modal-medalhas')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+      import('./modules/medals.js').then(({ fecharModalMedalhas }) => {
+        fecharModalMedalhas();
+      });
+    }
   });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
