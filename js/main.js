@@ -835,7 +835,7 @@ function configurarEventos() {
       sessionStorage.removeItem('torcidaId');
     }
     pararAtualizacaoTorcida();
-    window.location.href = 'index.html';
+    window.location.href = 'game.html';
   });
   
   document.getElementById('btn-sync-torcida')?.addEventListener('click', () => {
