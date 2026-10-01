@@ -1,696 +1,849 @@
-import { state } from './state.js';
-import { exibirToast, exibirModalResultados } from './ui.js';
-import { lerDados, atualizarDados, removerDados } from './db.js';
-import { tocarSom } from './sound.js';
-import { calcularRankingFase, atualizarInfoAluno } from './ranking.js';
-import { atualizarRecordeGeral } from './config.js';
-import { verificarEConcederMedalhas, atualizarExibicaoMedalhas } from './medals.js';
-import { concederEstrelas } from './estrelas.js';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Copa Tabuada CEIB 2026 - Jogo</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ===== ANIMAÇÃO DA LOGO (FLUTUAÇÃO) ===== */
+        @keyframes logo-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .logo-animada {
+            animation: logo-float 4s ease-in-out infinite;
+            will-change: transform;
+        }
+    </style>
+</head>
+<body>
 
-// ============================================================
-// GERAR PERGUNTAS COM DISTRATORES INTELIGENTES
-// ============================================================
+<!-- OVERLAY DE CARREGAMENTO -->
+<div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite">
+    <div class="loading-spinner" aria-hidden="true"></div>
+    <div class="loading-text">Carregando dados da Copa Tabuada...</div>
+    <div class="loading-sub">Aguarde um instante...</div>
+    <div id="loading-error" class="loading-error hidden">
+        ⚠️ A conexão está demorando mais que o esperado.<br>
+        Verifique sua internet ou tente recarregar a página.
+        <button id="btn-recarregar-loading" class="btn-recarregar-loading">🔄 Recarregar</button>
+    </div>
+</div>
 
-export function gerarPerguntas(modalidade, fase) {
-  const configs = {
-    "2-5": { min: 2, max: 5 },
-    "6-9": { min: 6, max: 9 },
-    "0-10": { min: 0, max: 10 }
-  };
-  const config = configs[modalidade];
-  if (!config) return [];
+<div class="container">
 
-  let base = [];
-  for (let i = config.min; i <= config.max; i++) base.push(i);
-  const H = (fase === 5) ? [6,7,8,9] : [];
+    <!-- MODAL DE LOGIN PROFESSOR -->
+    <div id="modalLoginProfessor" class="modal-login" role="dialog" aria-modal="true" aria-labelledby="login-title">
+        <div class="modal-login-content">
+            <h2 id="login-title">🔐 Acesso do Professor</h2>
+            <p style="color: #94a3b8; margin: 10px 0 20px;">Digite seu e-mail e senha cadastrados.</p>
+            <label for="loginEmail" class="visually-hidden">E-mail</label>
+            <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="email" aria-describedby="login-desc">
+            <label for="loginSenha" class="visually-hidden">Senha</label>
+            <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" aria-describedby="login-desc">
+            <span id="login-desc" class="visually-hidden">Digite as credenciais cadastradas</span>
+            <button id="btnLoginProfessor" class="btn-login">✅ Entrar</button>
+            <button id="btnCancelarLogin" class="btn-cancelar">❌ Cancelar</button>
+            <div id="loginErro" class="erro-msg" role="alert"></div>
+        </div>
+    </div>
 
-  let pool = [];
-  const used = new Set();
-  if (fase === 5) {
-    for (let a of base) for (let b of H) {
-      const key = `${a}x${b}`;
-      if (!used.has(key)) { used.add(key); pool.push({a,b}); }
-    }
-    for (let a of H) for (let b of base) {
-      const key = `${a}x${b}`;
-      if (!used.has(key)) { used.add(key); pool.push({a,b}); }
-    }
-  } else {
-    for (let a of base) for (let b of base) {
-      const key = `${a}x${b}`;
-      if (!used.has(key)) { used.add(key); pool.push({a,b}); }
-    }
-  }
+    <!-- MODAL DE SELEÇÃO DE TURMA (ALUNO) -->
+    <div id="modalTurma" class="modal-turma" role="dialog" aria-modal="true" aria-labelledby="turma-title" style="display:none;">
+        <div class="modal-turma-content">
+            <h2 id="turma-title">🏫 Selecione sua Turma</h2>
+            <p style="color: #94a3b8; margin: 10px 0;">Escolha sua turma para continuar.</p>
+            <select id="selectTurma" style="width:100%; padding:12px; border-radius:20px; background:#1f3a4b; color:white; font-size:16px;"></select>
+            <label for="inputNomeAluno" style="display:block; margin-top:15px; color:#f1f5f9;">Seu nome completo:</label>
+            <input type="text" id="inputNomeAluno" placeholder="Digite seu nome" style="width:100%; padding:12px; border-radius:20px; background:#1e293b; border:1px solid #334155; color:#f1f5f9; margin-top:5px;">
+            <div id="senhaContainer" style="display:none; margin-top:15px;">
+                <label for="inputSenhaAluno" style="color:#f1f5f9;">Senha da Fase 1 (2 dígitos):</label>
+                <input type="password" id="inputSenhaAluno" placeholder="Ex: 42" maxlength="2" style="width:100%; padding:12px; border-radius:20px; background:#1e293b; border:1px solid #334155; color:#f1f5f9; margin-top:5px;">
+            </div>
+            <button id="btnConfirmarAluno" class="btn-success" style="width:100%; margin-top:20px;">✅ Entrar na Copa</button>
+            <button id="btnCancelarAluno" class="btn-danger" style="width:100%; margin-top:10px;">❌ Cancelar</button>
+            <div id="erroAluno" class="erro-msg" style="margin-top:10px;"></div>
+        </div>
+    </div>
 
-  while (pool.length < 20) {
-    const extra = pool.slice(0, 20 - pool.length);
-    pool = pool.concat(extra);
-  }
+    <!-- CABEÇALHO PRINCIPAL (COM LOGO ANIMADA) -->
+    <div class="card esconder-durante-jogo">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img class="logo-animada" src="icons/logo-copa.png" alt="Copa Tabuada CEIB 2026" style="max-width: 90%; width: 550px; height: auto; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.4)); user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;">
+        </div>
 
-  function shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <a href="index.html" class="btn-secondary" style="text-decoration: none; padding: 8px 16px; border-radius: 30px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;">🏠 Menu Principal</a>
+                <span class="modalidade-badge" id="modalidade-titulo" style="margin-left: 0;">Carregando...</span>
+            </div>
+            <span id="version-clicavel" class="version-display" style="font-size: 12px; margin: 0; padding: 4px 12px; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation;">
+                Versão: <span id="version-number">--</span>
+            </span>
+        </div>
 
-  let selecionadas = [];
-  let tentativas = 0;
-  const maxTentativas = 100;
-  while (selecionadas.length < 20 && tentativas < maxTentativas) {
-    tentativas++;
-    const copia = shuffle([...pool]);
-    let candidatas = [];
-    for (let i = 0; i < copia.length && candidatas.length < 20; i++) {
-      const p = copia[i];
-      if (candidatas.length > 0) {
-        const ultima = candidatas[candidatas.length - 1];
-        if (ultima.a === p.a && ultima.b === p.b) continue;
-      }
-      candidatas.push({ a: p.a, b: p.b });
-    }
-    if (candidatas.length === 20) {
-      selecionadas = candidatas;
-      break;
-    }
-  }
-  while (selecionadas.length < 20) {
-    const p = pool[Math.floor(Math.random() * pool.length)];
-    if (selecionadas.length > 0) {
-      const ultima = selecionadas[selecionadas.length - 1];
-      if (ultima.a === p.a && ultima.b === p.b) continue;
-    }
-    selecionadas.push({ a: p.a, b: p.b });
-  }
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div>
+                <p>Fase atual: <strong id="fase-atual-titulo">--</strong> <span id="fase-progresso" class="fase-info"></span></p>
+                <div id="timer-fase" class="timer-display" aria-live="polite">00:00</div>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 5px; font-size: 13px;">
+                    <div>🕐 <span id="clock-display">--:--:--</span></div>
+                    <div>📅 Última Sinc: <span id="last-sync-time">--</span></div>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px;">
+                    <button id="btn-sincronizar-global" class="btn-warning">🔄 Sincronizar</button>
+                </div>
+            </div>
+            <div id="online-stats" class="online-badge hidden">Online: <span id="jogadores-online">0</span></div>
+        </div>
 
-  function gerarDistratoresInteligentes(correta, count = 3) {
-    const distratores = new Set();
-    const margem = Math.max(2, Math.round(correta * 0.2));
-    let tentativas = 0;
-    while (distratores.size < count && tentativas < 200) {
-      tentativas++;
-      let offset = 0;
-      const r = Math.random();
-      if (r < 0.4) offset = Math.floor(Math.random() * (margem + 1));
-      else if (r < 0.7) offset = Math.floor(Math.random() * (margem * 2 + 1)) + margem;
-      else offset = Math.floor(Math.random() * (margem * 4 + 1)) + margem * 2;
-      const sinal = Math.random() < 0.5 ? 1 : -1;
-      let candidato = correta + sinal * offset;
-      candidato = Math.max(0, Math.min(100, candidato));
-      if (candidato !== correta && !distratores.has(candidato)) {
-        distratores.add(candidato);
-      }
-    }
-    while (distratores.size < count) {
-      let candidato = Math.floor(Math.random() * 101);
-      if (candidato !== correta && !distratores.has(candidato)) {
-        distratores.add(candidato);
-      }
-    }
-    let resultado = Array.from(distratores);
-    shuffle(resultado);
-    return resultado;
-  }
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0;">
+            <button id="btn-aluno">🎮 Aluno</button>
+            <button id="btn-projecao">📺 Torcida</button>
+            <button id="btn-tema" class="btn-tema" title="Alternar tema" aria-label="Alternar tema">🌓</button>
+        </div>
+    </div>
 
-  const resultado = selecionadas.map((p) => {
-    const correta = p.a * p.b;
-    const distratores = gerarDistratoresInteligentes(correta, 3);
-    let opcoes = [correta, ...distratores];
-    opcoes.sort((a, b) => a - b);
-    const posicaoCorreta = opcoes.indexOf(correta) + 1;
-    return {
-      a: p.a,
-      b: p.b,
-      opts: opcoes,
-      posicaoCorreta: posicaoCorreta
-    };
-  });
+    <!-- ========================================================= -->
+    <!-- PAINEL DO PROFESSOR (mantido no código)                   -->
+    <!-- ========================================================= -->
+    <div id="painel-professor" class="card hidden">
+        <div class="header-actions" style="flex-wrap: wrap; gap: 10px;">
+            <h2>🔧 Painel do Professor <span id="prof-fase-info" class="fase-info"></span></h2>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <a href="index.html" class="btn-secondary" style="text-decoration:none; padding: 10px 20px; border-radius: 40px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;">🏠 Menu Principal</a>
+                <button id="btn-sync-prof" class="btn-warning">🔄 Sincronizar</button>
+                <button id="btn-logout-professor" class="btn-danger">🚪 Sair</button>
+            </div>
+        </div>
 
-  return resultado;
-}
+        <div class="tab-buttons" role="tablist">
+            <div class="tab-btn active" data-tab="controle" role="tab" aria-selected="true" tabindex="0">🎮 Controle</div>
+            <div class="tab-btn" data-tab="ranking-geral" role="tab" aria-selected="false" tabindex="-1">🏆 Ranking Geral</div>
+            <div class="tab-btn" data-tab="ranking-fase" role="tab" aria-selected="false" tabindex="-1">📊 Ranking por Fase <span class="live-badge" id="live-badge-prof">LIVE</span></div>
+            <div class="tab-btn" data-tab="ranking-turmas" role="tab" aria-selected="false" tabindex="-1">🏆 Ranking por Turma</div>
+            <div class="tab-btn" data-tab="ranking-pontos" role="tab" aria-selected="false" tabindex="-1">🏆 Pontos Copa</div>
+            <div class="tab-btn" data-tab="gerenciar-alunos" role="tab" aria-selected="false" tabindex="-1">✏️ Gerenciar Alunos</div>
+            <div class="tab-btn" data-tab="gerenciar-turmas" role="tab" aria-selected="false" tabindex="-1">🏷️ Gerenciar Turmas</div>
+            <div class="tab-btn" data-tab="configuracoes" role="tab" aria-selected="false" tabindex="-1">⚙️ Configurações</div>
+        </div>
 
-// ============================================================
-// INICIAR PARTIDA
-// ============================================================
+        <!-- ABA CONTROLE -->
+        <div id="tab-controle" class="tab-content">
+            <div class="flex-grid">
+                <div>
+                    <h3>Controle da Fase</h3>
+                    <div class="status-box">
+                        <label for="select-modalidade">Modalidade da Tabuada:</label>
+                        <select id="select-modalidade" style="width:100%; padding:8px; margin:10px 0; border-radius:20px; background:#1f3a4b; color:white;">
+                            <option value="2-5">📚 Tabuada do 2 ao 5</option>
+                            <option value="6-9">📚 Tabuada do 6 ao 9</option>
+                            <option value="0-10">📚 Tabuada do 0 ao 10 (Completa)</option>
+                        </select>
+                        <button id="btn-aplicar-modalidade" class="btn-warning" style="width:100%;">🎯 Aplicar e Reiniciar Copa</button>
+                        <hr>
+                        <label for="input-tempo-fase">Tempo (minutos):</label>
+                        <input type="number" id="input-tempo-fase" value="10" min="1" style="width: 80px; padding: 5px; border-radius: 5px;">
+                        <button id="btn-salvar-tempo" class="btn-warning">💾 Salvar</button>
+                        <hr>
+                        <button id="btn-iniciar-fase" class="btn-success">▶️ Iniciar Fase</button>
+                        <button id="btn-continuar-parar-fase" class="btn-danger">⏹️ Parar Fase</button>
+                        <button id="btn-avancar-fase" class="btn-primary" style="margin-top: 10px; width: 100%;">➡️ Finalizar Fase e Classificar</button>
+                        <button id="btn-reset-fase" class="btn-warning" style="margin-top: 10px; width: 100%;">🔄 Resetar Fase (apagar dados atuais)</button>
+                        <button id="btn-reset-total" class="btn-danger" style="margin-top: 10px; width: 100%;">⚠️ Resetar Competição</button>
+                        <hr>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <label for="input-tempo-extra" style="color: #ffd966;">➕ Adicionar tempo extra (min):</label>
+                            <input type="number" id="input-tempo-extra" value="5" min="1" style="width: 80px; padding: 5px; border-radius: 5px;">
+                            <button id="btn-adicionar-tempo-extra" class="btn-success" style="padding: 6px 16px;">Adicionar</button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3>Usuários Online: <span id="prof-online-count">0</span></h3>
+                    <div id="lista-participantes" style="max-height: 300px; overflow-y: auto; background: #000; padding: 10px; border-radius: 10px;"></div>
+                </div>
+            </div>
+            <div class="controle-atualizacao">
+                <h3>⚙️ Controle de Atualização dos Rankings</h3>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
+                    <div>
+                        <label for="intervalo-individual">📊 Ranking Individual (segundos):</label>
+                        <input type="number" id="intervalo-individual" min="1" max="300" value="4" step="1">
+                        <button id="btn-atualizar-intervalo-individual" class="btn-warning">Aplicar</button>
+                    </div>
+                    <div>
+                        <label for="intervalo-equipes">👥 Ranking por Equipes (segundos):</label>
+                        <input type="number" id="intervalo-equipes" min="1" max="600" value="60" step="1">
+                        <button id="btn-atualizar-intervalo-equipes" class="btn-warning">Aplicar</button>
+                    </div>
+                </div>
+                <p style="font-size: 12px;">* Os intervalos são salvos no Firebase e aplicados a todos os usuários em tempo real.</p>
+            </div>
+            <div id="competicao-finalizada-prof" class="competicao-finalizada hidden">
+                <h2>🏆 COPA FINALIZADA!</h2>
+                <p>A competição chegou ao fim.</p>
+                <div class="destaque">
+                    <p>📊 Consulte o <strong>Ranking de Pontos</strong> (na aba ao lado) para ver a classificação final e o grande campeão.</p>
+                    <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 5px;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
+                </div>
+            </div>
+        </div>
 
-export async function iniciarPartida() {
-  if (state.jogoAtivo) return;
+        <!-- ABA RANKING GERAL -->
+        <div id="tab-ranking-geral" class="tab-content hidden">
+            <h3>📊 Classificação Geral - Todos os Participantes</h3>
+            <div id="ranking-geral-container" class="status-box">Processando ranking geral...</div>
+        </div>
 
-  try {
-    if (!state.alunoId || !state.estadoAtual) {
-      exibirToast('❌ Dados do aluno não disponíveis.');
-      return;
-    }
-    if (state.estadoAtual.status !== 'em_andamento') {
-      exibirToast('⏳ Fase não está em andamento.');
-      return;
-    }
-    if (Date.now() >= state.estadoAtual.fim) {
-      exibirToast('⏰ Tempo esgotado!');
-      return;
-    }
+        <!-- ABA RANKING POR FASE -->
+        <div id="tab-ranking-fase" class="tab-content hidden">
+            <h3>Ranking por Fase (Atualização automática)</h3>
+            <div class="fase-selector">
+                <label for="select-fase-ranking">Selecione a Fase: </label>
+                <select id="select-fase-ranking" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
+                <button id="btn-toggle-auto-ranking" class="btn-secondary">⏸️ Pausar Atualização</button>
+            </div>
+            <div id="ranking-parcial" class="status-box" aria-live="polite">Aguardando dados...</div>
+        </div>
 
-    state.perguntas = gerarPerguntas(state.estadoAtual.modalidade, state.estadoAtual.fase);
-    state.perguntaIdx = 0;
-    state.pontosPartida = 0;
-    state.acertosPartida = 0;
-    state.tempoTotalPartida = 0;
-    state.partidaFinalizada = false;
-    state.jogoAtivo = true;
-    state.timerPergunta = null;
-    state.historicoPerguntas = [];
+        <!-- ABA RANKING POR TURMA -->
+        <div id="tab-ranking-turmas" class="tab-content hidden">
+            <h3>🏆 Ranking por Equipes (Média das melhores pontuações)</h3>
+            <div style="margin-bottom: 15px;">
+                <button id="btn-atualizar-ranking-turmas" class="btn-secondary">🔄 Atualizar</button>
+            </div>
+            <div id="ranking-turmas-container" class="status-box" aria-live="polite">Carregando...</div>
+        </div>
 
-    document.body.classList.add('em-jogo');
-    document.getElementById('jogo-area').classList.remove('hidden');
-    document.getElementById('aguardando-aluno').classList.add('hidden');
-    document.getElementById('btn-ranking-aluno').disabled = true;
-    document.getElementById('btn-ranking-pontos-aluno').disabled = true;
+        <!-- ABA RANKING DE PONTOS -->
+        <div id="tab-ranking-pontos" class="tab-content hidden">
+            <h3>🏆 Ranking de Pontos Acumulados</h3>
+            <p style="color: #94a3b8; margin-bottom: 15px;">O campeão da Copa será o jogador com o maior total de pontos ao final das 5 fases.</p>
+            <div class="toggle-ativo">
+                <label for="toggle-ranking-pontos">📌 Habilitar Ranking de Pontos</label>
+                <input type="checkbox" id="toggle-ranking-pontos" checked>
+                <span id="status-ranking-pontos" style="color: #94a3b8; font-size: 14px;">Desativado</span>
+            </div>
+            <div class="config-card">
+                <h4>📋 Configuração da Pontuação</h4>
+                <div class="pontos-config-area">
+                    <label style="color: #f1f5f9;">Fases 1 a 4 (padrão: 1º=40, 2º=39, ..., 40º=1)</label>
+                    <div class="dica-config">Digite no formato <strong>posição: pontos</strong>, separados por vírgula. Ex: 1:40, 2:39, 3:38</div>
+                    <textarea id="textarea-pontos-padrao" rows="3"></textarea>
+                    <button id="btn-restaurar-padrao" class="btn-secondary" style="margin-top: 6px;">🔄 Restaurar Padrão (40..1)</button>
+                </div>
+                <hr>
+                <div class="pontos-config-area">
+                    <label style="color: #f1f5f9;">Fase 5 (pode ser alterada a qualquer momento)</label>
+                    <div class="dica-config">Digite no formato <strong>posição: pontos</strong>, separados por vírgula.</div>
+                    <textarea id="textarea-pontos-fase5" rows="3"></textarea>
+                    <button id="btn-restaurar-padrao-fase5" class="btn-secondary" style="margin-top: 6px;">🔄 Restaurar Padrão (40..1)</button>
+                </div>
+                <button id="btn-salvar-pontuacao" class="btn-success" style="margin-top: 15px;">💾 Salvar Configuração de Pontos</button>
+                <div id="feedback-pontuacao" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
 
-    proximaPergunta();
-  } catch (error) {
-    console.error('Erro ao iniciar partida:', error);
-    exibirToast('❌ Erro ao iniciar partida. Tente novamente.');
-    state.jogoAtivo = false;
-    document.body.classList.remove('em-jogo');
-  }
-}
+            <div class="config-card" style="border-color: #facc15;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">⚡</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Bônus de Velocidade</h4>
+                    <span style="background: #facc15; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Concede pontos extras ao jogador com a <strong>maior velocidade recorde</strong> da fase, 
+                    desde que ele atinja a precisão mínima exigida (porcentagem de acertos).
+                    O bônus é concedido apenas ao <strong>1º colocado</strong> em velocidade válido.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <label style="color: #f1f5f9; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="toggle-bonus-velocidade" checked>
+                        Habilitar Bônus
+                    </label>
+                    <label style="color: #f1f5f9;">
+                        Pontos:
+                        <input type="number" id="input-bonus-velocidade" value="1" min="1" max="100" style="width: 70px; padding: 5px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9;">
+                    </label>
+                    <label style="color: #f1f5f9;">
+                        Precisão Mínima (%):
+                        <input type="number" id="input-precisao-bonus" value="80" min="50" max="100" style="width: 70px; padding: 5px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9;">
+                    </label>
+                </div>
+                <button id="btn-salvar-bonus-velocidade" class="btn-success" style="margin-top: 15px;">💾 Salvar Bônus</button>
+                <div id="feedback-bonus-velocidade" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
 
-// ============================================================
-// PRÓXIMA PERGUNTA
-// ============================================================
+            <h4 style="margin-top: 20px;">📊 Ranking Geral de Pontos</h4>
+            <div id="ranking-pontos-container" class="status-box" aria-live="polite">Carregando...</div>
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">
+                ⚡ = Bônus de velocidade na fase | 🚀 = Recorde de velocidade da competição
+            </p>
+        </div>
 
-function proximaPergunta() {
-  atualizarInfoAluno();
+        <!-- ABA GERENCIAR ALUNOS -->
+        <div id="tab-gerenciar-alunos" class="tab-content hidden">
+            <h3>📝 Gerenciar Alunos da Fase Atual</h3>
+            <div id="lista-alunos-gerenciavel" class="status-box scroll-list">Carregando...</div>
+            <button id="btn-atualizar-lista-alunos" class="btn-secondary">🔄 Recarregar</button>
+        </div>
 
-  if (state.perguntaIdx >= 20) {
-    finalizarPartida();
-    return;
-  }
+        <!-- ABA GERENCIAR TURMAS -->
+        <div id="tab-gerenciar-turmas" class="tab-content hidden">
+            <h3>🏷️ Gerenciar Turmas Disponíveis</h3>
+            <button id="btn-adicionar-turma" class="btn-success">➕ Adicionar Nova Turma</button>
+            <div id="lista-turmas-gerenciavel" class="status-box scroll-list" style="margin-top: 15px;">Carregando...</div>
+        </div>
 
-  try {
-    const p = state.perguntas[state.perguntaIdx];
-    document.getElementById('pergunta').innerText = `${p.a} x ${p.b} = ?`;
-    const btns = document.querySelectorAll('.opcao-vertical');
-    p.opts.forEach((o, i) => {
-      if (btns[i]) {
-        btns[i].innerText = o;
-        btns[i].disabled = false;
-        btns[i].dataset.correct = (i + 1 === p.posicaoCorreta) ? 'true' : 'false';
-        btns[i].classList.remove('correto', 'errado', 'destaque-correto');
+        <!-- ABA CONFIGURAÇÕES -->
+        <div id="tab-configuracoes" class="tab-content hidden">
+            <h3>⚙️ Configurações do Professor</h3>
+            
+            <!-- CARD: Controle de Som -->
+            <div id="bloco-controle-som" class="config-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">🔊</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Controle de Sons</h4>
+                    <span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Habilite ou desabilite cada som individualmente. Os alunos também ouvem os efeitos durante o jogo.
+                    O volume e as preferências são salvos automaticamente no navegador.
+                </p>
+                <div class="som-controles-gerais">
+                    <button id="btn-som-master" class="btn-som-master ativado">🔊 Sons Ativados</button>
+                    <div class="controle-vol">
+                        <span>🔉</span>
+                        <input type="range" id="volume-global" min="0" max="100" value="70">
+                        <span id="volume-label">70%</span>
+                    </div>
+                    <button id="btn-testar-todos-sons" class="btn-secondary" style="padding: 6px 16px; font-size: 13px;">🔊 Testar Todos</button>
+                </div>
+                <div class="som-card">
+                    <h4>🎵 Efeitos Sonoros <span class="badge-som">11 sons</span></h4>
+                    <div class="som-grid" id="som-grid-container"></div>
+                </div>
+            </div>
+
+            <!-- CARD: Valor da Partida -->
+            <div id="bloco-valor-partida" class="config-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">💰</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Valor da Partida</h4>
+                    <span style="background: #3b82f6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Define quantos pontos uma partida completa vale. 
+                    Este valor é usado para <strong>projetar a posição futura</strong> dos jogadores no ranking,
+                    baseado na sua velocidade média de acertos.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <label for="input-valor-partida" style="color: #94a3b8; font-weight: 500; font-size: 14px;">Pontos por partida:</label>
+                    <input type="number" id="input-valor-partida" value="2000" min="1" max="10000" step="100"
+                        style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 16px; border-radius: 10px; font-size: 16px; width: 180px; font-weight: 600;"/>
+                    <button id="btn-atualizar-valor-partida" 
+                        style="background: #3b82f6; color: white; border: none; padding: 10px 28px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.3s; display: flex; align-items: center; gap: 8px;"
+                        onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+                        <span>🔄</span> Atualizar
+                    </button>
+                    <span style="color: #64748b; font-size: 13px; display: flex; align-items: center; gap: 4px;">
+                        Valor atual: <strong id="valor-partida-atual" style="color: #4ade80; font-size: 15px;">2000</strong> pontos
+                    </span>
+                </div>
+                <div id="feedback-valor-partida" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+                <div style="margin-top: 12px; padding: 12px 16px; background: #0f172a; border-radius: 8px; border-left: 3px solid #facc15;">
+                    <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+                        💡 <strong>Exemplo:</strong> Com 2000 pontos por partida, um jogador com 
+                        <strong>1.00s</strong> de média projeta <strong>2000 pts</strong> na próxima partida, 
+                        enquanto um com <strong>2.00s</strong> projeta <strong>1000 pts</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CARD: Mínimo de Partidas -->
+            <div id="bloco-min-partidas" class="config-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">📋</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Mínimo de Partidas por Fase</h4>
+                    <span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Defina o número mínimo de partidas que um jogador deve completar em cada fase para ser elegível à classificação.
+                    Apenas jogadores que atingirem esse número e estiverem dentro das vagas avançam.
+                </p>
+                <div id="min-partidas-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                <button id="btn-salvar-min-partidas" class="btn-success" style="margin-top: 12px;">💾 Salvar configurações</button>
+                <div id="feedback-min-partidas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <!-- CARD: Visibilidade das Colunas -->
+            <div id="bloco-visibilidade-colunas" class="config-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">👁️</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Visibilidade das Colunas</h4>
+                    <span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Selecione quais colunas serão exibidas no ranking para <strong>alunos</strong> e para a <strong>torcida</strong>.
+                    As colunas com <strong>*</strong> são obrigatórias e sempre visíveis.
+                </p>
+                <div class="colunas-grid" id="colunas-visiveis-container"></div>
+                <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+                    <button id="btn-salvar-colunas" class="btn-success">💾 Salvar configurações</button>
+                    <button id="btn-restaurar-colunas" class="btn-warning">🔄 Restaurar Padrões</button>
+                </div>
+                <div id="feedback-colunas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <!-- CARD: Senha -->
+            <div class="config-card senha-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">🔑</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Senha de Acesso - Fase 1</h4>
+                    <span style="background: #facc15; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Defina uma senha numérica de 2 dígitos que os alunos deverão digitar para se cadastrar na <strong>Fase 1</strong>.
+                    Após iniciar a fase, a senha fica bloqueada e não pode mais ser alterada.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <div>
+                        <label for="input-senha-fase1" style="color: #94a3b8; font-size: 14px;">Senha atual:</label>
+                        <input type="number" id="input-senha-fase1" min="10" max="99" value="42" 
+                            style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; font-size: 24px; width: 100px; text-align: center; font-weight: bold;">
+                    </div>
+                    <button id="btn-gerar-senha" class="btn-gerar-senha">🎲 Gerar</button>
+                    <button id="btn-salvar-senha" class="btn-success">💾 Salvar</button>
+                    <label class="toggle-label">
+                        <span>Exigir senha na Fase 1</span>
+                        <input type="checkbox" id="toggle-exigir-senha" checked>
+                    </label>
+                    <span id="status-senha" style="color: #4ade80; font-size: 14px; margin-left: 8px;">✅ Ativa</span>
+                </div>
+                <div id="feedback-senha" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+                <p style="color: #94a3b8; font-size: 12px; margin-top: 12px;">
+                    ⚠️ A senha só pode ser alterada <strong>antes</strong> de iniciar a Fase 1. Após o início, o campo fica bloqueado.
+                </p>
+            </div>
+
+            <!-- CARD: Liberar Aluno -->
+            <div class="config-card liberar-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">🚪</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Liberar Cadastro Emergencial</h4>
+                    <span style="background: #3b82f6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Use esta ferramenta para <strong>liberar manualmente</strong> um aluno classificado que esteja tendo problemas para entrar 
+                    (ex: perda de deviceId, erro de digitação, bug). A liberação é persistente e válida apenas para a fase atual.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <input type="text" id="input-liberar-nome" placeholder="Nome do aluno" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; width: 200px;">
+                    <input type="text" id="input-liberar-turma" placeholder="Turma" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px; border-radius: 10px; width: 150px;">
+                    <button id="btn-liberar-aluno" class="btn-liberar">🔓 Liberar</button>
+                    <span style="color: #64748b; font-size: 13px;">(para a fase atual)</span>
+                </div>
+                <div id="feedback-liberar" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+                <div style="margin-top: 12px; max-height: 150px; overflow-y: auto; background: #0f172a; border-radius: 8px; padding: 8px;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">📋 Alunos liberados nesta fase:</p>
+                    <div id="lista-liberados" style="color: #4ade80; font-size: 13px; margin-top: 4px;"></div>
+                </div>
+            </div>
+
+            <!-- CARD: Avisos -->
+            <div id="bloco-avisos" class="config-card" style="border-color: #f39c12;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">📢</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Avisos para os Alunos</h4>
+                    <span style="background: #f39c12; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Publique uma mensagem que aparecerá como um banner na tela de <strong>TODOS os alunos</strong> em tempo real.
+                    O aviso será removido automaticamente após o tempo definido.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label for="input-aviso-mensagem" style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Mensagem:</label>
+                        <input type="text" id="input-aviso-mensagem" placeholder="Ex: Atenção, última semana!" 
+                            style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 14px; border-radius: 10px; width: 100%;">
+                    </div>
+                    <div style="min-width: 120px;">
+                        <label for="input-aviso-tempo" style="color: #94a3b8; font-size: 13px; display: block; margin-bottom: 4px;">Duração (min):</label>
+                        <input type="number" id="input-aviso-tempo" value="30" min="1" max="1440"
+                            style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 10px 14px; border-radius: 10px; width: 100%;">
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 18px;">
+                        <button id="btn-publicar-aviso" class="btn-warning" style="padding: 10px 24px;">📢 Publicar</button>
+                        <button id="btn-remover-aviso" class="btn-danger" style="padding: 10px 24px;">❌ Remover</button>
+                    </div>
+                </div>
+                <div id="aviso-status" style="margin-top: 16px;">
+                    <div style="padding: 12px 16px; background: #2c3e50; border-radius: 8px; color: #94a3b8;">
+                        📭 Nenhum aviso ativo no momento.
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD: Feedback Visual -->
+            <div id="bloco-feedback" class="config-card" style="border-color: #8b5cf6;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">👀</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Feedback Visual (Erro/Acerto)</h4>
+                    <span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Define por quanto tempo as cores de acerto (verde) e erro (vermelho) serão exibidas após cada resposta.
+                    O jogo avança automaticamente após esse tempo.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <div>
+                        <label for="input-tempo-feedback-acerto" style="color: #94a3b8; font-size: 14px; display: block;">✅ Acerto (segundos):</label>
+                        <input type="number" id="input-tempo-feedback-acerto" min="0.1" max="2.0" step="0.1" value="0.5" 
+                            style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 8px 12px; border-radius: 8px; width: 100px; text-align: center;">
+                    </div>
+                    <div>
+                        <label for="input-tempo-feedback-erro" style="color: #94a3b8; font-size: 14px; display: block;">❌ Erro (segundos):</label>
+                        <input type="number" id="input-tempo-feedback-erro" min="0.1" max="2.0" step="0.1" value="0.5" 
+                            style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 8px 12px; border-radius: 8px; width: 100px; text-align: center;">
+                    </div>
+                    <button id="btn-salvar-feedback" class="btn-success" style="padding: 8px 24px;">💾 Salvar</button>
+                    <span id="feedback-status" style="color: #4ade80; font-size: 14px;">✅ Ativo</span>
+                </div>
+                <div id="feedback-feedback" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+            </div>
+
+            <!-- CARD: Sistema de Estrelas -->
+            <div id="bloco-estrelas" class="config-card" style="border-color: #facc15;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">⭐</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Sistema de Estrelas</h4>
+                    <span style="background: #facc15; color: #000; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Configure quantas estrelas cada ação concede e quem pode ver os níveis.
+                </p>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #0f172a; padding: 12px 20px; border-radius: 12px; border: 1px solid #2d3a4f; margin-bottom: 16px;">
+                    <label style="color: #f1f5f9; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                        <span>👁️ Visibilidade do nível:</span>
+                        <select id="select-visibilidade-estrelas" style="background: #1e293b; border: 1px solid #334155; color: #f1f5f9; padding: 6px 12px; border-radius: 8px;">
+                            <option value="todos">Todos (alunos + torcida)</option>
+                            <option value="alunos">Apenas alunos</option>
+                        </select>
+                    </label>
+                    <button id="btn-salvar-visibilidade" class="btn-success" style="padding: 6px 16px;">💾 Salvar</button>
+                </div>
+
+                <div style="background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <h5 style="color: #f1f5f9; margin-bottom: 12px;">⚙️ Estrelas por Ação</h5>
+                    <div id="estrelas-acoes-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;"></div>
+                    <button id="btn-salvar-acoes-estrelas" class="btn-success" style="margin-top: 16px;">💾 Salvar Ações</button>
+                    <button id="btn-restaurar-acoes-estrelas" class="btn-warning" style="margin-top: 8px;">🔄 Restaurar Padrão</button>
+                    <div id="feedback-estrelas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
+                </div>
+            </div>
+
+            <!-- CARD: Cores e Temas -->
+            <div id="bloco-cores" class="config-card" style="border-color: var(--cor-primaria);">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 28px;">🎨</span>
+                    <h4 style="color: #f1f5f9; font-size: 18px; margin: 0;">Temas e Cores</h4>
+                    <span style="background: var(--cor-primaria); color: white; font-size: 11px; padding: 2px 12px; border-radius: 30px; font-weight: 600;">NOVO</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+                    Escolha a cor de destaque do jogo. A alteração é <strong>apenas no seu dispositivo</strong>.
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
+                    <div id="seletor-cores" style="display: flex; flex-wrap: wrap; gap: 8px;" role="radiogroup" aria-label="Cores disponíveis"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TELA DO ALUNO                                             -->
+    <!-- ========================================================= -->
+    <div id="tela-aluno" class="card hidden">
+        <div id="jogo-area" class="hidden jogo-topo">
+            <div id="pergunta-container" class="pergunta-container brilho-cinza">
+                <div class="barra-tempo" style="margin-top: 0; margin-bottom: 20px;"><div id="progresso-tempo" class="progresso-tempo" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div></div>
+                <div id="pergunta" style="font-size:64px; font-weight: bold; margin-bottom: 0;">0 x 0 = ?</div>
+            </div>
+            <div class="opcoes-vertical" role="group" aria-label="Opções de resposta">
+                <button class="opcao-vertical" onclick="window.responder(0)" aria-label="Opção 1"></button>
+                <button class="opcao-vertical" onclick="window.responder(1)" aria-label="Opção 2"></button>
+                <button class="opcao-vertical" onclick="window.responder(2)" aria-label="Opção 3"></button>
+                <button class="opcao-vertical" onclick="window.responder(3)" aria-label="Opção 4"></button>
+            </div>
+            <div style="text-align: center; margin-top: 15px; font-size: 18px; opacity: 0.8; font-weight: bold;">
+                Pergunta: <span id="pergunta-num">1</span> / 20
+            </div>
+            <div class="jogo-rodape-minimalista">
+                <div class="item-rodape" title="Pontuação">🎯 <span id="pontuacao-acumulada">0</span></div>
+                <div class="item-rodape" title="Posição Atual">🏆 <span id="posicao-numero">--</span>º</div>
+                <div class="item-rodape" title="Velocidade Média">⚡ <span id="velocidade-media">0.00</span>s</div>
+            </div>
+        </div>
+
+        <div class="header-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+            <h2 id="aluno-nome-display" style="margin: 0;">Aluno</h2>
+            <span style="color: var(--texto-secundario);">Turma: <strong id="aluno-turma-display">-</strong></span>
+            <div class="timer-fase-aluno" id="timer-fase-aluno">⏱️ Tempo: --:--</div>
+            <span class="fase-info" id="aluno-fase-info">Fase 1/5</span>
+            <span id="aluno-modalidade" style="background: #2c5a6e; padding: 2px 12px; border-radius: 20px; font-size: 13px;">2-5</span>
+            <button id="btn-ranking-aluno" class="btn-info" style="margin-left: auto;" disabled>📊 Ranking</button>
+            <button id="btn-tutorial-aluno" class="btn-info">📘 Tutorial</button>
+            <a href="index.html" class="btn-secondary" style="text-decoration:none; padding: 10px 20px; border-radius: 40px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;">🏠 Menu Principal</a>
+            <button id="btn-sair-aluno" class="btn-danger">🚪 Sair</button>
+        </div>
+
+        <div id="nivel-estrelas-aluno" class="nivel-estrelas-container"></div>
+
+        <div id="aguardando-aluno" style="text-align:center; padding:10px 0;">
+            <div id="msg-status-aluno" style="margin-bottom: 10px; font-size: 18px;">Aguardando...</div>
+            <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 16px 40px;">🎮 JOGAR</button>
+        </div>
+
+        <div style="display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; background: var(--bg-card-hover); padding: 12px; border-radius: 16px; margin: 10px 0;">
+            <div><strong>Melhor pontuação:</strong> <span id="aluno-melhor-score">0</span></div>
+            <div><strong>Partidas:</strong> <span id="aluno-total-partidas">0</span></div>
+            <div><strong>Melhor velocidade:</strong> <span id="aluno-melhor-velocidade">--</span></div>
+        </div>
+
+        <!-- CONQUISTAS (COM CONTADOR) -->
+        <div class="status-box" style="margin-top: 10px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <h3 style="margin: 0;">🏅 Conquistas <span id="medalhas-contador" style="font-size: 14px; color: var(--texto-secundario); font-weight: normal; margin-left: 6px;"></span></h3>
+                <button id="btn-ver-medalhas" class="btn-secondary" style="padding: 4px 12px;">Ver todas</button>
+            </div>
+            <div id="medalhas-container" aria-live="polite" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">
+                <p style="color: #94a3b8; font-size: 14px; margin: 0;">Nenhuma conquista ainda.</p>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 12px; flex-wrap: wrap;">
+            <button id="btn-ranking-pontos-aluno" class="btn-info">🏆 Ranking Pontos</button>
+            <button id="btn-historico-aluno" class="btn-secondary">📜 Histórico</button>
+            <button id="btn-grafico-aluno" class="btn-secondary">📈 Evolução</button>
+        </div>
+
+        <div id="historico-aluno-container" class="status-box hidden" style="margin-top: 10px;">
+            <h4>📜 Histórico de Partidas (Fase atual)</h4>
+            <div id="historico-aluno-lista"></div>
+        </div>
+        <div id="grafico-aluno-container" class="status-box hidden" style="margin-top: 10px;">
+            <h4>📈 Evolução da Pontuação</h4>
+            <canvas id="grafico-evolucao" width="600" height="200" style="width:100%; height:auto; max-width:600px; background: transparent;"></canvas>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODAL DE RESULTADO PÓS-JOGO                               -->
+    <!-- ========================================================= -->
+    <div id="modal-pos-jogo" class="modal-resultados" style="display:none;" role="dialog" aria-modal="true"></div>
+
+    <!-- ========================================================= -->
+    <!-- MODAL DE RANKING DO ALUNO                                 -->
+    <!-- ========================================================= -->
+    <div id="modal-ranking-aluno" class="modal-ranking" role="dialog" aria-modal="true" aria-labelledby="ranking-aluno-title">
+        <div class="modal-ranking-content">
+            <h2 id="ranking-aluno-title" style="color: #ffd966; text-align: center;">📊 Ranking</h2>
+            <div class="modal-sub-tabs" role="tablist">
+                <div class="sub-tab active" data-subtab="fase" role="tab" aria-selected="true" tabindex="0">📊 Fase Atual</div>
+                <div class="sub-tab" data-subtab="pontos" role="tab" aria-selected="false" tabindex="-1">🏆 Pontos Copa</div>
+            </div>
+            <div id="ranking-aluno-container" class="status-box" style="max-height: 60vh; overflow-y: auto;" aria-live="polite">Carregando...</div>
+            <div class="acoes-modal">
+                <button id="btn-fechar-modal-ranking" class="btn-fechar">🔙 Voltar ao Jogo</button>
+                <button id="btn-sair-modal-ranking" class="btn-sair-modal">🚪 Sair</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODAL DE TUTORIAL                                         -->
+    <!-- ========================================================= -->
+    <div id="modal-tutorial" class="modal-ranking" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="tutorial-titulo">
+        <div class="modal-ranking-content" style="max-width: 800px;">
+            <h2 style="color:#ffd966; text-align:center;" id="tutorial-titulo">📘 Tutorial</h2>
+            <div class="modal-sub-tabs" id="tutorial-tabs" role="tablist"></div>
+            <div id="tut-conteudo" class="tutorial-content" aria-live="polite"></div>
+            <div class="acoes-modal">
+                <button id="btn-fechar-tutorial" class="btn-fechar">🔙 Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODAL DE TODAS AS MEDALHAS                                -->
+    <!-- ========================================================= -->
+    <div id="modal-medalhas" class="modal-ranking" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="medalhas-titulo">
+        <div class="modal-ranking-content" style="max-width: 800px;">
+            <h2 style="color:#ffd966; text-align:center; margin-bottom: 8px;" id="medalhas-titulo">🏅 Todas as Conquistas</h2>
+            <p style="color: var(--texto-secundario); text-align: center; margin-bottom: 24px; font-size: 14px;">
+                Veja o que você já conquistou e o que ainda falta desbloquear.
+            </p>
+            
+            <div id="medalhas-modal-conteudo" class="tutorial-content" style="max-height: 60vh; overflow-y: auto; padding: 0 8px;" aria-live="polite"></div>
+            
+            <div class="acoes-modal">
+                <button id="btn-fechar-medalhas" class="btn-fechar">🔙 Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TELA DA TORCIDA                                           -->
+    <!-- ========================================================= -->
+    <div id="tela-torcida" class="card hidden">
+        <div class="header-actions" style="flex-wrap: wrap; gap: 10px;">
+            <h2>📺 RANKING EM TEMPO REAL <span class="live-badge">AO VIVO</span></h2>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <a href="index.html" class="btn-secondary" style="text-decoration:none; padding: 10px 20px; border-radius: 40px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;">🏠 Menu Principal</a>
+                <button id="btn-sync-torcida" class="btn-warning">🔄 Sincronizar</button>
+                <button id="btn-tutorial-torcida" class="btn-info">📘 Tutorial</button>
+                <button id="btn-sair-torcida" class="btn-danger">🚪 Sair</button>
+            </div>
+        </div>
+        <div class="modo-buttons" role="tablist">
+            <button id="btn-torcida-fase" class="btn-modo ativo" role="tab" aria-selected="true">📊 Ranking Fases</button>
+            <button id="btn-torcida-equipes" class="btn-modo" role="tab" aria-selected="false">👥 Ranking por Equipes</button>
+            <button id="btn-torcida-pontos" class="btn-modo" role="tab" aria-selected="false">🏆 Ranking de Pontos</button>
+        </div>
+        <div class="fase-selector" id="torcida-fase-selector">
+            <label for="select-fase-torcida">Selecione a Fase: </label>
+            <select id="select-fase-torcida" style="padding: 8px; border-radius: 20px; background: #1f3a4b; color: white;"></select>
+            <span style="margin-left: 15px; font-size: 14px; color: #ffd966;" id="fase-torcida-info"></span>
+        </div>
+        <div style="margin: 15px 0;">
+            <p>Modalidade: <strong id="torcida-modalidade">--</strong> | <span id="torcida-fase-info" class="fase-info"></span> | Tempo restante: <strong id="torcida-timer" class="timer-display" style="font-size: 24px;">--:--</strong></p>
+            <p><small>Atualização a cada <span id="torcida-individual-intervalo">4</span>s | Última atualização: <span id="torcida-last-update">--</span></small></p>
+        </div>
+        <div id="ranking-torcida-container" class="status-box" aria-live="polite">Carregando ranking ao vivo...</div>
+        <div id="competicao-finalizada-torcida" class="competicao-finalizada hidden">
+            <h2>🏆 COPA FINALIZADA!</h2>
+            <p>A competição chegou ao fim.</p>
+            <div class="destaque">
+                <p>📊 Consulte o <strong>Ranking de Pontos</strong> (aba ao lado) para ver a classificação final e o grande campeão.</p>
+                <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 5px;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ===== TOAST ===== -->
+<div id="toast" class="toast hidden" role="alert" aria-live="assertive"></div>
+
+<!-- ===== RODAPÉ ===== -->
+<div style="text-align: center; margin-top: 30px; padding: 15px; color: #666; font-size: 14px; border-top: 1px solid #2c3e50;">
+    🏆 Copa Tabuada CEIB 2026 - Desenvolvido por <strong style="color: #ffd966;">HENRIQUE ANGELO DA SILVA</strong>
+</div>
+
+<!-- ===== TEMPLATES ===== -->
+<template id="template-linha-ranking">
+  <tr>
+    <td class="posicao"></td>
+    <td class="nome-completo"></td>
+    <td class="melhor-pontuacao"></td>
+    <td class="classificacao"></td>
+    <td class="ritmo"></td>
+    <td class="pontuacao-atual"></td>
+    <td class="delta-lider"></td>
+    <td class="veloc-recorde"></td>
+    <td class="progresso"></td>
+    <td class="partidas"></td>
+    <td class="tempo-total"></td>
+    <td class="percentual-tempo"></td>
+    <td class="turma"></td>
+    <td class="projecao"></td>
+  </tr>
+</template>
+<template id="template-cabecalho-ranking">
+  <thead>
+    <tr>
+      <th>Pos</th>
+      <th>Nome</th>
+      <th>Melhor Pontuação</th>
+      <th class="col-classificacao">Classificação</th>
+      <th>Ritmo</th>
+      <th>Pontuação Atual</th>
+      <th>Delta Líder</th>
+      <th>Veloc. Recorde</th>
+      <th>Progresso</th>
+      <th>Partidas</th>
+      <th>Tempo Total</th>
+      <th>% Tempo</th>
+      <th>Turma</th>
+      <th>Projeção</th>
+    </tr>
+  </thead>
+</template>
+<template id="template-linha-pontos">
+  <tr>
+    <td class="posicao-pontos"></td>
+    <td class="nome-pontos"></td>
+    <td class="total-pontos"></td>
+    <td class="fase5"></td>
+    <td class="fase4"></td>
+    <td class="fase3"></td>
+    <td class="fase2"></td>
+    <td class="fase1"></td>
+  </tr>
+</template>
+<template id="template-modal-finalizacao">
+  <div class="modal-resultados" id="modal-finalizacao">
+    <h2>🏆 COPA FINALIZADA!</h2>
+    <div style="font-size: 64px; margin: 15px 0;">🎉</div>
+    <p>A competição chegou ao fim.</p>
+    <div class="dica">
+      <p>📊 Consulte o <strong>Ranking de Pontos</strong> para ver sua classificação final.</p>
+      <p style="font-size: 0.9rem; opacity: 0.7;">Se o Ranking de Pontos estiver desativado, o campeão é definido pelo ranking da Fase 5.</p>
+    </div>
+    <button class="fechar" id="btn-fechar-finalizacao">Voltar ao Menu</button>
+  </div>
+</template>
+<template id="template-medalhas-vazio">
+  <p style="color: #94a3b8; font-size: 14px;">Nenhuma conquista ainda. Continue jogando!</p>
+</template>
+<template id="template-medalha-item">
+  <div class="medalha-item" title="">
+    <span class="medalha-icone"></span>
+    <span class="medalha-nome"></span>
+  </div>
+</template>
+<template id="template-linha-turmas">
+  <tr>
+    <td class="pos-turma"></td>
+    <td class="nome-turma"></td>
+    <td class="media-turma"></td>
+    <td class="total-alunos"></td>
+    <td class="total-partidas-turma"></td>
+    <td class="melhor-aluno"></td>
+  </tr>
+</template>
+
+<!-- ===== FIREBASE ===== -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+
+<!-- ===== REMOVER SERVICE WORKER ANTIGO ===== -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for (let reg of registrations) {
+        reg.unregister().then(function(success) {
+          if (success) console.log('Service Worker desregistrado.');
+        });
       }
     });
-    document.getElementById('pergunta-num').innerText = state.perguntaIdx + 1;
-    iniciarTimerPergunta();
-  } catch (error) {
-    console.error('Erro ao exibir pergunta:', error);
-    exibirToast('❌ Erro ao carregar pergunta. Reinicie a partida.');
   }
-}
+</script>
 
-// ============================================================
-// TIMER DA PERGUNTA (10 segundos)
-// ============================================================
+<!-- ===== SCRIPT PRINCIPAL ===== -->
+<script type="module" src="js/main.js"></script>
 
-function iniciarTimerPergunta() {
-  if (state.timerPergunta) {
-    clearInterval(state.timerPergunta);
-    state.timerPergunta = null;
-  }
-
-  state.tempoRestantePergunta = 10;
-  const barra = document.getElementById('progresso-tempo');
-
-  state.timerPergunta = setInterval(() => {
-    state.tempoRestantePergunta -= 0.1;
-    if (state.tempoRestantePergunta < 0) state.tempoRestantePergunta = 0;
-    if (barra) {
-      const pct = (state.tempoRestantePergunta / 10) * 100;
-      barra.style.width = pct + '%';
-      barra.setAttribute('aria-valuenow', Math.round(pct));
-    }
-    if (state.tempoRestantePergunta <= 0) {
-      clearInterval(state.timerPergunta);
-      state.timerPergunta = null;
-      responder(-1);
-    }
-  }, 100);
-}
-
-// ============================================================
-// RESPONDER (exportado globalmente)
-// ============================================================
-
-export async function responder(idx) {
-  if (!state.jogoAtivo || state.partidaFinalizada) return;
-
-  if (state.timerPergunta) {
-    clearInterval(state.timerPergunta);
-    state.timerPergunta = null;
-  }
-
-  try {
-    const btns = document.querySelectorAll('.opcao-vertical');
-    btns.forEach(b => b.disabled = true);
-
-    const tempoGasto = 10 - Math.max(0, state.tempoRestantePergunta);
-    state.tempoTotalPartida += tempoGasto;
-
-    const p = state.perguntas[state.perguntaIdx];
-    const correta = p.a * p.b;
-    let acertou = false;
-    let respostaEscolhida = null;
-
-    if (idx !== -1) {
-      const resp = parseInt(btns[idx].innerText);
-      respostaEscolhida = resp;
-      if (resp === correta) {
-        acertou = true;
-        state.acertosPartida++;
-        const pontosGanhos = Math.round(100 * (Math.max(0, state.tempoRestantePergunta) / 10));
-        state.pontosPartida += pontosGanhos;
-        tocarSom('acerto');
-      } else {
-        tocarSom('erro');
-      }
-    } else {
-      tocarSom('tempo_esgotado');
-      respostaEscolhida = null;
-    }
-
-    state.historicoPerguntas.push({
-      pergunta: `${p.a} x ${p.b}`,
-      respostaEscolhida: respostaEscolhida,
-      respostaCorreta: correta,
-      acertou: acertou
-    });
-
-    if (idx !== -1) {
-      const btnEscolhido = btns[idx];
-      if (acertou) {
-        btnEscolhido.classList.add('correto');
-      } else {
-        btnEscolhido.classList.add('errado');
-        for (let i = 0; i < btns.length; i++) {
-          if (parseInt(btns[i].innerText) === correta) {
-            btns[i].classList.add('destaque-correto');
-            break;
-          }
-        }
-      }
-    } else {
-      for (let i = 0; i < btns.length; i++) {
-        if (parseInt(btns[i].innerText) === correta) {
-          btns[i].classList.add('destaque-correto');
-          break;
-        }
-      }
-    }
-
-    document.getElementById('pontuacao-acumulada').innerText = state.pontosPartida;
-    state.perguntaIdx++;
-    atualizarInfoAluno();
-
-    // ===== FEEDBACK SEPARADO =====
-    let delay = 0.5; // fallback
-    if (idx === -1) {
-      delay = state.tempoFeedbackErro * 1000;
-    } else if (acertou) {
-      delay = state.tempoFeedbackAcerto * 1000;
-    } else {
-      delay = state.tempoFeedbackErro * 1000;
-    }
-
-    setTimeout(() => {
-      btns.forEach(b => {
-        b.classList.remove('correto', 'errado', 'destaque-correto');
-        b.disabled = false;
-      });
-
-      if (state.perguntaIdx >= 20) {
-        finalizarPartida();
-      } else {
-        proximaPergunta();
-      }
-    }, delay);
-
-    await atualizarPontuacaoParcial();
-  } catch (error) {
-    console.error('Erro ao responder:', error);
-    exibirToast('❌ Erro ao processar resposta. Tente novamente.');
-  }
-}
-
-window.responder = responder;
-
-// ============================================================
-// ATUALIZAR PONTUAÇÃO PARCIAL
-// ============================================================
-
-async function atualizarPontuacaoParcial() {
-  if (!state.alunoId || !state.estadoAtual) return;
-  const fase = state.estadoAtual.fase;
-  try {
-    await atualizarDados(`copaV2/resultados_temp/${fase}/${state.alunoId}`, {
-      nome: state.alunoNome,
-      turma: state.alunoTurma,
-      pontos: state.pontosPartida,
-      acertos: state.acertosPartida,
-      tempo: state.tempoTotalPartida,
-      perguntas: state.perguntaIdx,
-      timestamp: Date.now()
-    });
-  } catch (error) {
-    console.warn('Erro ao salvar pontuação parcial:', error);
-  }
-}
-
-// ============================================================
-// FINALIZAR PARTIDA
-// ============================================================
-
-async function finalizarPartida() {
-  if (state.partidaFinalizada) return;
-  state.partidaFinalizada = true;
-  state.jogoAtivo = false;
-
-  document.body.classList.remove('em-jogo');
-  document.getElementById('btn-ranking-aluno').disabled = false;
-  document.getElementById('btn-ranking-pontos-aluno').disabled = false;
-  document.getElementById('jogo-area').classList.add('hidden');
-  document.getElementById('aguardando-aluno').classList.remove('hidden');
-
-  try {
-    const fase = state.estadoAtual.fase;
-    const ref = `copaV2/resultados/${fase}/${state.alunoId}`;
-    const partidas = await lerDados(ref) || [];
-    const novaPartida = {
-      pontos: state.pontosPartida,
-      acertos: state.acertosPartida,
-      tempo: state.tempoTotalPartida
-    };
-    partidas.push(novaPartida);
-    await atualizarDados(ref, partidas);
-    await removerDados(`copaV2/resultados_temp/${fase}/${state.alunoId}`);
-
-    if (state.acertosPartida > 0 && state.tempoTotalPartida > 0) {
-      const precisao = (state.acertosPartida / 20) * 100;
-      const velocidade = state.tempoTotalPartida / state.acertosPartida;
-      const partidaIndex = partidas.length - 1;
-      await atualizarRecordeGeral(state.alunoId, velocidade, precisao, fase, partidaIndex);
-    }
-
-    await verificarEConcederMedalhas();
-    atualizarExibicaoMedalhas();
-    await atualizarInfoAluno();
-
-    // ===== CONCEDER ESTRELAS =====
-    try {
-      const resultadosFase = state.estadoAtual?.resultados?.[fase] || {};
-      let ranking = [];
-      for (const [id, partidas] of Object.entries(resultadosFase)) {
-        if (partidas && partidas.length > 0) {
-          const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
-          ranking.push({ id, pontos: melhor.pontos });
-        }
-      }
-      ranking.sort((a, b) => b.pontos - a.pontos);
-      const posicaoAtual = ranking.findIndex(p => p.id === state.alunoId) + 1;
-
-      await concederEstrelas(state.alunoId, 'partida_completa', state.configEstrelas.acoes.partida_completa, fase, partidas.length - 1);
-
-      if (state.acertosPartida === 18 || state.acertosPartida === 19) {
-        await concederEstrelas(state.alunoId, 'acertos_18_19', state.configEstrelas.acoes.acertos_18_19, fase, partidas.length - 1);
-      }
-      if (state.acertosPartida === 20) {
-        await concederEstrelas(state.alunoId, 'acertos_20', state.configEstrelas.acoes.acertos_20, fase, partidas.length - 1);
-      }
-
-      if (state.posicaoAntesPartida !== null && posicaoAtual < state.posicaoAntesPartida) {
-        await concederEstrelas(state.alunoId, 'subiu_ranking', state.configEstrelas.acoes.subiu_ranking, fase, partidas.length - 1);
-      }
-
-      let melhorPontuacaoAnterior = 0;
-      if (partidas.length > 1) {
-        const anteriores = partidas.slice(0, -1);
-        melhorPontuacaoAnterior = Math.max(...anteriores.map(p => p.pontos || 0));
-      }
-      if (state.pontosPartida > melhorPontuacaoAnterior) {
-        await concederEstrelas(state.alunoId, 'recorde_pessoal', state.configEstrelas.acoes.recorde_pessoal, fase, partidas.length - 1);
-      }
-    } catch (e) {
-      console.warn('Erro ao conceder estrelas:', e);
-    }
-
-    const resultadosFaseFinal = state.estadoAtual?.resultados?.[fase] || {};
-    let rankingFinal = [];
-    for (const [id, partidas] of Object.entries(resultadosFaseFinal)) {
-      if (partidas && partidas.length > 0) {
-        const melhor = partidas.sort((a, b) => b.pontos - a.pontos)[0];
-        rankingFinal.push({ id, pontos: melhor.pontos });
-      }
-    }
-    rankingFinal.sort((a, b) => b.pontos - a.pontos);
-    const posicaoAtualFinal = rankingFinal.findIndex(p => p.id === state.alunoId) + 1;
-
-    let posicaoAnterior = state.posicaoAntesPartida || null;
-    let ultimaPartida = null;
-    if (partidas.length > 1) {
-      ultimaPartida = partidas[partidas.length - 2];
-    }
-
-    // ===== COLETAR ESTRELAS GANHAS PARA EXIBIR NO MODAL =====
-    let estrelasGanhas = {};
-    try {
-      const acoes = state.configEstrelas.acoes;
-      if (state.perguntaIdx >= 20) {
-        estrelasGanhas.partida_completa = acoes.partida_completa || 1;
-      }
-      if (state.acertosPartida === 18 || state.acertosPartida === 19) {
-        estrelasGanhas.acertos_18_19 = acoes.acertos_18_19 || 2;
-      }
-      if (state.acertosPartida === 20) {
-        estrelasGanhas.acertos_20 = acoes.acertos_20 || 5;
-      }
-      if (state.posicaoAntesPartida !== null && posicaoAtualFinal < state.posicaoAntesPartida) {
-        estrelasGanhas.subiu_ranking = acoes.subiu_ranking || 3;
-      }
-      let melhorPontuacaoAnterior2 = 0;
-      if (partidas.length > 1) {
-        const anteriores = partidas.slice(0, -1);
-        melhorPontuacaoAnterior2 = Math.max(...anteriores.map(p => p.pontos || 0));
-      }
-      if (state.pontosPartida > melhorPontuacaoAnterior2) {
-        estrelasGanhas.recorde_pessoal = acoes.recorde_pessoal || 4;
-      }
-    } catch (e) {
-      console.warn('Erro ao calcular estrelas ganhas:', e);
-    }
-
-    // ===== CALCULAR DADOS DE EVOLUÇÃO =====
-    let evolucao = null;
-    if (partidas.length >= 2) {
-      const p1 = partidas[partidas.length - 2];
-      const p2 = partidas[partidas.length - 1];
-      const tempoMedio1 = p1.acertos > 0 ? p1.tempo / p1.acertos : 0;
-      const tempoMedio2 = p2.acertos > 0 ? p2.tempo / p2.acertos : 0;
-      const precisao1 = (p1.acertos / 20) * 100;
-      const precisao2 = (p2.acertos / 20) * 100;
-
-      evolucao = {
-        pontos: { anterior: p1.pontos, atual: p2.pontos, delta: p2.pontos - p1.pontos },
-        acertos: { anterior: p1.acertos, atual: p2.acertos, delta: p2.acertos - p1.acertos },
-        tempoMedio: { anterior: tempoMedio1, atual: tempoMedio2, delta: tempoMedio2 - tempoMedio1 },
-        precisao: { anterior: precisao1, atual: precisao2, delta: precisao2 - precisao1 },
-        recordes: []
-      };
-
-      // Verificar recordes batidos
-      if (p2.pontos > p1.pontos) evolucao.recordes.push('📈 Recorde de pontuação');
-      if (tempoMedio2 < tempoMedio1 && tempoMedio2 > 0) evolucao.recordes.push('⚡ Recorde de velocidade');
-      if (p2.acertos > p1.acertos) evolucao.recordes.push('✅ Recorde de acertos');
-      if (precisao2 > precisao1) evolucao.recordes.push('🎯 Recorde de precisão');
-
-      // Projeção simples
-      const projPontos = Math.round(p2.pontos + (p2.pontos - p1.pontos));
-      const projAcertos = Math.round(p2.acertos + (p2.acertos - p1.acertos));
-      evolucao.projecao = {
-        pontos: Math.max(0, projPontos),
-        acertos: Math.max(0, Math.min(20, projAcertos))
-      };
-    }
-
-    const dadosModal = {
-      posicao: posicaoAtualFinal > 0 ? posicaoAtualFinal : 0,
-      posicaoAnterior: posicaoAnterior,
-      pontos: state.pontosPartida,
-      acertos: state.acertosPartida,
-      tempoTotal: state.tempoTotalPartida,
-      ultimaPartida: ultimaPartida,
-      fase: fase,
-      totalPartidas: partidas.length,
-      ranking: rankingFinal,
-      id: state.alunoId,
-      nome: state.alunoNome,
-      turma: state.alunoTurma,
-      historico: state.historicoPerguntas,
-      estrelasGanhas: estrelasGanhas || {},
-      evolucao: evolucao
-    };
-
-    exibirModalResultados(dadosModal);
-    desenharGraficoEvolucao();
-
-    exibirToast(`✅ Partida finalizada! Pontos: ${state.pontosPartida}`);
-
-  } catch (error) {
-    console.error('Erro ao finalizar partida:', error);
-    exibirToast('❌ Erro ao salvar resultados. Contate o professor.');
-  }
-}
-
-// ============================================================
-// GRÁFICO DE EVOLUÇÃO (PADRÃO - TELA DO ALUNO)
-// ============================================================
-
-export function desenharGraficoEvolucao() {
-  const canvas = document.getElementById('grafico-evolucao');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  const fase = state.estadoAtual?.fase || 1;
-  const resultados = state.estadoAtual?.resultados?.[fase]?.[state.alunoId] || [];
-  if (resultados.length < 2) {
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Jogue mais partidas para ver sua evolução!', canvas.width/2, canvas.height/2);
-    return;
-  }
-
-  const pontuacoes = resultados.map(p => p.pontos || 0);
-  const maxPontos = Math.max(2000, Math.max(...pontuacoes) + 200);
-  const padding = 40;
-  const graficoWidth = canvas.width - padding * 2;
-  const graficoHeight = canvas.height - padding * 2;
-
-  ctx.strokeStyle = '#4a5568';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(padding, padding);
-  ctx.lineTo(padding, canvas.height - padding);
-  ctx.lineTo(canvas.width - padding, canvas.height - padding);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.strokeStyle = '#ffd966';
-  ctx.lineWidth = 3;
-  for (let i = 0; i < pontuacoes.length; i++) {
-    const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
-    const y = canvas.height - padding - (pontuacoes[i] / maxPontos) * graficoHeight;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  for (let i = 0; i < pontuacoes.length; i++) {
-    const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
-    const y = canvas.height - padding - (pontuacoes[i] / maxPontos) * graficoHeight;
-    ctx.beginPath();
-    ctx.arc(x, y, 6, 0, 2 * Math.PI);
-    ctx.fillStyle = '#ffd966';
-    ctx.fill();
-    ctx.strokeStyle = '#0a0f1e';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.fillStyle = '#f1f5f9';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(pontuacoes[i], x, y - 12);
-  }
-
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '12px sans-serif';
-  ctx.textAlign = 'center';
-  for (let i = 0; i < pontuacoes.length; i++) {
-    const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
-    ctx.fillText(`P${i+1}`, x, canvas.height - padding + 20);
-  }
-
-  ctx.fillStyle = '#ffd966';
-  ctx.font = '14px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Evolução da Pontuação por Partida', canvas.width/2, 20);
-}
-
-// ============================================================
-// GRÁFICO DE EVOLUÇÃO (MODAL - PARA EXIBIR NA ABA EVOLUÇÃO)
-// ============================================================
-
-export function desenharGraficoEvolucaoModal(canvas) {
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const width = Math.min(rect.width || 600, 600);
-  const height = 150;
-  canvas.width = width;
-  canvas.height = height;
-  ctx.clearRect(0, 0, width, height);
-
-  const fase = state.estadoAtual?.fase || 1;
-  const resultados = state.estadoAtual?.resultados?.[fase]?.[state.alunoId] || [];
-  if (resultados.length < 2) {
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '14px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Dados insuficientes para o gráfico.', width/2, height/2);
-    return;
-  }
-
-  const pontuacoes = resultados.map(p => p.pontos || 0);
-  const maxPontos = Math.max(2000, Math.max(...pontuacoes) + 200);
-  const padding = 30;
-  const graficoWidth = width - padding * 2;
-  const graficoHeight = height - padding * 2;
-
-  ctx.strokeStyle = '#4a5568';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(padding, padding);
-  ctx.lineTo(padding, height - padding);
-  ctx.lineTo(width - padding, height - padding);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.strokeStyle = '#ffd966';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < pontuacoes.length; i++) {
-    const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
-    const y = height - padding - (pontuacoes[i] / maxPontos) * graficoHeight;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  for (let i = 0; i < pontuacoes.length; i++) {
-    const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
-    const y = height - padding - (pontuacoes[i] / maxPontos) * graficoHeight;
-    ctx.beginPath();
-    ctx.arc(x, y, 4, 0, 2 * Math.PI);
-    ctx.fillStyle = '#ffd966';
-    ctx.fill();
-    ctx.fillStyle = '#f1f5f9';
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(pontuacoes[i], x, y - 10);
-  }
-
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '10px sans-serif';
-  ctx.textAlign = 'center';
-  for (let i = 0; i < pontuacoes.length; i++) {
-    const x = padding + (i / (pontuacoes.length - 1)) * graficoWidth;
-    ctx.fillText(`P${i+1}`, x, height - padding + 16);
-  }
-}
+</body>
+</html>
