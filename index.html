@@ -84,13 +84,21 @@
             background: linear-gradient(135deg, rgba(250, 204, 21, 0.08), transparent);
             box-shadow: 0 4px 15px rgba(250, 204, 21, 0.15);
         }
+        .changelog-versao.legado {
+            border-left-color: #8b5cf6;
+            opacity: 0.92;
+        }
+        .changelog-versao.monolitico {
+            border-left-color: #64748b;
+            opacity: 0.88;
+        }
         .changelog-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
         }
         .changelog-titulo {
             font-size: 20px;
@@ -102,9 +110,37 @@
             color: var(--texto-secundario);
             font-weight: 500;
         }
+        .changelog-projeto {
+            font-size: 12px;
+            color: var(--texto-secundario);
+            font-style: italic;
+            margin-bottom: 12px;
+            display: inline-block;
+            padding: 2px 10px;
+            background: var(--bg-botao-padrao);
+            border-radius: 20px;
+        }
         .changelog-badge-atual {
             background: #facc15;
             color: #000;
+            font-size: 11px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+        .changelog-badge-legado {
+            background: #8b5cf6;
+            color: #fff;
+            font-size: 11px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+        .changelog-badge-monolitico {
+            background: #64748b;
+            color: #fff;
             font-size: 11px;
             padding: 2px 10px;
             border-radius: 20px;
@@ -158,12 +194,10 @@
         
         <!-- Menu de Ações -->
         <div class="lobby-actions">
-            <!-- Botão Principal para a Tela Secundária -->
             <a href="game.html" class="btn-lobby btn-primary">
                 🎮 Participar da Final
             </a>
             
-            <!-- Botões Secundários -->
             <a href="tutorial-instalacao.html" class="btn-lobby btn-secondary">
                 📲 Como Instalar o App
             </a>
@@ -198,13 +232,13 @@
     <!-- MODAL DE CHANGELOG (NOVIDADES)                            -->
     <!-- ========================================================= -->
     <div id="modal-changelog" class="modal-ranking" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="changelog-titulo">
-        <div class="modal-ranking-content" style="max-width: 700px;">
+        <div class="modal-ranking-content" style="max-width: 750px;">
             <h2 style="color:#ffd966; text-align:center; margin-bottom: 8px;" id="changelog-titulo">🆕 Novidades da Copa</h2>
             <p style="color: var(--texto-secundario); text-align: center; margin-bottom: 24px; font-size: 14px;">
                 Acompanhe o que melhoramos a cada atualização do jogo.
             </p>
             
-            <div id="changelog-conteudo" class="tutorial-content" style="max-height: 55vh; overflow-y: auto; padding: 0 8px;" aria-live="polite">
+            <div id="changelog-conteudo" class="tutorial-content" style="max-height: 60vh; overflow-y: auto; padding: 0 8px;" aria-live="polite">
                 <!-- Preenchido via JavaScript -->
             </div>
             
@@ -220,7 +254,7 @@
     <!-- ========================================================= -->
     <script>
         // ============================================================
-        // CONTEÚDO DO TUTORIAL (IDÊNTICO AO DO GAME.HTML)
+        // CONTEÚDO DO TUTORIAL
         // ============================================================
         const TUTORIAL_CONTENT = {
             objetivo: `<h3>🎯 Seja o grande campeão da Copa Tabuada CEIB 2026!</h3>
@@ -335,38 +369,43 @@
         };
 
         // ============================================================
-        // CONTEÚDO DO CHANGELOG
-        // Estrutura: cada versão tem data, títulos de grupos e listas
+        // CONTEÚDO DO CHANGELOG (CONSOLIDADO)
         // ============================================================
         const CHANGELOG_CONTENT = [
+            // ============================================================
+            // LINHA ATUAL — Copa Tabuada CEIB 2026 (Nova Estrutura)
+            // ============================================================
             {
-                versao: '2.0',
+                versao: '3.0',
                 data: '30 de setembro de 2026',
                 atual: true,
+                legado: false,
+                monolitico: false,
+                projeto: 'Copa Tabuada CEIB 2026 · Nova Estrutura',
                 grupos: [
                     {
-                        titulo: '✨ Adicionado',
+                        titulo: 'Adicionado',
                         icone: '✨',
                         itens: [
                             'Nova tela inicial (Lobby) com logo animada e botão "Participar da Final".',
-                            'Modal "Entenda a Copa" com tutorial completo em 4 abas.',
+                            'Modal "Entenda a Copa" com tutorial completo em 4 abas (Objetivo, Pontuação, Dicas, FAQ).',
                             'Modal "Novidades" (este changelog) para acompanhar atualizações.',
                             'Botão "Como Instalar o App" (nome mais claro que "Instalar App").',
                             'Easter egg secreto para o professor: 7 toques rápidos no texto da versão.'
                         ]
                     },
                     {
-                        titulo: '🔄 Alterado',
+                        titulo: 'Alterado',
                         icone: '🔄',
                         itens: [
                             'Estrutura do projeto reorganizada: novo index.html (Lobby) + game.html (jogo).',
                             'Logo animada também na tela secundária do jogo.',
-                            'Botões "Sair" (Aluno/Torcida) agora retornam à tela de escolha de modo.',
-                            'Botões "Menu Principal" retornam ao Lobby.'
+                            'Botões "Sair" (Aluno/Torcida) agora retornam à tela de escolha de modo (game.html).',
+                            'Botões "Menu Principal" retornam ao Lobby (index.html).'
                         ]
                     },
                     {
-                        titulo: '🐛 Corrigido',
+                        titulo: 'Corrigido',
                         icone: '🐛',
                         itens: [
                             'Removido o arquivo final.html e ajustados todos os links.',
@@ -375,20 +414,211 @@
                     }
                 ]
             },
+            // ============================================================
+            // LINHA MODULAR — Copa Tabuada CEIB 2026 (Modularização)
+            // ============================================================
             {
-                versao: '1.8',
-                data: '9 de julho de 2026',
+                versao: '2.0 – 2.7',
+                data: 'Setembro de 2026',
                 atual: false,
+                legado: false,
+                monolitico: false,
+                projeto: 'Copa Tabuada CEIB 2026 · Modularização',
                 grupos: [
                     {
-                        titulo: '✨ Versão inicial',
+                        titulo: 'Adicionado',
                         icone: '✨',
                         itens: [
-                            'Sistema de 5 fases com classificação automática.',
-                            'Ranking em tempo real com múltiplas visualizações.',
-                            'Bônus de velocidade e recorde geral.',
-                            'Sistema de estrelas e medalhas.',
-                            'Ranking de pontos acumulados (opcional).'
+                            'Estrutura modular completa (css/style.css, js/config/firebase.js, js/modules/*, js/main.js).',
+                            'Módulos: state, auth, db, ui, game, ranking, sound, tutorial, config, version, install.',
+                            'Página tutorial-instalacao.html com instruções passo a passo.',
+                            'Relógio em tempo real (clock-display) e campo de última sincronização (last-sync-time).',
+                            'Popularização dinâmica do seletor de fases (professor e torcida).',
+                            'Compatibilidade com links antigos via final.html (redirecionador).'
+                        ]
+                    },
+                    {
+                        titulo: 'Alterado',
+                        icone: '🔄',
+                        itens: [
+                            'index.html passou a referenciar CSS externo e JS modular.',
+                            'Firebase inicializado via window.firebase (variável global) em vez de import.',
+                            'Função responder() exportada globalmente como window.responder.',
+                            'index.html passou a ser o arquivo principal (antes era final.html).'
+                        ]
+                    },
+                    {
+                        titulo: 'Corrigido',
+                        icone: '🐛',
+                        itens: [
+                            'Erro de importação do firebase-app-compat.js (export default).',
+                            'Erro "No Firebase App [DEFAULT] has been created".',
+                            'Menus "Aluno" e "Torcida" que não funcionavam.',
+                            'Painel de sons que não aparecia na aba Configurações.',
+                            'Erro "Unexpected reserved word" (await fora de async).',
+                            'Ranking por fase não atualizava as fases já jogadas.',
+                            'Link "Ir para o Jogo" do tutorial apontava para endereço errado.'
+                        ]
+                    },
+                    {
+                        titulo: 'Removido',
+                        icone: '🗑️',
+                        itens: [
+                            'CSS inline do HTML (movido para style.css).',
+                            'JavaScript inline do HTML (movido para módulos).',
+                            'Botão "Última Versão" do tutorial (estava quebrado).'
+                        ]
+                    }
+                ]
+            },
+            // ============================================================
+            // LINHA MONOLÍTICA — Copa Tabuada CEIB 2026 (Origem)
+            // ============================================================
+            {
+                versao: '1.0',
+                data: 'Início do desenvolvimento',
+                atual: false,
+                legado: false,
+                monolitico: true,
+                projeto: 'Copa Tabuada CEIB 2026 · Monolítica',
+                grupos: [
+                    {
+                        titulo: 'Estado Inicial',
+                        icone: '📌',
+                        itens: [
+                            'Todo o projeto em um único arquivo HTML (GITHUB TABUADA FINAL.txt / final.html).',
+                            'CSS dentro da tag <style> e JavaScript dentro da tag <script>.',
+                            'Firebase carregado via CDN.'
+                        ]
+                    },
+                    {
+                        titulo: 'Adicionado',
+                        icone: '✨',
+                        itens: [
+                            'Sistema completo de jogo (tabuada, timer, perguntas, respostas).',
+                            'Sistema de ranking (fase, geral, turmas, pontos).',
+                            'Painel do professor com abas e login via Firebase Auth.',
+                            'Tela do aluno e tela da torcida (ranking ao vivo).',
+                            'Sistema de 11 efeitos sonoros.',
+                            'Sistema de versionamento via version.json.',
+                            'Controle de fases (1 a 5), bônus de velocidade e recorde geral.',
+                            'Senha para Fase 1 e liberação emergencial de alunos.',
+                            'Tutorial (aluno e torcida), controle de colunas e mínimo de partidas.'
+                        ]
+                    }
+                ]
+            },
+            // ============================================================
+            // PROJETO ANTERIOR (LEGADO)
+            // ============================================================
+            {
+                versao: '6.0',
+                data: 'Agosto de 2026',
+                atual: false,
+                legado: true,
+                monolitico: false,
+                projeto: '🧪 Projeto Anterior',
+                grupos: [
+                    {
+                        titulo: 'Adicionado',
+                        icone: '✨',
+                        itens: [
+                            'Sistema de áudio completo com AudioContext único e reaproveitado.',
+                            '4 sons implementados: Acerto, Erro, Combo e Conclusão.',
+                            'Botão de som funcional com desbloqueio de áudio no primeiro toque.',
+                            'Volume discreto (0.08–0.13) para ambiente de sala de aula.'
+                        ]
+                    },
+                    {
+                        titulo: 'Corrigido',
+                        icone: '🐛',
+                        itens: [
+                            'Bug crítico: áudio nunca funcionava porque a função de beep não era chamada.',
+                            'Bug: botão de som só alternava variável, não desbloqueava o AudioContext.'
+                        ]
+                    }
+                ]
+            },
+            {
+                versao: '5.0 – 5.9',
+                data: 'Agosto de 2026',
+                atual: false,
+                legado: true,
+                monolitico: false,
+                projeto: '🧪 Projeto Anterior',
+                grupos: [
+                    {
+                        titulo: 'Adicionado',
+                        icone: '✨',
+                        itens: [
+                            'Hero classificatória na tela inicial.',
+                            'Cartão de classificação com 3 zonas (classificação, reserva, fora).',
+                            'Pódio visual com medalhas no ranking.',
+                            'Modo noturno automático e fonte system-ui.',
+                            'Sistema de notificações internas (toasts) substituindo alert().',
+                            'Compartilhamento de resultado com posição e total de participantes.',
+                            'Turma real do aluno em "Minha Turma".',
+                            'Comparação das médias das turmas (Top 4).'
+                        ]
+                    },
+                    {
+                        titulo: 'Alterado',
+                        icone: '🔄',
+                        itens: [
+                            'Abas de ranking reorganizadas com toggle colapsável.',
+                            'Botão de som responsivo em 3 faixas (desktop, tablet, celular).',
+                            'Critérios de desempate unificados em todo o app.'
+                        ]
+                    },
+                    {
+                        titulo: 'Corrigido',
+                        icone: '🐛',
+                        itens: [
+                            'Bug crítico: melhor resultado oficial não era retornado corretamente.',
+                            'Bug: posição anterior mostrava "era 0º" em alguns casos.',
+                            'Bug: mensagem "Faltam X pontos" enganosa em empates.',
+                            'Bug: "Minha Turma" abria na turma 901 por padrão.',
+                            'Cores de texto em cartões no modo escuro.'
+                        ]
+                    }
+                ]
+            },
+            {
+                versao: '2.0 – 4.0',
+                data: 'Julho de 2026',
+                atual: false,
+                legado: true,
+                monolitico: false,
+                projeto: '🧪 Projeto Anterior',
+                grupos: [
+                    {
+                        titulo: 'Adicionado',
+                        icone: '✨',
+                        itens: [
+                            'Sistema de vínculo permanente por dispositivo.',
+                            'Toque secreto no título (5 cliques) para abrir o painel do professor.',
+                            'Sistema de conquistas com 14 medalhas.',
+                            'Mapa de tabuadas adaptativo com foco em dificuldades.',
+                            'Distratores inteligentes (alternativas erradas plausíveis).',
+                            'Modo treino com dicas de multiplicação.',
+                            '6 abas de ranking (turma, global, precisão, velocidade).',
+                            'Painel do professor com senha (hash SHA-256 com fallback).'
+                        ]
+                    },
+                    {
+                        titulo: 'Alterado',
+                        icone: '🔄',
+                        itens: [
+                            'Botão "Painel do Professor" removido da tela inicial.',
+                            'Código enxugado (de ~1800 para ~1400 linhas) com remoção de CSS morto.'
+                        ]
+                    },
+                    {
+                        titulo: 'Segurança',
+                        icone: '🔐',
+                        itens: [
+                            'Painel acessível apenas via 5 cliques no título.',
+                            'Senha exigida com sessão de 30 minutos.'
                         ]
                     }
                 ]
@@ -449,18 +679,27 @@
             const container = document.getElementById('changelog-conteudo');
             if (!modal || !container) return;
 
-            // Renderiza o changelog
             let html = '';
             CHANGELOG_CONTENT.forEach(versao => {
-                html += `<div class="changelog-versao ${versao.atual ? 'atual' : ''}">`;
+                let classeExtra = '';
+                if (versao.atual) classeExtra = 'atual';
+                else if (versao.legado) classeExtra = 'legado';
+                else if (versao.monolitico) classeExtra = 'monolitico';
+
+                html += `<div class="changelog-versao ${classeExtra}">`;
                 html += `<div class="changelog-header">`;
-                html += `<span class="changelog-titulo">🏆 Versão ${versao.versao}${versao.atual ? '<span class="changelog-badge-atual">ATUAL</span>' : ''}</span>`;
+                html += `<span class="changelog-titulo">🏆 Versão ${versao.versao}`;
+                if (versao.atual) html += `<span class="changelog-badge-atual">ATUAL</span>`;
+                if (versao.legado) html += `<span class="changelog-badge-legado">LEGADO</span>`;
+                if (versao.monolitico) html += `<span class="changelog-badge-monolitico">MONOLÍTICO</span>`;
+                html += `</span>`;
                 html += `<span class="changelog-data">📅 ${versao.data}</span>`;
                 html += `</div>`;
+                html += `<div class="changelog-projeto">📦 ${versao.projeto}</div>`;
 
                 versao.grupos.forEach(grupo => {
                     html += `<div class="changelog-grupo">`;
-                    html += `<div class="changelog-grupo-titulo">${grupo.icone} ${grupo.titulo.replace(/^[^\s]+\s/, '')}</div>`;
+                    html += `<div class="changelog-grupo-titulo">${grupo.icone} ${grupo.titulo}</div>`;
                     html += `<ul class="changelog-lista">`;
                     grupo.itens.forEach(item => {
                         html += `<li>${item}</li>`;
@@ -490,7 +729,6 @@
             localStorage.setItem('copa_theme', novoTema);
         }
 
-        // Carregar tema salvo ao abrir a página
         const temaSalvo = localStorage.getItem('copa_theme') || 'tema-escuro';
         document.body.className = temaSalvo;
 
