@@ -6,7 +6,7 @@
     <title>Copa Tabuada CEIB 2026 - Início</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* Estilos específicos para a Tela Principal (Lobby) */
+        /* ===== ESTILOS ESPECÍFICOS DA TELA PRINCIPAL (LOBBY) ===== */
         .lobby-container {
             display: flex;
             flex-direction: column;
@@ -73,6 +73,9 @@
 </head>
 <body class="tema-escuro">
 
+    <!-- ========================================================= -->
+    <!-- TELA PRINCIPAL (LOBBY)                                    -->
+    <!-- ========================================================= -->
     <div class="lobby-container">
         <!-- Logo da Copa -->
         <img src="icons/logo-copa.png" alt="Copa Tabuada CEIB 2026" class="lobby-logo">
@@ -84,12 +87,12 @@
                 🎮 Participar da Final
             </a>
             
-            <!-- Botões Secundários (Menos poluídos) -->
+            <!-- Botões Secundários -->
             <a href="tutorial-instalacao.html" class="btn-lobby btn-secondary">
-                📱 Instalar App
+                📲 Como Instalar o App
             </a>
             <button class="btn-lobby btn-secondary" onclick="abrirTutorial()">
-                📘 Como Jogar
+                📘 Entenda a Copa
             </button>
             <button class="btn-lobby btn-secondary" onclick="alternarTema()">
                 🌓 Alternar Tema
@@ -97,24 +100,209 @@
         </div>
     </div>
 
-    <!-- Scripts Básicos para Tema e Tutorial -->
+    <!-- ========================================================= -->
+    <!-- MODAL DE TUTORIAL (ENTENDA A COPA)                        -->
+    <!-- ========================================================= -->
+    <div id="modal-tutorial" class="modal-ranking" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="tutorial-titulo">
+        <div class="modal-ranking-content" style="max-width: 800px;">
+            <h2 style="color:#ffd966; text-align:center;" id="tutorial-titulo">📘 Entenda a Copa</h2>
+            <div class="modal-sub-tabs" id="tutorial-tabs" role="tablist"></div>
+            <div id="tut-conteudo" class="tutorial-content" aria-live="polite"></div>
+            <div class="acoes-modal">
+                <a href="game.html" class="btn-success" style="text-decoration:none; padding: 10px 24px; border-radius: 40px; font-weight: bold; display: inline-flex; align-items: center; gap: 8px;">🎮 Participar da Final</a>
+                <button id="btn-fechar-tutorial" class="btn-fechar" onclick="fecharTutorial()">🔙 Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- SCRIPTS                                                    -->
+    <!-- ========================================================= -->
     <script>
-        // Função básica para alternar tema
+        // ============================================================
+        // CONTEÚDO DO TUTORIAL (IDÊNTICO AO DO GAME.HTML)
+        // ============================================================
+        const TUTORIAL_CONTENT = {
+            objetivo: `<h3>🎯 Seja o grande campeão da Copa Tabuada CEIB 2026!</h3>
+                <div class="destaque">
+                    <p>A competição tem <strong>5 fases</strong>. Em cada fase, você vai responder <strong>20 perguntas de multiplicação</strong>.</p>
+                    <p>Quanto mais rápido e certo você responder, <strong>mais pontos</strong> você ganha na partida.</p>
+                    <p>Você pode jogar <strong>várias partidas</strong> durante o tempo da fase (ex: 10 minutos).</p>
+                    <p><strong>Sua melhor pontuação</strong> em uma única partida será usada para definir sua posição no ranking da fase.</p>
+                </div>
+                <h3>📊 Legenda de Desempenho (Cores)</h3>
+                <div class="legenda-cores-container">
+                    <div class="item-legenda"><span class="bolinha-mini bolinha-mini-vermelha"></span> <strong>Vermelho:</strong> Ameaça ao líder / Recorde máximo!</div>
+                    <div class="item-legenda"><span class="bolinha-mini bolinha-mini-laranja"></span> <strong>Laranja:</strong> Superando seu recorde pessoal.</div>
+                    <div class="item-legenda"><span class="bolinha-mini bolinha-mini-amarela"></span> <strong>Amarelo:</strong> Abaixo do seu recorde pessoal.</div>
+                    <div class="item-legenda"><span class="bolinha-mini bolinha-mini-branca"></span> <strong>Branco:</strong> Empate técnico.</div>
+                    <div class="item-legenda"><span class="bolinha-mini bolinha-mini-cinza"></span> <strong>Cinza:</strong> Sem dados suficientes.</div>
+                </div>
+                <p>Os <strong>melhores colocados</strong> (ex: os 30 primeiros na Fase 1) <strong>avançam</strong> para a próxima fase.</p>
+                <p>Quem chegar à Fase 5 e vencer pode ser o campeão da Copa <strong>ou</strong>, se o professor ativar o <strong>Ranking de Pontos</strong>, o campeão será quem <strong>somar mais pontos</strong> ao longo das 5 fases.</p>`,
+                
+            pontuacao: `<h3>📊 Como são calculados os pontos de uma partida?</h3>
+                <ul>
+                    <li>Cada pergunta vale até <strong>100 pontos</strong>, dependendo do tempo que você levou para responder.</li>
+                    <li>Quanto mais rápido, mais pontos você ganha.</li>
+                    <li>Se errar ou não responder a tempo, você <strong>não ganha pontos</strong> naquela pergunta.</li>
+                </ul>
+                <h3>🏅 Qual é a sua posição na fase?</h3>
+                <ul>
+                    <li>A posição é definida pela <strong>maior pontuação</strong> que você fez em <strong>uma única partida</strong>.</li>
+                    <li>Em caso de empate, o sistema usa:
+                        <ol>
+                            <li><strong>Número de partidas completas</strong> (quem jogou mais).</li>
+                            <li><strong>Menor tempo médio</strong> por partida.</li>
+                            <li><strong>Ordem alfabética</strong> (como último critério).</li>
+                        </ol>
+                    </li>
+                </ul>
+                <h3>🚀 Como funciona a classificação para a próxima fase?</h3>
+                <ul>
+                    <li>O professor define um <strong>número mínimo de partidas</strong> (ex: 1) – você precisa jogar pelo menos esse número para ser classificado.</li>
+                    <li>Os <strong>melhores colocados</strong> (de acordo com o número de vagas da fase) avançam.</li>
+                </ul>
+                <p>As vagas são:</p>
+                <ul>
+                    <li><span class="badge-fase">Fase 1</span> 30 vagas</li>
+                    <li><span class="badge-fase">Fase 2</span> 20 vagas</li>
+                    <li><span class="badge-fase">Fase 3</span> 10 vagas</li>
+                    <li><span class="badge-fase">Fase 4</span> 5 vagas</li>
+                    <li><span class="badge-fase">Fase 5</span> 5 finalistas</li>
+                </ul>
+                <h3>🏆 E o Ranking de Pontos (se ativado)?</h3>
+                <ul>
+                    <li>Se o professor ativar o <strong>Ranking de Pontos</strong>, cada fase também gera <strong>pontos para um ranking geral</strong>.</li>
+                    <li>A pontuação depende da sua posição na fase:
+                        <ul>
+                            <li>1º lugar → 40 pontos</li>
+                            <li>2º → 39</li>
+                            <li>...</li>
+                            <li>40º → 1 ponto</li>
+                            <li>A partir do 41º → 0 pontos</li>
+                        </ul>
+                    </li>
+                    <li>As fases 1 a 4 usam a mesma tabela. A Fase 5 pode ter uma tabela diferente (o professor pode ajustar).</li>
+                    <li>O <strong>campeão geral</strong> será o jogador com o <strong>maior total de pontos</strong> somando todas as fases.</li>
+                    <li>Em caso de empate, vence quem teve a <strong>melhor posição na Fase 5</strong>.</li>
+                </ul>
+                <h3>⚡ Bônus de Velocidade e Recorde Geral</h3>
+                <ul>
+                    <li>Em cada fase, o jogador com a <strong>maior velocidade</strong> (tempo médio por pergunta) e que atender à <strong>precisão mínima</strong> (ex: 80% de acertos) ganha um <strong>bônus em pontos</strong> (definido pelo professor).</li>
+                    <li>Esse bônus aparece no Ranking de Pontos com um <span class="raio-amarelo">⚡</span> amarelo ao lado da pontuação da fase.</li>
+                    <li>Além disso, o jogador com a <strong>maior velocidade de toda a competição</strong> (recorde geral) recebe um <span class="foguete-vermelho">🚀</span> que aparece na fase em que o recorde foi estabelecido e ao lado do nome em todos os rankings.</li>
+                    <li>O recorde geral é atualizado em tempo real e o foguete acompanha o detentor.</li>
+                </ul>`,
+                
+            dicas: `<h3>⚡ Dicas para ser campeão</h3>
+                <ol>
+                    <li><strong>Treine a tabuada</strong> antes de cada fase – revise as operações que vão cair.</li>
+                    <li><strong>Jogue o máximo de partidas</strong> que conseguir dentro do tempo – cada partida é uma chance de melhorar sua pontuação.</li>
+                    <li><strong>Foco e velocidade</strong> – responda rápido, mas com atenção para não errar.</li>
+                    <li><strong>Acompanhe sua posição</strong> no ranking ao vivo – veja se você está no grupo de classificação.</li>
+                    <li><strong>Não desanime</strong> se perder uma fase – você ainda pode acumular pontos para o Ranking de Pontos (se ativado), e isso pode te levar ao título geral.</li>
+                    <li><strong>Mantenha a calma</strong> – o tempo é curto, mas a prática leva à perfeição.</li>
+                </ol>
+                <div class="destaque">
+                    <p>💡 <strong>Lembre-se:</strong> a melhor pontuação de uma única partida é o que conta para o ranking da fase. Então, se você fizer uma partida excelente, pode garantir sua vaga!</p>
+                </div>`,
+                
+            faq: `<h3>❓ Perguntas frequentes</h3>
+                <p><strong>Posso jogar mais de uma vez na mesma fase?</strong></p>
+                <p>Sim! Você pode jogar quantas partidas quiser durante o tempo da fase. Apenas a <strong>melhor pontuação</strong> conta para o ranking.</p>
+                
+                <p><strong>O que acontece se eu não responder todas as 20 perguntas?</strong></p>
+                <p>A partida termina quando você responde as 20 perguntas ou quando o tempo de 10 segundos por pergunta acaba. Você ganha pontos apenas pelas perguntas respondidas corretamente.</p>
+                
+                <p><strong>Como sei se estou classificado?</strong></p>
+                <p>O ranking da fase é atualizado em tempo real. Se você estiver entre os primeiros (ex: Top 30 na Fase 1), você avança.</p>
+                
+                <p><strong>O que significa "Projeção" no ranking?</strong></p>
+                <p>É uma previsão de quantos pontos você ganharia no Ranking de Pontos se a fase terminasse agora, com base na sua posição atual.</p>
+                
+                <p><strong>E se eu perder o acesso ao meu dispositivo?</strong></p>
+                <p>Você precisa usar o <strong>mesmo dispositivo</strong> ou o mesmo navegador para manter seu progresso. Se trocar de aparelho, fale com o professor para ser liberado manualmente.</p>
+                
+                <p><strong>Onde vejo meu histórico de partidas?</strong></p>
+                <p>Na tela do aluno, em "Seu Melhor Resultado" e no histórico logo abaixo.</p>
+                
+                <p><strong>Como funciona o desempate no Ranking de Pontos?</strong></p>
+                <p>O desempate é pela melhor posição na Fase 5. Se ainda empatar, a ordem alfabética define.</p>
+                
+                <p><strong>O que significam os ícones ⚡ e 🚀?</strong></p>
+                <p><span class="raio-amarelo">⚡</span> = bônus de velocidade ganho na fase. <span class="foguete-vermelho">🚀</span> = recorde geral de velocidade da competição.</p>`
+        };
+
+        // ============================================================
+        // FUNÇÕES DO TUTORIAL
+        // ============================================================
+        function abrirTutorial() {
+            const modal = document.getElementById('modal-tutorial');
+            const titulo = document.getElementById('tutorial-titulo');
+            const tabsContainer = document.getElementById('tutorial-tabs');
+            if (!modal || !tabsContainer) return;
+
+            titulo.innerText = '📘 Entenda a Copa';
+            tabsContainer.innerHTML = `
+                <div class="sub-tab active" data-tab-tut="objetivo" role="tab" aria-selected="true" tabindex="0">🎯 Objetivo</div>
+                <div class="sub-tab" data-tab-tut="pontuacao" role="tab" aria-selected="false" tabindex="-1">📊 Pontuação + Bônus</div>
+                <div class="sub-tab" data-tab-tut="dicas" role="tab" aria-selected="false" tabindex="-1">⚡ Dicas</div>
+                <div class="sub-tab" data-tab-tut="faq" role="tab" aria-selected="false" tabindex="-1">❓ FAQ</div>
+            `;
+
+            mostrarAbaTutorial('objetivo');
+            modal.style.display = 'flex';
+
+            tabsContainer.querySelectorAll('[data-tab-tut]').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    mostrarAbaTutorial(this.dataset.tabTut);
+                });
+            });
+        }
+
+        function mostrarAbaTutorial(aba) {
+            const container = document.getElementById('tut-conteudo');
+            if (!container) return;
+            container.innerHTML = TUTORIAL_CONTENT[aba] || '<p>Conteúdo não encontrado.</p>';
+            document.querySelectorAll('[data-tab-tut]').forEach(el => {
+                el.classList.remove('active');
+                el.setAttribute('aria-selected', 'false');
+                if (el.dataset.tabTut === aba) {
+                    el.classList.add('active');
+                    el.setAttribute('aria-selected', 'true');
+                }
+            });
+        }
+
+        function fecharTutorial() {
+            const modal = document.getElementById('modal-tutorial');
+            if (modal) modal.style.display = 'none';
+        }
+
+        // ============================================================
+        // ALTERNAR TEMA
+        // ============================================================
         function alternarTema() {
             const atual = document.body.className;
             const novoTema = atual === 'tema-escuro' ? 'tema-claro' : 'tema-escuro';
             document.body.className = novoTema;
             localStorage.setItem('copa_theme', novoTema);
         }
-        
-        // Carregar tema salvo
+
+        // Carregar tema salvo ao abrir a página
         const temaSalvo = localStorage.getItem('copa_theme') || 'tema-escuro';
         document.body.className = temaSalvo;
 
-        // Placeholder para o tutorial
-        function abrirTutorial() {
-            alert("Aqui você pode abrir o tutorial ou redirecionar para a página de tutorial.");
-        }
+        // Fechar modal com tecla ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') fecharTutorial();
+        });
+
+        // Fechar modal ao clicar fora
+        document.getElementById('modal-tutorial')?.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) fecharTutorial();
+        });
     </script>
 </body>
 </html>
