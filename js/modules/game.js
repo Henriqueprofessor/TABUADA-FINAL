@@ -855,4 +855,53 @@ async function renderizarHistorico() {
     html += '<th style="padding:6px; text-align:left;">Tempo médio</th>';
     html += '</tr></thead><tbody>';
 
-    partidas.forEach((p, i)
+    partidas.forEach((p, i) => {
+      const tempoMedio = (p.acertos || 0) > 0
+        ? ((p.tempo || 0) / p.acertos).toFixed(2) + 's'
+        : '--';
+      html += '<tr style="border-bottom:1px solid #1e293b;">';
+      html += `<td style="padding:6px;">P${i + 1}</td>`;
+      html += `<td style="padding:6px;">${p.pontos || 0}</td>`;
+      html += `<td style="padding:6px;">${p.acertos || 0}/20</td>`;
+      html += `<td style="padding:6px;">${tempoMedio}</td>`;
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  } catch (e) {
+    console.warn('Erro ao carregar histórico:', e);
+    container.innerHTML = '<p style="color: #f87171;">Erro ao carregar histórico.</p>';
+  }
+}
+
+// ============================================================
+// LISTENERS DE BOTÕES (Histórico / Evolução)
+// ============================================================
+
+(function registrarListenersBotoes() {
+  const btnHistorico = document.getElementById('btn-historico-aluno');
+  if (btnHistorico) {
+    btnHistorico.addEventListener('click', () => {
+      const container = document.getElementById('historico-aluno-container');
+      if (!container) return;
+      container.classList.toggle('hidden');
+      if (!container.classList.contains('hidden')) {
+        renderizarHistorico();
+      }
+    });
+  }
+
+  const btnGrafico = document.getElementById('btn-grafico-aluno');
+  if (btnGrafico) {
+    btnGrafico.addEventListener('click', () => {
+      const container = document.getElementById('grafico-aluno-container');
+      if (!container) return;
+      container.classList.toggle('hidden');
+      if (!container.classList.contains('hidden')) {
+        // Aguarda o display para garantir dimensões corretas
+        setTimeout(() => desenharGraficoEvolucao(), 50);
+      }
+    });
+  }
+})();
