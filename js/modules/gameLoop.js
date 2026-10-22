@@ -1,33 +1,53 @@
 // js/modules/gameLoop.js
+// ============================================================
+// COPA TABUADA CEIB 2026 - LOOP DE GAMEPAD
+// ============================================================
+// OTIMIZAÇÃO DE PERFORMANCE:
+// O loop de requestAnimationFrame só roda quando o jogo está
+// ativo (state.jogoAtivo === true e !state.partidaFinalizada).
+// Quando o jogo está parado, entra em modo "vigia" (checagem
+// a cada 500ms), economizando CPU e bateria.
+// ============================================================
+
 import { state } from './state.js';
 import { exibirToast } from './ui.js';
 
 let loopId = null;
+let idleCheckId = null;
 let selectedIndex = 0;
 let isNavigating = false;
 let lastButtonPressTime = 0;
 let gamepadConnected = false;
 
+// Intervalo de checagem enquanto o jogo está ocioso (em ms).
+// 500ms = 2 verificações por segundo (custo praticamente zero).
+const IDLE_CHECK_INTERVAL_MS = 500;
+
 // ============================================================
-// INICIAR LOOP
+// INICIALIZAÇÃO
 // ============================================================
 
 export function initGameLoop() {
-  // Listeners para conectar/desconectar joystick
+  // Listener: controle conectado
   window.addEventListener('gamepadconnected', (e) => {
     gamepadConnected = true;
     exibirToast('🎮 Controle conectado! Use o D-Pad para navegar.', 'sucesso');
-    startLoop();
+    // Só acelera o loop se o jogo já estiver ativo
+    if (state.jogoAtivo && !state.partidaFinalizada) {
+      startLoop();
+    }
   });
 
+  // Listener: controle desconectado
   window.addEventListener('gamepaddisconnected', (e) => {
     gamepadConnected = false;
     exibirToast('🔌 Controle desconectado.', 'aviso');
-    // Limpa os destaques ao desconectar
-    document.querySelectorAll('.opcao-vertical').forEach(el => el.classList.remove('joystick-selecionado'));
+    document.querySelectorAll('.opcao-vertical').forEach(el =>
+      el.classList.remove('joystick-selecionado')
+    );
   });
 
-  // Verifica se já tem um controle conectado
+  // Detecta se já existe um controle conectado antes de abrir a página
   if (navigator.getGamepads) {
     const pads = navigator.getGamepads();
     for (let pad of pads) {
@@ -38,16 +58,22 @@ export function initGameLoop() {
     }
   }
 
-  // Inicia o loop (sempre rodando, mas só age se o jogo estiver ativo)
-  startLoop();
+  // Se o jogo já estiver ativo (raro, mas possível se state foi restaurado),
+  // inicia o loop direto. Senão, entra em modo vigia.
+  if (state.jogoAtivo && !state.partidaFinalizada) {
+    startLoop();
+  } else {
+    startIdleCheck();
+  }
 }
 
 // ============================================================
-// CONTROLE DO LOOP
+// CONTROLE DO LOOP PRINCIPAL (60 FPS)
 // ============================================================
 
 function startLoop() {
-  if (loopId) return;
+  if (loopId) return; // já rodando
+  stopIdleCheck();
   loopId = requestAnimationFrame(gameLoop);
 }
 
@@ -59,95 +85,114 @@ function stopLoop() {
 }
 
 // ============================================================
-// LOOP PRINCIPAL (60 FPS)
+// MODO VIGIA (quando o jogo está inativo)
+// ============================================================
+// Em vez de rodar a 60fps sem fazer nada, checa a cada 500ms
+// se o jogo começou. Assim que começar, inicia o loop real.
+
+function startIdleCheck() {
+  if (idleCheckId) return; // já vigiando
+  idleCheckId = setInterval(() => {
+    if (state.jogoAtivo && !state.partidaFinalizada) {
+      startLoop();
+    }
+  }, IDLE_CHECK_INTERVAL_MS);
+}
+
+function stopIdleCheck() {
+  if (idleCheckId) {
+    clearInterval(idleCheckId);
+    idleCheckId = null;
+  }
+}
+
+// ============================================================
+// LOOP PRINCIPAL (só roda quando o jogo está ativo)
 // ============================================================
 
 function gameLoop(timestamp) {
-  // Só processa joystick se o jogo estiver ativo e o aluno estiver respondendo
-  if (state.jogoAtivo && !state.partidaFinalizada) {
-    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-    let pad = null;
-    for (let p of pads) {
-      if (p) { pad = p; break; }
-    }
+  // --- Caso 1: jogo terminou ou não está ativo → para o loop ---
+  if (!state.jogoAtivo || state.partidaFinalizada) {
+    // Limpa qualquer destaque residual
+    document.querySelectorAll('.opcao-vertical').forEach(el =>
+      el.classList.remove('joystick-selecionado')
+    );
+    selectedIndex = 0;
+    loopId = null;
+    // Volta ao modo vigia (economia de CPU)
+    startIdleCheck();
+    return;
+  }
 
-    if (pad) {
-      const axes = pad.axes;
-      const buttons = pad.buttons;
+  // --- Caso 2: jogo ativo → processa o controle ---
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  let pad = null;
+  for (let p of pads) {
+    if (p) { pad = p; break; }
+  }
 
-      // Navegação vertical: Eixo Y do analógico esquerdo OU D-Pad
-      let axisY = (axes.length >= 2) ? axes[1] : 0;
-      const dpadUp = buttons[12]?.pressed || false;
-      const dpadDown = buttons[13]?.pressed || false;
+  if (pad) {
+    const axes = pad.axes;
+    const buttons = pad.buttons;
 
-      const threshold = 0.4;
-      let navigate = 0;
-      if (axisY < -threshold || dpadUp) navigate = -1;
-      else if (axisY > threshold || dpadDown) navigate = 1;
+    // Navegação vertical: analógico esquerdo OU D-Pad
+    let axisY = (axes.length >= 2) ? axes[1] : 0;
+    const dpadUp = buttons[12]?.pressed || false;
+    const dpadDown = buttons[13]?.pressed || false;
 
-      const options = document.querySelectorAll('.opcao-vertical:not([disabled])');
+    const threshold = 0.4;
+    let navigate = 0;
+    if (axisY < -threshold || dpadUp) navigate = -1;
+    else if (axisY > threshold || dpadDown) navigate = 1;
 
-      if (options.length > 0) {
-        // Navegação
-        if (navigate !== 0 && !isNavigating) {
-          isNavigating = true;
+    const options = document.querySelectorAll('.opcao-vertical:not([disabled])');
 
-          // Remove destaque anterior
-          options.forEach(el => el.classList.remove('joystick-selecionado'));
+    if (options.length > 0) {
+      // Navegação entre opções
+      if (navigate !== 0 && !isNavigating) {
+        isNavigating = true;
 
-          // Calcula novo índice (com wrap-around)
-          selectedIndex = (selectedIndex + navigate + options.length) % options.length;
+        options.forEach(el => el.classList.remove('joystick-selecionado'));
+        selectedIndex = (selectedIndex + navigate + options.length) % options.length;
+        options[selectedIndex].classList.add('joystick-selecionado');
+        options[selectedIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
-          // Adiciona destaque no novo
-          options[selectedIndex].classList.add('joystick-selecionado');
-          options[selectedIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        // Debounce de 180ms para não pular várias opções
+        setTimeout(() => { isNavigating = false; }, 180);
+      }
 
-          // Debounce de 200ms para não passar várias opções de uma vez
-          setTimeout(() => { isNavigating = false; }, 180);
-        }
+      // Botão de confirmação: A (0), X (2), Start (9)
+      const confirmPressed = buttons[0]?.pressed || buttons[2]?.pressed || buttons[9]?.pressed;
+      if (confirmPressed) {
+        const now = Date.now();
+        if (now - lastButtonPressTime > 300) {
+          lastButtonPressTime = now;
 
-        // Botão de confirmação: A (0), X (2), Start (9) ou Enter do teclado (já tratado via click)
-        const confirmPressed = buttons[0]?.pressed || buttons[2]?.pressed || buttons[9]?.pressed;
-        if (confirmPressed) {
-          const now = Date.now();
-          if (now - lastButtonPressTime > 300) {
-            lastButtonPressTime = now;
+          let selectedEl = document.querySelector('.opcao-vertical.joystick-selecionado');
+          if (!selectedEl && options.length > 0) {
+            selectedIndex = 0;
+            options[selectedIndex].classList.add('joystick-selecionado');
+            selectedEl = options[selectedIndex];
+          }
 
-            // Procura qual opção está selecionada
-            let selectedEl = document.querySelector('.opcao-vertical.joystick-selecionado');
-            if (!selectedEl && options.length > 0) {
-              // Se nenhuma estiver selecionada, seleciona a primeira
+          if (selectedEl) {
+            const idx = Array.from(options).indexOf(selectedEl);
+            if (idx !== -1 && typeof window.responder === 'function') {
+              window.responder(idx);
+              options.forEach(el => el.classList.remove('joystick-selecionado'));
               selectedIndex = 0;
-              options[selectedIndex].classList.add('joystick-selecionado');
-              selectedEl = options[selectedIndex];
-            }
-
-            if (selectedEl) {
-              const idx = Array.from(options).indexOf(selectedEl);
-              if (idx !== -1 && typeof window.responder === 'function') {
-                // Dispara a resposta
-                window.responder(idx);
-                // Limpa o destaque após responder
-                options.forEach(el => el.classList.remove('joystick-selecionado'));
-                // Reseta o índice para a primeira opção da próxima pergunta
-                selectedIndex = 0;
-              }
             }
           }
         }
-      } else {
-        // Se não há opções, reseta o índice
-        selectedIndex = 0;
       }
     } else {
-      // Se o controle foi desconectado, remove os destaques
-      document.querySelectorAll('.opcao-vertical').forEach(el => el.classList.remove('joystick-selecionado'));
+      selectedIndex = 0;
     }
   } else {
-    // Se o jogo não está ativo, garante que os destaques sumam
-    document.querySelectorAll('.opcao-vertical').forEach(el => el.classList.remove('joystick-selecionado'));
-    // Reseta o índice para a próxima vez que o jogo iniciar
-    selectedIndex = 0;
+    // Controle não encontrado durante o jogo → limpa destaque
+    document.querySelectorAll('.opcao-vertical').forEach(el =>
+      el.classList.remove('joystick-selecionado')
+    );
   }
 
   // Continua o loop
@@ -155,11 +200,26 @@ function gameLoop(timestamp) {
 }
 
 // ============================================================
-// FUNÇÕES DE LIMPEZA (opcional)
+// LIMPEZA MANUAL (chamável externamente)
 // ============================================================
 
 export function resetJoystickState() {
   selectedIndex = 0;
   isNavigating = false;
-  document.querySelectorAll('.opcao-vertical').forEach(el => el.classList.remove('joystick-selecionado'));
+  document.querySelectorAll('.opcao-vertical').forEach(el =>
+    el.classList.remove('joystick-selecionado')
+  );
+}
+
+// ============================================================
+// DESLIGAMENTO TOTAL (opcional - para uso futuro)
+// ============================================================
+// Se em algum momento for necessário parar tudo (ex: troca de tela
+// radical), pode-se chamar stopLoop() + stopIdleCheck().
+// Atualmente NÃO é chamado em lugar nenhum, então o vigia sempre
+// fica ativo em baixa frequência. É o comportamento desejado.
+
+export function shutdownGameLoop() {
+  stopLoop();
+  stopIdleCheck();
 }
