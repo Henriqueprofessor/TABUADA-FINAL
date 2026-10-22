@@ -4,7 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Copa Tabuada CEIB 2026 - Jogo</title>
-    <!-- MANIFEST REMOVIDO PARA EVITAR 404 -->
+
+    <!-- OTIMIZAÇÃO: preconnect/dns-prefetch para acelerar conexão com Firebase -->
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    <link rel="dns-prefetch" href="https://final-copa-tabuada-default-rtdb.firebaseio.com">
+    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com">
+
+    <!-- OTIMIZAÇÃO: pré-carrega o módulo principal em paralelo -->
+    <link rel="modulepreload" href="js/main.js">
+
     <link rel="stylesheet" href="css/style.css">
     <style>
         /* ===== ANIMAÇÃO DA LOGO (FLUTUAÇÃO) ===== */
@@ -70,18 +79,15 @@
 
     <!-- CABEÇALHO PRINCIPAL (COM LOGO ANIMADA) -->
     <div class="card esconder-durante-jogo">
-        <!-- Logo grande centralizada (animada, apenas decorativa) -->
         <div style="text-align: center; margin-bottom: 20px;">
             <img class="logo-animada" src="icons/logo-copa.png" alt="Copa Tabuada CEIB 2026" style="max-width: 90%; width: 550px; height: auto; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.4)); user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;">
         </div>
 
-        <!-- Linha com Menu Principal + Modalidade + Versão -->
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <a href="index.html" class="btn-secondary" style="text-decoration: none; padding: 8px 16px; border-radius: 30px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;">🏠 Menu Principal</a>
                 <span class="modalidade-badge" id="modalidade-titulo" style="margin-left: 0;">Carregando...</span>
             </div>
-            <!-- O elemento abaixo é o gatilho do professor: 7 toques rápidos -->
             <span id="version-clicavel" class="version-display" style="font-size: 12px; margin: 0; padding: 4px 12px; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation;">
                 Versão: <span id="version-number">--</span>
             </span>
@@ -102,7 +108,6 @@
             <div id="online-stats" class="online-badge hidden">Online: <span id="jogadores-online">0</span></div>
         </div>
 
-        <!-- Menu de Modos de Jogo (Professor removido - acessível via 7 toques na versão) -->
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0;">
             <button id="btn-aluno">🎮 Aluno</button>
             <button id="btn-projecao">📺 Torcida</button>
@@ -111,7 +116,7 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- PAINEL DO PROFESSOR (mantido no código para acesso futuro) -->
+    <!-- PAINEL DO PROFESSOR                                       -->
     <!-- ========================================================= -->
     <div id="painel-professor" class="card hidden">
         <div class="header-actions" style="flex-wrap: wrap; gap: 10px;">
@@ -528,7 +533,6 @@
                     Configure quantas estrelas cada ação concede e quem pode ver os níveis.
                 </p>
 
-                <!-- Visibilidade -->
                 <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #0f172a; padding: 12px 20px; border-radius: 12px; border: 1px solid #2d3a4f; margin-bottom: 16px;">
                     <label style="color: #f1f5f9; font-weight: 500; display: flex; align-items: center; gap: 8px;">
                         <span>👁️ Visibilidade do nível:</span>
@@ -540,12 +544,9 @@
                     <button id="btn-salvar-visibilidade" class="btn-success" style="padding: 6px 16px;">💾 Salvar</button>
                 </div>
 
-                <!-- Tabela de Ações -->
                 <div style="background: #0f172a; padding: 16px 20px; border-radius: 12px; border: 1px solid #2d3a4f;">
                     <h5 style="color: #f1f5f9; margin-bottom: 12px;">⚙️ Estrelas por Ação</h5>
-                    <div id="estrelas-acoes-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
-                        <!-- Preenchido via JavaScript -->
-                    </div>
+                    <div id="estrelas-acoes-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;"></div>
                     <button id="btn-salvar-acoes-estrelas" class="btn-success" style="margin-top: 16px;">💾 Salvar Ações</button>
                     <button id="btn-restaurar-acoes-estrelas" class="btn-warning" style="margin-top: 8px;">🔄 Restaurar Padrão</button>
                     <div id="feedback-estrelas" style="margin-top: 12px; padding: 8px 16px; border-radius: 8px; font-size: 14px; display: none;"></div>
@@ -568,16 +569,12 @@
             </div>
 
         </div>
-        <!-- Fim da aba Configurações -->
-
     </div>
-    <!-- Fim do painel do professor -->
 
     <!-- ========================================================= -->
-    <!-- TELA DO ALUNO (REFORMULADA)                               -->
+    <!-- TELA DO ALUNO                                             -->
     <!-- ========================================================= -->
     <div id="tela-aluno" class="card hidden">
-        <!-- Área de jogo (escondida até iniciar) -->
         <div id="jogo-area" class="hidden jogo-topo">
             <div id="pergunta-container" class="pergunta-container brilho-cinza">
                 <div class="barra-tempo" style="margin-top: 0; margin-bottom: 20px;"><div id="progresso-tempo" class="progresso-tempo" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div></div>
@@ -599,7 +596,6 @@
             </div>
         </div>
 
-        <!-- Cabeçalho do aluno (sempre visível) -->
         <div class="header-actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
             <h2 id="aluno-nome-display" style="margin: 0;">Aluno</h2>
             <span style="color: var(--texto-secundario);">Turma: <strong id="aluno-turma-display">-</strong></span>
@@ -612,28 +608,23 @@
             <button id="btn-sair-aluno" class="btn-danger">🚪 Sair</button>
         </div>
 
-        <!-- Nível de Estrelas (patente) - sempre visível -->
-        <div id="nivel-estrelas-aluno" class="nivel-estrelas-container">
-            <!-- Preenchido via JavaScript -->
-        </div>
+        <div id="nivel-estrelas-aluno" class="nivel-estrelas-container"></div>
 
-        <!-- Área de ação (JOGAR ou aguardando) -->
         <div id="aguardando-aluno" style="text-align:center; padding:10px 0;">
             <div id="msg-status-aluno" style="margin-bottom: 10px; font-size: 18px;">Aguardando...</div>
             <button id="btn-iniciar-partida" class="btn-success hidden" style="font-size: 24px; padding: 16px 40px;">🎮 JOGAR</button>
         </div>
 
-        <!-- Estatísticas rápidas -->
         <div style="display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; background: var(--bg-card-hover); padding: 12px; border-radius: 16px; margin: 10px 0;">
             <div><strong>Melhor pontuação:</strong> <span id="aluno-melhor-score">0</span></div>
             <div><strong>Partidas:</strong> <span id="aluno-total-partidas">0</span></div>
             <div><strong>Melhor velocidade:</strong> <span id="aluno-melhor-velocidade">--</span></div>
         </div>
 
-        <!-- Medalhas (horizontal) -->
+        <!-- CONQUISTAS (COM CONTADOR) -->
         <div class="status-box" style="margin-top: 10px; padding: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                <h3 style="margin: 0;">🏅 Conquistas</h3>
+                <h3 style="margin: 0;">🏅 Conquistas <span id="medalhas-contador" style="font-size: 14px; color: var(--texto-secundario); font-weight: normal; margin-left: 6px;"></span></h3>
                 <button id="btn-ver-medalhas" class="btn-secondary" style="padding: 4px 12px;">Ver todas</button>
             </div>
             <div id="medalhas-container" aria-live="polite" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">
@@ -641,14 +632,12 @@
             </div>
         </div>
 
-        <!-- Botões extras -->
         <div style="display: flex; gap: 12px; justify-content: center; margin-top: 12px; flex-wrap: wrap;">
             <button id="btn-ranking-pontos-aluno" class="btn-info">🏆 Ranking Pontos</button>
             <button id="btn-historico-aluno" class="btn-secondary">📜 Histórico</button>
             <button id="btn-grafico-aluno" class="btn-secondary">📈 Evolução</button>
         </div>
 
-        <!-- Seções ocultas (Histórico, Gráfico) que podem ser alternadas -->
         <div id="historico-aluno-container" class="status-box hidden" style="margin-top: 10px;">
             <h4>📜 Histórico de Partidas (Fase atual)</h4>
             <div id="historico-aluno-lista"></div>
@@ -660,11 +649,9 @@
     </div>
 
     <!-- ========================================================= -->
-    <!-- MODAL DE RESULTADO PÓS-JOGO (gerado por JS)               -->
+    <!-- MODAL DE RESULTADO PÓS-JOGO                               -->
     <!-- ========================================================= -->
-    <div id="modal-pos-jogo" class="modal-resultados" style="display:none;" role="dialog" aria-modal="true">
-        <!-- O conteúdo é gerado dinamicamente por JavaScript -->
-    </div>
+    <div id="modal-pos-jogo" class="modal-resultados" style="display:none;" role="dialog" aria-modal="true"></div>
 
     <!-- ========================================================= -->
     <!-- MODAL DE RANKING DO ALUNO                                 -->
@@ -694,6 +681,24 @@
             <div id="tut-conteudo" class="tutorial-content" aria-live="polite"></div>
             <div class="acoes-modal">
                 <button id="btn-fechar-tutorial" class="btn-fechar">🔙 Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODAL DE TODAS AS MEDALHAS                                -->
+    <!-- ========================================================= -->
+    <div id="modal-medalhas" class="modal-ranking" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="medalhas-titulo">
+        <div class="modal-ranking-content" style="max-width: 800px;">
+            <h2 style="color:#ffd966; text-align:center; margin-bottom: 8px;" id="medalhas-titulo">🏅 Todas as Conquistas</h2>
+            <p style="color: var(--texto-secundario); text-align: center; margin-bottom: 24px; font-size: 14px;">
+                Veja o que você já conquistou e o que ainda falta desbloquear.
+            </p>
+            
+            <div id="medalhas-modal-conteudo" class="tutorial-content" style="max-height: 60vh; overflow-y: auto; padding: 0 8px;" aria-live="polite"></div>
+            
+            <div class="acoes-modal">
+                <button id="btn-fechar-medalhas" class="btn-fechar">🔙 Fechar</button>
             </div>
         </div>
     </div>
@@ -829,25 +834,12 @@
   </tr>
 </template>
 
-<!-- ===== FIREBASE ===== -->
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<!-- ===== FIREBASE (OTIMIZAÇÃO: defer para não bloquear parsing) ===== -->
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 
-<!-- ===== REMOVER SERVICE WORKER ANTIGO ===== -->
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-      for (let reg of registrations) {
-        reg.unregister().then(function(success) {
-          if (success) console.log('Service Worker desregistrado.');
-        });
-      }
-    });
-  }
-</script>
-
-<!-- ===== SCRIPT PRINCIPAL ===== -->
+<!-- ===== SCRIPT PRINCIPAL (módulo: carregado em paralelo, executado após parsing) ===== -->
 <script type="module" src="js/main.js"></script>
 
 </body>
