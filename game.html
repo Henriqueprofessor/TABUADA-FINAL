@@ -80,7 +80,10 @@
     <!-- CABEÇALHO PRINCIPAL (COM LOGO ANIMADA) -->
     <div class="card esconder-durante-jogo">
         <div style="text-align: center; margin-bottom: 20px;">
-            <img class="logo-animada" src="icons/logo-copa.png" alt="Copa Tabuada CEIB 2026" style="max-width: 90%; width: 550px; height: auto; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.4)); user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;">
+            <!-- CORREÇÃO CLS: width, height, fetchpriority e aspect-ratio -->
+            <img class="logo-animada" src="icons/logo-copa.png" alt="Copa Tabuada CEIB 2026" 
+                 width="550" height="300" fetchpriority="high" 
+                 style="max-width: 90%; width: 550px; height: auto; aspect-ratio: 550 / 300; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.4)); user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;">
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
