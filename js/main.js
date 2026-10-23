@@ -843,19 +843,63 @@ function configurarEventos() {
     exibirToast('🔄 Sincronizado!', 'sucesso');
   });
 
+  // ============================================================
+  // CORREÇÃO: Abas internas do modal de Ranking do Aluno
+  // ============================================================
+  document.querySelectorAll('.modal-sub-tabs .sub-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.modal-sub-tabs .sub-tab').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+        t.setAttribute('tabindex', '-1');
+      });
+      this.classList.add('active');
+      this.setAttribute('aria-selected', 'true');
+      this.setAttribute('tabindex', '0');
+      
+      // Renderiza imediatamente a aba selecionada
+      if (typeof atualizarRankingAluno === 'function') {
+        atualizarRankingAluno();
+      }
+    });
+  });
+
   document.getElementById('btn-ranking-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
+    if (typeof atualizarRankingAluno === 'function') atualizarRankingAluno(); // Carrega imediatamente
+    
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
     state.intervaloRankingAluno = setInterval(() => {
       if (document.getElementById('modal-ranking-aluno').style.display === 'flex' && !state.jogoAtivo) {
-        atualizarRankingAluno();
+        if (typeof atualizarRankingAluno === 'function') atualizarRankingAluno();
       }
     }, state.intervaloIndividualSegundos * 1000);
   });
+
   document.getElementById('btn-ranking-pontos-aluno')?.addEventListener('click', () => {
     abrirModal('modal-ranking-aluno');
-    document.querySelector('.modal-sub-tabs .sub-tab[data-subtab="pontos"]')?.click();
+    
+    // Força a aba "Pontos Copa" a ficar ativa
+    document.querySelectorAll('.modal-sub-tabs .sub-tab').forEach(t => {
+      t.classList.remove('active');
+      t.setAttribute('aria-selected', 'false');
+    });
+    const tabPontos = document.querySelector('.modal-sub-tabs .sub-tab[data-subtab="pontos"]');
+    if (tabPontos) {
+      tabPontos.classList.add('active');
+      tabPontos.setAttribute('aria-selected', 'true');
+    }
+    
+    if (typeof atualizarRankingAluno === 'function') atualizarRankingAluno(); // Carrega imediatamente
+    
+    if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
+    state.intervaloRankingAluno = setInterval(() => {
+      if (document.getElementById('modal-ranking-aluno').style.display === 'flex' && !state.jogoAtivo) {
+        if (typeof atualizarRankingAluno === 'function') atualizarRankingAluno();
+      }
+    }, state.intervaloIndividualSegundos * 1000);
   });
+
   document.getElementById('btn-fechar-modal-ranking')?.addEventListener('click', () => {
     fecharModal('modal-ranking-aluno');
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
