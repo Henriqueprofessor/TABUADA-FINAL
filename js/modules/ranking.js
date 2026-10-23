@@ -253,9 +253,11 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   const vagas = VAGAS_POR_FASE[fase] || 30;
   const maxMelhor = listaComInfo.length > 0 ? listaComInfo[0].melhorPontuacao : 0;
 
+  // Montagem do HTML usando templates
   const table = document.createElement('table');
   table.className = 'ranking-table';
 
+  // Cabeçalho
   const theadTemplate = document.getElementById('template-cabecalho-ranking');
   if (theadTemplate) {
     const theadClone = theadTemplate.content.cloneNode(true);
@@ -290,6 +292,7 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     table.appendChild(thead);
   }
 
+  // Corpo
   const tbody = document.createElement('tbody');
   const linhaTemplate = document.getElementById('template-linha-ranking');
 
@@ -1060,7 +1063,7 @@ export async function atualizarInfoAluno() {
 }
 
 // ============================================================
-// FUNÇÕES DE CONTROLE DE FASE (AVANÇAR E RESETAR)
+// FUNÇÕES DE CONTROLE DE FASE
 // ============================================================
 
 export function getTabelaPontosPorFase(fase) {
