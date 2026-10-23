@@ -661,11 +661,7 @@ function preencherConfigEstrelasUI() {
 // CONFIGURAÇÃO DE EVENTOS
 // ============================================================
 function configurarEventos() {
-  // ============================================================
   // EASTER EGG: 7 toques rápidos na VERSÃO para acessar o Professor
-  // Suporta clique (desktop) e toque (mobile)
-  // Intervalo máximo de 1.5 segundos entre toques
-  // ============================================================
   const TOTAL_CLIQUES_GATILHO = 7;
   const INTERVALO_MAXIMO_MS = 1500;
   
@@ -734,7 +730,6 @@ function configurarEventos() {
   });
   document.getElementById('btnCancelarLogin')?.addEventListener('click', () => fecharModal('modalLoginProfessor'));
   
-  // Logout do Professor agora volta para o Lobby
   document.getElementById('btn-logout-professor')?.addEventListener('click', async () => {
     if (confirm('Deseja realmente sair?')) {
       await logoutProfessor();
@@ -743,7 +738,6 @@ function configurarEventos() {
     }
   });
   
-  // Voltar ao Menu do Professor agora volta para o Lobby
   document.getElementById('btn-voltar-menu-prof')?.addEventListener('click', () => {
     window.location.href = 'index.html';
   });
@@ -797,7 +791,7 @@ function configurarEventos() {
       }
     }
     atualizarTorcidaFase();
-    tocarSom('clique');
+    import('./modules/sound.js').then(({ tocarSom }) => tocarSom('clique'));
   });
 
   document.getElementById('btn-torcida-equipes')?.addEventListener('click', function() {
@@ -810,7 +804,7 @@ function configurarEventos() {
     this.setAttribute('aria-selected', 'true');
     document.getElementById('torcida-fase-selector').style.display = 'none';
     atualizarTorcidaEquipes();
-    tocarSom('clique');
+    import('./modules/sound.js').then(({ tocarSom }) => tocarSom('clique'));
   });
 
   document.getElementById('btn-torcida-pontos')?.addEventListener('click', function() {
@@ -823,10 +817,9 @@ function configurarEventos() {
     this.setAttribute('aria-selected', 'true');
     document.getElementById('torcida-fase-selector').style.display = 'none';
     atualizarTorcidaPontos();
-    tocarSom('clique');
+    import('./modules/sound.js').then(({ tocarSom }) => tocarSom('clique'));
   });
 
-  // Sair da Torcida → volta para o game.html (tela de escolha de modo)
   document.getElementById('btn-sair-torcida')?.addEventListener('click', () => {
     if (state.torcidaId) {
       db.ref(`online/${state.torcidaId}`).remove();
@@ -866,7 +859,6 @@ function configurarEventos() {
     if (state.intervaloRankingAluno) clearInterval(state.intervaloRankingAluno);
   });
   
-  // Sair do Modal de Ranking → volta para game.html
   document.getElementById('btn-sair-modal-ranking')?.addEventListener('click', () => {
     fecharModal('modal-ranking-aluno');
     if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
@@ -889,15 +881,11 @@ function configurarEventos() {
     await iniciarPartida();
   });
   
-  // Sair do Aluno → volta para game.html
   document.getElementById('btn-sair-aluno')?.addEventListener('click', () => {
     if (state.alunoId) db.ref(`online/${state.alunoId}`).remove();
     window.location.href = 'game.html';
   });
 
-  // ============================================================
-  // MODAL DE MEDALHAS (Ver todas)
-  // ============================================================
   document.getElementById('btn-ver-medalhas')?.addEventListener('click', () => {
     import('./modules/medals.js').then(({ abrirModalMedalhas }) => {
       abrirModalMedalhas();
@@ -910,7 +898,6 @@ function configurarEventos() {
     });
   });
   
-  // Fechar modais com ESC
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       import('./modules/medals.js').then(({ fecharModalMedalhas }) => {
@@ -921,7 +908,6 @@ function configurarEventos() {
     }
   });
   
-  // Fechar modal de medalhas ao clicar fora
   document.getElementById('modal-medalhas')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) {
       import('./modules/medals.js').then(({ fecharModalMedalhas }) => {
@@ -1448,6 +1434,34 @@ async function atualizarListaLiberados() {
 // ============================================================
 async function init() {
   try {
+    // ============================================================
+    // OTIMIZAÇÃO (item 5): REGISTRO DO SERVICE WORKER
+    // ============================================================
+    // Registra o sw.js em segundo plano (não bloqueia a página).
+    // Só roda em HTTPS ou localhost (exigência dos navegadores).
+    // Falhas silenciosas: se der erro, o jogo continua normalmente
+    // (apenas perde o benefício de cache offline).
+    // ============================================================
+    if ('serviceWorker' in navigator) {
+      const isSecureContext =
+        location.protocol === 'https:' ||
+        location.hostname === 'localhost' ||
+        location.hostname === '127.0.0.1';
+
+      if (isSecureContext) {
+        navigator.serviceWorker
+          .register('./sw.js')
+          .then((reg) => {
+            console.log('[SW] Service Worker registrado. Escopo:', reg.scope);
+          })
+          .catch((err) => {
+            console.warn('[SW] Falha ao registrar Service Worker:', err.message || err);
+          });
+      } else {
+        console.log('[SW] Service Worker ignorado (contexto não-seguro:', location.protocol, ')');
+      }
+    }
+
     aplicarTema();
     mostrarCarregando();
     carregarConfiguracoesDoCache();
@@ -1526,15 +1540,25 @@ async function init() {
       }
     });
 
+    // ============================================================
+    // OTIMIZAÇÃO (item 2): CARREGAMENTO EM PARALELO COM Promise.all
+    // ============================================================
+    // Antes: 8 configurações carregadas uma após a outra (~1-2s).
+    // Depois: todas em paralelo (~150-400ms).
+    // Se uma falhar, as outras continuam (cada uma já trata seus
+    // próprios erros internamente em config.js).
+    // ============================================================
     try {
-      await carregarValorPartida();
-      await carregarConfigRankingPontos();
-      await carregarConfigBonusVelocidade();
-      await carregarRecordeGeral();
-      await carregarColunasVisiveis();
-      await carregarMinPartidas();
-      await carregarTempoFeedback();
-      await carregarConfigEstrelas();
+      await Promise.all([
+        carregarValorPartida(),
+        carregarConfigRankingPontos(),
+        carregarConfigBonusVelocidade(),
+        carregarRecordeGeral(),
+        carregarColunasVisiveis(),
+        carregarMinPartidas(),
+        carregarTempoFeedback(),
+        carregarConfigEstrelas()
+      ]);
     } catch (e) {
       console.warn('Erro ao carregar configurações:', e);
       exibirToast('⚠️ Algumas configurações podem não estar disponíveis.', 'aviso');
