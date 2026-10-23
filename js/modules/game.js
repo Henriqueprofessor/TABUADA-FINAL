@@ -2,10 +2,6 @@
 // ============================================================
 // COPA TABUADA CEIB 2026 - MÓDULO DE JOGO
 // ============================================================
-// Responsável por: iniciar partida, gerar perguntas, controlar
-// timer, responder, calcular pontuação, finalizar partida,
-// salvar resultado, conceder estrelas/medalhas, desenhar gráficos.
-// ============================================================
 
 import { state } from './state.js';
 import { exibirToast, exibirModalResultados, atualizarNivelEstrelasUI } from './ui.js';
@@ -43,51 +39,73 @@ function obterOperandosPorModalidade(modalidade) {
   }
 }
 
-function gerarDistratores(correto, a, b) {
-  const usados = new Set([correto]);
-  const candidatos = [
-    correto + 1, correto - 1,
-    correto + 2, correto - 2,
-    correto + a, correto - a,
-    correto + b, correto - b,
-    (a + 1) * b, (a - 1) * b,
-    a * (b + 1), a * (b - 1),
-    a + b,
-    correto + 10, correto - 10
-  ];
+function gerarDistratores(correto, a, b, targetIndex) {
+  const menores = new Set();
+  const maiores = new Set();
 
-  // Embaralha candidatos
-  for (let i = candidatos.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [candidatos[i], candidatos[j]] = [candidatos[j], candidatos[i]];
+  // Função auxiliar para adicionar aos conjuntos separando maiores e menores
+  const add = (val) => {
+    if (val >= 0 && val !== correto && Number.isInteger(val)) {
+      if (val < correto) menores.add(val);
+      else maiores.add(val);
+    }
+  };
+
+  // Candidatos baseados em diferenças comuns
+  [1, 2, 3, 4, 5, 10, -1, -2, -3, -4, -5, -10].forEach(diff => add(correto + diff));
+  // Candidatos baseados nos operandos da multiplicação
+  add(correto + a); add(correto - a);
+  add(correto + b); add(correto - b);
+  add((a + 1) * b); add((a - 1) * b);
+  add(a * (b + 1)); add(a * (b - 1));
+  add(a + b);
+
+  // Embaralha os candidatos dentro de cada grupo
+  const menoresArr = Array.from(menores).sort(() => Math.random() - 0.5);
+  const maioresArr = Array.from(maiores).sort(() => Math.random() - 0.5);
+
+  // Define quantos números menores e maiores precisamos baseado na posição alvo (0, 1, 2 ou 3)
+  let numMenores = 0;
+  let numMaiores = 0;
+  if (targetIndex === 0) { numMaiores = 3; }
+  else if (targetIndex === 1) { numMaiores = 2; numMenores = 1; }
+  else if (targetIndex === 2) { numMaiores = 1; numMenores = 2; }
+  else if (targetIndex === 3) { numMenores = 3; }
+
+  // Ajuste para resultados muito baixos (ex: se a resposta for 1 ou 0, não existem 3 números menores)
+  if (correto < numMenores) {
+      numMenores = correto;
+      numMaiores = 3 - numMenores;
   }
 
   const opcoes = [correto];
-  for (const c of candidatos) {
-    if (opcoes.length >= 4) break;
-    if (c >= 0 && Number.isInteger(c) && !usados.has(c)) {
-      usados.add(c);
-      opcoes.push(c);
+  let pickedMenores = menoresArr.slice(0, numMenores);
+  let pickedMaiores = maioresArr.slice(0, numMaiores);
+
+  // Preenchimento de segurança caso falte algum número nos conjuntos pré-definidos
+  while (pickedMenores.length < numMenores) {
+    const val = correto - Math.floor(Math.random() * 15) - 1;
+    if (val >= 0 && !pickedMenores.includes(val) && val !== correto) {
+      pickedMenores.push(val);
+    }
+  }
+  while (pickedMaiores.length < numMaiores) {
+    const val = correto + Math.floor(Math.random() * 15) + 1;
+    if (!pickedMaiores.includes(val) && val !== correto) {
+      pickedMaiores.push(val);
     }
   }
 
-  // Preenchimento de segurança (caso extremo)
-  let tentativas = 0;
-  while (opcoes.length < 4 && tentativas < 100) {
-    tentativas++;
-    const c = correto + Math.floor(Math.random() * 20) - 10;
-    if (c >= 0 && !usados.has(c)) {
-      usados.add(c);
-      opcoes.push(c);
-    }
+  opcoes.push(...pickedMenores, ...pickedMaiores);
+
+  // Fallback extremo (garante que sempre teremos 4 opções)
+  while (opcoes.length < 4) {
+    const val = Math.max(0, correto + Math.floor(Math.random() * 21) - 10);
+    if (!opcoes.includes(val)) opcoes.push(val);
   }
 
-  // Embaralha opções
-  for (let i = opcoes.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [opcoes[i], opcoes[j]] = [opcoes[j], opcoes[i]];
-  }
-
+  // === AQUI GARANTIMOS A ORDEM CRESCENTE ===
+  opcoes.sort((x, y) => x - y);
   return opcoes;
 }
 
@@ -98,25 +116,36 @@ function gerarPerguntas(modalidade) {
   let tentativas = 0;
   const LIMITE_TENTATIVAS = 800;
 
+  // Gera um gabarito de posições: 5x(0), 5x(1), 5x(2), 5x(3) e embaralha
+  // Isso garante os 25% de distribuição
+  let targetIndices = [0,0,0,0,0, 1,1,1,1,1, 2,2,2,2,2, 3,3,3,3,3];
+  for (let i = targetIndices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [targetIndices[i], targetIndices[j]] = [targetIndices[j], targetIndices[i]];
+  }
+  let qIndex = 0;
+
   // Tenta gerar perguntas únicas primeiro
   while (perguntas.length < TOTAL_PERGUNTAS && tentativas < LIMITE_TENTATIVAS) {
     tentativas++;
     const a = operandos[Math.floor(Math.random() * operandos.length)];
-    const b = Math.floor(Math.random() * 11); // 0 a 10
+    const b = Math.floor(Math.random() * 11);
     const chave = `${a}x${b}`;
     if (chavesUsadas.has(chave)) continue;
     chavesUsadas.add(chave);
     const resposta = a * b;
+    
     perguntas.push({
       a,
       b,
       pergunta: `${a} x ${b}`,
       resposta,
-      opcoes: gerarDistratores(resposta, a, b)
+      opcoes: gerarDistratores(resposta, a, b, targetIndices[qIndex])
     });
+    qIndex++;
   }
 
-  // Se não alcançou 20 (modalidade limitada), permite repetição
+  // Se não alcançou 20 (modalidade limitada), permite repetição, mas mantém o balanceamento
   while (perguntas.length < TOTAL_PERGUNTAS) {
     const a = operandos[Math.floor(Math.random() * operandos.length)];
     const b = Math.floor(Math.random() * 11);
@@ -126,8 +155,9 @@ function gerarPerguntas(modalidade) {
       b,
       pergunta: `${a} x ${b}`,
       resposta,
-      opcoes: gerarDistratores(resposta, a, b)
+      opcoes: gerarDistratores(resposta, a, b, targetIndices[qIndex])
     });
+    qIndex++;
   }
 
   return perguntas;
