@@ -253,11 +253,9 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
   const vagas = VAGAS_POR_FASE[fase] || 30;
   const maxMelhor = listaComInfo.length > 0 ? listaComInfo[0].melhorPontuacao : 0;
 
-  // Montagem do HTML usando templates
   const table = document.createElement('table');
   table.className = 'ranking-table';
 
-  // Cabeçalho
   const theadTemplate = document.getElementById('template-cabecalho-ranking');
   if (theadTemplate) {
     const theadClone = theadTemplate.content.cloneNode(true);
@@ -292,7 +290,6 @@ export async function renderizarRanking(fase, containerId, tipo = 'individual', 
     table.appendChild(thead);
   }
 
-  // Corpo
   const tbody = document.createElement('tbody');
   const linhaTemplate = document.getElementById('template-linha-ranking');
 
@@ -1063,7 +1060,7 @@ export async function atualizarInfoAluno() {
 }
 
 // ============================================================
-// FUNÇÕES DE CONTROLE DE FASE
+// FUNÇÕES DE CONTROLE DE FASE (AVANÇAR E RESETAR)
 // ============================================================
 
 export function getTabelaPontosPorFase(fase) {
@@ -1077,58 +1074,69 @@ export function getPontosPorPosicao(posicao, fase) {
 }
 
 export async function avancarFase() {
-  if (state.timerFase) { clearInterval(state.timerFase); state.timerFase = null; }
-  const faseAtual = state.estadoAtual.fase;
-  if (faseAtual > 5) { exibirToast('Competição já finalizada!'); return; }
+  // ========================================================
+  // TRAVA DE SEGURANÇA (Evita que a fase pule várias vezes)
+  // ========================================================
+  if (state.tempoEsgotadoProcessado) return; 
+  state.tempoEsgotadoProcessado = true;
 
-  const minConfig = await carregarMinPartidas();
-  const minPartidas = minConfig[faseAtual] || 1;
+  try {
+    if (state.timerFase) { clearInterval(state.timerFase); state.timerFase = null; }
+    const faseAtual = state.estadoAtual.fase;
+    if (faseAtual > 5) { exibirToast('Competição já finalizada!'); return; }
 
-  await processarPontuacaoFase(faseAtual);
+    const minConfig = await carregarMinPartidas();
+    const minPartidas = minConfig[faseAtual] || 1;
 
-  const res = state.estadoAtual.resultados?.[faseAtual] || {};
-  let lista = [];
-  for (let id in res) {
-    const partidas = res[id];
-    if (partidas?.length) {
-      if (partidas.length < minPartidas) continue;
-      const melhor = [...partidas].sort((a, b) => b.pontos - a.pontos)[0];
-      lista.push({ id, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo });
+    await processarPontuacaoFase(faseAtual);
+
+    const res = state.estadoAtual.resultados?.[faseAtual] || {};
+    let lista = [];
+    for (let id in res) {
+      const partidas = res[id];
+      if (partidas?.length) {
+        if (partidas.length < minPartidas) continue;
+        const melhor = [...partidas].sort((a, b) => b.pontos - a.pontos)[0];
+        lista.push({ id, pontos: melhor.pontos, acertos: melhor.acertos, tempo: melhor.tempo });
+      }
     }
-  }
-  lista.sort((a, b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
-  const vagas = VAGAS_POR_FASE[faseAtual];
-  const classificadosIds = lista.slice(0, vagas).map(l => l.id);
-  await setDados(`copaV2/classificados/${faseAtual}`, classificadosIds);
-  tocarSom('classificado');
+    lista.sort((a, b) => b.pontos - a.pontos || b.acertos - a.acertos || a.tempo - b.tempo);
+    const vagas = VAGAS_POR_FASE[faseAtual];
+    const classificadosIds = lista.slice(0, vagas).map(l => l.id);
+    await setDados(`copaV2/classificados/${faseAtual}`, classificadosIds);
+    tocarSom('classificado');
 
-  const participantesAtual = state.estadoAtual.participantes?.[faseAtual] || {};
-  const participantesProxima = {};
-  for (let id of classificadosIds) {
-    if (participantesAtual[id]) participantesProxima[id] = participantesAtual[id];
-    else {
-      for (let f = faseAtual - 1; f >= 1; f--) {
-        if (state.estadoAtual.participantes?.[f]?.[id]) {
-          participantesProxima[id] = state.estadoAtual.participantes[f][id];
-          break;
+    const participantesAtual = state.estadoAtual.participantes?.[faseAtual] || {};
+    const participantesProxima = {};
+    for (let id of classificadosIds) {
+      if (participantesAtual[id]) participantesProxima[id] = participantesAtual[id];
+      else {
+        for (let f = faseAtual - 1; f >= 1; f--) {
+          if (state.estadoAtual.participantes?.[f]?.[id]) {
+            participantesProxima[id] = state.estadoAtual.participantes[f][id];
+            break;
+          }
         }
       }
     }
-  }
-  if (Object.keys(participantesProxima).length > 0) await setDados(`copaV2/participantes/${faseAtual+1}`, participantesProxima);
-  await removerDados(`copaV2/resultados_temp/${faseAtual}`);
-  state.tempoEsgotadoProcessado = false;
+    if (Object.keys(participantesProxima).length > 0) await setDados(`copaV2/participantes/${faseAtual+1}`, participantesProxima);
+    await removerDados(`copaV2/resultados_temp/${faseAtual}`);
 
-  if (faseAtual === 5) {
-    exibirToast('🏆 COMPETIÇÃO FINALIZADA!');
-    await setDados('copaV2', { ...state.estadoAtual, status: 'finalizado', fim: 0, tempoRestantePausa: null });
-    mostrarFinalizacao();
+    if (faseAtual === 5) {
+      exibirToast('🏆 COMPETIÇÃO FINALIZADA!');
+      await setDados('copaV2', { ...state.estadoAtual, status: 'finalizado', fim: 0, tempoRestantePausa: null });
+      mostrarFinalizacao();
+      forcarAlunosParaMenu();
+      return;
+    }
+    await setDados('copaV2', { ...state.estadoAtual, fase: faseAtual + 1, status: 'aguardando', fim: 0, tempoRestantePausa: null });
+    exibirToast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados para a fase ${faseAtual+1}.`);
     forcarAlunosParaMenu();
-    return;
+  } catch (error) {
+    console.error('Erro ao avançar fase:', error);
+  } finally {
+    state.tempoEsgotadoProcessado = false;
   }
-  await setDados('copaV2', { ...state.estadoAtual, fase: faseAtual + 1, status: 'aguardando', fim: 0, tempoRestantePausa: null });
-  exibirToast(`✅ Fase ${faseAtual} finalizada! ${vagas} classificados para a fase ${faseAtual+1}.`);
-  forcarAlunosParaMenu();
 }
 
 export async function resetarFase() {
