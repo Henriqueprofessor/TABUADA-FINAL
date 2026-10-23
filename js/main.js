@@ -125,7 +125,8 @@ function iniciarTimerGlobal() {
     if (restante <= 0) {
       pararTimerGlobal();
       atualizarTimerFase(0);
-      if (state.estadoAtual.status === 'em_andamento') {
+      if (state.estadoAtual.status === 'em_andamento' && !state.tempoEsgotadoProcessado) {
+        state.tempoEsgotadoProcessado = true;
         import('./modules/ranking.js').then(({ avancarFase }) => avancarFase());
       }
       return;
@@ -524,7 +525,8 @@ function atualizarUI() {
     } else {
       pararTimerGlobal();
       atualizarTimerFase(0);
-      if (state.estadoAtual.status === 'em_andamento') {
+      if (state.estadoAtual.status === 'em_andamento' && !state.tempoEsgotadoProcessado) {
+        state.tempoEsgotadoProcessado = true;
         import('./modules/ranking.js').then(({ avancarFase }) => avancarFase());
       }
     }
@@ -1012,6 +1014,7 @@ function configurarEventos() {
 
   document.getElementById('btn-iniciar-fase')?.addEventListener('click', async () => {
     if (!state.estadoAtual) return;
+    if (state.tempoEsgotadoProcessado) { exibirToast('⏳ Aguarde o processamento da fase...', 'aviso'); return; }
     const duracao = state.estadoAtual.tempoFase || 10;
     const fim = Date.now() + duracao * 60000;
     await setDados('copaV2', { ...state.estadoAtual, status: 'em_andamento', fim, tempoRestantePausa: null });
@@ -1041,6 +1044,7 @@ function configurarEventos() {
   });
 
   document.getElementById('btn-avancar-fase')?.addEventListener('click', async () => {
+    if (state.tempoEsgotadoProcessado) { exibirToast('⏳ Aguarde o processamento da fase...', 'aviso'); return; }
     if (confirm('Finalizar fase?')) {
       await avancarFase();
       atualizarUltimaSinc();
@@ -1434,14 +1438,6 @@ async function atualizarListaLiberados() {
 // ============================================================
 async function init() {
   try {
-    // ============================================================
-    // OTIMIZAÇÃO (item 5): REGISTRO DO SERVICE WORKER
-    // ============================================================
-    // Registra o sw.js em segundo plano (não bloqueia a página).
-    // Só roda em HTTPS ou localhost (exigência dos navegadores).
-    // Falhas silenciosas: se der erro, o jogo continua normalmente
-    // (apenas perde o benefício de cache offline).
-    // ============================================================
     if ('serviceWorker' in navigator) {
       const isSecureContext =
         location.protocol === 'https:' ||
@@ -1457,8 +1453,6 @@ async function init() {
           .catch((err) => {
             console.warn('[SW] Falha ao registrar Service Worker:', err.message || err);
           });
-      } else {
-        console.log('[SW] Service Worker ignorado (contexto não-seguro:', location.protocol, ')');
       }
     }
 
@@ -1540,14 +1534,6 @@ async function init() {
       }
     });
 
-    // ============================================================
-    // OTIMIZAÇÃO (item 2): CARREGAMENTO EM PARALELO COM Promise.all
-    // ============================================================
-    // Antes: 8 configurações carregadas uma após a outra (~1-2s).
-    // Depois: todas em paralelo (~150-400ms).
-    // Se uma falhar, as outras continuam (cada uma já trata seus
-    // próprios erros internamente em config.js).
-    // ============================================================
     try {
       await Promise.all([
         carregarValorPartida(),
