@@ -189,8 +189,10 @@
     <!-- TELA PRINCIPAL (LOBBY)                                    -->
     <!-- ========================================================= -->
     <div class="lobby-container">
-        <!-- Logo da Copa -->
-        <img src="icons/logo-copa.png" alt="Copa Tabuada CEIB 2026" class="lobby-logo">
+        <!-- CORREÇÃO CLS: width, height, fetchpriority e aspect-ratio -->
+        <img src="icons/logo-copa.png" alt="Copa Tabuada CEIB 2026" class="lobby-logo"
+             width="550" height="300" fetchpriority="high"
+             style="aspect-ratio: 550 / 300; height: auto;">
         
         <!-- Menu de Ações -->
         <div class="lobby-actions">
@@ -372,9 +374,6 @@
         // CONTEÚDO DO CHANGELOG (CONSOLIDADO)
         // ============================================================
         const CHANGELOG_CONTENT = [
-            // ============================================================
-            // LINHA ATUAL — Copa Tabuada CEIB 2026 (Nova Estrutura)
-            // ============================================================
             {
                 versao: '3.0',
                 data: '30 de setembro de 2026',
@@ -414,9 +413,6 @@
                     }
                 ]
             },
-            // ============================================================
-            // LINHA MODULAR — Copa Tabuada CEIB 2026 (Modularização)
-            // ============================================================
             {
                 versao: '2.0 – 2.7',
                 data: 'Setembro de 2026',
@@ -471,9 +467,6 @@
                     }
                 ]
             },
-            // ============================================================
-            // LINHA MONOLÍTICA — Copa Tabuada CEIB 2026 (Origem)
-            // ============================================================
             {
                 versao: '1.0',
                 data: 'Início do desenvolvimento',
@@ -508,9 +501,6 @@
                     }
                 ]
             },
-            // ============================================================
-            // PROJETO ANTERIOR (LEGADO)
-            // ============================================================
             {
                 versao: '6.0',
                 data: 'Agosto de 2026',
