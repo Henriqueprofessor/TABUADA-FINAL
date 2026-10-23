@@ -12,7 +12,7 @@
 // os navegadores baixem os novos arquivos.
 // ============================================================
 
-const SW_VERSION = '3.0.0';
+const SW_VERSION = '3.0.1';
 
 // Nomes dos caches (separados por estratégia)
 const CACHE_STATIC = `copa-tabuada-static-v${SW_VERSION}`;
